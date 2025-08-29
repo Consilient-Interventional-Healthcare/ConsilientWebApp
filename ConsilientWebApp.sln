@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36221.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsilientWebApp", "ConsilientWebApp.csproj", "{861F04AD-12CB-4A9C-B4B9-466377D0396F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Development|Any CPU = Development|Any CPU
+		Production|Any CPU = Production|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{861F04AD-12CB-4A9C-B4B9-466377D0396F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{861F04AD-12CB-4A9C-B4B9-466377D0396F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{861F04AD-12CB-4A9C-B4B9-466377D0396F}.Development|Any CPU.ActiveCfg = Development|Any CPU
+		{861F04AD-12CB-4A9C-B4B9-466377D0396F}.Development|Any CPU.Build.0 = Development|Any CPU
+		{861F04AD-12CB-4A9C-B4B9-466377D0396F}.Production|Any CPU.ActiveCfg = Production|Any CPU
+		{861F04AD-12CB-4A9C-B4B9-466377D0396F}.Production|Any CPU.Build.0 = Production|Any CPU
+		{861F04AD-12CB-4A9C-B4B9-466377D0396F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{861F04AD-12CB-4A9C-B4B9-466377D0396F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3A3853C7-A394-4EFD-95D9-73F9AED7A153}
+	EndGlobalSection
+EndGlobal

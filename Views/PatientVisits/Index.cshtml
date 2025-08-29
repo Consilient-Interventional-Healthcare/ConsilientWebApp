@@ -1,0 +1,114 @@
+﻿@model ConsilientWebApp.ViewModels.PatientVisitsIndexViewModel
+
+@{
+    ViewData["Title"] = "Patient Visits";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+
+<form asp-action="Index" method="get" class="mb-3">
+    <div class="row g-2 align-items-center">
+        <div class="col-auto">
+            <label for="selectedDate" class="col-form-label">Select Date:</label>
+        </div>
+        <div class="col-auto">
+            <input type="date" id="selectedDate" name="selectedDate"
+                   class="form-control"
+                   value="@(ViewBag.SelectedDate != null ? ((DateTime)ViewBag.SelectedDate).ToString("yyyy-MM-dd") : "")" />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </div>
+    </div>
+</form>
+
+
+<table id="patientVisitsTable" class="table table-bordered table-striped table-hover align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().DateServiced)</th>
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().Patient.PatientMrn)</th>
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().Patient.PatientFullName)</th>
+            @* <th>@Html.DisplayNameFor(model => model.FirstOrDefault().Patient.PatientBirthDate)</th> *@
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().AdmissionNumber)</th>
+            @* <th>@Html.DisplayNameFor(model => model.FirstOrDefault().Insurance)</th> *@
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().Facility)</th>
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().ServiceType)</th>
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().PhysicianEmployee)</th>
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().NursePractitionerEmployee)</th>
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().ScribeEmployee)</th>
+            <th>@Html.DisplayNameFor(model => model.PatientVisits.FirstOrDefault().CosigningPhysicianEmployee)</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.PatientVisits)
+        {
+            <tr>
+                <td>@Html.DisplayFor(_ => item.DateServiced)</td>
+                <td>@Html.DisplayFor(_ => item.Patient.PatientMrn)</td>
+                <td>@Html.DisplayFor(_ => item.Patient.PatientFullName)</td>
+                @* <td>@Html.DisplayFor(_ => item.Patient.PatientBirthDate)</td> *@
+                <td>@Html.DisplayFor(_ => item.AdmissionNumber)</td>
+                @* <td>@Html.DisplayFor(_ => item.Insurance.CodeAndDescription)</td> *@
+                <td>@Html.DisplayFor(_ => item.Facility.FacilityAbbreviation)</td>
+                <td>@Html.DisplayFor(_ => item.ServiceType.CodeAndDescription)</td>
+                <td>@Html.DisplayFor(_ => item.PhysicianEmployee.FullName)</td>
+                <td>@Html.DisplayFor(_ => item.NursePractitionerEmployee.FullName)</td>
+                <td>@Html.DisplayFor(_ => item.ScribeEmployee.FullName)</td>
+                <td>@Html.DisplayFor(_ => item.CosigningPhysicianEmployee.FullName)</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.PatientVisitId" class="btn btn-sm btn-outline-primary">Details</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Summary {
+    <div class="sidebar-summary">
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white">Physicians</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var physician in Model.PhysicianSummaries)
+                {
+                    <li class="list-group-item">@physician.Key: @physician.Value</li>
+                }
+            </ul>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white">Nurse Practitioners</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var nursePractitioner in Model.NursePractitionerSummaries)
+                {
+                    <li class="list-group-item">@nursePractitioner.Key: @nursePractitioner.Value</li>
+                }
+            </ul>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white">Scribes</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var scribe in Model.ScribeSummaries)
+                {
+                    <li class="list-group-item">@scribe.Key: @scribe.Value</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#patientVisitsTable').DataTable({
+                "order": [[0, "desc"]], // default sort by DateServiced descending
+                "pageLength": 100, // show 100 rows per page
+                "columnDefs": [
+                    { "orderable": false, "targets": -1 } // Disable sorting on the last column (Details button)
+                ]
+            });
+        });
+    </script>
+}

@@ -1,0 +1,49 @@
+﻿@{
+    ViewData["Title"] = "Consilient Web App";
+}
+<div class="container-mt-5">
+    <h2 class="mb-4">Welcome to the Consilient Web App</h2>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-primary mb-4">
+                <div class="card-header bg-primary text-white">
+                    Review Patient Encounters
+                </div>
+                <div class="card-body">
+                    <p>Review, upload, and manage patient encounters</p>
+                    <a class="btn btn-primary" asp-controller="PatientVisitsStaging" asp-action="Index">Patient Encounters</a>
+                </div>
+            </div>
+
+            <div class="card border-primary mb-4">
+                <div class="card-header bg-primary text-white">
+                    Approved Patient Encounters
+                </div>
+                <div class="card-body">
+                    <p>View patient encounters that have been previously approved.</p>
+                    <a class="btn btn-primary" asp-controller="PatientVisits" asp-action="Index">Patient Encounters (Approved)</a>
+                </div>
+            </div>
+        </div>
+
+        @if(User.IsInRole("Administrator"))
+        {
+            <div class="col-md-6">
+                <div class="card border-secondary mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        Administration
+                    </div>
+                    <div class="card-body">
+                        <p>Manage employees, services, and other settings.</p>
+                        <ul class="list-group list-group-flush">
+                            <li><a class="list-group-item" asp-controller="Employees" asp-action="Index">Employees</a></li>
+                            <li><a class="list-group-item" asp-controller="ServiceTypes" asp-action="Index">Service Types</a></li>
+                            <li><a class="list-group-item" asp-controller="Insurances" asp-action="Index">Insurances</a></li>
+                            <li><a class="list-group-item" asp-controller="Facilities" asp-action="Index">Facilities</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+</div>

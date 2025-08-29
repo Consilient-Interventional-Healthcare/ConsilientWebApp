@@ -1,0 +1,71 @@
+﻿@model ConsilientWebApp.ViewModels.PatientVisitsStagingViewModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1 class="mb-3">Delete Patient Visit Submission</h1>
+
+<div class="alert alert-warning">
+    <h4 class="alert-heading">Are you sure you want to delete this record?</h4>
+    <p>This action cannot be undone.</p>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.DateServiced):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.DateServiced)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.AdmissionNumber):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.AdmissionNumber)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Patient.PatientMrn):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Patient.PatientMrn)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Patient.PatientFullName):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Patient.PatientFullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Patient.PatientBirthDate):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Patient.PatientBirthDate)</div>
+        </div>
+@*         <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Insurance):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Insurance.CodeAndDescription)</div>
+        </div> *@
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Facility):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Facility.FacilityName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.ServiceType):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.ServiceType.CodeAndDescription)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">Physician:</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.PhysicianEmployee.FullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">Nurse Practitioner:</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.NursePractitionerEmployee.FullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">Cosigning Physician:</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.CosigningPhysicianEmployee.FullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">Scribe:</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.ScribeEmployee.FullName)</div>
+        </div>
+    </div>
+</div>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="PatientVisitStagingId" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-action="Index" class="btn btn-outline-secondary ml-2">Back to List</a>
+</form>

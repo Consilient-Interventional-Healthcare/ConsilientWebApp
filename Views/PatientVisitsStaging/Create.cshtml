@@ -1,0 +1,206 @@
+﻿@model ConsilientWebApp.ViewModels.PatientVisitsStagingViewModel
+
+@{
+    ViewData["Title"] = "Create Patient Visit";
+}
+
+<h1 class="mb-4">Create Patient Visit Submission</h1>
+
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <!-- Visit Information -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    Visit Information
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label asp-for="DateServiced" class="control-label"></label>
+                        <input asp-for="DateServiced" type="date" class="form-control" />
+                        <span asp-validation-for="DateServiced" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Patient.PatientMrn" class="control-label"></label>
+                        <input type="number" id="PatientMrnInput" class="form-control" value="@Model.Patient.PatientMrn"/>
+                        <small class="form-text text-muted">Enter MRN to search existing patients or create a new one.</small>
+                        <br/>
+                        <small class="form-text text-muted">Press TAB after entering MRN to search patients.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Patient Information -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    Patient Information
+                </div>
+                <div class="card-body">
+                    <!-- Option 1: Select existing -->
+                    <div class="form-check mb-2">
+                        <input type="radio" id="useExisting" name="patientOption" value="existing" checked />
+                        <label for="useExisting">Select Existing Patient</label>
+                        <select asp-for="PatientId" asp-items="Model.PatientsSelectList" class="form-control mt-2"></select>
+                    </div>
+
+                    <!-- Option 2: Create new -->
+                    <div class="form-check">
+                        <input type="radio" id="createNew" name="patientOption" value="new" />
+                        <label for="createNew">Create New Patient</label>
+                    </div>
+
+                    <div id="newPatientFields" class="mt-3" style="display:none;">
+                        <div class="form-group">
+                            <label asp-for="NewPatient.PatientMrn" class="control-label"></label>
+                            <input asp-for="NewPatient.PatientMrn" class="form-control" />
+                            <span asp-validation-for="NewPatient.PatientMrn" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="NewPatient.PatientFirstName" class="control-label"></label>
+                            <input asp-for="NewPatient.PatientFirstName" class="form-control" />
+                            <span asp-validation-for="NewPatient.PatientFirstName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="NewPatient.PatientLastName" class="control-label"></label>
+                            <input asp-for="NewPatient.PatientLastName" class="form-control" />
+                            <span asp-validation-for="NewPatient.PatientLastName" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="NewPatient.PatientBirthDate" class="control-label"></label>
+                            <input asp-for="NewPatient.PatientBirthDate" type="date" class="form-control" />
+                            <span asp-validation-for="NewPatient.PatientBirthDate" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="AdmissionNumber" class="control-label"></label>
+                        <input asp-for="AdmissionNumber" class="form-control" />
+                        <span asp-validation-for="AdmissionNumber" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service & Employees -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    Service & Employees
+                </div>
+                <div class="card-body">
+                    <!-- Insurance / Facility / Service Type -->
+@*                     <div class="form-group">
+                        <label asp-for="Insurance" class="control-label"></label>
+                        <select asp-for="InsuranceId" asp-items="Model.InsurancesSelectList" class="form-control"></select>
+                        <span asp-validation-for="InsuranceId" class="text-danger"></span>
+                    </div> *@
+
+                    <div class="form-group">
+                        <label asp-for="Facility" class="control-label"></label>
+                        <select asp-for="FacilityId" asp-items="Model.FacilitiesSelectList" class="form-control"></select>
+                        <span asp-validation-for="FacilityId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="ServiceType" class="control-label"></label>
+                        <select asp-for="ServiceTypeId" asp-items="Model.ServiceTypesSelectList" class="form-control"></select>
+                        <span asp-validation-for="ServiceTypeId" class="text-danger"></span>
+                    </div>
+
+                    <!-- Employees -->
+                    <div class="form-group">
+                        <label asp-for="PhysicianEmployee" class="control-label"></label>
+                        <select asp-for="PhysicianEmployeeId" asp-items="Model.PhysiciansSelectList" class="form-control"></select>
+                        <span asp-validation-for="PhysicianEmployeeId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="NursePractitionerEmployee" class="control-label"></label>
+                        <select asp-for="NursePractitionerEmployeeId" asp-items="Model.NursePractitionersSelectList" class="form-control"></select>
+                        <span asp-validation-for="NursePractitionerEmployeeId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="CosigningPhysicianEmployee" class="control-label"></label>
+                        <select asp-for="CosigningPhysicianEmployeeId" asp-items="Model.CosigningPhysiciansSelectList" class="form-control"></select>
+                        <span asp-validation-for="CosigningPhysicianEmployeeId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="ScribeEmployee" class="control-label"></label>
+                        <select asp-for="ScribeEmployeeId" asp-items="Model.ScribesSelectList" class="form-control"></select>
+                        <span asp-validation-for="ScribeEmployeeId" class="text-danger"></span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Create</button>
+                <a asp-action="Index" asp-route-selectedDate="@TempData["SelectedDate"]" class="btn btn-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        var patients = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            Model.PatientsSelectList.Select(p => new {id = p.Value, text = p.Text})
+        ));
+        document.addEventListener("DOMContentLoaded", function () {
+            const mrnInput = document.getElementById("PatientMrnInput");
+            const existingRadio = document.getElementById("useExisting");
+            const newRadio = document.getElementById("createNew");
+            const patientSelect = document.querySelector("select[name='PatientId']");
+            const newPatientFields = document.getElementById("newPatientFields");
+            const newPatientMrnInput = document.getElementById("NewPatient_PatientMrn");
+
+                mrnInput.addEventListener("blur", function () {
+                    const enteredMrn = mrnInput.value.trim();
+
+                    if (!enteredMrn) return;
+
+                    // Look for a patient whose MRN starts with entered MRN
+                    const match = patients.find(p => p.text.startsWith(enteredMrn));
+
+                    if (match) {
+                        // Select existing
+                        existingRadio.checked = true;
+                        newPatientFields.style.display = "none";
+
+                        // Set dropdown to matching patient
+                        patientSelect.value = match.id;
+                    } else {
+                        // Switch to new patient mode
+                        newRadio.checked = true;
+                        newPatientFields.style.display = "block";
+
+                        // Prefill MRN in new patient form
+                        if (newPatientMrnInput) {
+                            newPatientMrnInput.value = enteredMrn;
+                        }
+                    }
+                });
+
+                // Toggle new patient fields when switching radios manually
+                existingRadio.addEventListener("change", function () {
+                    if (existingRadio.checked) newPatientFields.style.display = "none";
+                });
+                newRadio.addEventListener("change", function () {
+                    if (newRadio.checked) newPatientFields.style.display = "block";
+                });
+            });
+
+    </script>
+}

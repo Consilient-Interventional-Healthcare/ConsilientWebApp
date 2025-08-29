@@ -1,0 +1,39 @@
+﻿@model ConsilientWebApp.ViewModels.InsuranceViewModel
+
+@{
+    ViewData["Title"] = "Delete Insurance";
+}
+
+<h1 class="mb-4 text-danger">@ViewData["Title"]</h1>
+
+<h4 class="text-warning">Are you sure you want to delete this insurance record?</h4>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Insurance Details</h5>
+        <dl class="row">
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.InsuranceCode)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.InsuranceCode)</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.InsuranceDescription)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.InsuranceDescription)</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.PhysicianIncluded)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.PhysicianIncluded)</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.IsContracted)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.IsContracted)</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.CodeAndDescription)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.CodeAndDescription)</dd>
+        </dl>
+    </div>
+</div>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="InsuranceId" />
+    <div class="d-flex gap-3">
+        <button type="submit" class="btn btn-danger">Confirm Delete</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>

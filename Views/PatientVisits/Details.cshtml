@@ -1,0 +1,56 @@
+﻿@model ConsilientWebApp.ViewModels.PatientVisitViewModel
+
+@{
+    ViewData["Title"] = "Patient Visit Details";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h4 class="mb-0">Patient Visit Information</h4>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">Date Serviced</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.DateServiced)</dd>
+
+            <dt class="col-sm-3">Patient MRN</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Patient.PatientMrn)</dd>
+
+            <dt class="col-sm-3">Patient Name</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Patient.PatientFullName)</dd>
+
+            <dt class="col-sm-3">Birth Date</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Patient.PatientBirthDate)</dd>
+
+            <dt class="col-sm-3">Admission Number</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.AdmissionNumber)</dd>
+
+            <dt class="col-sm-3">Insurance</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Insurance.CodeAndDescription)</dd>
+
+            <dt class="col-sm-3">Facility</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Facility.FacilityName)</dd>
+
+            <dt class="col-sm-3">Service Type</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.ServiceType.CodeAndDescription)</dd>
+
+            <dt class="col-sm-3">Physician</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.PhysicianEmployee.FullName)</dd>
+
+            <dt class="col-sm-3">Nurse Practitioner</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.NursePractitionerEmployee.FullName)</dd>
+
+            <dt class="col-sm-3">Cosigning Physician</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.CosigningPhysicianEmployee.FullName)</dd>
+
+            <dt class="col-sm-3">Scribe</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.ScribeEmployee.FullName)</dd>
+        </dl>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index" class="btn btn-outline-secondary">← Back to List</a>
+</div>

@@ -1,0 +1,35 @@
+﻿@model IEnumerable<ConsilientWebApp.ViewModels.FacilityViewModel>
+
+@{
+    ViewData["Title"] = "Facilities";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
+</p>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.FacilityName)</th>
+            <th>@Html.DisplayNameFor(model => model.FacilityAbbreviation)</th>
+            <th style="width: 180px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.FacilityName)</td>
+                <td>@Html.DisplayFor(modelItem => item.FacilityAbbreviation)</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.FacilityId" class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                    <a asp-action="Details" asp-route-id="@item.FacilityId" class="btn btn-sm btn-outline-info me-1">Details</a>
+                    <a asp-action="Delete" asp-route-id="@item.FacilityId" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

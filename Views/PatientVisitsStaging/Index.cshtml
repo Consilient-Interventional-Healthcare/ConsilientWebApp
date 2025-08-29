@@ -1,0 +1,175 @@
+﻿@using ConsilientWebApp.ViewModels
+@model ConsilientWebApp.ViewModels.PatientVisitsStagingIndexViewModel
+
+@{
+    ViewData["Title"] = "Patient Visit Staging";
+    var placeholder = new PatientVisitsStagingViewModel();
+    var firstItem = Model.PatientVisitsStaging.FirstOrDefault() ?? placeholder;
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4">Patient Visit Submissions</h2>
+
+    <!-- Row 1: Filters -->
+    <form asp-action="Index" method="get" class="row mb-4 g-3 align-items-end">
+        <!-- Date Filter -->
+        <div class="col-md-3">
+            <label for="selectedDate" class="form-label">Select Date:</label>
+            <input type="date" id="selectedDate" name="selectedDate"
+                   class="form-control"
+                   value="@(ViewBag.SelectedDate != null ? ((DateOnly)ViewBag.SelectedDate).ToString("yyyy-MM-dd") : "")" />
+        </div>
+
+        <!-- Facility Filter -->
+        <div class="col-md-3">
+            <label asp-for="SelectedFacilityId" class="form-label">Facility</label>
+            <select asp-for="SelectedFacilityId" asp-items="Model.FacilitiesSelectList" class="form-control"></select>
+        </div>
+
+        <!-- Provider Filter -->
+        <div class="col-md-3">
+            <label asp-for="SelectedProviderId" class="form-label">Provider</label>
+            <select asp-for="SelectedProviderId" asp-items="Model.ProvidersSelectList" class="form-control"></select>
+        </div>
+
+        <!-- Submit -->
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </form>
+
+
+
+    <!-- Row 2: Create + Push -->
+    <div class="row mb-4">
+        <!-- Create New -->
+        <div class="col-md-6 mb-2">
+            <div class="card text-center">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <a asp-action="Create" class="btn btn-outline-secondary">Create New Record</a>
+                </div>
+            </div>
+        </div>
+
+        @if(User.IsInRole("Administrator"))
+        {
+            <!-- Push Approved -->
+            <div class="col-md-6 mb-2">
+                <div class="card text-center">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <form asp-action="PushApprovedPatientVisits" method="post">
+                            <button type="submit" class="btn btn-success">Push Approved Records</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <form asp-action="SaveApprovals" method="post">
+        @if (User.IsInRole("Administrator"))
+        {
+            <div class="d-flex justify-content-end mb-2">
+                <button type="submit" class="btn btn-primary">Approve Selected Visits</button>
+            </div>
+        }
+
+        <div class="table-responsive">
+            <table id="patientVisitsStagingTable" class="table table-bordered table-striped table-hover align-middle">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th>@Html.DisplayNameFor(_ => firstItem.DateServiced)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.Patient.PatientMrn)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.Patient.PatientFullName)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.AdmissionNumber)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.Facility)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.ServiceType)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.PhysicianEmployee)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.NursePractitionerEmployee)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.ScribeEmployee)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.CosigningPhysicianEmployee)</th>
+                        <th>@Html.DisplayNameFor(_ => firstItem.QualityApproved)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.PatientVisitsStaging.Count; i++)
+                    {
+                        var row = Model.PatientVisitsStaging[i];
+                        var rowClass = row.QualityApproved ? "table-success" : "";
+
+                        <tr class="@rowClass">
+                            @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
+                            <td>@Html.DisplayFor(_ => row.DateServiced)</td>
+                            <td>@Html.DisplayFor(_ => row.Patient.PatientMrn)</td>
+                            <td>@Html.DisplayFor(_ => row.Patient.PatientFullName)</td>
+                            <td>@Html.DisplayFor(_ => row.AdmissionNumber)</td>
+                            <td>@Html.DisplayFor(_ => row.Facility.FacilityAbbreviation)</td>
+                            <td>@Html.DisplayFor(_ => row.ServiceType.CodeAndDescription)</td>
+                            <td>@Html.DisplayFor(_ => row.PhysicianEmployee.FullName)</td>
+                            <td>@Html.DisplayFor(_ => row.NursePractitionerEmployee.FullName)</td>
+                            <td>@Html.DisplayFor(_ => row.ScribeEmployee.FullName)</td>
+                            <td>@Html.DisplayFor(_ => row.CosigningPhysicianEmployee.FullName)</td>
+                            <td class="text-center">
+                                <input asp-for="@Model.PatientVisitsStaging[i].QualityApproved" type="checkbox" class="form-check-input" />
+                            </td>
+                            <td class="text-nowrap">
+                                <a asp-action="Edit" asp-route-id="@row.PatientVisitStagingId" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <a asp-action="Details" asp-route-id="@row.PatientVisitStagingId" class="btn btn-sm btn-outline-info">Details</a>
+                                <a asp-action="Delete" asp-route-id="@row.PatientVisitStagingId" class="btn btn-sm btn-outline-danger">Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @section Summary {
+            <div class="sidebar-summary">
+                <div class="card mb-3">
+                    <div class="card-header bg-dark text-white">Physicians</div>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var physician in Model.PhysicianSummaries)
+                        {
+                            <li class="list-group-item">@physician.Key: @physician.Value</li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-dark text-white">Nurse Practitioners</div>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var nursePractitioner in Model.NursePractitionerSummaries)
+                        {
+                            <li class="list-group-item">@nursePractitioner.Key: @nursePractitioner.Value</li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-dark text-white">Scribes</div>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var scribe in Model.ScribeSummaries)
+                        {
+                            <li class="list-group-item">@scribe.Key: @scribe.Value</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#patientVisitsStagingTable').DataTable({
+                "order": [[0, "desc"]], // default sort by DateServiced descending
+                "pageLength": 100, // show 100 rows per page
+                "columnDefs": [
+                    { "orderable": false, "targets": -2 } // Disable sorting on the last column (Details button)
+                ]
+            });
+        });
+    </script>
+}

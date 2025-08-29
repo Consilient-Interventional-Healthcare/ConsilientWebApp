@@ -1,0 +1,24 @@
+﻿@model ConsilientWebApp.ViewModels.ServiceTypeViewModel
+
+@{
+    ViewData["Title"] = "Service Type Details";
+}
+
+<h1 class="mb-4">Service Type Details</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Description</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Description)</dd>
+
+            <dt class="col-sm-3">CPT Code</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Cptcode)</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="d-flex gap-2">
+    <a asp-action="Edit" asp-route-id="@Model?.ServiceTypeId" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>

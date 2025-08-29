@@ -1,0 +1,65 @@
+﻿@model ConsilientWebApp.ViewModels.PatientVisitsStagingViewModel
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1 class="mb-4">Patient Visit Submission Details</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.DateServiced):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.DateServiced)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.AdmissionNumber):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.AdmissionNumber)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Patient.PatientMrn):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Patient.PatientMrn)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Patient.PatientFullName):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Patient.PatientFullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Patient.PatientBirthDate):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Patient.PatientBirthDate)</div>
+        </div>
+@*         <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Insurance):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Insurance.CodeAndDescription)</div>
+        </div> *@
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.Facility):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.Facility.FacilityName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.ServiceType):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.ServiceType.CodeAndDescription)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.PhysicianEmployee):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.PhysicianEmployee.FullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.NursePractitionerEmployee):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.NursePractitionerEmployee.FullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.CosigningPhysicianEmployee):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.CosigningPhysicianEmployee.FullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.ScribeEmployee):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.ScribeEmployee.FullName)</div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Edit" asp-route-id="@Model.PatientVisitStagingId" class="btn btn-outline-primary">Edit</a>
+    <a asp-action="Index" asp-route-selectedDate="@TempData["SelectedDate"]"  class="btn btn-link">Back to List</a>
+</div>

@@ -1,0 +1,142 @@
+﻿@model ConsilientWebApp.ViewModels.PatientVisitsStagingViewModel
+
+@{
+    ViewData["Title"] = "Edit Patient Visit";
+}
+<div class="container mt-4">
+
+    <form asp-action="Edit" method="post">
+
+        <input type="hidden" asp-for="PatientVisitStagingId" />
+        <!-- Section: Visit Details -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                Visit Details
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="DateServiced" class="form-label">Visit Date</label>
+                    <input asp-for="DateServiced" class="form-control" type="date" />
+                    <span asp-validation-for="DateServiced" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="AdmissionNumber" class="form-label">Admission Number</label>
+                    <input asp-for="AdmissionNumber" class="form-control" />
+                    <span asp-validation-for="AdmissionNumber" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Information -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-success text-white">
+                Patient Information
+            </div>
+            <div class="card-body">
+                <!-- Option 1: Select existing -->
+                <div class="form-check mb-2">
+                    <input type="radio" id="useExisting" name="patientOption" value="existing" checked />
+                    <label for="useExisting">Select Existing Patient</label>
+                    <select asp-for="PatientId" asp-items="Model.PatientsSelectList" class="form-control mt-2"></select>
+                </div>
+
+                <!-- Option 2: Create new -->
+                <div class="form-check">
+                    <input type="radio" id="createNew" name="patientOption" value="new" />
+                    <label for="createNew">Create New Patient</label>
+                </div>
+
+                <div id="newPatientFields" class="mt-3" style="display:none;">
+                    <div class="form-group">
+                        <label asp-for="NewPatient.PatientMrn" class="control-label"></label>
+                        <input asp-for="NewPatient.PatientMrn" class="form-control" />
+                        <span asp-validation-for="NewPatient.PatientMrn" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="NewPatient.PatientFirstName" class="control-label"></label>
+                        <input asp-for="NewPatient.PatientFirstName" class="form-control" />
+                        <span asp-validation-for="NewPatient.PatientFirstName" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="NewPatient.PatientLastName" class="control-label"></label>
+                        <input asp-for="NewPatient.PatientLastName" class="form-control" />
+                        <span asp-validation-for="NewPatient.PatientLastName" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="NewPatient.PatientBirthDate" class="control-label"></label>
+                        <input asp-for="NewPatient.PatientBirthDate" type="date" class="form-control" />
+                        <span asp-validation-for="NewPatient.PatientBirthDate" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service & Employees -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-info text-white">
+                Service & Employees
+            </div>
+            <div class="card-body">
+                <!-- Insurance / Facility / Service Type -->
+@*                 <div class="form-group">
+                    <label asp-for="Insurance" class="control-label"></label>
+                    <select asp-for="InsuranceId" asp-items="Model.InsurancesSelectList" class="form-control"></select>
+                    <span asp-validation-for="InsuranceId" class="text-danger"></span>
+                </div> *@
+
+                <div class="form-group">
+                    <label asp-for="Facility" class="control-label"></label>
+                    <select asp-for="FacilityId" asp-items="Model.FacilitiesSelectList" class="form-control"></select>
+                    <span asp-validation-for="FacilityId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ServiceType" class="control-label"></label>
+                    <select asp-for="ServiceTypeId" asp-items="Model.ServiceTypesSelectList" class="form-control"></select>
+                    <span asp-validation-for="ServiceTypeId" class="text-danger"></span>
+                </div>
+
+                <!-- Employees -->
+                <div class="form-group">
+                    <label asp-for="PhysicianEmployee" class="control-label"></label>
+                    <select asp-for="PhysicianEmployeeId" asp-items="Model.PhysiciansSelectList" class="form-control"></select>
+                    <span asp-validation-for="PhysicianEmployeeId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="NursePractitionerEmployee" class="control-label"></label>
+                    <select asp-for="NursePractitionerEmployeeId" asp-items="Model.NursePractitionersSelectList" class="form-control"></select>
+                    <span asp-validation-for="NursePractitionerEmployeeId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="CosigningPhysicianEmployee" class="control-label"></label>
+                    <select asp-for="CosigningPhysicianEmployeeId" asp-items="Model.CosigningPhysiciansSelectList" class="form-control"></select>
+                    <span asp-validation-for="CosigningPhysicianEmployeeId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="ScribeEmployee" class="control-label"></label>
+                    <select asp-for="ScribeEmployeeId" asp-items="Model.ScribesSelectList" class="form-control"></select>
+                    <span asp-validation-for="ScribeEmployeeId" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Save -->
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary me-2">Save</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

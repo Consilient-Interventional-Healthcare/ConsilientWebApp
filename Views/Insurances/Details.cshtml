@@ -1,0 +1,34 @@
+﻿@model ConsilientWebApp.ViewModels.InsuranceViewModel
+
+@{
+    ViewData["Title"] = "Insurance Details";
+}
+
+<h1 class="mb-4">@ViewData["Title"]</h1>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h4 class="card-title mb-3">Insurance Info</h4>
+        <dl class="row">
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.InsuranceCode)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.InsuranceCode)</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.InsuranceDescription)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.InsuranceDescription)</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.PhysicianIncluded)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.PhysicianIncluded)</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.IsContracted)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.IsContracted)</dd>
+
+            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.CodeAndDescription)</dt>
+            <dd class="col-sm-8">@Html.DisplayFor(m => m.CodeAndDescription)</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between">
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+    <a asp-action="Edit" asp-route-id="@Model?.InsuranceId" class="btn btn-primary">Edit</a>
+</div>

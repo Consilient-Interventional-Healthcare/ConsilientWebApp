@@ -1,0 +1,44 @@
+﻿@model IEnumerable<ConsilientWebApp.ViewModels.ServiceTypeViewModel>
+
+@{
+    ViewData["Title"] = "Service Types";
+}
+
+<h1 class="mb-4">Service Types</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
+</p>
+
+@if (Model != null && Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>@Html.DisplayNameFor(model => model.First().Description)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().Cptcode)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                        <td>@Html.DisplayFor(modelItem => item.Cptcode)</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@item.ServiceTypeId" class="btn btn-sm btn-warning me-1">Edit</a>
+                            <a asp-action="Details" asp-route-id="@item.ServiceTypeId" class="btn btn-sm btn-info text-white me-1">Details</a>
+                            <a asp-action="Delete" asp-route-id="@item.ServiceTypeId" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <p>No service types found.</p>
+}
