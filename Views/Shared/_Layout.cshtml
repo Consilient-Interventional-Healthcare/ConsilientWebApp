@@ -10,91 +10,244 @@
     <title>
         @ViewData["Title"] - Consilient Interventional Healthcare Web App
     </title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/ConsilientWebApp.styles.css" asp-append-version="true" />
+    @* <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" /> *@
+    @* <link rel="stylesheet" href="~/ConsilientWebApp.styles.css" asp-append-version="true" /> *@
+    @* <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /> *@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+   
 </head>
-<body>
+<body class="flex min-h-screen flex-col">
     <header>
-        <div class="logo-banner text-center py-2 bg-white">
-            <img src="/consilientlogo.PNG" alt="logo" style="max-height: 40px" />
-        </div>
-
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    Consilient Interventional Healthcare Web App
+        <nav class="bg-white shadow-md border-b border-brand-blue" role="navigation" aria-label="Main Navigation">
+            <div class="mx-auto container px-4 py-3 flex items-center justify-between">
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="flex items-center gap-2">
+                    <img src="/consilientlogo.PNG" alt="Consilient IVH logo" class="h-10 w-auto" />
+                    <span class="sr-only">Consilient Interventional Healthcare</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+
+                <!-- Desktop nav -->
+                <ul class="hidden md:flex items-center gap-8">
+                    <li>
+                        <a asp-area="" asp-controller="Home" asp-action="Index"
+                           class="no-underline text-brand-blue font-semibold hover:text-brand-blue-dark focus:outline-none rounded">
+                            Home
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="" asp-controller="PatientVisits" asp-action="Index"
+                           class="no-underline text-brand-blue font-semibold hover:text-brand-blue-dark focus:outline-none rounded">
+                            Patient Visits
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="" asp-controller="PatientVisitsStaging" asp-action="Index"
+                           class="no-underline text-brand-blue font-semibold hover:text-brand-blue-dark focus:outline-none rounded">
+                            Submissions
+                        </a>
+                    </li>
+
+                    @if (User.IsInRole("Administrator"))
+                    {
+                        <li class="relative" id="admin-desktop-wrapper">
+                            <button id="admin-desktop-btn" type="button"
+                                    class="no-underline cursor-pointer text-brand-blue font-semibold hover:text-brand-blue-dark focus:outline-none rounded flex items-center gap-1"
+                                    aria-haspopup="true" aria-expanded="false" aria-controls="admin-desktop-menu">
+                                Administration
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="stroke-current">
+                                    <path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round" />
+                                </svg>
+                            </button>
+
+                            <ul id="admin-desktop-menu"
+                                class="z-50 absolute right-0 mt-2 w-56 bg-white shadow-xl border border-gray-200 rounded-md py-2 hidden"
+                                role="menu" aria-labelledby="admin-desktop-btn">
+                                <li><a asp-area="" asp-controller="Employees" asp-action="Index" class="block px-4 py-2 hover:bg-gray-50 text-brand-blue" role="menuitem">Employees</a></li>
+                                <li><a asp-area="" asp-controller="ServiceTypes" asp-action="Index" class="block px-4 py-2 hover:bg-gray-50 text-brand-blue" role="menuitem">Service Types</a></li>
+                                <li><a asp-area="" asp-controller="Insurances" asp-action="Index" class="block px-4 py-2 hover:bg-gray-50 text-brand-blue" role="menuitem">Insurances</a></li>
+                                <li><a asp-area="" asp-controller="Facilities" asp-action="Index" class="block px-4 py-2 hover:bg-gray-50 text-brand-blue" role="menuitem">Facilities</a></li>
+                            </ul>
+                        </li>
+                    }
+
+                    <li class="text-sm text-gray-600">
+                        @(User?.Identity?.IsAuthenticated == true ? User.Identity.Name : "No user identity found.")
+                    </li>
+                </ul>
+
+                <!-- Mobile hamburger -->
+                <button id="mobile-menu-open" type="button"
+                        class="md:hidden inline-flex items-center justify-center rounded-md p-2 text-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]"
+                        aria-label="Open menu" aria-controls="mobile-menu-panel" aria-expanded="false">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" class="stroke-current" aria-hidden="true">
+                        <path d="M3 6h18M3 12h18M3 18h18" stroke-width="2" stroke-linecap="round" />
+                    </svg>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-light" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-light" asp-area="" asp-controller="PatientVisitsStaging" asp-action="Index">Patient Visits Submissions</a>
-                        </li>
-                        <li>
-                            <a class="nav-link text-light" asp-area="" asp-controller="PatientVisits" asp-action="Index">Patient Visits</a>
-                        </li>
+            </div>
+
+            <!-- Mobile overlay & panel -->
+            <div id="mobile-overlay" class="hidden md:hidden fixed inset-0 z-40 bg-black/40" aria-hidden="true"></div>
+
+            <div id="mobile-menu-panel"
+                 class="translate-x-full md:hidden fixed right-0 top-0 z-50 h-full w-4/5 max-w-xs bg-white shadow-xl border-l border-gray-200 transition-transform duration-300"
+                 role="dialog" aria-modal="true" aria-label="Mobile menu">
+                <div class="flex items-center justify-between px-4 py-4 border-b">
+                    <span class="text-lg font-semibold text-brand-blue">Menu</span>
+                    <button id="mobile-menu-close" type="button"
+                            class="rounded-md p-2 text-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]"
+                            aria-label="Close menu">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="px-4 py-6">
+                    <ul class="space-y-3">
+                        <li><a asp-area="" asp-controller="Home" asp-action="Index" class="block w-full rounded px-3 py-2 text-base font-medium text-brand-blue hover:bg-gray-50" data-close-mobile>Home</a></li>
+                        <li><a asp-area="" asp-controller="PatientVisits" asp-action="Index" class="block w-full rounded px-3 py-2 text-base font-medium text-brand-blue hover:bg-gray-50" data-close-mobile>Patient Visits</a></li>
+                        <li><a asp-area="" asp-controller="PatientVisitsStaging" asp-action="Index" class="block w-full rounded px-3 py-2 text-base font-medium text-brand-blue hover:bg-gray-50" data-close-mobile>Submissions</a></li>
 
                         @if (User.IsInRole("Administrator"))
                         {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Administration
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="adminDropdown">
-                                    <li><a class="dropdown-item" asp-area="" asp-controller="Employees" asp-action="Index">Employees</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-controller="ServiceTypes" asp-action="Index">Service Types</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-controller="Insurances" asp-action="Index">Insurances</a></li>
-                                    <li><a class="dropdown-item" asp-area="" asp-controller="Facilities" asp-action="Index">Facilities</a></li>
+                            <!-- Mobile Admin dropdown (accordion) -->
+                            <li>
+                                <button type="button" id="admin-mobile-btn"
+                                        class="flex w-full items-center justify-between rounded px-3 py-2 text-base font-medium text-brand-blue hover:bg-gray-50"
+                                        aria-controls="admin-mobile-menu" aria-expanded="false">
+                                    <span>Administration</span>
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="stroke-current">
+                                        <path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round" />
+                                    </svg>
+                                </button>
+
+                                <ul id="admin-mobile-menu" class="hidden ml-2 mt-2 space-y-2">
+                                    <li><a asp-area="" asp-controller="Employees" asp-action="Index" class="block rounded px-3 py-2 text-brand-blue hover:bg-gray-50" data-close-mobile>Employees</a></li>
+                                    <li><a asp-area="" asp-controller="ServiceTypes" asp-action="Index" class="block rounded px-3 py-2 text-brand-blue hover:bg-gray-50" data-close-mobile>Service Types</a></li>
+                                    <li><a asp-area="" asp-controller="Insurances" asp-action="Index" class="block rounded px-3 py-2 text-brand-blue hover:bg-gray-50" data-close-mobile>Insurances</a></li>
+                                    <li><a asp-area="" asp-controller="Facilities" asp-action="Index" class="block rounded px-3 py-2 text-brand-blue hover:bg-gray-50" data-close-mobile>Facilities</a></li>
                                 </ul>
                             </li>
                         }
-                        
+
+                        <li class="text-sm text-gray-600 mt-2">
+                            @(User?.Identity?.IsAuthenticated == true ? User.Identity.Name : "No user identity found.")
+                        </li>
                     </ul>
-                    <span class="navbar-text ms-auto">
-                        @if (User.Identity.IsAuthenticated)
-                        {
-                            <span class="navbar-text ms-auto">@User.Identity.Name</span>
-                        }
-                        else
-                        {
-                            <span class="navbar-text ms-auto">No user identity found.</span>
-                        }
-                    </span>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="main-wrapper d-flex">
-        <div class="container flex-grow-1">
-            <main role="main" class="pb-3">
-                @await Html.PartialAsync("_Alerts")
-                @RenderBody()
-            </main>
-        </div>
 
-        <div class="summary-section">
-            @RenderSection("Summary", required: false)
+    <main role="main" class="flex-grow">
+        <!-- Center + roomy max width -->
+        <div class="mx-auto w-full max-w-screen-2xl px-4 pb-6">
+            @await Html.PartialAsync("_Alerts")
+            @RenderBody()
         </div>
+    </main>
+
+    <div class="summary-section">
+        @RenderSection("Summary", required: false)
     </div>
 
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - Consilient Interventional Healthcare Web App - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="bg-neutral-100 border-t mt-1" role="contentinfo">
+        <div class="container mx-auto px-4 py-8 flex items-center justify-between">
+            <p class="text-neutral-700 text-sm">
+                &copy; @DateTime.Now.Year Consilient Interventional Healthcare Web App. All rights reserved.
+            </p>
         </div>
     </footer>
+
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @* <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script> *@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        (function () {
+          const html = document.documentElement;
+
+          // Mobile elements
+          const openBtn   = document.getElementById('mobile-menu-open');
+          const closeBtn  = document.getElementById('mobile-menu-close');
+          const panel     = document.getElementById('mobile-menu-panel');
+          const overlay   = document.getElementById('mobile-overlay');
+
+          // Desktop admin dropdown
+          const adminBtn      = document.getElementById('admin-desktop-btn');
+          const adminMenu     = document.getElementById('admin-desktop-menu');
+          const adminWrapper  = document.getElementById('admin-desktop-wrapper');
+
+          // Mobile admin accordion
+          const adminMobileBtn  = document.getElementById('admin-mobile-btn');
+          const adminMobileMenu = document.getElementById('admin-mobile-menu');
+
+          // Helpers
+          const openMobile = () => {
+            panel.classList.remove('translate-x-full');
+            overlay.classList.remove('hidden');
+            html.style.overflow = 'hidden'; // scroll lock
+            openBtn?.setAttribute('aria-expanded', 'true');
+          };
+          const closeMobile = () => {
+            panel.classList.add('translate-x-full');
+            overlay.classList.add('hidden');
+            html.style.overflow = ''; // restore
+            openBtn?.setAttribute('aria-expanded', 'false');
+          };
+
+          // Open/close mobile panel
+          openBtn?.addEventListener('click', openMobile);
+          closeBtn?.addEventListener('click', closeMobile);
+          overlay?.addEventListener('click', closeMobile);
+
+          // Close after any link click inside mobile
+          panel?.querySelectorAll('[data-close-mobile]').forEach(a => {
+            a.addEventListener('click', () => setTimeout(closeMobile, 0));
+          });
+
+          // Escape closes mobile and desktop dropdown
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+              closeMobile();
+              if (adminMenu && !adminMenu.classList.contains('hidden')) {
+                adminMenu.classList.add('hidden');
+                adminBtn?.setAttribute('aria-expanded', 'false');
+              }
+            }
+          });
+
+          // Desktop Admin dropdown toggle (click-to-open, click-away close)
+          if (adminBtn && adminMenu && adminWrapper) {
+            const toggleAdmin = () => {
+              const isOpen = !adminMenu.classList.contains('hidden');
+              adminMenu.classList.toggle('hidden', isOpen);
+              adminBtn.setAttribute('aria-expanded', String(!isOpen));
+            };
+            adminBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              toggleAdmin();
+            });
+            document.addEventListener('click', (e) => {
+              if (!adminWrapper.contains(e.target)) {
+                adminMenu.classList.add('hidden');
+                adminBtn.setAttribute('aria-expanded', 'false');
+              }
+            });
+          }
+
+          // Mobile Admin accordion
+          if (adminMobileBtn && adminMobileMenu) {
+            adminMobileBtn.addEventListener('click', () => {
+              const isHidden = adminMobileMenu.classList.contains('hidden');
+              adminMobileMenu.classList.toggle('hidden', !isHidden);
+              adminMobileBtn.setAttribute('aria-expanded', String(isHidden));
+            });
+          }
+        })();
+    </script>
+
 </body>
 </html>

@@ -1,0 +1,48 @@
+@source "../Views/**/*.cshtml";
+@source "../Pages/**/*.cshtml";
+@source "../Areas/**/Views/**/*.cshtml"; /* optional if using Areas */
+
+@import "tailwindcss"; /* this is required in v4 */
+
+
+
+/* Theme tokens */
+@layer theme {
+    @theme {
+        --color-brand-blue: #102b5f;
+        --color-brand-blue-light: #2e4c88;
+        --color-brand-blue-dark: #0b1e42;
+        --color-brand-yellow: #eda941;
+        --color-brand-yellow-light: #f2c473;
+        --color-brand-yellow-dark: #b87f32;
+    }
+}
+
+@utility text-brand-blue {
+    color: var(--color-brand-blue);
+}
+
+@utility text-brand-blue-light {
+    color: var(--color-brand-blue-light);
+}
+
+@utility text-brand-blue-dark {
+    color: var(--color-brand-blue-dark);
+}
+
+@utility bg-brand-yellow {
+    background-color: var(--color-brand-yellow);
+}
+
+@utility bg-brand-yellow-light {
+    background-color: var(--color-brand-yellow-light);
+}
+
+@utility bg-brand-yellow-dark {
+    background-color: var(--color-brand-yellow-dark);
+}
+
+@utility border-brand-blue {
+    border-color: var(--color-brand-blue);
+}
+
