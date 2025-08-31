@@ -4,39 +4,101 @@
     ViewData["Title"] = "Employee Details";
 }
 
-<h1>@ViewData["Title"]</h1>
+<div class="mx-auto w-full max-w-screen-2xl px-4 py-8 md:py-12">
+    <h1 class="text-2xl md:text-3xl font-bold text-brand-blue mb-6">
+        @ViewData["Title"]
+    </h1>
 
-<div>
-    <h4>Employee</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.FirstName)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.FirstName)</dd>
+    <!-- Details card -->
+    <section class="rounded-xl border border-gray-200 bg-white shadow-sm">
+        <header class="rounded-t-xl bg-brand-blue text-white px-5 py-3">
+            <h2 class="text-base md:text-lg font-semibold">Employee</h2>
+        </header>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.LastName)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.LastName)</dd>
+        <div class="px-5 py-4">
+            <dl class="divide-y divide-gray-200">
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.TitleExtension)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.TitleExtension)</dd>
+                <!-- First Name -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3">
+                    <dt class="text-sm font-medium text-gray-600">@Html.DisplayNameFor(m => m.FirstName)</dt>
+                    <dd class="sm:col-span-2 text-sm text-gray-900">@Html.DisplayFor(m => m.FirstName)</dd>
+                </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.IsProvider)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.IsProvider)</dd>
+                <!-- Last Name -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3">
+                    <dt class="text-sm font-medium text-gray-600">@Html.DisplayNameFor(m => m.LastName)</dt>
+                    <dd class="sm:col-span-2 text-sm text-gray-900">@Html.DisplayFor(m => m.LastName)</dd>
+                </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.Role)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.Role)</dd>
+                <!-- Title Extension -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3">
+                    <dt class="text-sm font-medium text-gray-600">@Html.DisplayNameFor(m => m.TitleExtension)</dt>
+                    <dd class="sm:col-span-2 text-sm text-gray-900">@Html.DisplayFor(m => m.TitleExtension)</dd>
+                </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.FullName)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.FullName)</dd>
+                <!-- Is Provider -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3">
+                    <dt class="text-sm font-medium text-gray-600">@Html.DisplayNameFor(m => m.IsProvider)</dt>
+                    <dd class="sm:col-span-2">
+                        @if (Model.IsProvider)
+                        {
+                            <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-800">No</span>
+                        }
+                    </dd>
+                </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.IsAdministrator)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.IsAdministrator)</dd>
+                <!-- Role -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3">
+                    <dt class="text-sm font-medium text-gray-600">@Html.DisplayNameFor(m => m.Role)</dt>
+                    <dd class="sm:col-span-2 text-sm text-gray-900">@Html.DisplayFor(m => m.Role)</dd>
+                </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.Email)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.Email)</dd>
-    </dl>
-</div>
+                <!-- Full Name -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3">
+                    <dt class="text-sm font-medium text-gray-600">@Html.DisplayNameFor(m => m.FullName)</dt>
+                    <dd class="sm:col-span-2 text-sm text-gray-900">@Html.DisplayFor(m => m.FullName)</dd>
+                </div>
 
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.EmployeeId" class="btn btn-primary me-2">Edit</a>
-    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+                <!-- Is Administrator -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3">
+                    <dt class="text-sm font-medium text-gray-600">@Html.DisplayNameFor(m => m.IsAdministrator)</dt>
+                    <dd class="sm:col-span-2">
+                        @if (Model.IsAdministrator)
+                        {
+                            <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-800">No</span>
+                        }
+                    </dd>
+                </div>
+
+                <!-- Email -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 py-3">
+                    <dt class="text-sm font-medium text-gray-600">@Html.DisplayNameFor(m => m.Email)</dt>
+                    <dd class="sm:col-span-2 text-sm text-gray-900 break-words">@Html.DisplayFor(m => m.Email)</dd>
+                </div>
+
+            </dl>
+        </div>
+    </section>
+
+    <!-- Actions -->
+    <div class="mt-6 flex flex-wrap gap-3">
+        <a asp-action="Edit"
+           asp-route-id="@Model?.EmployeeId"
+           class="inline-flex items-center justify-center rounded-lg bg-brand-blue px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-blue-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue/50 active:bg-brand-blue-dark">
+            Edit
+        </a>
+
+        <a asp-action="Index"
+           class="inline-flex items-center justify-center rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-800 transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300">
+            Back to List
+        </a>
+    </div>
 </div>
