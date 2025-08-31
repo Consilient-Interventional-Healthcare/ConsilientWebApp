@@ -4,26 +4,51 @@
     ViewData["Title"] = "Delete Service Type";
 }
 
-<h1 class="mb-3 text-danger">Delete Service Type</h1>
+<div>
+    <div class="px-4 sm:px-0">
+        <h3 class="text-base/7 font-semibold text-gray-900">@ViewData["Title"]</h3>
+        <p class="mt-1 max-w-2xl text-sm/6 text-gray-500">
+            Are you sure you want to permanently delete this service type?
+        </p>
+    </div>
 
-<h4 class="mb-4">Are you sure you want to delete this service type?</h4>
+    <div class="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        Deleting this record cannot be undone.
+    </div>
 
-<div class="card shadow-sm mb-4 border-danger">
-    <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3">Description</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.Description)</dd>
+    <div class="mt-6 border-t border-gray-100">
+        <dl class="divide-y divide-gray-100">
+            <!-- Description -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Description</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Description)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">CPT Code</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.Cptcode)</dd>
+            <!-- CPT Code -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">CPT Code</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Cptcode)
+                </dd>
+            </div>
         </dl>
     </div>
-</div>
 
-<form asp-action="Delete">
-    <input type="hidden" asp-for="ServiceTypeId" />
-    <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-danger">Confirm Delete</button>
-        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    <!-- Actions -->
+    <div class="mt-6 flex items-center justify-end gap-x-4">
+        <a asp-action="Index" class="text-sm/6 font-semibold text-gray-900">
+            Cancel
+        </a>
+
+        <form asp-action="Delete" method="post" class="inline">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ServiceTypeId" />
+            <button type="submit"
+                    class="inline-flex justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs cursor-pointer hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+                Delete
+            </button>
+        </form>
     </div>
-</form>
+</div>
