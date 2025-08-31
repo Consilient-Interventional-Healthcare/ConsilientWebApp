@@ -348,12 +348,6 @@
   .-my-3 {
     margin-block: calc(var(--spacing) * -3);
   }
-  .ms-2 {
-    margin-inline-start: calc(var(--spacing) * 2);
-  }
-  .me-1 {
-    margin-inline-end: calc(var(--spacing) * 1);
-  }
   .me-2 {
     margin-inline-end: calc(var(--spacing) * 2);
   }
