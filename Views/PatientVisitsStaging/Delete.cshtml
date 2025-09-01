@@ -4,7 +4,7 @@
     ViewData["Title"] = "Delete";
 }
 
-<h1 class="mb-3">Delete Patient Visit Submission</h1>
+<h1 class="mb-3">Delete Patient Encounter Submission</h1>
 
 <div class="alert alert-warning">
     <h4 class="alert-heading">Are you sure you want to delete this record?</h4>
@@ -60,6 +60,10 @@
         <div class="row mb-2">
             <div class="col-sm-3 font-weight-bold">Scribe:</div>
             <div class="col-sm-9">@Html.DisplayFor(m => m.ScribeEmployee.FullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">Is Scribe Service Only:</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.IsScribeServiceOnly)</div>
         </div>
     </div>
 </div>

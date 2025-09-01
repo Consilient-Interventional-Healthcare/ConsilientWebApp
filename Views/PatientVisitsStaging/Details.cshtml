@@ -4,7 +4,7 @@
     ViewData["Title"] = "Details";
 }
 
-<h1 class="mb-4">Patient Visit Submission Details</h1>
+<h1 class="mb-4">Encounter Details</h1>
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
@@ -55,6 +55,10 @@
         <div class="row mb-2">
             <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.ScribeEmployee):</div>
             <div class="col-sm-9">@Html.DisplayFor(m => m.ScribeEmployee.FullName)</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col-sm-3 font-weight-bold">@Html.DisplayNameFor(m => m.IsScribeServiceOnly):</div>
+            <div class="col-sm-9">@Html.DisplayFor(m => m.IsScribeServiceOnly)</div>
         </div>
     </div>
 </div>

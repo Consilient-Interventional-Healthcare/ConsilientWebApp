@@ -4,7 +4,7 @@
     ViewData["Title"] = "Create Patient Visit";
 }
 
-<h1 class="mb-4">Create Patient Visit Submission</h1>
+<h1 class="mb-4">Create Patient Encounter Submission</h1>
 
 <hr />
 
@@ -136,6 +136,12 @@
                         <label asp-for="ScribeEmployee" class="control-label"></label>
                         <select asp-for="ScribeEmployeeId" asp-items="Model.ScribesSelectList" class="form-control"></select>
                         <span asp-validation-for="ScribeEmployeeId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check form-group">
+                        <input asp-for="IsScribeServiceOnly" class="form-check-input" type="checkbox" />
+                        <label asp-for="IsScribeServiceOnly" class="form-check-label"></label>
+                        <span asp-validation-for="IsScribeServiceOnly" class="text-danger"></span>
                     </div>
 
                 </div>
