@@ -37,6 +37,8 @@ public partial class PatientVisitsStaging
 
     public int? CosigningPhysicianEmployeeId { get; set; }
 
+    public bool IsScribeServiceOnly { get; set; }
+
     public virtual Employee? CosigningPhysicianEmployee { get; set; }
 
     public virtual Facility Facility { get; set; } = null!;

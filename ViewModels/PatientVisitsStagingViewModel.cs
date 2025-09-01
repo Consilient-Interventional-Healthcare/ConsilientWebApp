@@ -43,6 +43,8 @@ namespace ConsilientWebApp.ViewModels
 
         public int? CosigningPhysicianEmployeeId { get; set; }
 
+        public bool IsScribeServiceOnly { get; set; }
+
 
         [ValidateNever]
         [Display(Name = "Cosigning")]

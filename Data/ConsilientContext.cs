@@ -48,7 +48,6 @@ public partial class ConsilientContext : DbContext
 
     public virtual DbSet<VwPatientVisitsStaging> VwPatientVisitsStagings { get; set; }
 
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Contract>(entity =>
