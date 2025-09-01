@@ -331,12 +331,15 @@
 
             <li class="mt-auto -mx-6">
               <div class="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-brand-blue border-t border-gray-200">
-                            <img src="~/images/default.jpg"
-                                 alt="User avatar"
-                                 class="h-8 w-8 rounded-full object-cover aspect-square bg-gray-50 outline -outline-offset-1 outline-black/5" />
+                @{
+                    var displayName = User?.Identity?.IsAuthenticated == true ? User.Identity.Name : "0";
+                    var initial = string.IsNullOrEmpty(displayName) ? "?" : displayName[0].ToString().ToUpper();
+                }
 
-
-
+                <!-- Avatar as initial circle -->
+                <span class="flex size-8 items-center justify-center rounded-full bg-brand-blue/10 text-brand-blue font-semibold">
+                    @initial
+                </span>
                 <div class="min-w-0">
                   <div class="truncate">
                     @(User?.Identity?.IsAuthenticated == true ? User.Identity.Name : "Guest")
@@ -364,11 +367,17 @@
       </div>
     </main>
 
-    <aside class="fixed inset-y-0 right-0 hidden w-96 overflow-y-auto border-l border-gray-200 px-4 py-6 sm:px-6 lg:px-8 xl:block">
-      <div class="space-y-6">
+    <aside class="block w-full
+              overflow-visible
+              xl:fixed xl:inset-y-0 xl:right-0 xl:w-96
+              xl:overflow-y-auto xl:max-h-screen
+              border-t xl:border-t-0 xl:border-l border-gray-200
+              px-4 py-10 sm:px-6 lg:px-8 lg:py-20">
         @RenderSection("Summary", required: false)
-      </div>
     </aside>
+
+
+
     <!-- =================== /Main + Summary =================== -->
 
     @* <footer class="bg-neutral-100 border-t mt-1" role="contentinfo">

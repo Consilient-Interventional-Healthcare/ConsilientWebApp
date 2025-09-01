@@ -4,53 +4,127 @@
     ViewData["Title"] = "Patient Visit Details";
 }
 
-<h1 class="mb-4">@ViewData["Title"]</h1>
-
-<div class="card shadow-sm mb-4">
-    <div class="card-header">
-        <h4 class="mb-0">Patient Visit Information</h4>
+<div>
+    <!-- Header -->
+    <div class="px-4 sm:px-0">
+        <h3 class="text-base/7 font-semibold text-gray-900">@ViewData["Title"]</h3>
+        <p class="mt-1 max-w-2xl text-sm/6 text-gray-500">Summary of this patient visit.</p>
     </div>
-    <div class="card-body">
-        <dl class="row">
-            <dt class="col-sm-3">Date Serviced</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.DateServiced)</dd>
 
-            <dt class="col-sm-3">Patient MRN</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.Patient.PatientMrn)</dd>
+    <!-- Details -->
+    <div class="mt-6 border-t border-gray-100">
+        <dl class="divide-y divide-gray-100">
 
-            <dt class="col-sm-3">Patient Name</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.Patient.PatientFullName)</dd>
+            <!-- Date Serviced -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.DateServiced)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.DateServiced)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Birth Date</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.Patient.PatientBirthDate)</dd>
+            <!-- Patient MRN -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientMrn)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0 break-words">
+                    @Html.DisplayFor(m => m.Patient.PatientMrn)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Admission Number</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.AdmissionNumber)</dd>
+            <!-- Patient Name -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientFullName)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Patient.PatientFullName)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Insurance</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.Insurance.CodeAndDescription)</dd>
+            <!-- Birth Date -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientBirthDate)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Patient.PatientBirthDate)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Facility</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.Facility.FacilityName)</dd>
+            <!-- Admission Number -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.AdmissionNumber)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0 break-words">
+                    @Html.DisplayFor(m => m.AdmissionNumber)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Service Type</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.ServiceType.CodeAndDescription)</dd>
+            <!-- Insurance -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Insurance.CodeAndDescription)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Insurance.CodeAndDescription)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Physician</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.PhysicianEmployee.FullName)</dd>
+            <!-- Facility -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Facility.FacilityName)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Facility.FacilityName)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Nurse Practitioner</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.NursePractitionerEmployee.FullName)</dd>
+            <!-- Service Type -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.ServiceType.CodeAndDescription)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.ServiceType.CodeAndDescription)
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Cosigning Physician</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.CosigningPhysicianEmployee.FullName)</dd>
+            <!-- Physician -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Physician</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.PhysicianEmployee?.FullName
+                </dd>
+            </div>
 
-            <dt class="col-sm-3">Scribe</dt>
-            <dd class="col-sm-9">@Html.DisplayFor(model => model.ScribeEmployee.FullName)</dd>
+            <!-- Nurse Practitioner -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Nurse Practitioner</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.NursePractitionerEmployee?.FullName
+                </dd>
+            </div>
+
+            <!-- Cosigning Physician -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Cosigning Physician</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.CosigningPhysicianEmployee?.FullName
+                </dd>
+            </div>
+
+            <!-- Scribe -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Scribe</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.ScribeEmployee?.FullName
+                </dd>
+            </div>
+
         </dl>
     </div>
-</div>
 
-<div>
-    <a asp-action="Index" class="btn btn-outline-secondary">← Back to List</a>
+    <!-- Actions -->
+    <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+        <a asp-action="Index" class="text-sm/6 font-semibold text-gray-900">
+            ← Back to List
+        </a>
+
+        @* Optional edit if you have a route *@
+        <a asp-action="Edit"
+           asp-route-id="@Model?.PatientVisitId"
+           class="inline-flex items-center justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+            Edit
+        </a>
+    </div>
 </div>
