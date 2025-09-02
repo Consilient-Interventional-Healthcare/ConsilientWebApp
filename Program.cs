@@ -13,7 +13,7 @@ using Microsoft.Identity.Web;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ConsilientContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DevConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("LiveConnection")));
 
 builder.Services.AddAutoMapper(cfg => {
     cfg.AddProfile<MappingProfile>();
