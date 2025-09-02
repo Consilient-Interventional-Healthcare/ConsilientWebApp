@@ -4,39 +4,100 @@
     ViewData["Title"] = "Employee Details";
 }
 
-<h1>@ViewData["Title"]</h1>
-
 <div>
-    <h4>Employee</h4>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.FirstName)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.FirstName)</dd>
+    <div class="px-4 sm:px-0">
+        <h3 class="text-base/7 font-semibold text-gray-900">@ViewData["Title"]</h3>
+        <p class="mt-1 max-w-2xl text-sm/6 text-gray-500">Summary of this employee’s information.</p>
+    </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.LastName)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.LastName)</dd>
+    <div class="mt-6 border-t border-gray-100">
+        <dl class="divide-y divide-gray-100">
+            <!-- First Name -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.FirstName)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.FirstName)
+                </dd>
+            </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.TitleExtension)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.TitleExtension)</dd>
+            <!-- Last Name -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.LastName)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.LastName)
+                </dd>
+            </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.IsProvider)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.IsProvider)</dd>
+            <!-- Title Extension -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.TitleExtension)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.TitleExtension)
+                </dd>
+            </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.Role)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.Role)</dd>
+            <!-- Provider -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.IsProvider)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @(Model.IsProvider ? "Yes" : "No")
+                </dd>
+            </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.FullName)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.FullName)</dd>
+            <!-- Role -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Role)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Role)
+                </dd>
+            </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.IsAdministrator)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.IsAdministrator)</dd>
+            <!-- Full Name -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.FullName)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.FullName)
+                </dd>
+            </div>
 
-        <dt class="col-sm-2">@Html.DisplayNameFor(m => m.Email)</dt>
-        <dd class="col-sm-10">@Html.DisplayFor(m => m.Email)</dd>
-    </dl>
-</div>
+            <!-- Administrator -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.IsAdministrator)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @(Model.IsAdministrator ? "Yes" : "No")
+                </dd>
+            </div>
 
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.EmployeeId" class="btn btn-primary me-2">Edit</a>
-    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+            <!-- Email -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Email)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0 break-words">
+                    @Html.DisplayFor(m => m.Email)
+                </dd>
+            </div>
+        </dl>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+        <a asp-action="Index"
+           class="text-sm/6 font-semibold text-gray-900">
+            Back to List
+        </a>
+
+        <a asp-action="Edit"
+           asp-route-id="@Model?.EmployeeId"
+           class="inline-flex items-center justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+            Edit
+        </a>
+
+        <form asp-action="Delete" asp-route-id="@Model?.EmployeeId" method="post" class="inline">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                   
+                    class="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+                Delete
+            </button>
+        </form>
+    </div>
 </div>

@@ -2,33 +2,99 @@
 
 @{
     ViewData["Title"] = "Insurance Details";
+
+    string NullDash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v!;
 }
 
-<h1 class="mb-4">@ViewData["Title"]</h1>
-
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <h4 class="card-title mb-3">Insurance Info</h4>
-        <dl class="row">
-            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.InsuranceCode)</dt>
-            <dd class="col-sm-8">@Html.DisplayFor(m => m.InsuranceCode)</dd>
-
-            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.InsuranceDescription)</dt>
-            <dd class="col-sm-8">@Html.DisplayFor(m => m.InsuranceDescription)</dd>
-
-            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.PhysicianIncluded)</dt>
-            <dd class="col-sm-8">@Html.DisplayFor(m => m.PhysicianIncluded)</dd>
-
-            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.IsContracted)</dt>
-            <dd class="col-sm-8">@Html.DisplayFor(m => m.IsContracted)</dd>
-
-            <dt class="col-sm-4">@Html.DisplayNameFor(m => m.CodeAndDescription)</dt>
-            <dd class="col-sm-8">@Html.DisplayFor(m => m.CodeAndDescription)</dd>
-        </dl>
+<div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+        <h1 class="text-base font-semibold text-gray-900">@ViewData["Title"]</h1>
+        <p class="mt-2 text-sm text-gray-700">View information about this insurance.</p>
     </div>
 </div>
 
-<div class="d-flex justify-content-between">
-    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
-    <a asp-action="Edit" asp-route-id="@Model?.InsuranceId" class="btn btn-primary">Edit</a>
+<div class="mt-6 border-t border-gray-100">
+    <dl class="divide-y divide-gray-100">
+        <!-- Insurance Code -->
+        <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+            <dt class="text-sm/6 font-medium text-gray-900">
+                @Html.DisplayNameFor(m => m.InsuranceCode)
+            </dt>
+            <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                @NullDash(Model?.InsuranceCode)
+            </dd>
+        </div>
+
+        <!-- Insurance Description -->
+        <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+            <dt class="text-sm/6 font-medium text-gray-900">
+                @Html.DisplayNameFor(m => m.InsuranceDescription)
+            </dt>
+            <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                @NullDash(Model?.InsuranceDescription)
+            </dd>
+        </div>
+
+        <!-- Physician Included -->
+        <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+            <dt class="text-sm/6 font-medium text-gray-900">
+                @Html.DisplayNameFor(m => m.PhysicianIncluded)
+            </dt>
+            <dd class="mt-1 text-sm/6 sm:col-span-2 sm:mt-0">
+                @if (Model?.PhysicianIncluded == true)
+                {
+                    <span class="inline-flex items-center rounded-full bg-green-50 ring-1 ring-inset ring-green-500 px-2 py-0.5 text-xs font-medium text-green-700">
+                        Yes
+                    </span>
+                }
+                else
+                {
+                    <span class="inline-flex items-center rounded-full bg-red-50 ring-1 ring-inset ring-red-500 px-2 py-0.5 text-xs font-medium text-red-700">
+                        No
+                    </span>
+                }
+            </dd>
+        </div>
+
+        <!-- Contracted -->
+        <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+            <dt class="text-sm/6 font-medium text-gray-900">
+                @Html.DisplayNameFor(m => m.IsContracted)
+            </dt>
+            <dd class="mt-1 text-sm/6 sm:col-span-2 sm:mt-0">
+                @if (Model?.IsContracted == true)
+                {
+                    <span class="inline-flex items-center rounded-full bg-green-50 ring-1 ring-inset ring-green-500 px-2 py-0.5 text-xs font-medium text-green-700">
+                        Contracted
+                    </span>
+                }
+                else
+                {
+                    <span class="inline-flex items-center rounded-full bg-red-50 ring-1 ring-inset ring-red-500 px-2 py-0.5 text-xs font-medium text-red-700">
+                        Not Contracted
+                    </span>
+                }
+            </dd>
+        </div>
+
+        <!-- Code and Description (combined) -->
+        <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+            <dt class="text-sm/6 font-medium text-gray-900">
+                @Html.DisplayNameFor(m => m.CodeAndDescription)
+            </dt>
+            <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                @NullDash(Model?.CodeAndDescription)
+            </dd>
+        </div>
+    </dl>
+</div>
+
+<div class="mt-6 flex items-center gap-x-4">
+    <a asp-action="Edit" asp-route-id="@Model?.InsuranceId"
+       class="inline-flex justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+        Edit
+    </a>
+    <a asp-action="Index" class="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700">
+        Back to List
+    </a>
 </div>
