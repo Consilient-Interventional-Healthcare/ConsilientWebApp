@@ -2,7 +2,7 @@
 @model ConsilientWebApp.ViewModels.PatientVisitsStagingIndexViewModel
 
 @{
-    ViewData["Title"] = "Patient Visit Staging";
+    ViewData["Title"] = "Patient Encounter Staging";
     var placeholder = new PatientVisitsStagingViewModel();
     var firstItem = Model.PatientVisitsStaging.FirstOrDefault() ?? placeholder;
 }
@@ -10,7 +10,7 @@
 <div class="sm:flex sm:items-center">
     <div class="sm:flex-auto">
         <h1 class="text-base font-semibold text-gray-900">@ViewData["Title"]</h1>
-        <p class="mt-2 text-sm text-gray-700">Filter, review, and approve staged visits before pushing them to the live system.</p>
+        <p class="mt-2 text-sm text-gray-700">Filter, review, and approve staged encounters before pushing them to the live system.</p>
     </div>
 </div>
 
@@ -20,7 +20,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h3 class="text-sm font-semibold text-gray-900">Create New Record</h3>
-                <p class="mt-1 text-sm text-gray-600">Add a staged visit manually.</p>
+                <p class="mt-1 text-sm text-gray-600">Add a staged encounter manually.</p>
             </div>
             <a asp-action="Create"
                class="inline-flex items-center rounded-md border border-brand-blue px-3 py-2 text-sm font-semibold text-brand-blue hover:bg-brand-blue-light/10 cursor-pointer">

@@ -9,6 +9,7 @@
 	<PropertyGroup Label="Tailwind Properties">
 		<TailwindInputFile>$(MSBuildProjectDirectory)\Properties\tailwind.input.css</TailwindInputFile>
 		<TailwindOutputFile>$(MSBuildProjectDirectory)\wwwroot\css\tailwind.css</TailwindOutputFile>
+		<TailwindMinify>false</TailwindMinify>
 	</PropertyGroup>
 
 
