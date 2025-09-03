@@ -59,6 +59,18 @@
                 </button>
             </div>
         </div>
+
+        <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900">Approve All By Day</h3>
+                    <p class="mt-1 text-sm text-gray-600">Approve all encounters for @Model.SelectedDate.ToString("MM/dd/yyyy").</p>
+                </div>
+                <a asp- asp-action="ApproveAllByDay" asp-route-selectedDate="@Model.SelectedDate" class="inline-flex items-center rounded-md cursor-pointer bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+                    Approve All
+                </a>
+            </div>
+        </div>
     }
 </div>
 
@@ -151,9 +163,13 @@
                             @for (int i = 0; i < Model.PatientVisitsStaging.Count; i++)
                             {
                                 var row = Model.PatientVisitsStaging[i];
-                                var providerApproved = row.PhysicianApproved;
 
-                                <tr class="@(providerApproved ? "bg-green-50" : "")">
+                                <tr class="@(row.PhysicianApproved && row.NursePractitionerApproved
+                                                    ? "bg-green-400"
+                                                    : (row.PhysicianApproved || row.NursePractitionerApproved
+                                                        ? "bg-green-50"
+                                                        : "bg-white"))">
+
                                     @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
                                     <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 sm:pl-0">
                                         @row.DateServiced.ToString("yyyy-MM-dd")

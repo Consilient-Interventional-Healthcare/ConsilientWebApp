@@ -341,6 +341,25 @@ namespace ConsilientWebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        public IActionResult ApproveAllByDay(DateOnly selectedDate)
+        {
+            var visits = _context.PatientVisitsStagings
+                .Where(p => p.DateServiced == selectedDate && !p.AddedToMainTable)
+                .ToList();
+
+            foreach (var visit in visits)
+            {
+                visit.PhysicianApproved = true;
+                visit.NursePractitionerApproved = true;
+                visit.PhysicianApprovedDateTime = DateTime.Now;
+                visit.PhysicianApprovedBy = User?.Identity?.Name;
+                _context.Update(visit);
+            }
+            _context.SaveChanges();
+
+            return RedirectToAction(nameof(Index), new {selectedDate = selectedDate});
+        }
+
         [HttpPost]
         public async Task<IActionResult> PushApprovedPatientVisits()
         {
