@@ -30,14 +30,17 @@ namespace ConsilientWebApp.ViewModels
 
         public int? ScribeEmployeeId { get; set; }
 
-        public bool ScribeApproved { get; set; }
+        [Display(Name = "NP Approved")]
+        public bool NursePractitionerApproved { get; set; }
 
-        [Display(Name = "Approved")]
-        public bool QualityApproved { get; set; }
+        [Display(Name = "Physician Approved")]
+        public bool PhysicianApproved { get; set; }
 
-        public string? QualityApprovedBy { get; set; }
+        [Display(Name = "Physician Approved By")]
+        public string? PhysicianApprovedBy { get; set; }
 
-        public DateTime? QualityApprovedDateTime { get; set; }
+        [Display(Name = "Physician Approved Date/Time")]
+        public DateTime? PhysicianApprovedDateTime { get; set; }
 
         public bool AddedToMainTable { get; set; }
 

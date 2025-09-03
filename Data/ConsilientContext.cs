@@ -215,9 +215,9 @@ public partial class ConsilientContext : DbContext
             entity.Property(e => e.InsuranceId).HasColumnName("InsuranceID");
             entity.Property(e => e.NursePractitionerEmployeeId).HasColumnName("NursePractitionerEmployeeID");
             entity.Property(e => e.PatientId).HasColumnName("PatientID");
+            entity.Property(e => e.PhysicianApprovedBy).HasMaxLength(100);
+            entity.Property(e => e.PhysicianApprovedDateTime).HasColumnType("datetime");
             entity.Property(e => e.PhysicianEmployeeId).HasColumnName("PhysicianEmployeeID");
-            entity.Property(e => e.QualityApprovedBy).HasMaxLength(100);
-            entity.Property(e => e.QualityApprovedDateTime).HasColumnType("datetime");
             entity.Property(e => e.ScribeEmployeeId).HasColumnName("ScribeEmployeeID");
             entity.Property(e => e.ServiceTypeId).HasColumnName("ServiceTypeID");
 

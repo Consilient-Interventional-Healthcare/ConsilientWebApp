@@ -64,7 +64,7 @@
 
 <!-- Filters -->
 <form asp-action="Index" method="get" class="mt-6">
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-4 sm:items-end">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-5 sm:items-end">
         <!-- Date -->
         <div>
             <label for="selectedDate" class="block text-sm font-medium text-gray-700">Select Date</label>
@@ -94,6 +94,28 @@
                 Filter
             </button>
         </div>
+
+        <!-- Legend -->
+        <div class="flex items-center justify-end">
+            <div class="flex flex-col gap-1 text-xs text-gray-700 bg-white rounded-md border border-gray-200 p-2 shadow-sm w-max">
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-4 h-4 rounded border border-gray-300 bg-white"></span>
+                    No approvals
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-4 h-4 rounded border border-green-200 bg-green-50"></span>
+                    One Approval
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-4 h-4 rounded border border-green-600 bg-green-400"></span>
+                    Both Approved
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-4 h-4 rounded border border-yellow-400 bg-yellow-200"></span>
+                    Flagged
+                </div>
+            </div>
+        </div>
     </div>
 </form>
 
@@ -113,14 +135,15 @@
                                 <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Date Serviced</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Patient.PatientMrn)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Patient.PatientFullName)</th>
-                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.AdmissionNumber)</th>
+                                @* <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.AdmissionNumber)</th> *@
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Facility)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.ServiceType)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.PhysicianEmployee)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.NursePractitionerEmployee)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.ScribeEmployee)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.CosigningPhysicianEmployee)</th>
-                                <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.QualityApproved)</th>
+                                <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.PhysicianApproved)</th>
+                                <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.NursePractitionerApproved)</th>
                                 <th scope="col" class="py-3.5 pr-4 pl-3 text-right text-sm font-semibold text-gray-900 sm:pr-0"><span class="sr-only">Actions</span></th>
                             </tr>
                         </thead>
@@ -128,25 +151,32 @@
                             @for (int i = 0; i < Model.PatientVisitsStaging.Count; i++)
                             {
                                 var row = Model.PatientVisitsStaging[i];
-                                var approved = row.QualityApproved;
+                                var providerApproved = row.PhysicianApproved;
 
-                                <tr class="@(approved ? "bg-green-50" : "")">
+                                <tr class="@(providerApproved ? "bg-green-50" : "")">
                                     @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
                                     <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 sm:pl-0">
                                         @row.DateServiced.ToString("yyyy-MM-dd")
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.Patient.PatientMrn</td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.Patient.PatientFullName</td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.AdmissionNumber</td>
+                                    @* <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.AdmissionNumber</td> *@
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.Facility.FacilityAbbreviation</td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.ServiceType.CodeAndDescription</td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.PhysicianEmployee?.FullName</td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.NursePractitionerEmployee?.FullName</td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.ScribeEmployee?.FullName</td>
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.CosigningPhysicianEmployee?.FullName</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.ServiceType.Cptcode</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.PhysicianEmployee?.LastName</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.NursePractitionerEmployee?.LastName</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.ScribeEmployee?.FirstName</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.CosigningPhysicianEmployee?.LastName</td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm">
                                         <div class="flex justify-center">
-                                            <input asp-for="@Model.PatientVisitsStaging[i].QualityApproved"
+                                            <input asp-for="@Model.PatientVisitsStaging[i].PhysicianApproved"
+                                                   type="checkbox"
+                                                   class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                        <div class="flex justify-center">
+                                            <input asp-for="@Model.PatientVisitsStaging[i].NursePractitionerApproved"
                                                    type="checkbox"
                                                    class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
                                         </div>
@@ -168,7 +198,7 @@
                 @for (int i = 0; i < Model.PatientVisitsStaging.Count; i++)
                 {
                     var row = Model.PatientVisitsStaging[i];
-                    <div class="rounded-xl border border-gray-200 p-4 shadow-sm @(row.QualityApproved ? "bg-green-50" : "")">
+                    <div class="rounded-xl border border-gray-200 p-4 shadow-sm @(row.PhysicianApproved ? "bg-green-50" : "")">
                         @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -216,7 +246,7 @@
 
                         <div class="mt-4 flex items-center justify-between">
                             <label class="inline-flex items-center gap-2 text-sm text-gray-800">
-                                <input asp-for="@Model.PatientVisitsStaging[i].QualityApproved"
+                                <input asp-for="@Model.PatientVisitsStaging[i].PhysicianApproved"
                                        type="checkbox"
                                        class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
                                 Approve

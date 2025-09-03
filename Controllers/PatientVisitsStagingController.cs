@@ -332,8 +332,8 @@ namespace ConsilientWebApp.Controllers
                     .FirstOrDefault(p => p.PatientVisitStagingId == visit.PatientVisitStagingId);
                 if (patientVisitStaging != null)
                 {
-                    patientVisitStaging.QualityApproved = visit.QualityApproved;
-                    patientVisitStaging.QualityApprovedDateTime = DateTime.Now;
+                    patientVisitStaging.PhysicianApproved = visit.PhysicianApproved;
+                    patientVisitStaging.PhysicianApprovedDateTime = DateTime.Now;
                     _context.Update(patientVisitStaging);
                 }
             }
@@ -345,11 +345,11 @@ namespace ConsilientWebApp.Controllers
         public async Task<IActionResult> PushApprovedPatientVisits()
         {
             var approvedPatientVisitsStaging = await _context.PatientVisitsStagings
-                .Where(p => p.QualityApproved && !p.AddedToMainTable)
+                .Where(p => p.PhysicianApproved && !p.AddedToMainTable)
                 .ToListAsync();
             if (approvedPatientVisitsStaging.Count == 0)
             {
-                TempData["ErrorMessage"] = "No approved patient visits to push.";
+                TempData["ErrorMessage"] = "No approved patient encounters to push.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -362,7 +362,7 @@ namespace ConsilientWebApp.Controllers
                 _context.Update(patientVisitStaging);
             }
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Approved patient visits have been pushed successfully.";
+            TempData["SuccessMessage"] = "Approved patient encounters have been pushed successfully.";
             return RedirectToAction(nameof(Index));
         }
 

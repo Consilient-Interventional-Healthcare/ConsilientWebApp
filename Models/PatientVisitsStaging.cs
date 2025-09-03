@@ -25,13 +25,13 @@ public partial class PatientVisitsStaging
 
     public int? ScribeEmployeeId { get; set; }
 
-    public bool ScribeApproved { get; set; }
+    public bool NursePractitionerApproved { get; set; }
 
-    public bool QualityApproved { get; set; }
+    public bool PhysicianApproved { get; set; }
 
-    public string? QualityApprovedBy { get; set; }
+    public string? PhysicianApprovedBy { get; set; }
 
-    public DateTime? QualityApprovedDateTime { get; set; }
+    public DateTime? PhysicianApprovedDateTime { get; set; }
 
     public bool AddedToMainTable { get; set; }
 
