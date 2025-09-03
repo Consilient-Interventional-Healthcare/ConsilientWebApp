@@ -214,7 +214,11 @@
                 @for (int i = 0; i < Model.PatientVisitsStaging.Count; i++)
                 {
                     var row = Model.PatientVisitsStaging[i];
-                    <div class="rounded-xl border border-gray-200 p-4 shadow-sm @(row.PhysicianApproved ? "bg-green-50" : "")">
+                    <div class="rounded-xl border border-gray-200 p-4 shadow-sm "@(row.PhysicianApproved && row.NursePractitionerApproved
+                                                                                                             ? "bg-green-400"
+                                                                                                             : (row.PhysicianApproved || row.NursePractitionerApproved
+                                                                                                             ? "bg-green-50"
+                                                                                                             : "bg-white"))">
                         @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -262,9 +266,12 @@
 
                         <div class="mt-4 flex items-center justify-between">
                             <label class="inline-flex items-center gap-2 text-sm text-gray-800">
-                                <input asp-for="@Model.PatientVisitsStaging[i].PhysicianApproved"
+                                @* <input asp-for="@Model.PatientVisitsStaging[i].PhysicianApproved"
                                        type="checkbox"
                                        class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
+                                <input asp-for="@Model.PatientVisitsStaging[i].NursePractitionerApproved"
+                                       type="checkbox"
+                                       class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" /> *@
                                 Approve
                             </label>
                             <div class="space-x-4">

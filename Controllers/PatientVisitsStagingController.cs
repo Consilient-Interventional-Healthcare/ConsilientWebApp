@@ -334,6 +334,9 @@ namespace ConsilientWebApp.Controllers
                 {
                     patientVisitStaging.PhysicianApproved = visit.PhysicianApproved;
                     patientVisitStaging.PhysicianApprovedDateTime = DateTime.Now;
+                    patientVisitStaging.PhysicianApprovedBy = User?.Identity?.Name;
+
+                    patientVisitStaging.NursePractitionerApproved = visit.NursePractitionerApproved;
                     _context.Update(patientVisitStaging);
                 }
             }
