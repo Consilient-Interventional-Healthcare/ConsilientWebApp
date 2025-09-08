@@ -192,9 +192,12 @@
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm">
                                         <div class="flex justify-center">
-                                            <input asp-for="@Model.PatientVisitsStaging[i].NursePractitionerApproved"
+                                            @if(Model.PatientVisitsStaging[i].NursePractitionerEmployeeId != null)
+                                            {
+                                                <input asp-for="@Model.PatientVisitsStaging[i].NursePractitionerApproved"
                                                    type="checkbox"
                                                    class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
+                                            }
                                         </div>
                                     </td>
                                     <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0 space-x-3">
