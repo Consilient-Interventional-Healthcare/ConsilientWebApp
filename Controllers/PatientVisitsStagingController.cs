@@ -191,6 +191,12 @@ namespace ConsilientWebApp.Controllers
                     PatientBirthDate = viewModel.NewPatient.PatientBirthDate,
                 };
 
+                if (string.IsNullOrEmpty(patient.PatientFirstName) || string.IsNullOrEmpty(patient.PatientLastName))
+                {
+                    TempData["ErrorMessage"] = "First Name and Last Name are required for new patients.";
+                    return View(viewModel);
+                }
+
                 _context.Patients.Add(patient);
                 await _context.SaveChangesAsync();
                 patientId = patient.PatientId;
