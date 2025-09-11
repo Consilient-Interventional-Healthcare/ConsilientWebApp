@@ -373,7 +373,8 @@ namespace ConsilientWebApp.Controllers
         public async Task<IActionResult> PushApprovedPatientVisits()
         {
             var approvedPatientVisitsStaging = await _context.PatientVisitsStagings
-                .Where(p => p.PhysicianApproved && !p.AddedToMainTable)
+                .Where(p => p.PhysicianApproved && !p.AddedToMainTable
+                            && (p.NursePractitionerEmployeeId != null ? p.NursePractitionerApproved : true))
                 .ToListAsync();
             if (approvedPatientVisitsStaging.Count == 0)
             {

@@ -32,6 +32,9 @@ namespace ConsilientWebApp.ViewModels
 
         public string? Email { get; set; }
 
+        [Display(Name = "Can Approve Visits")]
+        public bool CanApproveVisits { get; set; }
+
         [ValidateNever]
         [Display(Name = "Contracts")]
         public virtual ICollection<Contract> Contracts { get; set; } = new List<Contract>();

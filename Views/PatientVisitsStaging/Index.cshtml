@@ -29,22 +29,25 @@
         </div>
     </div>
 
-    @if (User.IsInRole("Administrator"))
+    @if (User.IsInRole("Administrator") || User.IsInRole("CanApproveVisits"))
     {
-        <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-900">Push Approved Records</h3>
-                    <p class="mt-1 text-sm text-gray-600">Only rows marked as approved will be pushed.</p>
+        @if(User.IsInRole("Administrator"))
+        {
+            <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900">Push Approved Records</h3>
+                        <p class="mt-1 text-sm text-gray-600">Only rows marked as approved will be pushed.</p>
+                    </div>
+                    <form asp-action="PushApprovedPatientVisits" method="post">
+                        <button type="submit"
+                                class="inline-flex items-center rounded-md cursor-pointer bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+                            Push
+                        </button>
+                    </form>
                 </div>
-                <form asp-action="PushApprovedPatientVisits" method="post">
-                    <button type="submit"
-                            class="inline-flex items-center rounded-md cursor-pointer bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
-                        Push
-                    </button>
-                </form>
             </div>
-        </div>
+        }
 
         <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
             <div class="flex items-center justify-between">
@@ -116,11 +119,11 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="inline-block w-4 h-4 rounded border border-green-200 bg-green-50"></span>
-                    One Approval
+                    Some Approved
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="inline-block w-4 h-4 rounded border border-green-600 bg-green-400"></span>
-                    Both Approved
+                    All Approved
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="inline-block w-4 h-4 rounded border border-yellow-400 bg-yellow-200"></span>
@@ -166,7 +169,8 @@
 
                                 <tr class="@(row.PhysicianApproved && row.NursePractitionerApproved
                                                     ? "bg-green-400"
-                                                    : (row.PhysicianApproved || row.NursePractitionerApproved
+                                                    : (row.PhysicianApproved && row.NursePractitionerEmployeeId == null) ? "bg-green-400"
+                                                        : (row.PhysicianApproved || row.NursePractitionerApproved
                                                         ? "bg-green-50"
                                                         : "bg-white"))">
 

@@ -97,6 +97,20 @@
                     </div>
                 </div>
 
+                <!-- Can Approve Visits (checkbox) -->
+                <div class="sm:grid sm:grid-cols-3 sm:items-center sm:gap-4 sm:py-6">
+                    <label asp-for="CanApproveVisits" class="block text-sm/6 font-medium text-gray-900"></label>
+                    <div class="mt-2 sm:col-span-2 sm:mt-0">
+                        <div class="flex items-center gap-x-3">
+                            <input asp-for="CanApproveVisits"
+                                   type="checkbox"
+                                   class="relative size-4 appearance-none rounded-sm border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-[2px] before:bg-white not-checked:before:hidden checked:border-brand-blue checked:bg-brand-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:border-gray-300 disabled:bg-gray-100 forced-colors:appearance-auto" />
+                            <span class="text-sm text-gray-700">Can Approve Visits</span>
+                        </div>
+                        <span asp-validation-for="CanApproveVisits" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+                </div>
+
                 <!-- Email -->
                 <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
                     <label asp-for="Email" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5"></label>

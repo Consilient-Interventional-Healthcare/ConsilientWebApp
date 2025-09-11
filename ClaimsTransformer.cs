@@ -36,6 +36,18 @@ namespace ConsilientWebApp
                         identity.AddClaim(new Claim(ClaimTypes.Role, "Administrator"));
                     }
                 }
+
+                var canApproveVisits = await _context.Employees
+                    .AnyAsync(u => u.Email == email && u.CanApproveVisits);
+
+                if (canApproveVisits)
+                {
+                    var identity = (ClaimsIdentity)principal.Identity!;
+                    if (!principal.IsInRole("CanApproveVisits"))
+                    {
+                        identity.AddClaim(new Claim(ClaimTypes.Role, "CanApproveVisits"));
+                    }
+                }
             }
 
             return principal;

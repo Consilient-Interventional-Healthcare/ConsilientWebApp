@@ -23,6 +23,8 @@ public partial class Employee
 
     public string? Email { get; set; }
 
+    public bool CanApproveVisits { get; set; }
+
     public virtual ICollection<Contract> Contracts { get; set; } = new List<Contract>();
 
     public virtual ICollection<PatientVisit> PatientVisitCosigningPhysicianEmployees { get; set; } = new List<PatientVisit>();
