@@ -166,6 +166,13 @@ namespace ConsilientWebApp.Controllers
 
             int patientId;
 
+            if (viewModel.ServiceTypeId == 0 || viewModel.ServiceTypeId == null)
+            {
+                ModelState.AddModelError("ServiceTypeId", "The Service Type field is required.");
+                CreateSelectLists(viewModel);
+                return View(viewModel);
+            }
+
             if (patientOption == "existing" && viewModel.PatientId != null)
             {
                 patientId = viewModel.PatientId.Value;
