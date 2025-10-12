@@ -263,6 +263,9 @@
   .relative {
     position: relative;
   }
+  .static {
+    position: static;
+  }
   .sticky {
     position: sticky;
   }
@@ -1243,6 +1246,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       --tw-ring-color: color-mix(in oklab, var(--color-red-600) 20%, transparent);
     }
+  }
+  .ring-yellow-600 {
+    --tw-ring-color: var(--color-yellow-600);
   }
   .ring-yellow-600\/20 {
     --tw-ring-color: color-mix(in srgb, oklch(68.1% 0.162 75.834) 20%, transparent);

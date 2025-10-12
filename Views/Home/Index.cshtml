@@ -1,4 +1,7 @@
-﻿@{
+﻿@using static ConsilientWebApp.ViewModels.HomeIndexViewModel
+@model ConsilientWebApp.ViewModels.HomeIndexViewModel
+
+@{
     ViewData["Title"] = "Consilient Web App";
 }
 
@@ -9,16 +12,17 @@
             <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-6 px-4 sm:flex-nowrap sm:px-6 lg:px-8">
                 <h1 class="text-base/7 font-semibold text-brand-blue">Welcome to the Consilient Web App</h1>
                 <div class="order-last flex w-full gap-x-8 text-sm/6 font-semibold sm:order-0 sm:w-auto sm:border-l sm:border-gray-200 sm:pl-6 sm:text-sm/7">
-                    <a href="#" class="text-brand-blue">Last 7 days</a>
-                    <a href="#" class="text-gray-700">Last 30 days</a>
-                    <a href="#" class="text-gray-700">All-time</a>
+                    <a asp-controller="Home" asp-action="Index" asp-route-timeframe="@TimeframeOptions.Today" class="@(Model.SelectedTimeframe== TimeframeOptions.Today ? "text-brand-blue" : "text-gray-700")">Today</a>
+                    <a asp-controller="Home" asp-action="Index" asp-route-timeframe="@TimeframeOptions.Last7Days" class="@(Model.SelectedTimeframe == TimeframeOptions.Last7Days ? "text-brand-blue" : "text-gray-700")">Last 7 days</a>
+                    <a asp-controller="Home" asp-action="Index" asp-route-timeframe="@TimeframeOptions.Last30Days" class="@(Model.SelectedTimeframe == TimeframeOptions.Last30Days ? "text-brand-blue" : "text-gray-700")">Last 30 days</a>
+                    <a asp-controller="Home" asp-action="Index" asp-route-timeframe="@TimeframeOptions.AllTime" class="@(Model.SelectedTimeframe == TimeframeOptions.AllTime ? "text-brand-blue" : "text-gray-700")">All Time</a>
                 </div>
-                <a href="#" class="ml-auto flex items-center gap-x-1 rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+@*                 <a href="#" class="ml-auto flex items-center gap-x-1 rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
                     <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="-ml-1.5 size-5">
                         <path d="M10.75 6.75a.75.75 0 0 0-1.5 0v2.5h-2.5a.75.75 0 0 0 0 1.5h2.5v2.5a.75.75 0 0 0 1.5 0v-2.5h2.5a.75.75 0 0 0 0-1.5h-2.5v-2.5Z" />
                     </svg>
                     New
-                </a>
+                </a> *@
             </div>
         </header>
 
@@ -26,24 +30,24 @@
         <div class="border-b border-b-gray-900/10 lg:border-t lg:border-t-gray-900/5">
             <dl class="mx-auto grid max-w-7xl grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:px-2 xl:px-0">
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-gray-900/5 px-4 py-10 sm:px-6 lg:border-t-0 xl:px-8">
-                    <dt class="text-sm/6 font-medium text-gray-500">Encounters (Today)</dt>
-                    <dd class="text-xs font-medium text-brand-blue">+4</dd>
-                    <dd class="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900">28</dd>
+                    <dt class="text-sm/6 font-medium text-gray-500">Encounters</dt>
+                    @* <dd class="text-xs font-medium text-brand-blue">+4</dd> *@
+                    <dd class="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900">@Model.EncountersToday</dd>
                 </div>
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-gray-900/5 px-4 py-10 sm:border-l sm:px-6 lg:border-t-0 xl:px-8">
                     <dt class="text-sm/6 font-medium text-gray-500">Pending Approvals</dt>
-                    <dd class="text-xs font-medium text-brand-yellow">+2</dd>
-                    <dd class="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900">11</dd>
+                    @* <dd class="text-xs font-medium text-brand-yellow">+2</dd> *@
+                    <dd class="w-full flex-none text-3xl/10 font-medium tracking-tight text-brand-yellow">@Model.PendingApprovals</dd>
                 </div>
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-gray-900/5 px-4 py-10 sm:px-6 lg:border-t-0 lg:border-l xl:px-8">
-                    <dt class="text-sm/6 font-medium text-gray-500">Approved (Last 7 days)</dt>
-                    <dd class="text-xs font-medium text-gray-700">-1</dd>
-                    <dd class="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900">143</dd>
+                    <dt class="text-sm/6 font-medium text-gray-500">Approved</dt>
+                    @* <dd class="text-xs font-medium text-gray-700">-1</dd> *@
+                    <dd class="w-full flex-none text-3xl/10 font-medium tracking-tight text-green-700">@Model.ApprovedEncounters</dd>
                 </div>
                 <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-t border-gray-900/5 px-4 py-10 sm:border-l sm:px-6 lg:border-t-0 xl:px-8">
                     <dt class="text-sm/6 font-medium text-gray-500">Errors</dt>
-                    <dd class="text-xs font-medium text-rose-600">0</dd>
-                    <dd class="w-full flex-none text-3xl/10 font-medium tracking-tight text-gray-900">—</dd>
+                    @* <dd class="text-xs font-medium text-rose-600">0</dd> *@
+                    <dd class="w-full flex-none text-3xl/10 font-medium tracking-tight text-rose-600">@Model.ErrorEncounters</dd>
                 </div>
             </dl>
         </div>
@@ -73,13 +77,12 @@
                         <dl class="divide-y divide-gray-100 px-6 py-4 text-sm/6">
                             <div class="flex justify-between gap-x-4 py-3">
                                 <dt class="text-gray-500">Overview</dt>
-                                <dd class="text-gray-700">Review, upload, and manage</dd>
+                                <dd class="text-gray-700">Review, upload, manage and approve</dd>
                             </div>
                             <div class="flex justify-between gap-x-4 py-3">
-                                <dt class="text-gray-500">Today</dt>
+                                <dt class="text-gray-500">Last 7 days</dt>
                                 <dd class="flex items-center gap-2">
-                                    <span class="font-medium text-gray-900">—</span>
-                                    <span class="rounded-md bg-brand-yellow/10 px-2 py-0.5 text-xs font-medium text-brand-yellow ring-1 ring-inset ring-brand-yellow/20">Idle</span>
+                                    <span class="rounded-md bg-brand-yellow/10 px-2 py-0.5 text-xs font-medium text-brand-yellow ring-1 ring-inset ring-brand-yellow/20">@Model.Last7DaysPending</span>
                                 </dd>
                             </div>
                         </dl>
@@ -109,13 +112,23 @@
                         <dl class="divide-y divide-gray-100 px-6 py-4 text-sm/6">
                             <div class="flex justify-between gap-x-4 py-3">
                                 <dt class="text-gray-500">Status</dt>
-                                <dd class="flex items-center gap-2">
-                                    <span class="rounded-md bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Up to date</span>
-                                </dd>
+                                @if (Model.PendingApprovals == 0)
+                                {
+                                    <dd class="flex items-center gap-2">
+                                        <span class="rounded-md bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Up to date</span>
+                                    </dd>
+                                }
+                                else if (Model.PendingApprovals > 0)
+                                {
+                                    <dd class="flex items-center gap-2">
+                                        <span class="rounded-md bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700 ring-1 ring-inset ring-yellow-600\/20">Approvals Needed</span>
+                                    </dd>
+                                }
+
                             </div>
                             <div class="flex justify-between gap-x-4 py-3">
                                 <dt class="text-gray-500">Last 7 days</dt>
-                                <dd class="text-gray-900 font-medium">143</dd>
+                                <dd class="text-gray-900 font-medium">@Model.Last7DaysApproved</dd>
                             </div>
                         </dl>
 
@@ -239,7 +252,7 @@
         </div> *@
 
         <!-- Recent clients (kept from example; brand link color) -->
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        @* <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-2xl lg:mx-0 lg:max-w-none">
                 <div class="flex items-center justify-between">
                     <h2 class="text-base/7 font-semibold text-gray-900">Recent patients</h2>
@@ -357,7 +370,7 @@
 
                 </ul>
             </div>
-        </div>
+        </div> *@
 
     </div>
 </main>
