@@ -1,0 +1,6 @@
+@Consilient.Api_HostAddress = http://localhost:5172
+
+GET {{Consilient.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
