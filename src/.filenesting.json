@@ -1,0 +1,9 @@
+{
+  "dependentFileProviders": {
+    "pathSegment": {
+      "addItems": [
+        "appsettings.{environment}.json"
+      ]
+    }
+  }
+}

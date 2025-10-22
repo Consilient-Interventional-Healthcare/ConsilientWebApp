@@ -1,0 +1,129 @@
+﻿@model Consilient.WebApp.ViewModels.InsuranceViewModel
+
+@{
+    ViewData["Title"] = "Create Insurance";
+}
+
+<form asp-action="Create" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="text-red-600 mb-4"></div>
+
+    <div class="space-y-12 sm:space-y-16">
+        <div>
+            <h2 class="text-base/7 font-semibold text-gray-900">@ViewData["Title"]</h2>
+            <p class="mt-1 max-w-2xl text-sm/6 text-gray-600">Enter details for the new insurance record.</p>
+
+            <div class="mt-10 space-y-8 border-b border-gray-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-gray-900/10 sm:border-t sm:border-t-gray-900/10 sm:pb-0">
+                <!-- Insurance Code -->
+                <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <label asp-for="InsuranceCode" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5"></label>
+                    <div class="mt-2 sm:col-span-2 sm:mt-0">
+                        <input asp-for="InsuranceCode"
+                               class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-blue sm:max-w-lg sm:text-sm/6" />
+                        <span asp-validation-for="InsuranceCode" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+                </div>
+
+                <!-- Insurance Description -->
+                <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <label asp-for="InsuranceDescription" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5"></label>
+                    <div class="mt-2 sm:col-span-2 sm:mt-0">
+                        <input asp-for="InsuranceDescription"
+                               class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-blue sm:max-w-xl sm:text-sm/6" />
+                        <span asp-validation-for="InsuranceDescription" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+                </div>
+
+                <!-- Physician Included (Yes / No / Unknown) -->
+                <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <label for="PhysicianIncluded" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5">
+                        @Html.DisplayNameFor(m => m.PhysicianIncluded)
+                    </label>
+
+                    <div class="mt-2 sm:col-span-2 sm:mt-0">
+                        <fieldset class="flex flex-wrap gap-6">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input name="PhysicianIncluded" value="true" type="radio"
+                                       class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
+                                       @(Model?.PhysicianIncluded == true ? "checked" : null) />
+                                Yes
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input name="PhysicianIncluded" value="false" type="radio"
+                                       class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
+                                       @(Model?.PhysicianIncluded == false ? "checked" : null) />
+                                No
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input name="PhysicianIncluded" value="" type="radio"
+                                       class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
+                                       @(Model?.PhysicianIncluded == null ? "checked" : null) />
+                                Unknown
+                            </label>
+                        </fieldset>
+
+                        <span asp-validation-for="PhysicianIncluded" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+                </div>
+
+                <!-- Is Contracted (Yes / No / Unknown) -->
+                <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <label for="IsContracted" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5">
+                        @Html.DisplayNameFor(m => m.IsContracted)
+                    </label>
+
+                    <div class="mt-2 sm:col-span-2 sm:mt-0">
+                        <fieldset class="flex flex-wrap gap-6">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input name="IsContracted" value="true" type="radio"
+                                       class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
+                                       @(Model?.IsContracted == true ? "checked" : null) />
+                                Yes
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input name="IsContracted" value="false" type="radio"
+                                       class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
+                                       @(Model?.IsContracted == false ? "checked" : null) />
+                                No
+                            </label>
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input name="IsContracted" value="" type="radio"
+                                       class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
+                                       @(Model?.IsContracted == null ? "checked" : null) />
+                                Unknown
+                            </label>
+                        </fieldset>
+
+                        <span asp-validation-for="IsContracted" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+                </div>
+
+
+                <!-- Code and Description -->
+                <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <label asp-for="CodeAndDescription" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5"></label>
+                    <div class="mt-2 sm:col-span-2 sm:mt-0">
+                        <input asp-for="CodeAndDescription"
+                               class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-blue sm:max-w-2xl sm:text-sm/6" />
+                        <span asp-validation-for="CodeAndDescription" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-6 flex items-center justify-end gap-x-6">
+        <a asp-action="Index" class="text-sm/6 font-semibold text-gray-900">Back to List</a>
+        <button type="submit"
+                class="inline-flex justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+            Create
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

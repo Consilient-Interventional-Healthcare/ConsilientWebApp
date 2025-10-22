@@ -1,0 +1,57 @@
+﻿@model Consilient.WebApp.ViewModels.ServiceTypeViewModel
+
+@{
+    ViewData["Title"] = "Edit Service Type";
+}
+
+<form asp-action="Edit" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-red-600 mb-4"></div>
+    <input type="hidden" asp-for="ServiceTypeId" />
+
+    <div class="space-y-12 sm:space-y-16">
+        <!-- Section: Service Type -->
+        <div>
+            <h2 class="text-base/7 font-semibold text-gray-900">Edit Service Type</h2>
+            <p class="mt-1 max-w-2xl text-sm/6 text-gray-600">Update the description for this service type. CPT code is read-only.</p>
+
+            <div class="mt-10 space-y-8 border-b border-gray-900/10 pb-12 sm:space-y-0 sm:divide-y sm:divide-gray-900/10 sm:border-t sm:border-t-gray-900/10 sm:pb-0">
+                <!-- Description -->
+                <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <label asp-for="Description" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5"></label>
+                    <div class="mt-2 sm:col-span-2 sm:mt-0">
+                        <input asp-for="Description"
+                               class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-blue sm:max-w-lg sm:text-sm/6" />
+                        <span asp-validation-for="Description" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+                </div>
+
+                <!-- CPT Code (readonly) -->
+                <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
+                    <label asp-for="Cptcode" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5"></label>
+                    <div class="mt-2 sm:col-span-2 sm:mt-0">
+                        <input asp-for="Cptcode" readonly
+                               class="block w-full rounded-md bg-gray-50 px-3 py-1.5 text-base text-gray-600 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-blue sm:max-w-xs sm:text-sm/6 cursor-not-allowed" />
+                        <span class="mt-1 block text-xs text-gray-500">CPT code cannot be changed.</span>
+                        <span asp-validation-for="Cptcode" class="mt-1 block text-sm text-red-600"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /Section -->
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-6 flex items-center justify-end gap-x-6">
+        <a asp-action="Index" class="text-sm/6 font-semibold text-gray-900">Cancel</a>
+        <button type="submit"
+                class="inline-flex justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+            Save
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

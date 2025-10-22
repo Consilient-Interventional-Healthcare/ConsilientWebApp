@@ -1,0 +1,11 @@
+# root = true indicates that this is the top-most .editorconfig file
+root = true
+
+[*] # Apply to all files by default
+end_of_line = crlf # Default to Windows-style line endings
+
+[*.sh] # Apply to shell scripts
+end_of_line = lf # Use Unix-style line endings for shell scripts
+
+[*.py] # Apply to Python files
+end_of_line = lf

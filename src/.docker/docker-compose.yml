@@ -1,0 +1,91 @@
+version: '3.8'
+
+networks:
+  consilient-net:
+    driver: bridge
+    name: consilient-net
+
+volumes:
+  mssql-data:
+
+services:
+  consilient.webapp:
+    image: ${DOCKER_REGISTRY-}consilientwebapp
+    container_name: consilient.webapp.container
+    build:
+      context: ..
+      dockerfile: Consilient.WebApp/Dockerfile
+      args:
+        BUILD_CONFIGURATION: "Debug"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - consilient-net
+
+  consilient.api:
+    image: ${DOCKER_REGISTRY-}consilientapi
+    container_name: consilient.api.container
+    build:
+      context: ..
+      dockerfile: Consilient.Api/Dockerfile
+      args:
+        BUILD_CONFIGURATION: "Debug"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+    ports:
+      - "8090:8090"
+      - "8091:8091"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - consilient-net
+
+  consilient.backgroundhost:
+    image: ${DOCKER_REGISTRY-}consilientbackgroundhost
+    container_name: consilient.backgroundhost.container
+    build:
+      context: ..
+      dockerfile: Consilient.BackgroundHost/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:8092"
+    ports:
+      - "8092:8092"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - consilient-net
+    restart: unless-stopped
+
+  db:
+    image: ${DOCKER_REGISTRY-}db
+    container_name: consilient.db.container
+    build:
+      context: .
+      dockerfile: Db/Dockerfile
+    ports:
+      - "1433:1433"
+    env_file:
+      - .env
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD}
+    volumes:
+        - mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'IF DB_ID('consilient_hangfire') IS NOT NULL SELECT 1 ELSE SELECT 0' | /opt/mssql-tools18/bin/sqlcmd -S localhost,1433 -U sa -P ${SA_PASSWORD} -C"]
+      interval: 10s
+      retries: 10
+      start_period: 60s
+      timeout: 3s
+    networks:
+      - consilient-net
+    restart: unless-stopped

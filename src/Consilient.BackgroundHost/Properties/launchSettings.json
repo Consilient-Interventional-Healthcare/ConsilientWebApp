@@ -1,0 +1,17 @@
+{
+  "profiles": {
+    "Consilient.BackgroundHost": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "hotReloadEnabled": false
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
