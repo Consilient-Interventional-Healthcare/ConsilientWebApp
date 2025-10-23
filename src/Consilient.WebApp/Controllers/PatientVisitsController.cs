@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Consilient.WebApp.Data;
+using Consilient.Data;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

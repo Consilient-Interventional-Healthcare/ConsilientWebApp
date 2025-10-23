@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using ClosedXML.Excel;
-using Consilient.WebApp.Data;
-using Consilient.WebApp.Models;
+using Consilient.Data;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

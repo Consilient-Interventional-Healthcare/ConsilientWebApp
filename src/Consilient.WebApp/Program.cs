@@ -1,5 +1,5 @@
+using Consilient.Data;
 using Consilient.WebApp;
-using Consilient.WebApp.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.EntityFrameworkCore;
@@ -8,8 +8,8 @@ using Microsoft.Identity.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<ConsilientContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DevConnection")));
+var connectionString = builder.Configuration.GetConnectionString("DevConnection") ?? throw new ArgumentException("connectionString");
+builder.Services.RegisterConsilientDataServices(connectionString);
 
 builder.Services.AddAutoMapper(cfg =>
 {

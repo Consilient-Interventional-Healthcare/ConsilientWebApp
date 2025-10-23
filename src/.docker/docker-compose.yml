@@ -66,7 +66,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: ${DOCKER_REGISTRY-}db
+    image: ${DOCKER_REGISTRY-}consilientdb
     container_name: consilient.db.container
     build:
       context: .
@@ -78,6 +78,7 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=${SA_PASSWORD}
+      - MSSQL_PID=Developer
     volumes:
         - mssql-data:/var/opt/mssql
     healthcheck:

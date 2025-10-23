@@ -29,6 +29,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastru
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Infrastructure.Injection", "Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj", "{EAB0D14E-49BF-43EC-8686-6F0D4174D028}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{77FF3390-7B72-4B17-B4A4-48A1C42852BD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Data", "Consilient.Data\Consilient.Data.csproj", "{0BDA5A92-A963-4AA7-A860-E22597E64428}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +75,10 @@ Global
 		{EAB0D14E-49BF-43EC-8686-6F0D4174D028}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EAB0D14E-49BF-43EC-8686-6F0D4174D028}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EAB0D14E-49BF-43EC-8686-6F0D4174D028}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BDA5A92-A963-4AA7-A860-E22597E64428}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BDA5A92-A963-4AA7-A860-E22597E64428}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BDA5A92-A963-4AA7-A860-E22597E64428}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BDA5A92-A963-4AA7-A860-E22597E64428}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -81,6 +89,7 @@ Global
 		{92F32B89-314B-9080-2F26-7D57CEBB8786} = {A0D90233-8EF1-439B-AE51-8F8D698E2221}
 		{35020E51-3330-791F-DF6B-0309CACAA13C} = {A0D90233-8EF1-439B-AE51-8F8D698E2221}
 		{EAB0D14E-49BF-43EC-8686-6F0D4174D028} = {3FEF80A5-14D6-47B8-9AC7-A0F6DFD8A0A6}
+		{0BDA5A92-A963-4AA7-A860-E22597E64428} = {77FF3390-7B72-4B17-B4A4-48A1C42852BD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {47B65B2D-42D5-4A24-9284-C134209249B7}

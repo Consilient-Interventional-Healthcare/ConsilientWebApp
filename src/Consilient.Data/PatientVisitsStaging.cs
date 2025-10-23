@@ -1,8 +1,8 @@
-﻿namespace Consilient.WebApp.Models;
+﻿namespace Consilient.Data;
 
-public partial class PatientVisit
+public partial class PatientVisitsStaging
 {
-    public int PatientVisitId { get; set; }
+    public int PatientVisitStagingId { get; set; }
 
     public DateOnly DateServiced { get; set; }
 
@@ -14,15 +14,23 @@ public partial class PatientVisit
 
     public int? InsuranceId { get; set; }
 
-    public int ServiceTypeId { get; set; }
+    public int? ServiceTypeId { get; set; }
 
     public int PhysicianEmployeeId { get; set; }
 
     public int? NursePractitionerEmployeeId { get; set; }
 
-    public int IsSupervising { get; set; }
-
     public int? ScribeEmployeeId { get; set; }
+
+    public bool NursePractitionerApproved { get; set; }
+
+    public bool PhysicianApproved { get; set; }
+
+    public string? PhysicianApprovedBy { get; set; }
+
+    public DateTime? PhysicianApprovedDateTime { get; set; }
+
+    public bool AddedToMainTable { get; set; }
 
     public int? CosigningPhysicianEmployeeId { get; set; }
 
@@ -42,5 +50,5 @@ public partial class PatientVisit
 
     public virtual Employee? ScribeEmployee { get; set; }
 
-    public virtual ServiceType ServiceType { get; set; } = null!;
+    public virtual ServiceType? ServiceType { get; set; }
 }

@@ -1,4 +1,4 @@
-using Consilient.WebApp.Data;
+using Consilient.Data;
 using Consilient.WebApp.Models;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;

@@ -1,4 +1,4 @@
-﻿namespace Consilient.WebApp.Models;
+﻿namespace Consilient.Data;
 
 public partial class FacilityPay
 {

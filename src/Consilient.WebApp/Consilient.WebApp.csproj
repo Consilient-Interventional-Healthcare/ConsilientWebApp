@@ -13,6 +13,30 @@
 		<UserSecretsId>7783ce65-16bf-4dd5-b034-d63bc54e8c20</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="Data\**" />
+	  <Content Remove="Data\**" />
+	  <EmbeddedResource Remove="Data\**" />
+	  <None Remove="Data\**" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Compile Remove="Models\Contract.cs" />
+	  <Compile Remove="Models\Employee.cs" />
+	  <Compile Remove="Models\Facility.cs" />
+	  <Compile Remove="Models\FacilityPay.cs" />
+	  <Compile Remove="Models\Insurance.cs" />
+	  <Compile Remove="Models\Patient.cs" />
+	  <Compile Remove="Models\PatientVisit.cs" />
+	  <Compile Remove="Models\PatientVisitsStaging.cs" />
+	  <Compile Remove="Models\PayrollDatum.cs" />
+	  <Compile Remove="Models\PayrollPeriod.cs" />
+	  <Compile Remove="Models\ProviderContract.cs" />
+	  <Compile Remove="Models\ProviderPay.cs" />
+	  <Compile Remove="Models\ServiceType.cs" />
+	  <Compile Remove="Models\VwPatientVisit.cs" />
+	  <Compile Remove="Models\VwPatientVisitsCompareToLive.cs" />
+	  <Compile Remove="Models\VwPatientVisitsStaging.cs" />
+	</ItemGroup>
 
 
 
@@ -21,14 +45,7 @@
     <PackageReference Include="AutoMapper" Version="15.0.1" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="EPPlus" Version="8.0.8" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Build" Version="17.14.28" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.10">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.Identity.Web" Version="3.13.2" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
@@ -43,6 +60,13 @@
 
 	<ItemGroup>
 	  <None Include="wwwroot\images\default.jpg" />
+	</ItemGroup>
+
+
+
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
 	</ItemGroup>
 
 </Project>
