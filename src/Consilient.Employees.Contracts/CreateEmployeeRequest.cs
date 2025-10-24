@@ -1,8 +1,7 @@
-﻿namespace Consilient.Employees.Contracts.Dtos
+﻿namespace Consilient.Employees.Contracts
 {
-    public class EmployeeDto
+    public class CreateEmployeeRequest
     {
-        public int EmployeeId { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? TitleExtension { get; set; }

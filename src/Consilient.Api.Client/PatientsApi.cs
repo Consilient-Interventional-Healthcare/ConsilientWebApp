@@ -4,13 +4,18 @@ using System.Net.Http.Json;
 
 namespace Consilient.Api.Client
 {
-    internal class PatientsApi(HttpClient httpClient) : IPatientsApi
+    internal class PatientsApi(HttpClient httpClient) : BaseApi(httpClient), IPatientsApi
     {
-        private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-
         public Task<PatientDto?> GetByMrnAsync(int mrn)
         {
-            return _httpClient.GetFromJsonAsync<PatientDto?>($"/patients/{mrn}");
+            return HttpClient.GetFromJsonAsync<PatientDto?>(Routes.GetByMrn(mrn));
+        }
+
+        static class Routes
+        {
+            public const string Base = "/patients";
+
+            public static string GetByMrn(int mrn) => $"{Base}/{mrn}";
         }
     }
 }

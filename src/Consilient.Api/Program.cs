@@ -1,9 +1,11 @@
 using Consilient.Api.Init;
 using Consilient.Data;
 using Consilient.Patients.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
+using Microsoft.AspNetCore.Mvc.Authorization;
 
 namespace Consilient.Api
 {
@@ -23,7 +25,16 @@ namespace Consilient.Api
 
             // Add services to the container.
 
-            builder.Services.AddControllers();
+            // Require authorization globally for all controllers by adding an AuthorizeFilter
+            builder.Services.AddControllers(options =>
+            {
+                var policy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+
+                options.Filters.Add(new AuthorizeFilter(policy));
+            });
+
             builder.Services.AddHealthChecks();
 
             builder.Services.AddDataProtection()
@@ -49,6 +60,8 @@ namespace Consilient.Api
 
             app.UseHttpsRedirection();
 
+            // Ensure authentication middleware runs before authorization. Configure authentication (JWT, cookies, etc.) elsewhere.
+            app.UseAuthentication();
             app.UseAuthorization();
 
 
