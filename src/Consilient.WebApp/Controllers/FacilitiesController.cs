@@ -8,10 +8,10 @@ using Microsoft.EntityFrameworkCore;
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class FacilitiesController(ConsilientContext context, IMapper mapper) : Controller
+    public class FacilitiesController(ConsilientDbContext context, IMapper mapper) : Controller
     {
         private readonly IMapper _mapper = mapper;
-        private readonly ConsilientContext _context = context;
+        private readonly ConsilientDbContext _context = context;
 
         // GET: Facilities
         public async Task<IActionResult> Index()

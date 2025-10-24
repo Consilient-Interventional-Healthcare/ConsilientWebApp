@@ -11,16 +11,17 @@
     <None Remove="initdb\**" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Db\consilient_dev\00_create.sql" />
-    <None Include="Db\consilient_dev\01_init.sql" />
-    <None Include="Db\consilient_dev\seed.sql" />
+    <None Include="Db\consilient_main\01_init.sql" />
+    <None Include="Db\consilient_main\seed.sql" />
     <None Include="Db\Dockerfile" />
-    <None Include="Db\entrypoint.sh" />
-    <None Include="Db\run_initialization.sh" />
+    <None Include="db\entrypoint.sh" />
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
     <None Include="docker-compose.yml" />
-    <None Include="Db\consilient_hangfire\init.sql" />
+    <None Include="KillContainers.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Db\consilient_hangfire\" />
   </ItemGroup>
 </Project>

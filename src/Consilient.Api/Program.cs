@@ -1,4 +1,6 @@
 using Consilient.Api.Init;
+using Consilient.Data;
+using Consilient.Patients.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
@@ -31,6 +33,10 @@ namespace Consilient.Api
                     ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
                 });
             builder.Services.AddSwaggerGen(appId, version);
+
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new NullReferenceException("connectionString");
+            builder.Services.RegisterDataContext(connectionString);
+            builder.Services.RegisterPatientServices();
 
 
             var app = builder.Build();

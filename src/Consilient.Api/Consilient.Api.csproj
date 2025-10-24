@@ -14,7 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
+    <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
+    <ProjectReference Include="..\Consilient.Employees.Services\Consilient.Employees.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Patients.Services\Consilient.Patients.Services.csproj" />
   </ItemGroup>
 
 </Project>

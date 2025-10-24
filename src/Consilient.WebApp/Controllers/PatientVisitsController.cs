@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class PatientVisitsController(ConsilientContext context, IMapper mapper) : Controller
+    public class PatientVisitsController(ConsilientDbContext context, IMapper mapper) : Controller
     {
-        private readonly ConsilientContext _context = context;
+        private readonly ConsilientDbContext _context = context;
         private readonly IMapper _mapper = mapper;
 
         // GET: PatientVisits

@@ -5,9 +5,9 @@ using System.Security.Claims;
 
 namespace Consilient.WebApp
 {
-    public class ClaimsTransformer(ConsilientContext context) : IClaimsTransformation
+    public class ClaimsTransformer(ConsilientDbContext context) : IClaimsTransformation
     {
-        private readonly ConsilientContext _context = context;
+        private readonly ConsilientDbContext _context = context;
 
         public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
         {

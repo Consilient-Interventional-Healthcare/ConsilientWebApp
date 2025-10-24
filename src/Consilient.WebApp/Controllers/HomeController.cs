@@ -9,10 +9,10 @@ using static Consilient.WebApp.ViewModels.HomeIndexViewModel;
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class HomeController(ILogger<HomeController> logger, ConsilientContext context) : Controller
+    public class HomeController(ILogger<HomeController> logger, ConsilientDbContext context) : Controller
     {
         private readonly ILogger<HomeController> _logger = logger;
-        private readonly ConsilientContext _context = context;
+        private readonly ConsilientDbContext _context = context;
 
         public IActionResult Index(TimeframeOptions? timeframe)
         {

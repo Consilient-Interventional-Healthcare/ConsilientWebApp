@@ -1,14 +1,39 @@
-version: '3.8'
-
 networks:
   consilient-net:
     driver: bridge
     name: consilient-net
 
 volumes:
-  mssql-data:
+  consilient-mssql-data:
 
 services:
+  db:
+    image: ${DOCKER_REGISTRY-}consilientdb
+    container_name: consilient.db.container
+    build:
+      context: .
+      dockerfile: Db/Dockerfile
+    ports:
+      - "1434:1433"
+    env_file:
+      - .env
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD}
+      - MSSQL_PID=Developer
+    command: -databases consilient_hangfire consilient_main
+    volumes:
+        - consilient-mssql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SA_PASSWORD}\" -C -Q \"SELECT 1\""]
+      interval: 10s
+      retries: 10
+      start_period: 60s
+      timeout: 3s
+    networks:
+      - consilient-net
+    restart: unless-stopped
+
   consilient.webapp:
     image: ${DOCKER_REGISTRY-}consilientwebapp
     container_name: consilient.webapp.container
@@ -61,32 +86,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - consilient-net
-    restart: unless-stopped
-
-  db:
-    image: ${DOCKER_REGISTRY-}consilientdb
-    container_name: consilient.db.container
-    build:
-      context: .
-      dockerfile: Db/Dockerfile
-    ports:
-      - "1433:1433"
-    env_file:
-      - .env
-    environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${SA_PASSWORD}
-      - MSSQL_PID=Developer
-    volumes:
-        - mssql-data:/var/opt/mssql
-    healthcheck:
-      test: ["CMD-SHELL", "echo 'IF DB_ID('consilient_hangfire') IS NOT NULL SELECT 1 ELSE SELECT 0' | /opt/mssql-tools18/bin/sqlcmd -S localhost,1433 -U sa -P ${SA_PASSWORD} -C"]
-      interval: 10s
-      retries: 10
-      start_period: 60s
-      timeout: 3s
     networks:
       - consilient-net
     restart: unless-stopped

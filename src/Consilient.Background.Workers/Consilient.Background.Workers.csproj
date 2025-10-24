@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Consilient.EmailMonitor\Consilient.EmailMonitor.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.EmailMonitor\Consilient.Infrastructure.EmailMonitor.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,7 +5,7 @@ VisualStudioVersion = 17.14.36603.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Api", "Consilient.Api\Consilient.Api.csproj", "{1C84E308-3BCF-421D-B1BD-C45E0D4E97B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.EmailMonitor", "Consilient.EmailMonitor\Consilient.EmailMonitor.csproj", "{9DB15DEB-7E2F-4446-8FA8-EDE948C4EBAA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Infrastructure.EmailMonitor", "Consilient.Infrastructure.EmailMonitor\Consilient.Infrastructure.EmailMonitor.csproj", "{9DB15DEB-7E2F-4446-8FA8-EDE948C4EBAA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.BackgroundHost", "Consilient.BackgroundHost\Consilient.BackgroundHost.csproj", "{B3D14282-A448-4AE0-B6B6-61ABEE2E10B7}"
 EndProject
@@ -13,17 +13,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Background.Worke
 EndProject
 Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker", ".docker\docker.dcproj", "{81DDED9D-158B-E303-5F62-77A2896D2A5A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BackgroundWorkers", "BackgroundWorkers", "{3731E66F-F6BF-48E5-A99E-B2C2DE135EE1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.WebApp", "Consilient.WebApp\Consilient.WebApp.csproj", "{D67F0B81-23CE-5DB9-E19B-12A3B217F58B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.ExcelImporter.Tests", "Consilient.ExcelImporter.Tests\Consilient.ExcelImporter.Tests.csproj", "{92F32B89-314B-9080-2F26-7D57CEBB8786}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Infrastructure.ExcelImporter.Tests", "Consilient.Infrastructure.ExcelImporter.Tests\Consilient.Infrastructure.ExcelImporter.Tests.csproj", "{92F32B89-314B-9080-2F26-7D57CEBB8786}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExcelImporter", "ExcelImporter", "{A0D90233-8EF1-439B-AE51-8F8D698E2221}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.ExcelImporter", "Consilient.ExcelImporter\Consilient.ExcelImporter.csproj", "{35020E51-3330-791F-DF6B-0309CACAA13C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Infrastructure.ExcelImporter", "Consilient.Infrastructure.ExcelImporter\Consilient.Infrastructure.ExcelImporter.csproj", "{35020E51-3330-791F-DF6B-0309CACAA13C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastructure", "{3FEF80A5-14D6-47B8-9AC7-A0F6DFD8A0A6}"
 EndProject
@@ -32,6 +28,28 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{77FF3390-7B72-4B17-B4A4-48A1C42852BD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Data", "Consilient.Data\Consilient.Data.csproj", "{0BDA5A92-A963-4AA7-A860-E22597E64428}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Api.Client", "Consilient.Api.Client\Consilient.Api.Client.csproj", "{0D565354-9350-4338-A27F-597AC9A92BA7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Patients.Services", "Consilient.Patients.Services\Consilient.Patients.Services.csproj", "{D3F79E5B-8C26-4AB3-814C-F17AC2C820F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Patients.Contracts", "Consilient.Patients.Contracts\Consilient.Patients.Contracts.csproj", "{A6C182A0-464B-4E62-8425-590CEF10573B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Patients", "Patients", "{D321992F-7DCB-4168-B706-802714420133}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Employees", "Employees", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Employees.Contracts", "Consilient.Employees.Contracts\Consilient.Employees.Contracts.csproj", "{9049DB89-C226-4403-9101-32BAFB5927BB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Employees.Services", "Consilient.Employees.Services\Consilient.Employees.Services.csproj", "{E4391C6C-175C-477F-A01C-979807E2C51F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Insurances", "Insurances", "{6CB15BA5-A0DF-426B-860D-665537F75191}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Insurances.Contracts", "Consilient.Insurances.Contracts\Consilient.Insurances.Contracts.csproj", "{18295F9D-D781-49E8-9ED2-07BC228ED9D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Insurances.Services", "Consilient.Insurances.Services\Consilient.Insurances.Services.csproj", "{671A508F-681C-4219-82A8-DB82A6E17AB4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Domain", "Domain", "{22D16A09-C4B9-4BF7-B412-19C2D91A7362}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -79,17 +97,55 @@ Global
 		{0BDA5A92-A963-4AA7-A860-E22597E64428}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0BDA5A92-A963-4AA7-A860-E22597E64428}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0BDA5A92-A963-4AA7-A860-E22597E64428}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D565354-9350-4338-A27F-597AC9A92BA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D565354-9350-4338-A27F-597AC9A92BA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D565354-9350-4338-A27F-597AC9A92BA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D565354-9350-4338-A27F-597AC9A92BA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3F79E5B-8C26-4AB3-814C-F17AC2C820F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3F79E5B-8C26-4AB3-814C-F17AC2C820F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3F79E5B-8C26-4AB3-814C-F17AC2C820F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3F79E5B-8C26-4AB3-814C-F17AC2C820F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6C182A0-464B-4E62-8425-590CEF10573B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6C182A0-464B-4E62-8425-590CEF10573B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6C182A0-464B-4E62-8425-590CEF10573B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6C182A0-464B-4E62-8425-590CEF10573B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9049DB89-C226-4403-9101-32BAFB5927BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9049DB89-C226-4403-9101-32BAFB5927BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9049DB89-C226-4403-9101-32BAFB5927BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9049DB89-C226-4403-9101-32BAFB5927BB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4391C6C-175C-477F-A01C-979807E2C51F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4391C6C-175C-477F-A01C-979807E2C51F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4391C6C-175C-477F-A01C-979807E2C51F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4391C6C-175C-477F-A01C-979807E2C51F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18295F9D-D781-49E8-9ED2-07BC228ED9D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18295F9D-D781-49E8-9ED2-07BC228ED9D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18295F9D-D781-49E8-9ED2-07BC228ED9D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18295F9D-D781-49E8-9ED2-07BC228ED9D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{671A508F-681C-4219-82A8-DB82A6E17AB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{671A508F-681C-4219-82A8-DB82A6E17AB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{671A508F-681C-4219-82A8-DB82A6E17AB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{671A508F-681C-4219-82A8-DB82A6E17AB4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{9DB15DEB-7E2F-4446-8FA8-EDE948C4EBAA} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{9DB15DEB-7E2F-4446-8FA8-EDE948C4EBAA} = {3FEF80A5-14D6-47B8-9AC7-A0F6DFD8A0A6}
 		{B452B9AB-32C1-4219-A023-EA0ABFC3A846} = {3731E66F-F6BF-48E5-A99E-B2C2DE135EE1}
-		{92F32B89-314B-9080-2F26-7D57CEBB8786} = {A0D90233-8EF1-439B-AE51-8F8D698E2221}
-		{35020E51-3330-791F-DF6B-0309CACAA13C} = {A0D90233-8EF1-439B-AE51-8F8D698E2221}
+		{92F32B89-314B-9080-2F26-7D57CEBB8786} = {3FEF80A5-14D6-47B8-9AC7-A0F6DFD8A0A6}
+		{35020E51-3330-791F-DF6B-0309CACAA13C} = {3FEF80A5-14D6-47B8-9AC7-A0F6DFD8A0A6}
 		{EAB0D14E-49BF-43EC-8686-6F0D4174D028} = {3FEF80A5-14D6-47B8-9AC7-A0F6DFD8A0A6}
+		{77FF3390-7B72-4B17-B4A4-48A1C42852BD} = {22D16A09-C4B9-4BF7-B412-19C2D91A7362}
 		{0BDA5A92-A963-4AA7-A860-E22597E64428} = {77FF3390-7B72-4B17-B4A4-48A1C42852BD}
+		{D3F79E5B-8C26-4AB3-814C-F17AC2C820F2} = {D321992F-7DCB-4168-B706-802714420133}
+		{A6C182A0-464B-4E62-8425-590CEF10573B} = {D321992F-7DCB-4168-B706-802714420133}
+		{D321992F-7DCB-4168-B706-802714420133} = {22D16A09-C4B9-4BF7-B412-19C2D91A7362}
+		{02EA681E-C7D8-13C7-8484-4AC65E1B71E8} = {22D16A09-C4B9-4BF7-B412-19C2D91A7362}
+		{9049DB89-C226-4403-9101-32BAFB5927BB} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{E4391C6C-175C-477F-A01C-979807E2C51F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{6CB15BA5-A0DF-426B-860D-665537F75191} = {22D16A09-C4B9-4BF7-B412-19C2D91A7362}
+		{18295F9D-D781-49E8-9ED2-07BC228ED9D0} = {6CB15BA5-A0DF-426B-860D-665537F75191}
+		{671A508F-681C-4219-82A8-DB82A6E17AB4} = {6CB15BA5-A0DF-426B-860D-665537F75191}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {47B65B2D-42D5-4A24-9284-C134209249B7}
