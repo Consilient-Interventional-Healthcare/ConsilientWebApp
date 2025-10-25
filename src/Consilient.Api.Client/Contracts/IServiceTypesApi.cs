@@ -1,18 +1,8 @@
-using Consilient.Shared.Contracts.Dtos;
-using Consilient.Shared.Contracts.Requests;
+using Consilient.Shared.Contracts;
 
 namespace Consilient.Api.Client.Contracts
 {
-    public interface IServiceTypesApi : IApi
+    public interface IServiceTypesApi : IServiceTypeService, IApi
     {
-        Task<IEnumerable<ServiceTypeDto>> GetAllAsync();
-
-        Task<ServiceTypeDto?> GetByIdAsync(int id);
-
-        Task<ServiceTypeDto> CreateAsync(CreateServiceTypeRequest request);
-
-        Task<ServiceTypeDto?> UpdateAsync(int id, UpdateServiceTypeRequest request);
-
-        Task<bool> DeleteAsync(int id);
     }
 }

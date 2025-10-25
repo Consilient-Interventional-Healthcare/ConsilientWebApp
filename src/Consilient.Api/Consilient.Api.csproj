@@ -16,7 +16,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
     <ProjectReference Include="..\Consilient.Employees.Services\Consilient.Employees.Services.csproj" />
-    <ProjectReference Include="..\Consilient.Insurances.Contracts\Consilient.Insurances.Contracts.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />
+    <ProjectReference Include="..\Consilient.Insurances.Services\Consilient.Insurances.Services.csproj" />
     <ProjectReference Include="..\Consilient.Patients.Services\Consilient.Patients.Services.csproj" />
     <ProjectReference Include="..\Consilient.Shared.Services\Consilient.Shared.Services.csproj" />
   </ItemGroup>

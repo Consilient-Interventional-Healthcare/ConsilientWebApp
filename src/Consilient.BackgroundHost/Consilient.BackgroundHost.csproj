@@ -24,7 +24,6 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.2">
       <TreatAsUsed>true</TreatAsUsed>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.10" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4">
       <TreatAsUsed>true</TreatAsUsed>
@@ -33,8 +32,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Consilient.Background.Workers\Consilient.Background.Workers.csproj" />
+    <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
+    <ProjectReference Include="..\Consilient.Employees.Services\Consilient.Employees.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.EmailMonitor\Consilient.Infrastructure.EmailMonitor.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />
+    <ProjectReference Include="..\Consilient.Insurances.Services\Consilient.Insurances.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Patients.Services\Consilient.Patients.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Shared.Services\Consilient.Shared.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,10 +48,6 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Init\" />
   </ItemGroup>
 
 </Project>

@@ -2,7 +2,7 @@
 
 namespace Consilient.Api.Client
 {
-    public abstract class BaseApi(HttpClient httpClient) : IApi
+    internal abstract class BaseApi(HttpClient httpClient) : IApi
     {
         protected HttpClient HttpClient { get; } = httpClient;
     }

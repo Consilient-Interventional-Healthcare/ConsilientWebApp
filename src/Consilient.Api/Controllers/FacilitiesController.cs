@@ -8,7 +8,38 @@ namespace Consilient.Api.Controllers
     [ApiController]
     public class FacilitiesController(IFacilityService facilityService) : ControllerBase
     {
-        private readonly IFacilityService _facilityService = facilityService;
+        private readonly IFacilityService _facilityService = facilityService ?? throw new ArgumentNullException(nameof(facilityService));
+
+        [HttpPost]
+        public async Task<IActionResult> CreateFacility([FromBody] CreateFacilityRequest request)
+        {
+            if (request == null)
+            {
+                return BadRequest();
+            }
+
+            try
+            {
+                var created = await _facilityService.CreateAsync(request);
+                return CreatedAtAction(nameof(GetFacilityById), new { id = created.FacilityId }, created);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { error = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> DeleteFacility(int id)
+        {
+            var deleted = await _facilityService.DeleteAsync(id);
+            if (!deleted)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetFacilities()
@@ -28,42 +59,12 @@ namespace Consilient.Api.Controllers
 
             return Ok(facility);
         }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateFacility([FromBody] CreateFacilityRequest request)
-        {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                var created = await _facilityService.CreateAsync(request);
-                return CreatedAtAction(nameof(GetFacilityById), new { id = created.FacilityId }, created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
-        }
-
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateFacility(int id, [FromBody] UpdateFacilityRequest request)
         {
             if (request == null)
             {
                 return BadRequest();
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
             }
 
             try
@@ -80,18 +81,6 @@ namespace Consilient.Api.Controllers
             {
                 return Conflict(new { error = ex.Message });
             }
-        }
-
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteFacility(int id)
-        {
-            var deleted = await _facilityService.DeleteAsync(id);
-            if (!deleted)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
         }
     }
 }

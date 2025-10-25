@@ -6,7 +6,7 @@ namespace Consilient.Shared.Contracts
     public interface IServiceTypeService
     {
         Task<IEnumerable<ServiceTypeDto>> GetAllAsync();
-        Task<ServiceTypeDto?> GetById(int id);
+        Task<ServiceTypeDto?> GetByIdAsync(int id);
         Task<ServiceTypeDto> CreateAsync(CreateServiceTypeRequest request);
         Task<ServiceTypeDto?> UpdateAsync(int id, UpdateServiceTypeRequest request);
         Task<bool> DeleteAsync(int id);

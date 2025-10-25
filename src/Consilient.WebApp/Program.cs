@@ -1,5 +1,7 @@
 using Consilient.Api.Client;
 using Consilient.Data;
+using Consilient.Infrastructure.Injection;
+using Consilient.WebApp.Configuration;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
@@ -10,15 +12,23 @@ using Microsoft.Identity.Web;
 
 namespace Consilient.WebApp
 {
-    public class Program
+    internal static class Program
     {
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables();
+
+            // Add services to the container.
+            var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
+
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentException("connectionString");
             builder.Services.RegisterDataContext(connectionString);
-            builder.Services.AddConsilientApiClient(new ConsilientApiClientConfiguration { });
+            builder.Services.AddConsilientApiClient(applicationSettings.ApiClient);
 
             builder.Services.AddDataProtection()
                 .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration

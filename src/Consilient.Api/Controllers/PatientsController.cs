@@ -9,7 +9,7 @@ namespace Consilient.Api.Controllers
     [Authorize]
     public class PatientsController(IPatientService patientService) : ControllerBase
     {
-        private readonly IPatientService _patientService = patientService;
+        private readonly IPatientService _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
 
         [HttpGet("{mrn}")]
         public async Task<IActionResult> GetByMRN(int mrn)

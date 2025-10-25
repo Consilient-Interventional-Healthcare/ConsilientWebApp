@@ -2,10 +2,10 @@
 {
     public interface IConsilientApiClient
     {
-        IPatientsApi Patients { get; }
         IEmployeesApi Employees { get; }
         IFacilitiesApi Facilities { get; }
+        IInsurancesApi Insurances { get; }
+        IPatientsApi Patients { get; }
         IServiceTypesApi ServiceTypes { get; }
-
     }
 }

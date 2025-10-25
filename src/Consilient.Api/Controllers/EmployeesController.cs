@@ -8,7 +8,7 @@ namespace Consilient.Api.Controllers
     [ApiController]
     public class EmployeesController(IEmployeeService employeeService) : ControllerBase
     {
-        private readonly IEmployeeService _employeeService = employeeService;
+        private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
 
         [HttpPost]
         public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequest request)

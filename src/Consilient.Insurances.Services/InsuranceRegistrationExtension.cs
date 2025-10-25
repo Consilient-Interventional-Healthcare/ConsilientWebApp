@@ -5,7 +5,7 @@ namespace Consilient.Insurances.Services
 {
     public static class InsuranceRegistrationExtension
     {
-        public static void AddInsuranceServices(this IServiceCollection services)
+        public static void RegisterInsuranceServices(this IServiceCollection services)
         {
             services.AddScoped<IInsuranceService, InsuranceService>();
         }

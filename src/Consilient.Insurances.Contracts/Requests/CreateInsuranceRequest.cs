@@ -1,9 +1,7 @@
-﻿namespace Consilient.Insurances.Contracts.Dtos
+﻿namespace Consilient.Insurances.Contracts.Requests
 {
-    public class InsuranceDto
+    public class CreateInsuranceRequest
     {
-        public int InsuranceId { get; set; }
-
         public string? InsuranceCode { get; set; }
 
         public string? InsuranceDescription { get; set; }
@@ -13,5 +11,6 @@
         public bool? IsContracted { get; set; }
 
         public string CodeAndDescription { get; set; } = null!;
+
     }
 }

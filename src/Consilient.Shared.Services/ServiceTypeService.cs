@@ -60,7 +60,7 @@ namespace Consilient.Shared.Services
             return dtos;
         }
 
-        public async Task<ServiceTypeDto?> GetById(int id)
+        public async Task<ServiceTypeDto?> GetByIdAsync(int id)
         {
             var dto = await _dataContext.ServiceTypes
                 .AsNoTracking()

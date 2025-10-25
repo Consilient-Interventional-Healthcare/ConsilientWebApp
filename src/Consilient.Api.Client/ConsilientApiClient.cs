@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace Consilient.Api.Client
 {
-    public class ConsilientApiClient : IConsilientApiClient, IDisposable, IAsyncDisposable
+    internal class ConsilientApiClient : IConsilientApiClient, IDisposable, IAsyncDisposable
     {
         // Keep references to instantiated children so we can dispose them if they require disposal.
         private readonly List<object> _children = [];
@@ -18,14 +18,11 @@ namespace Consilient.Api.Client
             InitializeChildren();
         }
 
-        public IPatientsApi Patients { get; private set; } = null!;
-
         public IEmployeesApi Employees { get; private set; } = null!;
-
         public IFacilitiesApi Facilities { get; private set; } = null!;
-
+        public IInsurancesApi Insurances { get; private set; } = null!;
+        public IPatientsApi Patients { get; private set; } = null!;
         public IServiceTypesApi ServiceTypes { get; private set; } = null!;
-
 
         // Synchronous dispose: dispose any child that implements IDisposable or IAsyncDisposable.
         public void Dispose()

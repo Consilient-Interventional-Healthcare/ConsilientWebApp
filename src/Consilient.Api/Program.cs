@@ -1,6 +1,11 @@
+using Consilient.Api.Configuration;
 using Consilient.Api.Init;
 using Consilient.Data;
+using Consilient.Employees.Services;
+using Consilient.Infrastructure.Injection;
+using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
+using Consilient.Shared.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
@@ -9,7 +14,7 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 
 namespace Consilient.Api
 {
-    public class Program
+    internal static class Program
     {
         public static void Main(string[] args)
         {
@@ -24,6 +29,14 @@ namespace Consilient.Api
                 .AddEnvironmentVariables();
 
             // Add services to the container.
+            var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new NullReferenceException("connectionString");
+
+            builder.Services.RegisterDataContext(connectionString);
+            builder.Services.RegisterEmployeeServices();
+            builder.Services.RegisterInsuranceServices();
+            builder.Services.RegisterPatientServices();
+            builder.Services.RegisterSharedServices();
 
             // Require authorization globally for all controllers by adding an AuthorizeFilter
             builder.Services.AddControllers(options =>
@@ -44,10 +57,6 @@ namespace Consilient.Api
                     ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
                 });
             builder.Services.AddSwaggerGen(appId, version);
-
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new NullReferenceException("connectionString");
-            builder.Services.RegisterDataContext(connectionString);
-            builder.Services.RegisterPatientServices();
 
 
             var app = builder.Build();
