@@ -1,6 +1,7 @@
 using Consilient.Api.Client;
 using Consilient.Data;
 using Consilient.Infrastructure.Injection;
+using Consilient.Infrastructure.Logging;
 using Consilient.WebApp.Configuration;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -29,6 +30,8 @@ namespace Consilient.WebApp
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentException("connectionString");
             builder.Services.RegisterDataContext(connectionString);
             builder.Services.AddConsilientApiClient(applicationSettings.ApiClient);
+
+            builder.Services.RegisterLogging(applicationSettings.Logging);
 
             builder.Services.AddDataProtection()
                 .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration

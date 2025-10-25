@@ -3,6 +3,7 @@ using Consilient.Api.Init;
 using Consilient.Data;
 using Consilient.Employees.Services;
 using Consilient.Infrastructure.Injection;
+using Consilient.Infrastructure.Logging;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
@@ -37,6 +38,8 @@ namespace Consilient.Api
             builder.Services.RegisterInsuranceServices();
             builder.Services.RegisterPatientServices();
             builder.Services.RegisterSharedServices();
+
+            builder.Services.RegisterLogging(applicationSettings.Logging);
 
             // Require authorization globally for all controllers by adding an AuthorizeFilter
             builder.Services.AddControllers(options =>

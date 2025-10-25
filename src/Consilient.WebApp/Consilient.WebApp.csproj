@@ -66,6 +66,7 @@
 	  <ProjectReference Include="..\Consilient.Api.Client\Consilient.Api.Client.csproj" />
 	  <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
 	  <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />
+	  <ProjectReference Include="..\Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -5,6 +5,7 @@ using Consilient.Data;
 using Consilient.Employees.Services;
 using Consilient.Infrastructure.EmailMonitor;
 using Consilient.Infrastructure.Injection;
+using Consilient.Infrastructure.Logging;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
@@ -38,6 +39,8 @@ namespace Consilient.BackgroundHost
             builder.Services.RegisterInsuranceServices();
             builder.Services.RegisterPatientServices();
             builder.Services.RegisterSharedServices();
+
+            builder.Services.RegisterLogging(applicationSettings.Logging);
 
             var app = builder.Build();
 

@@ -36,6 +36,7 @@
     <ProjectReference Include="..\Consilient.Employees.Services\Consilient.Employees.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.EmailMonitor\Consilient.Infrastructure.EmailMonitor.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj" />
     <ProjectReference Include="..\Consilient.Insurances.Services\Consilient.Insurances.Services.csproj" />
     <ProjectReference Include="..\Consilient.Patients.Services\Consilient.Patients.Services.csproj" />
     <ProjectReference Include="..\Consilient.Shared.Services\Consilient.Shared.Services.csproj" />

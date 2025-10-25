@@ -64,6 +64,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorConfig = .editorConfig
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Infrastructure.Logging", "Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj", "{44B1AA69-EE2E-4638-8ED7-E010F9E26603}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -146,6 +148,10 @@ Global
 		{E103D436-5028-455C-93EA-B0973C66ED3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E103D436-5028-455C-93EA-B0973C66ED3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E103D436-5028-455C-93EA-B0973C66ED3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44B1AA69-EE2E-4638-8ED7-E010F9E26603}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44B1AA69-EE2E-4638-8ED7-E010F9E26603}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44B1AA69-EE2E-4638-8ED7-E010F9E26603}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44B1AA69-EE2E-4638-8ED7-E010F9E26603}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -170,6 +176,7 @@ Global
 		{8D8D1883-CF79-4396-9EE4-66BB35E67194} = {22D16A09-C4B9-4BF7-B412-19C2D91A7362}
 		{77226072-6830-41C5-99E5-7FADB3C721D4} = {8D8D1883-CF79-4396-9EE4-66BB35E67194}
 		{E103D436-5028-455C-93EA-B0973C66ED3E} = {8D8D1883-CF79-4396-9EE4-66BB35E67194}
+		{44B1AA69-EE2E-4638-8ED7-E010F9E26603} = {3FEF80A5-14D6-47B8-9AC7-A0F6DFD8A0A6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {47B65B2D-42D5-4A24-9284-C134209249B7}
