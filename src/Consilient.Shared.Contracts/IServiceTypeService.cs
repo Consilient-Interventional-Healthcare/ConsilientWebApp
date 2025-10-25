@@ -1,7 +1,7 @@
-﻿using Consilient.Shared.Contracts;
-using Consilient.Shared.Contracts.Dtos;
+﻿using Consilient.Shared.Contracts.Dtos;
+using Consilient.Shared.Contracts.Requests;
 
-namespace Consilient.Shared.Services.Contracts
+namespace Consilient.Shared.Contracts
 {
     public interface IServiceTypeService
     {

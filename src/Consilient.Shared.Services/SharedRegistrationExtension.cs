@@ -1,4 +1,4 @@
-﻿using Consilient.Shared.Services.Contracts;
+﻿using Consilient.Shared.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.Shared.Services

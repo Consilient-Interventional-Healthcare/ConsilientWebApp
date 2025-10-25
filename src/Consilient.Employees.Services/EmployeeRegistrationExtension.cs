@@ -1,4 +1,4 @@
-﻿using Consilient.Employees.Services.Contracts;
+﻿using Consilient.Employees.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.Employees.Services

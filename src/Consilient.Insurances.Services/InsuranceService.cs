@@ -1,8 +1,7 @@
 ﻿using Consilient.Data;
+using Consilient.Insurances.Contracts;
 using Consilient.Insurances.Contracts.Dtos;
-using Consilient.Insurances.Services.Contracts;
 using Mapster;
-using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.Insurances.Services
 {
@@ -12,7 +11,7 @@ namespace Consilient.Insurances.Services
 
         public async Task<InsuranceDto?> GetById(int id)
         {
-            var insurance = await DataContext.Insurances.FirstOrDefaultAsync(m => m.InsuranceId == id);
+            var insurance = await DataContext.Insurances.FindAsync(id);
             return insurance?.Adapt<InsuranceDto>();
         }
     }

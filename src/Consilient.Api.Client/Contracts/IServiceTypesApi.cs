@@ -1,7 +1,5 @@
-using Consilient.Shared.Contracts;
 using Consilient.Shared.Contracts.Dtos;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Consilient.Shared.Contracts.Requests;
 
 namespace Consilient.Api.Client.Contracts
 {

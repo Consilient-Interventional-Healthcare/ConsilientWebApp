@@ -20,6 +20,12 @@ namespace Consilient.Api.Client
 
         public IPatientsApi Patients { get; private set; } = null!;
 
+        public IEmployeesApi Employees { get; private set; } = null!;
+
+        public IFacilitiesApi Facilities { get; private set; } = null!;
+
+        public IServiceTypesApi ServiceTypes { get; private set; } = null!;
+
 
         // Synchronous dispose: dispose any child that implements IDisposable or IAsyncDisposable.
         public void Dispose()

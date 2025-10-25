@@ -1,4 +1,4 @@
-namespace Consilient.Shared.Contracts
+namespace Consilient.Shared.Contracts.Requests
 {
     /// <summary>
     /// Request to update an existing service type.

@@ -1,6 +1,5 @@
 using Consilient.Api.Client;
 using Consilient.Data;
-using Consilient.WebApp;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
@@ -9,76 +8,83 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationM
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 
-
-var builder = WebApplication.CreateBuilder(args);
-
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentException("connectionString");
-builder.Services.RegisterDataContext(connectionString);
-builder.Services.AddConsilientApiClient(new ConsilientApiClientConfiguration { });
-
-builder.Services.AddDataProtection()
-    .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration
+namespace Consilient.WebApp
+{
+    public class Program
     {
-        EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,
-        ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
-    });
-builder.Services.AddAutoMapper(cfg =>
-{
-    cfg.AddProfile<MappingProfile>();
-});
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSession();
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new ArgumentException("connectionString");
+            builder.Services.RegisterDataContext(connectionString);
+            builder.Services.AddConsilientApiClient(new ConsilientApiClientConfiguration { });
 
-builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+            builder.Services.AddDataProtection()
+                .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration
+                {
+                    EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,
+                    ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
+                });
+            builder.Services.AddAutoMapper(cfg =>
+            {
+                cfg.AddProfile<MappingProfile>();
+            });
 
-//// not needed
-//builder.Services.Configure<OpenIdConnectOptions>(
-//    OpenIdConnectDefaults.AuthenticationScheme, options =>
-//    {
-//        options.Events = new OpenIdConnectEvents
-//        {
-//            OnTokenValidated = ctx =>
-//            {
-//                Console.WriteLine("OIDC Token validated for: " + ctx.Principal.Identity?.Name);
-//                return Task.CompletedTask;
-//            },
-//            OnAuthenticationFailed = ctx =>
-//            {
-//                Console.WriteLine("OIDC Auth failed: " + ctx.Exception.Message);
-//                return Task.CompletedTask;
-//            }
-//        };
-//    });
+            builder.Services.AddSession();
 
+            builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+                .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
 
-builder.Services.AddAuthorization();
+            //// not needed
+            //builder.Services.Configure<OpenIdConnectOptions>(
+            //    OpenIdConnectDefaults.AuthenticationScheme, options =>
+            //    {
+            //        options.Events = new OpenIdConnectEvents
+            //        {
+            //            OnTokenValidated = ctx =>
+            //            {
+            //                Console.WriteLine("OIDC Token validated for: " + ctx.Principal.Identity?.Name);
+            //                return Task.CompletedTask;
+            //            },
+            //            OnAuthenticationFailed = ctx =>
+            //            {
+            //                Console.WriteLine("OIDC Auth failed: " + ctx.Exception.Message);
+            //                return Task.CompletedTask;
+            //            }
+            //        };
+            //    });
 
-builder.Services.AddScoped<IClaimsTransformation, ClaimsTransformer>();
+            builder.Services.AddAuthorization();
 
-builder.Services.AddControllersWithViews();
+            builder.Services.AddScoped<IClaimsTransformation, ClaimsTransformer>();
 
-var app = builder.Build();
+            builder.Services.AddControllersWithViews();
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+            var app = builder.Build();
+
+            // Configure the HTTP request pipeline.
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseExceptionHandler("/Home/Error");
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                app.UseHsts();
+            }
+
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+            app.UseSession();
+
+            app.UseRouting();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.MapControllerRoute(
+                name: "default",
+                pattern: "{controller=Home}/{action=Index}/{id?}");
+
+            app.Run();
+        }
+    }
 }
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseSession();
-
-app.UseRouting();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-app.Run();

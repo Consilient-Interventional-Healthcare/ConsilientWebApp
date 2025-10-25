@@ -1,6 +1,6 @@
 ﻿using Consilient.Data;
+using Consilient.Patients.Contracts;
 using Consilient.Patients.Contracts.Dtos;
-using Consilient.Patients.Services.Contracts;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 

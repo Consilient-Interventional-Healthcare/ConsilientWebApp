@@ -1,6 +1,6 @@
-﻿namespace Consilient.Shared.Contracts
+﻿namespace Consilient.Shared.Contracts.Requests
 {
-    public class UpdateFacilityRequest
+    public class CreateFacilityRequest
     {
         public string? FacilityName { get; set; }
 

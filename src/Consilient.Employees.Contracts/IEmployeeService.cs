@@ -1,7 +1,7 @@
-﻿using Consilient.Employees.Contracts;
-using Consilient.Employees.Contracts.Dtos;
+﻿using Consilient.Employees.Contracts.Dtos;
+using Consilient.Employees.Contracts.Requests;
 
-namespace Consilient.Employees.Services.Contracts
+namespace Consilient.Employees.Contracts
 {
     /// <summary>
     /// Service contract for reading and managing employee records.
@@ -24,7 +24,7 @@ namespace Consilient.Employees.Services.Contracts
         /// A <see cref="Task"/> that resolves to the matching <see cref="EmployeeDto"/>, or <see langword="null"/> if no employee was found.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="email"/> is <see langword="null"/>.</exception>
-        Task<EmployeeDto?> GetByEmail(string email);
+        Task<EmployeeDto?> GetByEmailAsync(string email);
 
         /// <summary>
         /// Gets an employee by identifier.
@@ -33,7 +33,7 @@ namespace Consilient.Employees.Services.Contracts
         /// <returns>
         /// A <see cref="Task"/> that resolves to the <see cref="EmployeeDto"/> if found, otherwise <see langword="null"/>.
         /// </returns>
-        Task<EmployeeDto?> GetById(int id);
+        Task<EmployeeDto?> GetByIdAsync(int id);
 
         /// <summary>
         /// Creates a new employee from the given request.

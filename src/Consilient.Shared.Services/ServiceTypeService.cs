@@ -1,7 +1,7 @@
 ﻿using Consilient.Data;
 using Consilient.Shared.Contracts;
 using Consilient.Shared.Contracts.Dtos;
-using Consilient.Shared.Services.Contracts;
+using Consilient.Shared.Contracts.Requests;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 

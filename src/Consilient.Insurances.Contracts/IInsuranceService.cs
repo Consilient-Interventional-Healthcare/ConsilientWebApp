@@ -1,6 +1,6 @@
 ﻿using Consilient.Insurances.Contracts.Dtos;
 
-namespace Consilient.Insurances.Services.Contracts
+namespace Consilient.Insurances.Contracts
 {
     public interface IInsuranceService
     {

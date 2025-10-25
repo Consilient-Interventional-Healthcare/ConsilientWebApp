@@ -1,9 +1,8 @@
-﻿using Consilient.Patients.Contracts.Dtos;
+﻿using Consilient.Patients.Contracts;
 
 namespace Consilient.Api.Client.Contracts
 {
-    public interface IPatientsApi : IApi
+    public interface IPatientsApi : IPatientService, IApi
     {
-        public Task<PatientDto?> GetByMrnAsync(int mrn);
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Consilient.Employees.Contracts;
-using Consilient.Employees.Services.Contracts;
+using Consilient.Employees.Contracts.Requests;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consilient.Api.Controllers
@@ -44,7 +44,7 @@ namespace Consilient.Api.Controllers
         [HttpGet("email/{email}")]
         public async Task<IActionResult> GetByEmail(string email)
         {
-            var employee = await _employeeService.GetByEmail(email);
+            var employee = await _employeeService.GetByEmailAsync(email);
             if (employee == null)
             {
                 return NotFound();
@@ -56,7 +56,7 @@ namespace Consilient.Api.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetEmployeeById(int id)
         {
-            var employee = await _employeeService.GetById(id);
+            var employee = await _employeeService.GetByIdAsync(id);
             if (employee == null)
             {
                 return NotFound();

@@ -1,6 +1,5 @@
 using Consilient.Shared.Contracts;
-using Consilient.Shared.Contracts.Dtos;
-using Consilient.Shared.Services.Contracts;
+using Consilient.Shared.Contracts.Requests;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consilient.Api.Controllers
@@ -86,7 +85,7 @@ namespace Consilient.Api.Controllers
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteServiceType(int id)
         {
-            var deleted = await _serviceType_service.DeleteAsync(id);
+            var deleted = await _serviceTypeService.DeleteAsync(id);
             if (!deleted)
             {
                 return NotFound();

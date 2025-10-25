@@ -1,6 +1,6 @@
 using Consilient.Api.Client.Contracts;
-using Consilient.Shared.Contracts;
 using Consilient.Shared.Contracts.Dtos;
+using Consilient.Shared.Contracts.Requests;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -20,12 +20,7 @@ namespace Consilient.Api.Client
 
             resp.EnsureSuccessStatusCode();
 
-            var dto = await resp.Content.ReadFromJsonAsync<FacilityDto?>().ConfigureAwait(false);
-            if (dto == null)
-            {
-                throw new InvalidOperationException("Server returned an empty response when creating facility.");
-            }
-
+            var dto = await resp.Content.ReadFromJsonAsync<FacilityDto?>().ConfigureAwait(false) ?? throw new InvalidOperationException("Server returned an empty response when creating facility.");
             return dto;
         }
 

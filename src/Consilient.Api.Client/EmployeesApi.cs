@@ -1,6 +1,6 @@
 using Consilient.Api.Client.Contracts;
-using Consilient.Employees.Contracts;
 using Consilient.Employees.Contracts.Dtos;
+using Consilient.Employees.Contracts.Requests;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -20,12 +20,7 @@ namespace Consilient.Api.Client
 
             resp.EnsureSuccessStatusCode();
 
-            var dto = await resp.Content.ReadFromJsonAsync<EmployeeDto?>().ConfigureAwait(false);
-            if (dto == null)
-            {
-                throw new InvalidOperationException("Server returned an empty response when creating employee.");
-            }
-
+            var dto = await resp.Content.ReadFromJsonAsync<EmployeeDto?>().ConfigureAwait(false) ?? throw new InvalidOperationException("Server returned an empty response when creating employee.");
             return dto;
         }
 

@@ -1,6 +1,6 @@
 ﻿using Consilient.Patients.Contracts.Dtos;
 
-namespace Consilient.Patients.Services.Contracts
+namespace Consilient.Patients.Contracts
 {
     public interface IPatientService
     {

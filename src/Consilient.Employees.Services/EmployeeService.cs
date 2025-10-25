@@ -1,7 +1,7 @@
 ﻿using Consilient.Data;
 using Consilient.Employees.Contracts;
 using Consilient.Employees.Contracts.Dtos;
-using Consilient.Employees.Services.Contracts;
+using Consilient.Employees.Contracts.Requests;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,7 +60,7 @@ namespace Consilient.Employees.Services
             return dtos;
         }
 
-        public async Task<EmployeeDto?> GetByEmail(string email)
+        public async Task<EmployeeDto?> GetByEmailAsync(string email)
         {
             ArgumentNullException.ThrowIfNull(email);
 
@@ -72,7 +72,7 @@ namespace Consilient.Employees.Services
 
             return dto;
         }
-        public async Task<EmployeeDto?> GetById(int id)
+        public async Task<EmployeeDto?> GetByIdAsync(int id)
         {
             var dto = await dataContext.Employees
                 .AsNoTracking()

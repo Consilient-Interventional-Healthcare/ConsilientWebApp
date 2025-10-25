@@ -1,7 +1,7 @@
 ﻿using Consilient.Data;
 using Consilient.Shared.Contracts;
 using Consilient.Shared.Contracts.Dtos;
-using Consilient.Shared.Services.Contracts;
+using Consilient.Shared.Contracts.Requests;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,7 +60,7 @@ namespace Consilient.Shared.Services
             return dtos;
         }
 
-        public async Task<FacilityDto?> GetById(int id)
+        public async Task<FacilityDto?> GetByIdAsync(int id)
         {
             var dto = await _dataContext.Facilities
                 .AsNoTracking()
