@@ -1,10 +1,10 @@
-﻿using Consilient.EmailMonitor.Contracts;
+﻿using Consilient.Infrastructure.EmailMonitor.Contracts;
 using MailKit;
 using MailKit.Net.Imap;
 using MailKit.Search;
 using Microsoft.Extensions.Logging;
 
-namespace Consilient.EmailMonitor
+namespace Consilient.Infrastructure.EmailMonitor
 {
     public class EmailMonitor(
         MonitorConfiguration configuration,

@@ -1,4 +1,4 @@
-﻿namespace Consilient.EmailMonitor.Contracts
+﻿namespace Consilient.Infrastructure.EmailMonitor.Contracts
 {
     public interface IEmailMonitor
     {

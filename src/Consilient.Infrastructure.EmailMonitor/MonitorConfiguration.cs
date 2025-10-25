@@ -1,6 +1,6 @@
-﻿using Consilient.EmailMonitor.Processors;
+﻿using Consilient.Infrastructure.EmailMonitor.Processors;
 
-namespace Consilient.EmailMonitor
+namespace Consilient.Infrastructure.EmailMonitor
 {
     public class MonitorConfiguration
     {

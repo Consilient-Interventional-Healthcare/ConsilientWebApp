@@ -1,4 +1,4 @@
-﻿using Consilient.EmailMonitor;
+﻿using Consilient.Infrastructure.EmailMonitor;
 
 namespace Consilient.BackgroundHost.Configuration
 {

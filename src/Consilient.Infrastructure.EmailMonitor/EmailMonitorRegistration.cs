@@ -1,8 +1,8 @@
-﻿using Consilient.EmailMonitor.Contracts;
-using Consilient.EmailMonitor.Processors;
+﻿using Consilient.Infrastructure.EmailMonitor.Contracts;
+using Consilient.Infrastructure.EmailMonitor.Processors;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Consilient.EmailMonitor
+namespace Consilient.Infrastructure.EmailMonitor
 {
     public static class EmailMonitorRegistration
     {

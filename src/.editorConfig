@@ -9,3 +9,20 @@ end_of_line = lf # Use Unix-style line endings for shell scripts
 
 [*.py] # Apply to Python files
 end_of_line = lf
+
+[*.cs]
+# C# naming rule: private fields must begin with underscore and use camelCase (e.g. _myField)
+
+# Symbol group: private fields
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+
+# Naming style: underscore prefix + camelCase
+dotnet_naming_style.underscore_prefix.required_prefix = _
+dotnet_naming_style.underscore_prefix.capitalization = camel_case
+
+# Rule: apply the style to the symbol group, severity can be suggestion/warning/error
+dotnet_naming_rule.private_fields_must_start_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_must_start_with_underscore.style = underscore_prefix
+dotnet_naming_rule.private_fields_must_start_with_underscore.severity = suggestion

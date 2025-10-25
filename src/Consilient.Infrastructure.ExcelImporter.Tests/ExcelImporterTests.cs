@@ -10,7 +10,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
     public class ExcelImporterTests
     {
         public TestContext TestContext { get; set; }
-        private readonly IEnumerable<string> WorksheetNames = [
+        private readonly IEnumerable<string> _worksheetNames = [
           "PatientAdmissionReportXLS",
           "Joseph 100",
           "Torrico 300",
@@ -22,7 +22,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
           "Kaula 600",
           "Kletz 700"
         ];
-        private readonly IEnumerable<string> RegexPatterns = ["^(Joseph|Torrico|Jordan) \\d+$"];
+        private readonly IEnumerable<string> _regexPatterns = ["^(Joseph|Torrico|Jordan) \\d+$"];
 
         [TestMethod]
         public void FilterWorksheets_ShouldReturnFilteredWorksheets()
@@ -31,7 +31,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             var mockWorksheets = new Mock<IXLWorksheets>();
             var allSheets = new List<IXLWorksheet>();
 
-            foreach (var name in WorksheetNames)
+            foreach (var name in _worksheetNames)
             {
                 var mockSheet = new Mock<IXLWorksheet>();
                 mockSheet.Setup(s => s.Name).Returns(name);
@@ -47,7 +47,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             };
 
             // Act
-            var filteredSheets = ExcelImporter.FilterWorksheets(mockWorksheets.Object, RegexPatterns);
+            var filteredSheets = ExcelImporter.FilterWorksheets(mockWorksheets.Object, _regexPatterns);
             var filteredSheetNames = filteredSheets.Select(ws => ws.Name).ToList();
 
             // Assert
@@ -64,7 +64,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             var excelImporter = new ExcelImporter(
                 new ExcelImporterConfiguration
                 {
-                    WorksheetFilters = RegexPatterns
+                    WorksheetFilters = _regexPatterns
                 },
                 loggerFactory
             );

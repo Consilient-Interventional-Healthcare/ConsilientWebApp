@@ -8,9 +8,9 @@ namespace Consilient.BackgroundHost
 {
     internal class WorkerRegistration(IBackgroundJobClient backgroundJobClient, IRecurringJobManager recurringJobManager, JobStorage jobStorage)
     {
-        private readonly IBackgroundJobClient BackgroundJobClient = backgroundJobClient;
-        private readonly JobStorage JobStorage = jobStorage;
-        private readonly IRecurringJobManager RecurringJobManager = recurringJobManager;
+        private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient;
+        private readonly JobStorage _jobStorage = jobStorage;
+        private readonly IRecurringJobManager _recurringJobManager = recurringJobManager;
 
         public void Register()
         {
@@ -24,16 +24,16 @@ namespace Consilient.BackgroundHost
 
         private void RegisterRecurringJob<TRecurringJob>(Expression<Action<TRecurringJob>> methodCall, string cronExpression, TimeZoneInfo? timeZoneInfo = null) where TRecurringJob : BaseRecurringWorker
         {
-            RecurringJobManager.AddOrUpdate(typeof(TRecurringJob).Name, methodCall, cronExpression, new RecurringJobOptions { TimeZone = timeZoneInfo ?? TimeZoneInfo.Local });
+            _recurringJobManager.AddOrUpdate(typeof(TRecurringJob).Name, methodCall, cronExpression, new RecurringJobOptions { TimeZone = timeZoneInfo ?? TimeZoneInfo.Local });
         }
 
         private void RegisterRecurringJobs()
         {
-            using (var connection = JobStorage.GetConnection())
+            using (var connection = _jobStorage.GetConnection())
             {
                 foreach (var recurringJob in connection.GetRecurringJobs())
                 {
-                    RecurringJobManager.RemoveIfExists(recurringJob.Id);
+                    _recurringJobManager.RemoveIfExists(recurringJob.Id);
                 }
             }
             RegisterRecurringJob<EmailMonitorWorker>(m => m.Run(), "*/5 * * * *", GetEasternTimeZoneInfo());

@@ -11,18 +11,18 @@ namespace Consilient.Infrastructure.ExcelImporter
 {
     public class ExcelImporter(ExcelImporterConfiguration configuration, ILoggerFactory loggerFactory) : IExcelImporter
     {
-        private readonly ExcelImporterConfiguration configuration = configuration;
-        private readonly ILogger logger = loggerFactory.CreateLogger<ExcelImporter>();
+        private readonly ExcelImporterConfiguration _configuration = configuration;
+        private readonly ILogger _logger = loggerFactory.CreateLogger<ExcelImporter>();
 
         public IEnumerable<PatientData> Import(string filename)
         {
             var allPatients = new List<PatientData>();
-            logger.LogInformation("Starting Excel import for file: {FileName}", filename);
+            _logger.LogInformation("Starting Excel import for file: {FileName}", filename);
 
-            using var workbook = WorkbookFactory.Create(configuration.CanConvertFile, filename);
+            using var workbook = WorkbookFactory.Create(_configuration.CanConvertFile, filename);
 
-            var filteredWorksheets = FilterWorksheets(workbook.Worksheets, configuration.WorksheetFilters).ToList();
-            logger.LogInformation("Found {WorksheetCount} worksheets to process after filtering.", filteredWorksheets.Count);
+            var filteredWorksheets = FilterWorksheets(workbook.Worksheets, _configuration.WorksheetFilters).ToList();
+            _logger.LogInformation("Found {WorksheetCount} worksheets to process after filtering.", filteredWorksheets.Count);
 
             foreach (var worksheet in filteredWorksheets)
             {
@@ -30,18 +30,18 @@ namespace Consilient.Infrastructure.ExcelImporter
                 allPatients.AddRange(patientsInSheet);
             }
 
-            logger.LogInformation("Excel import finished for file: {FileName}", filename);
+            _logger.LogInformation("Excel import finished for file: {FileName}", filename);
             return allPatients;
         }
 
         private List<PatientData> ProcessWorksheet(IXLWorksheet worksheet)
         {
-            logger.LogDebug("Processing worksheet: {WorksheetName}", worksheet.Name);
+            _logger.LogDebug("Processing worksheet: {WorksheetName}", worksheet.Name);
 
             var (headerRow, columnMap) = FindHeader(worksheet);
             if (headerRow == null || columnMap == null)
             {
-                logger.LogWarning("Header row not found in worksheet '{WorksheetName}'. Skipping.", worksheet.Name);
+                _logger.LogWarning("Header row not found in worksheet '{WorksheetName}'. Skipping.", worksheet.Name);
                 return [];
             }
 
@@ -55,7 +55,7 @@ namespace Consilient.Infrastructure.ExcelImporter
                 if (IsHeaderRow(row, out var foundHeaders))
                 {
                     var columnMap = GetColumnMap(foundHeaders);
-                    logger.LogDebug("Header row found on row {RowNumber} in worksheet '{WorksheetName}'.", row.RowNumber(), worksheet.Name);
+                    _logger.LogDebug("Header row found on row {RowNumber} in worksheet '{WorksheetName}'.", row.RowNumber(), worksheet.Name);
                     return (row, columnMap);
                 }
             }
@@ -99,7 +99,7 @@ namespace Consilient.Infrastructure.ExcelImporter
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Error processing row {RowNumber} in worksheet '{WorksheetName}'.", row.RowNumber(), worksheet.Name);
+                    _logger.LogError(ex, "Error processing row {RowNumber} in worksheet '{WorksheetName}'.", row.RowNumber(), worksheet.Name);
                 }
             }
             return patients;

@@ -1,7 +1,7 @@
-﻿using Consilient.EmailMonitor.Contracts;
+﻿using Consilient.Infrastructure.EmailMonitor.Contracts;
 using MailKit;
 
-namespace Consilient.EmailMonitor.Processors
+namespace Consilient.Infrastructure.EmailMonitor.Processors
 {
     internal abstract class EmailProcessorBase : IEmailProcessor
     {

@@ -6,7 +6,7 @@ namespace Consilient.WebApp.Models.AuthorizationModels
     public static class AzureAdAuthHelper
     {
         // Cache the JsonSerializerOptions instance
-        private static readonly JsonSerializerOptions CachedJsonOptions = new()
+        private static readonly JsonSerializerOptions _cachedJsonOptions = new()
         {
             PropertyNameCaseInsensitive = true
         };
@@ -22,7 +22,7 @@ namespace Consilient.WebApp.Models.AuthorizationModels
             var decoded = Convert.FromBase64String(header);
             var json = System.Text.Encoding.UTF8.GetString(decoded);
 
-            var clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, CachedJsonOptions);
+            var clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, _cachedJsonOptions);
 
             var claims = clientPrincipal?.Claims?.Select(c => new Claim(c.Type, c.Value)) ?? [];
             return new ClaimsPrincipal(new ClaimsIdentity(claims, clientPrincipal?.AuthenticationType));

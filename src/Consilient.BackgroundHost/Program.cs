@@ -2,8 +2,8 @@
 using Consilient.BackgroundHost.Infra.Security;
 using Consilient.BackgroundHost.Init;
 using Consilient.Data;
-using Consilient.EmailMonitor;
 using Consilient.Employees.Services;
+using Consilient.Infrastructure.EmailMonitor;
 using Consilient.Infrastructure.Injection;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
