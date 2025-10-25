@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Consilient.Constants\Consilient.Constants.csproj" />
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
     <ProjectReference Include="..\Consilient.Employees.Services\Consilient.Employees.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />

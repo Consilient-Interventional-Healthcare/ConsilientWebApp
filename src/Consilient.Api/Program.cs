@@ -1,5 +1,6 @@
 using Consilient.Api.Configuration;
 using Consilient.Api.Init;
+using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Employees.Services;
 using Consilient.Infrastructure.Injection;
@@ -18,12 +19,6 @@ namespace Consilient.Api
 {
     internal static class Program
     {
-        const string _configurationFile = "appsettings.json";
-        const string _environmentConfigurationFile = "appsettings.{0}.json";
-        //const string _hangfireConnectionStringName = "HangfireConnection";
-        const string _defaultConnectionStringName = "DefaultConnection";
-        const string _loggingSectionName = "Logging";
-
         public static void Main(string[] args)
         {
             const string version = "v1";
@@ -31,21 +26,22 @@ namespace Consilient.Api
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
-                .AddJsonFile(_configurationFile, optional: true, reloadOnChange: true)
-                .AddJsonFile(string.Format(_environmentConfigurationFile, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
+                .AddJsonFile(ApplicationConstants.ConfigurationFiles.AppSettings, optional: true, reloadOnChange: true)
+                .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
+
+            var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
 
             // Add services to the container.
             var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
-            var connectionString = builder.Configuration.GetConnectionString(_defaultConnectionStringName) ?? throw new NullReferenceException($"{_defaultConnectionStringName} missing");
 
-            builder.Services.RegisterDataContext(connectionString);
+            builder.Services.RegisterDataContext(defaultConnectionString);
             builder.Services.RegisterEmployeeServices();
             builder.Services.RegisterInsuranceServices();
             builder.Services.RegisterPatientServices();
             builder.Services.RegisterSharedServices();
 
-            var loggingConfiguration = builder.Configuration.GetSection(_loggingSectionName).Get<LoggingConfiguration>() ?? throw new NullReferenceException($"{_loggingSectionName} missing");
+            var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging).Get<LoggingConfiguration>() ?? throw new NullReferenceException($"{ApplicationConstants.ConfigurationFiles.AppSettings} missing");
             var labels = new Dictionary<string, string>
             {
                 { LabelConstants.App, builder.Environment.ApplicationName },
