@@ -4,6 +4,7 @@ using Consilient.Data;
 using Consilient.Employees.Services;
 using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
+using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
@@ -17,21 +18,26 @@ namespace Consilient.Api
 {
     internal static class Program
     {
+        const string _configurationFile = "appsettings.json";
+        const string _environmentConfigurationFile = "appsettings.{0}.json";
+        //const string _hangfireConnectionStringName = "HangfireConnection";
+        const string _defaultConnectionStringName = "DefaultConnection";
+        const string _loggingSectionName = "Logging";
+
         public static void Main(string[] args)
         {
             const string version = "v1";
-            var appId = typeof(Program).Namespace!;
 
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+                .AddJsonFile(_configurationFile, optional: true, reloadOnChange: true)
+                .AddJsonFile(string.Format(_environmentConfigurationFile, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
             // Add services to the container.
             var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new NullReferenceException("connectionString");
+            var connectionString = builder.Configuration.GetConnectionString(_defaultConnectionStringName) ?? throw new NullReferenceException($"{_defaultConnectionStringName} missing");
 
             builder.Services.RegisterDataContext(connectionString);
             builder.Services.RegisterEmployeeServices();
@@ -39,7 +45,13 @@ namespace Consilient.Api
             builder.Services.RegisterPatientServices();
             builder.Services.RegisterSharedServices();
 
-            builder.Services.RegisterLogging(applicationSettings.Logging);
+            var loggingConfiguration = builder.Configuration.GetSection(_loggingSectionName).Get<LoggingConfiguration>() ?? throw new NullReferenceException($"{_loggingSectionName} missing");
+            var labels = new Dictionary<string, string>
+            {
+                { LabelConstants.App, builder.Environment.ApplicationName },
+                { LabelConstants.Env, builder.Environment.EnvironmentName.ToLower() }
+            };
+            builder.Services.RegisterLogging(loggingConfiguration, labels);
 
             // Require authorization globally for all controllers by adding an AuthorizeFilter
             builder.Services.AddControllers(options =>
@@ -59,7 +71,7 @@ namespace Consilient.Api
                     EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,
                     ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
                 });
-            builder.Services.AddSwaggerGen(appId, version);
+            builder.Services.AddSwaggerGen(builder.Environment.ApplicationName, version);
 
 
             var app = builder.Build();
@@ -67,7 +79,7 @@ namespace Consilient.Api
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger(appId, version);
+                app.UseSwagger(builder.Environment.ApplicationName, version);
             }
 
             app.UseHttpsRedirection();

@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Consilient.Infrastructure.Logging.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Serilog.Events;
 using Serilog.Extensions.Logging;
 using Serilog.Sinks.Grafana.Loki;
 
@@ -8,17 +10,20 @@ namespace Consilient.Infrastructure.Logging
 {
     public static class LoggingRegistrationExtension
     {
-        public static void RegisterLogging(this IServiceCollection services, LoggingSettings loggingSettings)
+        public static void RegisterLogging(this IServiceCollection services, LoggingConfiguration loggingSettings, IDictionary<string, string>? labels = null)
         {
-            var loggingLevel = Helpers.ParseLogEventLevel(loggingSettings.LogLevelEvent);
+            var minimumLogLevel = ParseLogEventLevel(loggingSettings.LogLevel.Default);
             var loggerConfiguration = CreateLoggerConfiguration();
-            loggerConfiguration.WriteTo.Console(loggingLevel);
-            var labels = loggingSettings.GrafanaLoki.Labels?.Select((x) => new LokiLabel
+            loggerConfiguration
+                .MinimumLevel.Is(minimumLogLevel)
+                .MinimumLevel.Override("Microsoft.AspNetCore", ParseLogEventLevel(loggingSettings.LogLevel.MicrosoftAspNetCore));
+            loggerConfiguration.WriteTo.Console();
+            var lokiLabels = labels?.Select((x) => new LokiLabel
             {
                 Key = x.Key.ToLower(),
                 Value = x.Value.ToLower()
             });
-            loggerConfiguration.WriteTo.GrafanaLoki(loggingSettings.GrafanaLoki.Url, labels, null, null, null, loggingLevel, loggingSettings.GrafanaLoki.BatchPostingLimit, null, null, new LokiJsonTextFormatter(), null, null, false);
+            loggerConfiguration.WriteTo.GrafanaLoki(loggingSettings.GrafanaLoki.Url, lokiLabels, null, null, null, minimumLogLevel, loggingSettings.GrafanaLoki.BatchPostingLimit, null, null, new LokiJsonTextFormatter(), null, null, false);
             var logger = loggerConfiguration.CreateLogger();
             services.AddSingleton<ILoggerFactory>(new SerilogLoggerFactory(logger));
         }
@@ -31,6 +36,11 @@ namespace Consilient.Infrastructure.Logging
             //defaultLoggerConfiguration.Enrich.With<ActivityEnricher>();
             //configure?.Invoke(defaultLoggerConfiguration);
             return defaultLoggerConfiguration;
+        }
+
+        private static LogEventLevel ParseLogEventLevel(string input)
+        {
+            return Enum.Parse<LogEventLevel>(input, ignoreCase: true);
         }
     }
 }
