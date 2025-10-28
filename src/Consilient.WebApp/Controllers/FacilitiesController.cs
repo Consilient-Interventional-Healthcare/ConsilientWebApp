@@ -1,25 +1,22 @@
-﻿using AutoMapper;
-using Consilient.Data;
+﻿using Consilient.Api.Client;
+using Consilient.Api.Client.Contracts;
+using Consilient.Shared.Contracts.Requests;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class FacilitiesController(ConsilientDbContext context, IMapper mapper) : Controller
+    public class FacilitiesController(IFacilitiesApi facilitiesApi) : Controller
     {
-        private readonly IMapper _mapper = mapper;
-        private readonly ConsilientDbContext _context = context;
+        private readonly IFacilitiesApi _facilitiesApi = facilitiesApi;
 
         // GET: Facilities
         public async Task<IActionResult> Index()
         {
-            var facilities = await _context.Facilities.ToListAsync();
-
-            var viewModel = _mapper.Map<List<FacilityViewModel>>(facilities);
-            return View(viewModel);
+            var facilities = (await _facilitiesApi.GetAllAsync()).Unwrap();
+            return View(facilities);
         }
 
         // GET: Facilities/Details/5
@@ -30,15 +27,13 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var facility = await _context.Facilities
-                .FirstOrDefaultAsync(m => m.FacilityId == id);
+            var facility = (await _facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
             if (facility == null)
             {
                 return NotFound();
             }
 
-            var viewModel = _mapper.Map<FacilityViewModel>(facility);
-            return View(viewModel);
+            return View(facility);
         }
 
         // GET: Facilities/Create
@@ -56,9 +51,11 @@ namespace Consilient.WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                var facility = _mapper.Map<Facility>(viewModel);
-                _context.Add(facility);
-                await _context.SaveChangesAsync();
+                var facility = (await _facilitiesApi.CreateAsync(new CreateFacilityRequest
+                {
+                    FacilityName = viewModel.FacilityName,
+                    FacilityAbbreviation = viewModel.FacilityAbbreviation
+                })).Unwrap();
                 return RedirectToAction(nameof(Index));
             }
             return View(viewModel);
@@ -72,14 +69,12 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var facility = await _context.Facilities.FindAsync(id);
+            var facility = (await _facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
             if (facility == null)
             {
                 return NotFound();
             }
-
-            var viewModel = _mapper.Map<FacilityViewModel>(facility);
-            return View(viewModel);
+            return View(facility);
         }
 
         // POST: Facilities/Edit/5
@@ -89,29 +84,16 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, FacilityViewModel viewModel)
         {
-            if (id != viewModel.FacilityId)
-            {
-                return NotFound();
-            }
-
             if (ModelState.IsValid)
             {
-                try
+                var facility = (await _facilitiesApi.UpdateAsync(id, new UpdateFacilityRequest
                 {
-                    var facility = _mapper.Map<Facility>(viewModel);
-                    _context.Update(facility);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
+                    FacilityName = viewModel.FacilityName,
+                    FacilityAbbreviation = viewModel.FacilityAbbreviation
+                })).Unwrap();
+                if (facility == null)
                 {
-                    if (!FacilityExists(viewModel.FacilityId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    return NotFound();
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -126,15 +108,12 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var facility = await _context.Facilities
-                .FirstOrDefaultAsync(m => m.FacilityId == id);
+            var facility = (await _facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
             if (facility == null)
             {
                 return NotFound();
             }
-
-            var viewModel = _mapper.Map<FacilityViewModel>(facility);
-            return View(viewModel);
+            return View(facility);
         }
 
         // POST: Facilities/Delete/5
@@ -142,19 +121,12 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var facility = await _context.Facilities.FindAsync(id);
-            if (facility != null)
+            var deleted = (await _facilitiesApi.DeleteAsync(id)).Unwrap();
+            if (!deleted)
             {
-                _context.Facilities.Remove(facility);
+                return NotFound();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool FacilityExists(int id)
-        {
-            return _context.Facilities.Any(e => e.FacilityId == id);
         }
     }
 }

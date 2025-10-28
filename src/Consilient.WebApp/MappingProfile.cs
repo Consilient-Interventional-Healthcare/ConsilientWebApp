@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Consilient.Data;
 using Consilient.WebApp.ViewModels;
 
 namespace Consilient.WebApp

@@ -74,13 +74,8 @@ namespace Consilient.Employees.Services
         }
         public async Task<EmployeeDto?> GetByIdAsync(int id)
         {
-            var dto = await _dataContext.Employees
-                .AsNoTracking()
-                .Where(e => e.EmployeeId == id)
-                .ProjectToType<EmployeeDto>()
-                .FirstOrDefaultAsync();
-
-            return dto;
+            var employee = await _dataContext.Employees.FindAsync(id);
+            return employee?.Adapt<EmployeeDto>();
         }
 
         public async Task<EmployeeDto?> UpdateAsync(int id, UpdateEmployeeRequest request)
@@ -104,11 +99,7 @@ namespace Consilient.Employees.Services
                 return null;
             }
 
-            return await _dataContext.Employees
-                .AsNoTracking()
-                .Where(e => e.EmployeeId == id)
-                .ProjectToType<EmployeeDto>()
-                .FirstOrDefaultAsync();
+            return await GetByIdAsync(id);
         }
     }
 }

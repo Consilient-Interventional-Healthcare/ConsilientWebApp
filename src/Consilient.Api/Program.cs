@@ -1,4 +1,5 @@
 using Consilient.Api.Configuration;
+using Consilient.Api.Infra;
 using Consilient.Api.Init;
 using Consilient.Constants;
 using Consilient.Data;
@@ -57,6 +58,9 @@ namespace Consilient.Api
                     .Build();
 
                 options.Filters.Add(new AuthorizeFilter(policy));
+
+                // ensure our provider runs before defaults
+                options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
             });
 
             builder.Services.AddHealthChecks();

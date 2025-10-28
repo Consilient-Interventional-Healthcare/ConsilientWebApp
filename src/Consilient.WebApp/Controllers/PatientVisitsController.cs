@@ -1,17 +1,12 @@
-﻿using AutoMapper;
-using Consilient.Data;
-using Consilient.WebApp.ViewModels;
+﻿using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class PatientVisitsController(ConsilientDbContext context, IMapper mapper) : Controller
+    public class PatientVisitsController() : Controller
     {
-        private readonly ConsilientDbContext _context = context;
-        private readonly IMapper _mapper = mapper;
 
         // GET: PatientVisits
         public async Task<IActionResult> Index(DateTime? selectedDate)

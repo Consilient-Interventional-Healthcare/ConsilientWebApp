@@ -1,21 +1,23 @@
-﻿using AutoMapper;
-using ClosedXML.Excel;
-using Consilient.Data;
+﻿using ClosedXML.Excel;
+using Consilient.Api.Client;
+using Consilient.Api.Client.Contracts;
+using Consilient.Constants;
+using Consilient.Patients.Contracts.Requests;
+using Consilient.WebApp.Infra;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class PatientVisitsStagingController(ConsilientDbContext context, IMapper mapper) : Controller
+    public class PatientVisitsStagingController(IConsilientApiClient apiClient, ICurrentUserService currentUserService) : Controller
     {
-        private readonly ConsilientDbContext _context = context;
-        private readonly IMapper _mapper = mapper;
+        private readonly IConsilientApiClient _apiClient = apiClient;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
-        // GET: PatientVisitsStaging
+        // GET: PatientVisitStaging
         public async Task<IActionResult> Index(DateOnly? selectedDate,
                                                 int? selectedFacilityId,
                                                 int? selectedProviderId)
@@ -71,7 +73,7 @@ namespace Consilient.WebApp.Controllers
                 SelectedProviderId = selectedProviderId ?? 0
             };
 
-            CreateIndexSelectLists(viewModel);
+            await CreateIndexSelectLists(viewModel);
 
             foreach (var visit in viewModel.PatientVisitsStaging)
             {
@@ -146,7 +148,7 @@ namespace Consilient.WebApp.Controllers
         }
 
         // GET: PatientVisitsStaging/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             var viewModel = new PatientVisitsStagingViewModel();
             if (!string.IsNullOrEmpty(HttpContext.Session.GetString("SelectedDate")))
@@ -154,7 +156,7 @@ namespace Consilient.WebApp.Controllers
                 viewModel.DateServiced = DateOnly.FromDateTime(Convert.ToDateTime(HttpContext.Session.GetString("SelectedDate")));
             }
 
-            CreateSelectLists(viewModel);
+            await CreateSelectLists(viewModel);
             return View(viewModel);
         }
 
@@ -167,7 +169,7 @@ namespace Consilient.WebApp.Controllers
         {
             if (!ModelState.IsValid)
             {
-                CreateSelectLists(viewModel);
+                await CreateSelectLists(viewModel);
                 return View(viewModel);
             }
 
@@ -176,7 +178,7 @@ namespace Consilient.WebApp.Controllers
             if (viewModel.ServiceTypeId == 0 || viewModel.ServiceTypeId == null)
             {
                 ModelState.AddModelError("ServiceTypeId", "The Service Type field is required.");
-                CreateSelectLists(viewModel);
+                await CreateSelectLists(viewModel);
                 return View(viewModel);
             }
 
@@ -186,41 +188,40 @@ namespace Consilient.WebApp.Controllers
             }
             else
             {
-                var patientExists = _context.Patients
-                    .FirstOrDefault(p => p.PatientMrn == viewModel.NewPatient.PatientMrn);
-                if (patientExists != null)
+                var patient = (await _apiClient.Patients.GetByMrnAsync(viewModel.NewPatient.PatientMrn)).Unwrap();
+                if (patient != null)
                 {
                     TempData["ErrorMessage"] = $"Patient with MRN {viewModel.NewPatient.PatientMrn} already exists. Please select the patient from the dropdown.";
                     viewModel.NewPatient = new PatientViewModel(); // clears values of new patient
-                    viewModel.Patient.PatientMrn = patientExists.PatientMrn;
-                    CreateSelectLists(viewModel);
+                    viewModel.Patient.PatientMrn = patient.PatientMrn;
+                    await CreateSelectLists(viewModel);
                     return View(viewModel);
                 }
 
-                var patient = new Patient
+                if (string.IsNullOrEmpty(viewModel.NewPatient.PatientFirstName) || string.IsNullOrEmpty(viewModel.NewPatient.PatientLastName))
+                {
+                    TempData["ErrorMessage"] = "First Name and Last Name are required for new patients.";
+                    return View(viewModel);
+                }
+                var newPatient = (await _apiClient.Patients.CreateAsync(new CreatePatientRequest
                 {
                     PatientMrn = viewModel.NewPatient.PatientMrn,
                     PatientFirstName = viewModel.NewPatient.PatientFirstName,
                     PatientLastName = viewModel.NewPatient.PatientLastName,
                     PatientBirthDate = viewModel.NewPatient.PatientBirthDate,
-                };
-
-                if (string.IsNullOrEmpty(patient.PatientFirstName) || string.IsNullOrEmpty(patient.PatientLastName))
-                {
-                    TempData["ErrorMessage"] = "First Name and Last Name are required for new patients.";
-                    return View(viewModel);
-                }
-
-                _context.Patients.Add(patient);
-                await _context.SaveChangesAsync();
-                patientId = patient.PatientId;
+                })).Unwrap()!;
+                patientId = newPatient.PatientId;
             }
 
 
-            var patientVisitStaging = _mapper.Map<PatientVisitsStaging>(viewModel);
-            patientVisitStaging.PatientId = patientId;
-            _context.PatientVisitsStagings.Add(patientVisitStaging);
-            await _context.SaveChangesAsync();
+            (await _apiClient.StagingPatientVisits.CreateAsync(new CreatePatientVisitRequest
+            {
+
+            })).Unwrap();
+            //var patientVisitStaging = _mapper.Map<PatientVisitsStaging>(viewModel);
+            //patientVisitStaging.PatientId = patientId;
+            //_context.PatientVisitsStagings.Add(patientVisitStaging);
+            //await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
@@ -259,52 +260,62 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(PatientVisitsStagingViewModel viewModel, string patientOption)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                int patientId;
+                await CreateSelectLists(viewModel);
+                return View(viewModel);
+            }
+            int patientId;
 
-                if (patientOption == "existing" && viewModel.PatientId != null)
+            if (!(patientOption == "existing" && viewModel.PatientId != null))
+            {
+                var newPatient = (await _apiClient.Patients.CreateAsync(new CreatePatientRequest
                 {
-                    patientId = viewModel.PatientId.Value;
-                }
-                else
-                {
-                    var patient = new Patient
-                    {
-                        PatientMrn = viewModel.NewPatient.PatientMrn,
-                        PatientFirstName = viewModel.NewPatient.PatientFirstName,
-                        PatientLastName = viewModel.NewPatient.PatientLastName,
-                        PatientBirthDate = viewModel.NewPatient.PatientBirthDate,
-                    };
-
-                    _context.Patients.Add(patient);
-                    await _context.SaveChangesAsync();
-                    patientId = patient.PatientId;
-                }
-
-                try
-                {
-                    var patientVisitStaging = _mapper.Map<PatientVisitsStaging>(viewModel);
-                    patientVisitStaging.PatientId = patientId;
-                    _context.Update(patientVisitStaging);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!PatientVisitStagingExists(viewModel.PatientVisitStagingId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                    PatientMrn = viewModel.NewPatient.PatientMrn,
+                    PatientFirstName = viewModel.NewPatient.PatientFirstName,
+                    PatientLastName = viewModel.NewPatient.PatientLastName,
+                    PatientBirthDate = viewModel.NewPatient.PatientBirthDate,
+                })).Unwrap()!;
+                patientId = newPatient.PatientId;
+            }
+            else
+            {
+                patientId = viewModel.PatientId.Value;
             }
 
-            CreateSelectLists(viewModel);
-            return View(viewModel);
+            var patientVisitStaging = (await _apiClient.StagingPatientVisits.UpdateAsync(viewModel.PatientVisitStagingId, new UpdatePatientVisitRequest
+            {
+                CosigningPhysicianEmployeeId = viewModel.CosigningPhysicianEmployeeId,
+                DateServiced = viewModel.DateServiced,
+                FacilityId = viewModel.FacilityId,
+                InsuranceId = viewModel.InsuranceId,
+                IsScribeServiceOnly = viewModel.IsScribeServiceOnly,
+                NursePractitionerEmployeeId = viewModel.NursePractitionerEmployeeId,
+                PhysicianEmployeeId = viewModel.PhysicianEmployeeId,
+                ScribeEmployeeId = viewModel.ScribeEmployeeId,
+                ServiceTypeId = viewModel.ServiceTypeId,
+            })).Unwrap();
+            //try
+            //{
+
+            //    var patientVisitStaging = _mapper.Map<PatientVisitStaging>(viewModel);
+            //    patientVisitStaging.PatientId = patientId;
+            //    _context.Update(patientVisitStaging);
+            //    await _context.SaveChangesAsync();
+            //}
+            //catch (DbUpdateConcurrencyException)
+            //{
+            //    if (!PatientVisitStagingExists(viewModel.PatientVisitStagingId))
+            //    {
+            //        return NotFound();
+            //    }
+            //    else
+            //    {
+            //        throw;
+            //    }
+            //}
+            return RedirectToAction(nameof(Index));
+
         }
 
         // GET: PatientVisitsStaging/Delete/5
@@ -315,16 +326,17 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var patientVisitStaging = await _context.PatientVisitsStagings
-                                        .Include(m => m.CosigningPhysicianEmployee)
-                                        .Include(m => m.Facility)
-                                        .Include(m => m.Insurance)
-                                        .Include(m => m.NursePractitionerEmployee)
-                                        .Include(m => m.Patient)
-                                        .Include(m => m.PhysicianEmployee)
-                                        .Include(m => m.ScribeEmployee)
-                                        .Include(m => m.ServiceType)
-                                    .FirstOrDefaultAsync(m => m.PatientVisitStagingId == id);
+            var patientVisitStaging = (await _apiClient.StagingPatientVisits.GetByIdAsync(id.Value)).Unwrap();
+            //var patientVisitStaging = await _context.PatientVisitsStagings
+            //                            .Include(m => m.CosigningPhysicianEmployee)
+            //                            .Include(m => m.Facility)
+            //                            .Include(m => m.Insurance)
+            //                            .Include(m => m.NursePractitionerEmployee)
+            //                            .Include(m => m.Patient)
+            //                            .Include(m => m.PhysicianEmployee)
+            //                            .Include(m => m.ScribeEmployee)
+            //                            .Include(m => m.ServiceType)
+            //                        .FirstOrDefaultAsync(m => m.PatientVisitStagingId == id);
             if (patientVisitStaging == null)
             {
                 return NotFound();
@@ -339,38 +351,31 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var patientVisitStaging = await _context.PatientVisitsStagings.FindAsync(id);
-            if (patientVisitStaging != null)
+            var deleted = (await _apiClient.StagingPatientVisits.DeleteAsync(id)).Unwrap();
+            if (!deleted)
             {
-                _context.PatientVisitsStagings.Remove(patientVisitStaging);
+                return NotFound();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
-        public IActionResult SaveApprovals(PatientVisitsStagingIndexViewModel viewModel)
+        public async Task<IActionResult> SaveApprovals(PatientVisitsStagingIndexViewModel viewModel)
         {
             foreach (var visit in viewModel.PatientVisitsStaging)
             {
-                var patientVisitStaging = _context.PatientVisitsStagings
-                    .FirstOrDefault(p => p.PatientVisitStagingId == visit.PatientVisitStagingId);
-                if (patientVisitStaging != null)
+                (await _apiClient.StagingPatientVisits.UpdateAsync(visit.PatientVisitStagingId, new UpdatePatientVisitRequest
                 {
-                    patientVisitStaging.PhysicianApproved = visit.PhysicianApproved;
-                    patientVisitStaging.PhysicianApprovedDateTime = DateTime.Now;
-                    patientVisitStaging.PhysicianApprovedBy = User?.Identity?.Name;
-
-                    patientVisitStaging.NursePractitionerApproved = visit.NursePractitionerApproved;
-                    _context.Update(patientVisitStaging);
-                }
+                    PhysicianApproved = visit.PhysicianApproved,
+                    NursePractitionerApproved = visit.NursePractitionerApproved,
+                    PhysicianApprovedBy = _currentUserService.UserId,
+                    PhysicianApprovedDateTime = DateTime.Now
+                })).Unwrap();
             }
-            _context.SaveChanges();
             return RedirectToAction(nameof(Index));
         }
 
-        public IActionResult ApproveAllByDay(DateOnly selectedDate)
+        public async Task<IActionResult> ApproveAllByDay(DateOnly selectedDate)
         {
             var visits = _context.PatientVisitsStagings
                 .Where(p => p.DateServiced == selectedDate && !p.AddedToMainTable)
@@ -378,13 +383,14 @@ namespace Consilient.WebApp.Controllers
 
             foreach (var visit in visits)
             {
-                visit.PhysicianApproved = true;
-                visit.NursePractitionerApproved = true;
-                visit.PhysicianApprovedDateTime = DateTime.Now;
-                visit.PhysicianApprovedBy = User?.Identity?.Name;
-                _context.Update(visit);
+                (await _apiClient.StagingPatientVisits.UpdateAsync(visit.PatientVisitStagingId, new UpdatePatientVisitRequest
+                {
+                    PhysicianApproved = true,
+                    NursePractitionerApproved = true,
+                    PhysicianApprovedBy = _currentUserService.UserId,
+                    PhysicianApprovedDateTime = DateTime.Now
+                })).Unwrap();
             }
-            _context.SaveChanges();
 
             return RedirectToAction(nameof(Index), new { selectedDate });
         }
@@ -424,7 +430,7 @@ namespace Consilient.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var records = new List<PatientVisitsStaging>();
+            var records = new List<PatientVisitStaging>();
             using (var stream = new MemoryStream())
             {
                 await spreadsheet.CopyToAsync(stream);
@@ -501,7 +507,7 @@ namespace Consilient.WebApp.Controllers
                     }
 
 
-                    var patientVisitStaging = new PatientVisitsStaging
+                    var patientVisitStaging = new PatientVisitStaging
                     {
                         DateServiced = DateOnly.FromDateTime(row.Cell(1).GetDateTime()),
                         //PatientName = row.Cell(2).GetString(),
@@ -524,17 +530,19 @@ namespace Consilient.WebApp.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private bool PatientVisitStagingExists(int id)
-        {
-            return _context.PatientVisitsStagings.Any(e => e.PatientVisitStagingId == id);
-        }
+        //private bool PatientVisitStagingExists(int id)
+        //{
+        //    return _context.PatientVisitsStagings.Any(e => e.PatientVisitStagingId == id);
+        //}
 
 
-        private void CreateSelectLists(PatientVisitsStagingViewModel viewModel)
+        private async Task CreateSelectLists(PatientVisitsStagingViewModel viewModel)
         {
+            var employees = (await _apiClient.Employees.GetAllAsync()).Unwrap()!;
+
             // PHYSICIANS
-            var physicianList = _context.Employees
-                .Where(p => p.Role == "Physician")
+            var physicianList = employees
+                .Where(p => p.Role == ApplicationConstants.Roles.Physician)
                 .Select(p => new SelectListItem
                 {
                     Value = p.EmployeeId.ToString(),
@@ -565,8 +573,7 @@ namespace Consilient.WebApp.Controllers
             viewModel.PhysiciansSelectList = physicianList;
 
             // NURSE PRACTITIONERS
-            var nurseList = _context.Employees
-                .Where(p => p.Role == "Nurse Practitioner")
+            var nurseList = employees.Where(p => p.Role == ApplicationConstants.Roles.NursePracticioner)
                 .Select(p => new SelectListItem
                 {
                     Value = p.EmployeeId.ToString(),
@@ -596,13 +603,13 @@ namespace Consilient.WebApp.Controllers
             viewModel.NursePractitionersSelectList = nurseList;
 
             // INSURANCES
-            var insuranceList = _context.Insurances
-                .Select(p => new SelectListItem
-                {
-                    Value = p.InsuranceId.ToString(),
-                    Text = p.CodeAndDescription,
-                    Selected = p.InsuranceId == viewModel.InsuranceId
-                })
+            var insurances = (await _apiClient.Insurances.GetAllAsync()).Unwrap()!;
+            var insuranceList = insurances.Select(p => new SelectListItem
+            {
+                Value = p.InsuranceId.ToString(),
+                Text = p.CodeAndDescription,
+                Selected = p.InsuranceId == viewModel.InsuranceId
+            })
                 .ToList();
 
             if (!insuranceList.Any(p => p.Selected))
@@ -626,7 +633,8 @@ namespace Consilient.WebApp.Controllers
             viewModel.InsurancesSelectList = insuranceList;
 
             // FACILITIES
-            var facilitiesList = _context.Facilities
+            var facilities = (await _apiClient.Facilities.GetAllAsync()).Unwrap()!;
+            var facilitiesList = facilities
                 .Select(p => new SelectListItem
                 {
                     Value = p.FacilityId.ToString(),
@@ -656,7 +664,8 @@ namespace Consilient.WebApp.Controllers
             viewModel.FacilitiesSelectList = facilitiesList;
 
             // SERVICE TYPES
-            var serviceTypesList = _context.ServiceTypes
+            var serviceTypes = (await _apiClient.ServiceTypes.GetAllAsync()).Unwrap()!;
+            var serviceTypesList = serviceTypes
                 .Select(p => new SelectListItem
                 {
                     Value = p.ServiceTypeId.ToString(),
@@ -686,8 +695,7 @@ namespace Consilient.WebApp.Controllers
             viewModel.ServiceTypesSelectList = serviceTypesList;
 
             // SCRIBES
-            var scribeList = _context.Employees
-                .Where(p => p.Role == "Scribe")
+            var scribeList = employees.Where(p => p.Role == ApplicationConstants.Roles.Scribe)
                 .Select(p => new SelectListItem
                 {
                     Value = p.EmployeeId.ToString(),
@@ -717,7 +725,8 @@ namespace Consilient.WebApp.Controllers
             viewModel.ScribesSelectList = scribeList;
 
             // PATIENTS
-            var patientsList = _context.Patients
+            var patients = (await _apiClient.Patients.GetAllAsync()).Unwrap()!;
+            var patientsList = patients
                 .OrderBy(p => p.PatientMrn)
                 .Select(p => new SelectListItem
                 {
@@ -748,8 +757,7 @@ namespace Consilient.WebApp.Controllers
             viewModel.PatientsSelectList = patientsList;
 
             // COSIGNING PHYSICIANS
-            var cosigningPhysicianList = _context.Employees
-                .Where(p => p.Role == "Physician")
+            var cosigningPhysicianList = employees.Where(p => p.Role == ApplicationConstants.Roles.Physician)
                 .Select(p => new SelectListItem
                 {
                     Value = p.EmployeeId.ToString(),
@@ -780,10 +788,11 @@ namespace Consilient.WebApp.Controllers
             viewModel.CosigningPhysiciansSelectList = cosigningPhysicianList;
         }
 
-        private void CreateIndexSelectLists(PatientVisitsStagingIndexViewModel viewModel)
+        private async Task CreateIndexSelectLists(PatientVisitsStagingIndexViewModel viewModel)
         {
             // FACILITIES
-            var facilitiesList = _context.Facilities
+            var facilities = (await _apiClient.Facilities.GetAllAsync()).Unwrap()!;
+            var facilitiesList = facilities
                 .Select(p => new SelectListItem
                 {
                     Value = p.FacilityId.ToString(),

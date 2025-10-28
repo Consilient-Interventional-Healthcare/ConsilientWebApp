@@ -1,13 +1,14 @@
-﻿using Consilient.Data;
+﻿using Consilient.Api.Client;
+using Consilient.Api.Client.Contracts;
+using Consilient.Constants;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Consilient.WebApp
 {
-    public class ClaimsTransformer(ConsilientDbContext context) : IClaimsTransformation
+    public class ClaimsTransformer(IEmployeesApi employeesApi) : IClaimsTransformation
     {
-        private readonly ConsilientDbContext _context = context;
+        private readonly IEmployeesApi _employeesApi = employeesApi;
 
         public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
         {
@@ -18,27 +19,22 @@ namespace Consilient.WebApp
 
             if (!string.IsNullOrEmpty(email))
             {
-                var isAdmin = await _context.Employees
-                    .AnyAsync(u => u.Email == email && u.IsAdministrator);
+                var employee = (await _employeesApi.GetByEmailAsync(email)).Unwrap()!;
+                var identity = (ClaimsIdentity)principal.Identity!;
 
-                if (isAdmin)
+                if (employee.IsAdministrator)
                 {
-                    var identity = (ClaimsIdentity)principal.Identity!;
-                    if (!principal.IsInRole("Administrator"))
+                    if (!principal.IsInRole(ApplicationConstants.Roles.Administrator))
                     {
-                        identity.AddClaim(new Claim(ClaimTypes.Role, "Administrator"));
+                        identity.AddClaim(new Claim(ClaimTypes.Role, ApplicationConstants.Roles.Administrator));
                     }
                 }
 
-                var canApproveVisits = await _context.Employees
-                    .AnyAsync(u => u.Email == email && u.CanApproveVisits);
-
-                if (canApproveVisits)
+                if (employee.CanApproveVisits)
                 {
-                    var identity = (ClaimsIdentity)principal.Identity!;
-                    if (!principal.IsInRole("CanApproveVisits"))
+                    if (!principal.IsInRole(ApplicationConstants.Permissions.CanApproveVisits))
                     {
-                        identity.AddClaim(new Claim(ClaimTypes.Role, "CanApproveVisits"));
+                        identity.AddClaim(new Claim(ClaimTypes.Role, ApplicationConstants.Permissions.CanApproveVisits));
                     }
                 }
             }

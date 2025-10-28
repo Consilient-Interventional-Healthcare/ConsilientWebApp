@@ -1,6 +1,6 @@
 ﻿namespace Consilient.Data;
 
-public partial class PatientVisitsStaging
+public partial class PatientVisitStaging
 {
     public int PatientVisitStagingId { get; set; }
 

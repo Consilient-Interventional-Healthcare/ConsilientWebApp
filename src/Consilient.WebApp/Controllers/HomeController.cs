@@ -1,4 +1,6 @@
-using Consilient.Data;
+using Consilient.Api.Client;
+using Consilient.Api.Client.Contracts;
+using Consilient.WebApp.Infra;
 using Consilient.WebApp.Models;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -9,12 +11,13 @@ using static Consilient.WebApp.ViewModels.HomeIndexViewModel;
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class HomeController(ILogger<HomeController> logger, ConsilientDbContext context) : Controller
+    public class HomeController(IEmployeesApi employeesApi, IStagingPatientVisitsApi stagingPatientVisitsApi, ICurrentUserService currentUserService) : Controller
     {
-        private readonly ILogger<HomeController> _logger = logger;
-        private readonly ConsilientDbContext _context = context;
+        private readonly IEmployeesApi _employeesApi = employeesApi;
+        private readonly IStagingPatientVisitsApi _stagingPatientVisitsApi = stagingPatientVisitsApi;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
-        public IActionResult Index(TimeframeOptions? timeframe)
+        public async Task<IActionResult> Index(TimeframeOptions? timeframe)
         {
             var viewModel = new HomeIndexViewModel();
 
@@ -23,10 +26,10 @@ namespace Consilient.WebApp.Controllers
                 viewModel.SelectedTimeframe = timeframe.Value;
             }
 
-            var userEmail = User?.Identity?.Name;
+            var userEmail = _currentUserService.UserEmail;
             if (!string.IsNullOrEmpty(userEmail))
             {
-                var employee = _context.Employees.FirstOrDefault(e => e.Email.ToLower() == userEmail.ToLower());
+                var employee = (await _employeesApi.GetByEmailAsync(userEmail)).Unwrap();
                 if (employee != null)
                 {
                     var employeeVisits = _context.PatientVisitsStagings.Where(e => e.DateServiced >= viewModel.LowerDateRange).ToList(); // lower date range set within the view model

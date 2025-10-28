@@ -27,7 +27,7 @@ public partial class ConsilientDbContext : DbContext
 
     public virtual DbSet<PatientVisit> PatientVisits { get; set; }
 
-    public virtual DbSet<PatientVisitsStaging> PatientVisitsStagings { get; set; }
+    public virtual DbSet<PatientVisitStaging> PatientVisitsStagings { get; set; }
 
     public virtual DbSet<PayrollDatum> PayrollData { get; set; }
 

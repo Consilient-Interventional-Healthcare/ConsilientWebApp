@@ -36,6 +36,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Patients.Contracts", "Consilient.Patients.Contracts\Consilient.Patients.Contracts.csproj", "{A6C182A0-464B-4E62-8425-590CEF10573B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Patients", "Patients", "{D321992F-7DCB-4168-B706-802714420133}"
+	ProjectSection(SolutionItems) = preProject
+		Consilient.Patients.Contracts\Requests\StagingPatientVisitService.cs = Consilient.Patients.Contracts\Requests\StagingPatientVisitService.cs
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Employees", "Employees", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject

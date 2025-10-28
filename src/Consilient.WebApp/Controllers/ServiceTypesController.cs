@@ -1,26 +1,21 @@
-﻿using AutoMapper;
-using Consilient.Data;
+﻿using Consilient.Api.Client;
+using Consilient.Api.Client.Contracts;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class ServiceTypesController(ConsilientDbContext context, IMapper mapper) : Controller
+    public class ServiceTypesController(IServiceTypesApi serviceTypesApi) : Controller
     {
-        private readonly ConsilientDbContext _context = context;
-        private readonly IMapper _mapper = mapper;
+        private readonly IServiceTypesApi _serviceTypesApi = serviceTypesApi;
 
         // GET: ServiceTypes
         public async Task<IActionResult> Index()
         {
-            var serviceTypes = await _context.ServiceTypes.ToListAsync();
-
-            var viewModel = _mapper.Map<List<ServiceTypeViewModel>>(serviceTypes);
-
-            return View(viewModel);
+            var serviceTypes = (await _serviceTypesApi.GetAllAsync()).Unwrap();
+            return View(serviceTypes);
         }
 
         // GET: ServiceTypes/Details/5
@@ -31,15 +26,13 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var serviceType = await _context.ServiceTypes
-                .FirstOrDefaultAsync(m => m.ServiceTypeId == id);
+            var serviceType = (await _serviceTypesApi.GetByIdAsync(id.Value)).Unwrap();
             if (serviceType == null)
             {
                 return NotFound();
             }
 
-            var viewModel = _mapper.Map<ServiceTypeViewModel>(serviceType);
-            return View(viewModel);
+            return View(serviceType);
         }
 
         // GET: ServiceTypes/Create
@@ -57,9 +50,11 @@ namespace Consilient.WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                var serviceType = _mapper.Map<ServiceType>(viewModel);
-                _context.Add(serviceType);
-                await _context.SaveChangesAsync();
+                (await _serviceTypesApi.CreateAsync(new Shared.Contracts.Requests.CreateServiceTypeRequest
+                {
+                    CptCode = viewModel.Cptcode,
+                    Description = viewModel.Description
+                })).Unwrap();
                 return RedirectToAction(nameof(Index));
             }
             return View(viewModel);
@@ -73,14 +68,12 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var serviceType = await _context.ServiceTypes.FindAsync(id);
+            var serviceType = (await _serviceTypesApi.GetByIdAsync(id.Value)).Unwrap();
             if (serviceType == null)
             {
                 return NotFound();
             }
-
-            var viewModel = _mapper.Map<ServiceTypeViewModel>(serviceType);
-            return View(viewModel);
+            return View(serviceType);
         }
 
         // POST: ServiceTypes/Edit/5
@@ -97,22 +90,14 @@ namespace Consilient.WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+                var serviceType = (await _serviceTypesApi.UpdateAsync(id, new Shared.Contracts.Requests.UpdateServiceTypeRequest
                 {
-                    var serviceType = _mapper.Map<ServiceType>(viewModel);
-                    _context.Update(serviceType);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
+                    CptCode = viewModel.Cptcode,
+                    Description = viewModel.Description
+                })).Unwrap();
+                if (serviceType == null)
                 {
-                    if (!ServiceTypeExists(viewModel.ServiceTypeId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    return NotFound();
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -127,15 +112,12 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var serviceType = await _context.ServiceTypes
-                .FirstOrDefaultAsync(m => m.ServiceTypeId == id);
+            var serviceType = await _serviceTypesApi.GetByIdAsync(id.Value);
             if (serviceType == null)
             {
                 return NotFound();
             }
-
-            var viewModel = _mapper.Map<ServiceTypeViewModel>(serviceType);
-            return View(viewModel);
+            return View(serviceType);
         }
 
         // POST: ServiceTypes/Delete/5
@@ -143,19 +125,12 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var serviceType = await _context.ServiceTypes.FindAsync(id);
-            if (serviceType != null)
+            var deleted = (await _serviceTypesApi.DeleteAsync(id)).Unwrap();
+            if (!deleted)
             {
-                _context.ServiceTypes.Remove(serviceType);
+                return NotFound();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool ServiceTypeExists(int id)
-        {
-            return _context.ServiceTypes.Any(e => e.ServiceTypeId == id);
         }
     }
 }

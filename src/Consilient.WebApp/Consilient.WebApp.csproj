@@ -20,6 +20,7 @@
 	  <None Remove="Data\**" />
 	</ItemGroup>
 	<ItemGroup>
+	  <Compile Remove="MappingProfile.cs" />
 	  <Compile Remove="Models\Contract.cs" />
 	  <Compile Remove="Models\Employee.cs" />
 	  <Compile Remove="Models\Facility.cs" />
@@ -65,7 +66,6 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\Consilient.Api.Client\Consilient.Api.Client.csproj" />
 	  <ProjectReference Include="..\Consilient.Constants\Consilient.Constants.csproj" />
-	  <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
 	  <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />
 	  <ProjectReference Include="..\Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj" />
 	</ItemGroup>

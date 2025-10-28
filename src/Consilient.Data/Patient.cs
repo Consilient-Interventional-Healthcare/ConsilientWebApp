@@ -16,5 +16,5 @@ public partial class Patient
 
     public virtual ICollection<PatientVisit> PatientVisits { get; set; } = [];
 
-    public virtual ICollection<PatientVisitsStaging> PatientVisitsStagings { get; set; } = [];
+    public virtual ICollection<PatientVisitStaging> PatientVisitsStagings { get; set; } = [];
 }

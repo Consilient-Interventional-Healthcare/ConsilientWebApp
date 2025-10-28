@@ -1,26 +1,22 @@
-﻿using AutoMapper;
-using Consilient.Data;
+﻿using Consilient.Api.Client;
+using Consilient.Api.Client.Contracts;
+using Consilient.Insurances.Contracts.Requests;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class InsurancesController(ConsilientDbContext context, IMapper mapper) : Controller
+    public class InsurancesController(IInsurancesApi insurancesApi) : Controller
     {
-        private readonly ConsilientDbContext _context = context;
-        private readonly IMapper _mapper = mapper;
+        private readonly IInsurancesApi _insurancesApi = insurancesApi;
 
         // GET: Insurances
         public async Task<IActionResult> Index()
         {
-            var insurances = await _context.Insurances.ToListAsync();
-
-            var viewModel = _mapper.Map<List<InsuranceViewModel>>(insurances);
-
-            return View(viewModel);
+            var insurances = await _insurancesApi.GetAllAsync();
+            return View(insurances);
         }
 
         // GET: Insurances/Details/5
@@ -31,15 +27,13 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var insurance = await _context.Insurances
-                .FirstOrDefaultAsync(m => m.InsuranceId == id);
+            var insurance = await _insurancesApi.GetByIdAsync(id.Value);
             if (insurance == null)
             {
                 return NotFound();
             }
 
-            var viewModel = _mapper.Map<InsuranceViewModel>(insurance);
-            return View(viewModel);
+            return View(insurance);
         }
 
         // GET: Insurances/Create
@@ -57,9 +51,13 @@ namespace Consilient.WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                var insurance = _mapper.Map<Insurance>(viewModel);
-                _context.Add(insurance);
-                await _context.SaveChangesAsync();
+                var insurance = await _insurancesApi.CreateAsync(new CreateInsuranceRequest
+                {
+                    InsuranceCode = viewModel.InsuranceCode,
+                    InsuranceDescription = viewModel.InsuranceDescription,
+                    PhysicianIncluded = viewModel.PhysicianIncluded,
+                    IsContracted = viewModel.IsContracted
+                });
                 return RedirectToAction(nameof(Index));
             }
             return View(viewModel);
@@ -73,13 +71,12 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var insurance = await _context.Insurances.FindAsync(id);
+            var insurance = await _insurancesApi.GetByIdAsync(id.Value);
             if (insurance == null)
             {
                 return NotFound();
             }
-            var viewModel = _mapper.Map<InsuranceViewModel>(insurance);
-            return View(viewModel);
+            return View(insurance);
         }
 
         // POST: Insurances/Edit/5
@@ -96,22 +93,18 @@ namespace Consilient.WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                try
+
+                var insurance = (await _insurancesApi.UpdateAsync(viewModel.InsuranceId, new UpdateInsuranceRequest
                 {
-                    var insurance = _mapper.Map<Insurance>(viewModel);
-                    _context.Update(insurance);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
+                    InsuranceCode = viewModel.InsuranceCode,
+                    InsuranceDescription = viewModel.InsuranceDescription,
+                    PhysicianIncluded = viewModel.PhysicianIncluded,
+                    IsContracted = viewModel.IsContracted
+                })).Unwrap();
+
+                if (insurance == null)
                 {
-                    if (!InsuranceExists(viewModel.InsuranceId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    return NotFound();
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -126,15 +119,12 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var insurance = await _context.Insurances
-                .FirstOrDefaultAsync(m => m.InsuranceId == id);
+            var insurance = await _insurancesApi.GetByIdAsync(id.Value);
             if (insurance == null)
             {
                 return NotFound();
             }
-
-            var viewModel = _mapper.Map<InsuranceViewModel>(insurance);
-            return View(viewModel);
+            return View(insurance);
         }
 
         // POST: Insurances/Delete/5
@@ -142,19 +132,12 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var insurance = await _context.Insurances.FindAsync(id);
-            if (insurance != null)
+            var deleted = (await _insurancesApi.DeleteAsync(id)).Unwrap();
+            if (!deleted)
             {
-                _context.Insurances.Remove(insurance);
+                return NotFound();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool InsuranceExists(int id)
-        {
-            return _context.Insurances.Any(e => e.InsuranceId == id);
         }
     }
 }

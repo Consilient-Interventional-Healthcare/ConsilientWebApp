@@ -1,45 +1,37 @@
-﻿using AutoMapper;
-using Consilient.Data;
+﻿using Consilient.Api.Client;
+using Consilient.Api.Client.Contracts;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class EmployeesController(ConsilientDbContext context, IMapper mapper) : Controller
+    public class EmployeesController(IEmployeesApi employeesApi) : Controller
     {
-        private readonly ConsilientDbContext _context = context;
-        private readonly IMapper _mapper = mapper;
+        private readonly IEmployeesApi _employeesApi = employeesApi;
 
         // GET: Employees
         public async Task<IActionResult> Index()
         {
-            var providers = await _context.Employees.ToListAsync();
-
-            var viewModel = _mapper.Map<List<EmployeeViewModel>>(providers);
-
-            return View(viewModel);
+            var providers = (await _employeesApi.GetAllAsync()).Unwrap();
+            return View(providers);
         }
 
         // GET: Employees/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null)
+            if (!id.HasValue)
             {
-                return NotFound();
+                throw new ArgumentNullException(nameof(id));
             }
 
-            var employee = await _context.Employees
-                .FirstOrDefaultAsync(m => m.EmployeeId == id);
+            var employee = (await _employeesApi.GetByIdAsync(id.Value)).Unwrap();
             if (employee == null)
             {
                 return NotFound();
             }
-
-            var viewModel = _mapper.Map<EmployeeViewModel>(employee);
-            return View(viewModel);
+            return View(employee);
         }
 
         // GET: Employees/Create
@@ -58,9 +50,17 @@ namespace Consilient.WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                var provider = _mapper.Map<Employee>(viewModel);
-                _context.Add(provider);
-                await _context.SaveChangesAsync();
+                (await _employeesApi.CreateAsync(new Employees.Contracts.Requests.CreateEmployeeRequest
+                {
+                    CanApproveVisits = viewModel.CanApproveVisits,
+                    Email = viewModel.Email,
+                    FirstName = viewModel.FirstName,
+                    IsAdministrator = viewModel.IsAdministrator,
+                    IsProvider = viewModel.IsProvider,
+                    LastName = viewModel.LastName,
+                    Role = viewModel.Role,
+                    TitleExtension = viewModel.TitleExtension
+                })).Unwrap();
                 return RedirectToAction(nameof(Index));
             }
             return View(viewModel);
@@ -74,13 +74,12 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employees.FindAsync(id);
+            var employee = (await _employeesApi.GetByIdAsync(id.Value)).Unwrap();
             if (employee == null)
             {
                 return NotFound();
             }
-            var viewModel = _mapper.Map<EmployeeViewModel>(employee);
-            return View(viewModel);
+            return View(employee);
         }
 
         // POST: Employees/Edit/5
@@ -90,29 +89,21 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, EmployeeViewModel viewModel)
         {
-            if (id != viewModel.EmployeeId)
-            {
-                return NotFound();
-            }
-
             if (ModelState.IsValid)
             {
-                try
+                var employee = (await _employeesApi.UpdateAsync(viewModel.EmployeeId, new Employees.Contracts.Requests.UpdateEmployeeRequest
                 {
-                    var employee = _mapper.Map<Employee>(viewModel);
-                    _context.Update(employee);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
+                    CanApproveVisits = viewModel.CanApproveVisits,
+                    FirstName = viewModel.FirstName,
+                    IsAdministrator = viewModel.IsAdministrator,
+                    IsProvider = viewModel.IsProvider,
+                    LastName = viewModel.LastName,
+                    Role = viewModel.Role,
+                    TitleExtension = viewModel.TitleExtension
+                })).Unwrap();
+                if (employee == null)
                 {
-                    if (!EmployeeExists(viewModel.EmployeeId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    return NotFound();
                 }
                 return RedirectToAction(nameof(Index));
             }
@@ -127,15 +118,12 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var employee = await _context.Employees
-                .FirstOrDefaultAsync(m => m.EmployeeId == id);
+            var employee = (await _employeesApi.GetByIdAsync(id.Value)).Unwrap();
             if (employee == null)
             {
                 return NotFound();
             }
-
-            var viewModel = _mapper.Map<EmployeeViewModel>(employee);
-            return View(viewModel);
+            return View(employee);
         }
 
         // POST: Employees/Delete/5
@@ -143,19 +131,12 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var provider = await _context.Employees.FindAsync(id);
-            if (provider != null)
+            var deleted = (await _employeesApi.DeleteAsync(id)).Unwrap();
+            if (!deleted)
             {
-                _context.Employees.Remove(provider);
+                return NotFound();
             }
-
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool EmployeeExists(int id)
-        {
-            return _context.Employees.Any(e => e.EmployeeId == id);
         }
     }
 }

@@ -32,13 +32,13 @@ public partial class Employee
 
     public virtual ICollection<PatientVisit> PatientVisitScribeEmployees { get; set; } = [];
 
-    public virtual ICollection<PatientVisitsStaging> PatientVisitsStagingCosigningPhysicianEmployees { get; set; } = [];
+    public virtual ICollection<PatientVisitStaging> PatientVisitsStagingCosigningPhysicianEmployees { get; set; } = [];
 
-    public virtual ICollection<PatientVisitsStaging> PatientVisitsStagingNursePractitionerEmployees { get; set; } = [];
+    public virtual ICollection<PatientVisitStaging> PatientVisitsStagingNursePractitionerEmployees { get; set; } = [];
 
-    public virtual ICollection<PatientVisitsStaging> PatientVisitsStagingPhysicianEmployees { get; set; } = [];
+    public virtual ICollection<PatientVisitStaging> PatientVisitsStagingPhysicianEmployees { get; set; } = [];
 
-    public virtual ICollection<PatientVisitsStaging> PatientVisitsStagingScribeEmployees { get; set; } = [];
+    public virtual ICollection<PatientVisitStaging> PatientVisitsStagingScribeEmployees { get; set; } = [];
 
     public virtual ICollection<ProviderContract> ProviderContracts { get; set; } = [];
 

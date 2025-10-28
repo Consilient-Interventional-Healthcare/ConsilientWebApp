@@ -8,12 +8,15 @@ namespace Consilient.Api.Client
         // Keep references to instantiated children so we can dispose them if they require disposal.
         private readonly List<object> _children = [];
 
-        private readonly ConsilientApiClientConfiguration _configuration;
+        //private readonly ConsilientApiClientConfiguration _configuration;
+        //private readonly IHttpClientFactory _httpClientFactory;
+        private readonly Func<HttpClient> _httpClientFactory;
         private bool _disposed;
 
-        public ConsilientApiClient(ConsilientApiClientConfiguration configuration)
+        public ConsilientApiClient(Func<HttpClient> httpClientFactory)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            //_configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
 
             InitializeChildren();
         }
@@ -22,7 +25,9 @@ namespace Consilient.Api.Client
         public IFacilitiesApi Facilities { get; private set; } = null!;
         public IInsurancesApi Insurances { get; private set; } = null!;
         public IPatientsApi Patients { get; private set; } = null!;
+        public IPatientVisitsApi PatientVisits { get; private set; } = null!;
         public IServiceTypesApi ServiceTypes { get; private set; } = null!;
+        public IStagingPatientVisitsApi StagingPatientVisits { get; private set; } = null!;
 
         // Synchronous dispose: dispose any child that implements IDisposable or IAsyncDisposable.
         public void Dispose()
@@ -91,6 +96,7 @@ namespace Consilient.Api.Client
 
         private static object? CreateInstanceWithKnownServices(Type implType, HttpClient httpClient)
         {
+            // Create an instance with a single HttpClient constructor parameter
             return Activator.CreateInstance(implType, [httpClient]);
         }
 
@@ -114,16 +120,13 @@ namespace Consilient.Api.Client
                     continue;
                 }
 
-                // create a named HttpClient for the implementation (allows per-client configuration)
-                var httpClient = new HttpClient()
-                {
-                    BaseAddress = new Uri(_configuration.BaseUrl)
-                };
+                var httpClient = _httpClientFactory.Invoke();
 
                 var instance = CreateInstanceWithKnownServices(implType, httpClient);
                 if (instance != null)
                 {
                     prop.SetValue(this, instance);
+                    _children.Add(instance);
                 }
             }
         }

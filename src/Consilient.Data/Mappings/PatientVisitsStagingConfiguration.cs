@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Consilient.Data.Mappings
 {
-    internal class PatientVisitsStagingConfiguration : IEntityTypeConfiguration<PatientVisitsStaging>
+    internal class PatientVisitsStagingConfiguration : IEntityTypeConfiguration<PatientVisitStaging>
     {
-        public void Configure(EntityTypeBuilder<PatientVisitsStaging> entity)
+        public void Configure(EntityTypeBuilder<PatientVisitStaging> entity)
         {
             entity.HasKey(e => e.PatientVisitStagingId);
 

@@ -6,6 +6,8 @@
         IFacilitiesApi Facilities { get; }
         IInsurancesApi Insurances { get; }
         IPatientsApi Patients { get; }
+        IPatientVisitsApi PatientVisits { get; }
         IServiceTypesApi ServiceTypes { get; }
+        IStagingPatientVisitsApi StagingPatientVisits { get; }
     }
 }

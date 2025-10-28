@@ -18,15 +18,8 @@ namespace Consilient.Api.Controllers
                 return BadRequest();
             }
 
-            try
-            {
-                var created = await _facilityService.CreateAsync(request);
-                return CreatedAtAction(nameof(GetFacilityById), new { id = created.FacilityId }, created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            var created = await _facilityService.CreateAsync(request);
+            return CreatedAtAction(nameof(GetFacilityById), new { id = created.FacilityId }, created);
         }
 
         [HttpDelete("{id:int}")]

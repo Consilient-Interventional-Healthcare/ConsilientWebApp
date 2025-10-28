@@ -1,6 +1,5 @@
 using Consilient.Api.Client;
 using Consilient.Constants;
-using Consilient.Data;
 using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
@@ -10,7 +9,6 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 
 namespace Consilient.WebApp
@@ -26,12 +24,9 @@ namespace Consilient.WebApp
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
-            var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
-
             // Add services to the container.
             var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
 
-            builder.Services.RegisterDataContext(defaultConnectionString);
             builder.Services.AddConsilientApiClient(applicationSettings.ApiClient);
 
             var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging).Get<LoggingConfiguration>() ?? throw new NullReferenceException($"{ApplicationConstants.ConfigurationFiles.AppSettings} missing");
@@ -48,10 +43,10 @@ namespace Consilient.WebApp
                     EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,
                     ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
                 });
-            builder.Services.AddAutoMapper(cfg =>
-            {
-                cfg.AddProfile<MappingProfile>();
-            });
+            //builder.Services.AddAutoMapper(cfg =>
+            //{
+            //    cfg.AddProfile<MappingProfile>();
+            //});
 
             builder.Services.AddSession();
 
