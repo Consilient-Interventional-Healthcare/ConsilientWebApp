@@ -35,7 +35,6 @@ namespace Consilient.BackgroundHost
             {
                 Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
 
-                // Add services to the container.
                 var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
                 var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
                 var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
@@ -53,7 +52,6 @@ namespace Consilient.BackgroundHost
 
                 var app = builder.Build();
 
-                //app.UseSerilog();
                 app.UseHangfireDashboard(string.Empty, new DashboardOptions
                 {
                     DashboardTitle = $"{builder.Environment.ApplicationName} ({builder.Environment.EnvironmentName.ToUpper()})",

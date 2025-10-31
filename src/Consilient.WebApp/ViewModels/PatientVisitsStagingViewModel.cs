@@ -28,11 +28,11 @@ namespace Consilient.WebApp.ViewModels
 
         public int? ScribeEmployeeId { get; set; }
 
-        //[Display(Name = "NP Approved")]
-        //public bool NursePractitionerApproved { get; set; }
+        [Display(Name = "NP Approved")]
+        public bool NursePractitionerApproved { get; set; }
 
-        //[Display(Name = "Physician Approved")]
-        //public bool PhysicianApproved { get; set; }
+        [Display(Name = "Physician Approved")]
+        public bool PhysicianApproved { get; set; }
 
         //[Display(Name = "Physician Approved By")]
         //public string? PhysicianApprovedBy { get; set; }

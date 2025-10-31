@@ -1,4 +1,5 @@
-﻿@using Consilient.WebApp.ViewModels
+﻿@using Consilient.Patients.Contracts.Dtos
+@using Consilient.WebApp.ViewModels
 @model Consilient.WebApp.ViewModels.PatientVisitsStagingIndexViewModel
 
 @{
@@ -31,7 +32,7 @@
 
     @if (User.IsInRole("Administrator") || User.IsInRole("CanApproveVisits"))
     {
-        @if(User.IsInRole("Administrator"))
+        @if (User.IsInRole("Administrator"))
         {
             <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
                 <div class="flex items-center justify-between">
@@ -150,7 +151,7 @@
                                 <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Date Serviced</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Patient.PatientMrn)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Patient.PatientFullName)</th>
-                                @* <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.AdmissionNumber)</th> *@
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.AdmissionNumber)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Facility)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.ServiceType)</th>
                                 <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.PhysicianEmployee)</th>
@@ -163,16 +164,11 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
-                            @for (int i = 0; i < Model.PatientVisitsStaging.Count; i++)
+                            @for (var i = 0; i < Model.PatientVisitsStaging.Count; i++)
                             {
                                 var row = Model.PatientVisitsStaging[i];
 
-                                <tr class="@(row.PhysicianApproved && row.NursePractitionerApproved
-                                                    ? "bg-green-400"
-                                                    : (row.PhysicianApproved && row.NursePractitionerEmployeeId == null) ? "bg-green-400"
-                                                        : (row.PhysicianApproved || row.NursePractitionerApproved
-                                                        ? "bg-green-50"
-                                                        : "bg-white"))">
+                                <tr class="">
 
                                     @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
                                     <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 sm:pl-0">
@@ -196,11 +192,11 @@
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm">
                                         <div class="flex justify-center">
-                                            @if(Model.PatientVisitsStaging[i].NursePractitionerEmployeeId != null)
+                                            @if (Model.PatientVisitsStaging[i].NursePractitionerEmployeeId != null)
                                             {
                                                 <input asp-for="@Model.PatientVisitsStaging[i].NursePractitionerApproved"
-                                                   type="checkbox"
-                                                   class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
+                                                       type="checkbox"
+                                                       class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
                                             }
                                         </div>
                                     </td>
@@ -218,14 +214,10 @@
 
             <!-- Mobile cards -->
             <div class="md:hidden space-y-4">
-                @for (int i = 0; i < Model.PatientVisitsStaging.Count; i++)
+                @for (var i = 0; i < Model.PatientVisitsStaging.Count; i++)
                 {
                     var row = Model.PatientVisitsStaging[i];
-                    <div class="rounded-xl border border-gray-200 p-4 shadow-sm "@(row.PhysicianApproved && row.NursePractitionerApproved
-                                                                                                             ? "bg-green-400"
-                                                                                                             : (row.PhysicianApproved || row.NursePractitionerApproved
-                                                                                                             ? "bg-green-50"
-                                                                                                             : "bg-white"))">
+                    <div class="rounded-xl border border-gray-200 p-4 shadow-sm @row.GetClass()">
                         @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -303,7 +295,7 @@
             <ul role="list" class="mt-3 divide-y divide-gray-200">
                 @foreach (var physician in Model.PhysicianSummaries)
                 {
-                    var name = physician.Key?.Trim() ?? "";
+                    var name = physician.Key.Trim();
                     var initial = string.IsNullOrEmpty(name) ? "?" : name[0].ToString().ToUpper();
                     var count = physician.Value;
 
@@ -329,7 +321,7 @@
             <ul role="list" class="mt-3 divide-y divide-gray-200">
                 @foreach (var np in Model.NursePractitionerSummaries)
                 {
-                    var name = np.Key?.Trim() ?? "";
+                    var name = np.Key.Trim();
                     var initial = string.IsNullOrEmpty(name) ? "?" : name[0].ToString().ToUpper();
                     var count = np.Value;
 
@@ -355,7 +347,7 @@
             <ul role="list" class="mt-3 divide-y divide-gray-200">
                 @foreach (var s in Model.ScribeSummaries)
                 {
-                    var name = s.Key?.Trim() ?? "";
+                    var name = s.Key.Trim();
                     var initial = string.IsNullOrEmpty(name) ? "?" : name[0].ToString().ToUpper();
                     var count = s.Value;
 

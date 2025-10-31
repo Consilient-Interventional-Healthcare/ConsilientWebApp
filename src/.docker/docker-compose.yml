@@ -13,6 +13,7 @@ services:
 
   loki:
     image: grafana/loki:latest
+    container_name: consilient.logging.loki.container
     ports:
       - 3100:3100
     volumes:
@@ -24,6 +25,7 @@ services:
 
   promtail:
     image: grafana/promtail:latest
+    container_name: consilient.logging.promtail.container
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro
@@ -36,6 +38,7 @@ services:
 
   grafana:
     image: grafana/grafana
+    container_name: consilient.logging.grafana.container
     ports:
       - 3000:3000
     environment:
@@ -51,7 +54,7 @@ services:
 
   db:
     image: ${DOCKER_REGISTRY-}consilientdb
-    container_name: consilient.db.container
+    container_name: consilient.dbs.container
     build:
       context: .
       dockerfile: Db/Dockerfile
@@ -78,12 +81,12 @@ services:
 
   ollama:
     image: docker.io/ollama/ollama:latest
+    container_name: consilient.ai.ollama.container
     ports:
       - 7869:11434
     volumes:
       - .:/code
       - ./ollama/ollama:/root/.ollama
-    container_name: ollama
     pull_policy: always
     tty: true
     restart: always
@@ -95,7 +98,7 @@ services:
 
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
-    container_name: ollama-webui
+    container_name: consilient.ai.ollama.webui.container
     volumes:
       - ./ollama/ollama-webui:/app/backend/data
     depends_on:
@@ -117,7 +120,7 @@ services:
 
   consilient.webapp:
     image: ${DOCKER_REGISTRY-}consilientwebapp
-    container_name: consilient.webapp.container
+    container_name: consilient.apps.webapp.container
     build:
       context: ..
       dockerfile: Consilient.WebApp/Dockerfile
@@ -135,7 +138,7 @@ services:
 
   consilient.api:
     image: ${DOCKER_REGISTRY-}consilientapi
-    container_name: consilient.api.container
+    container_name: consilient.apps.api.container
     build:
       context: ..
       dockerfile: Consilient.Api/Dockerfile
@@ -153,7 +156,7 @@ services:
 
   consilient.backgroundhost:
     image: ${DOCKER_REGISTRY-}consilientbackgroundhost
-    container_name: consilient.backgroundhost.container
+    container_name: consilient.apps.backgroundhost.container
     build:
       context: ..
       dockerfile: Consilient.BackgroundHost/Dockerfile

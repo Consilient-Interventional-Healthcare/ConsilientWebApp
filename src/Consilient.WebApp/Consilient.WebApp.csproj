@@ -47,10 +47,6 @@
 	  <Compile Remove="ViewModels\ProviderContractViewModel.cs" />
 	  <Compile Remove="ViewModels\ProviderPayViewModel.cs" />
 	</ItemGroup>
-	<ItemGroup>
-	  <Content Remove="Views\PatientVisitsStaging\Index.cshtml" />
-	  <Content Remove="Views\PatientVisits\Index.cshtml" />
-	</ItemGroup>
 
 
 

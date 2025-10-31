@@ -34,7 +34,7 @@ namespace Consilient.WebApp.Controllers
 
             HttpContext.Session.SetString("SelectedDate", sDate.Value.ToString("yyyy-MM-dd"));
 
-            var predicate = PredicateBuilder.New<StagingPatientVisitDto>(v => !v.AddedToMainTable);
+            var predicate = PredicateBuilder.New<PatientVisitsStagingViewModel>(v => !v.AddedToMainTable);
 
             if (selectedFacilityId.HasValue)
             {
@@ -52,11 +52,11 @@ namespace Consilient.WebApp.Controllers
             ViewBag.SelectedProvider = selectedProviderId;
 
             // API returns IEnumerable<T>, so compile the expression to Func<T,bool> before applying Where
-            var patientVisitsStaging = (await apiClient.StagingPatientVisits.GetByDateAsync(sDate.Value)).Unwrap()!
+            var query = $@"{sDate.Value}";
+            var patientVisitsStaging = (await apiClient.GraphQl.Query<PatientVisitsStagingViewModel>(query)).Unwrap()!
                 .Where(predicate.Compile())
                 .ToList();
 
-            //var patientVisitsStagingViewModels = _mapper.Map<List<PatientVisitsStagingViewModel>>(patientVisitsStaging);
             var viewModel = new PatientVisitsStagingIndexViewModel
             {
                 PatientVisitsStaging = [.. patientVisitsStaging],
@@ -67,49 +67,48 @@ namespace Consilient.WebApp.Controllers
 
             await CreateIndexSelectLists(viewModel);
 
-            //TODO: H
-            //foreach (var visit in viewModel.PatientVisitsStaging)
-            //{
-            //    var physicianName = visit.PhysicianEmployee?.FullName ?? "Unknown Physician";
-            //    if (viewModel.PhysicianSummaries.TryGetValue(physicianName, out var value))
-            //    {
-            //        viewModel.PhysicianSummaries[physicianName] = ++value;
-            //    }
-            //    else
-            //    {
-            //        viewModel.PhysicianSummaries[physicianName] = 1;
-            //    }
-            //    if (visit.NursePractitionerEmployee != null)
-            //    {
-            //        var npName = visit.NursePractitionerEmployee.FullName;
-            //        if (!string.IsNullOrEmpty(npName))
-            //        {
-            //            if (viewModel.NursePractitionerSummaries.TryGetValue(npName, out var nursePractitionerSummaries))
-            //            {
-            //                viewModel.NursePractitionerSummaries[npName] = ++nursePractitionerSummaries;
-            //            }
-            //            else
-            //            {
-            //                viewModel.NursePractitionerSummaries[npName] = 1;
-            //            }
-            //        }
-            //    }
-            //    if (visit.ScribeEmployee != null)
-            //    {
-            //        var scribeName = visit.ScribeEmployee.FullName;
-            //        if (!string.IsNullOrEmpty(scribeName))
-            //        {
-            //            if (viewModel.ScribeSummaries.TryGetValue(scribeName, out var scribeNamevalue))
-            //            {
-            //                viewModel.ScribeSummaries[scribeName] = ++scribeNamevalue;
-            //            }
-            //            else
-            //            {
-            //                viewModel.ScribeSummaries[scribeName] = 1;
-            //            }
-            //        }
-            //    }
-            //}
+            foreach (var visit in viewModel.PatientVisitsStaging)
+            {
+                var physicianName = visit.PhysicianEmployee?.FullName ?? "Unknown Physician";
+                if (viewModel.PhysicianSummaries.TryGetValue(physicianName, out var value))
+                {
+                    viewModel.PhysicianSummaries[physicianName] = ++value;
+                }
+                else
+                {
+                    viewModel.PhysicianSummaries[physicianName] = 1;
+                }
+                if (visit.NursePractitionerEmployee != null)
+                {
+                    var npName = visit.NursePractitionerEmployee.FullName;
+                    if (!string.IsNullOrEmpty(npName))
+                    {
+                        if (viewModel.NursePractitionerSummaries.TryGetValue(npName, out var nursePractitionerSummaries))
+                        {
+                            viewModel.NursePractitionerSummaries[npName] = ++nursePractitionerSummaries;
+                        }
+                        else
+                        {
+                            viewModel.NursePractitionerSummaries[npName] = 1;
+                        }
+                    }
+                }
+                if (visit.ScribeEmployee != null)
+                {
+                    var scribeName = visit.ScribeEmployee.FullName;
+                    if (!string.IsNullOrEmpty(scribeName))
+                    {
+                        if (viewModel.ScribeSummaries.TryGetValue(scribeName, out var scribeNamevalue))
+                        {
+                            viewModel.ScribeSummaries[scribeName] = ++scribeNamevalue;
+                        }
+                        else
+                        {
+                            viewModel.ScribeSummaries[scribeName] = 1;
+                        }
+                    }
+                }
+            }
             return View(viewModel);
         }
 
@@ -117,16 +116,6 @@ namespace Consilient.WebApp.Controllers
         public async Task<IActionResult> Details(int id)
         {
             var patientVisitStaging = (await apiClient.StagingPatientVisits.GetByIdAsync(id)).Unwrap();
-            //var patientVisitStaging = await _context.PatientVisitsStagings
-            //                            .Include(m => m.CosigningPhysicianEmployee)
-            //                            .Include(m => m.Facility)
-            //                            .Include(m => m.Insurance)
-            //                            .Include(m => m.NursePractitionerEmployee)
-            //                            .Include(m => m.Patient)
-            //                            .Include(m => m.PhysicianEmployee)
-            //                            .Include(m => m.ScribeEmployee)
-            //                            .Include(m => m.ServiceType)
-            //    .FirstOrDefaultAsync(m => m.PatientVisitStagingId == id);
             if (patientVisitStaging == null)
             {
                 return NotFound();
@@ -286,25 +275,6 @@ namespace Consilient.WebApp.Controllers
                 ScribeEmployeeId = viewModel.ScribeEmployeeId
                 //ServiceTypeId = viewModel.ServiceTypeId,
             })).Unwrap();
-            //try
-            //{
-
-            //    var patientVisitStaging = _mapper.Map<PatientVisitStaging>(viewModel);
-            //    patientVisitStaging.PatientId = patientId;
-            //    _context.Update(patientVisitStaging);
-            //    await _context.SaveChangesAsync();
-            //}
-            //catch (DbUpdateConcurrencyException)
-            //{
-            //    if (!PatientVisitStagingExists(viewModel.PatientVisitStagingId))
-            //    {
-            //        return NotFound();
-            //    }
-            //    else
-            //    {
-            //        throw;
-            //    }
-            //}
             return RedirectToAction(nameof(Index));
 
         }
@@ -318,22 +288,11 @@ namespace Consilient.WebApp.Controllers
             }
 
             var patientVisitStaging = (await apiClient.StagingPatientVisits.GetByIdAsync(id.Value)).Unwrap();
-            //var patientVisitStaging = await _context.PatientVisitsStagings
-            //                            .Include(m => m.CosigningPhysicianEmployee)
-            //                            .Include(m => m.Facility)
-            //                            .Include(m => m.Insurance)
-            //                            .Include(m => m.NursePractitionerEmployee)
-            //                            .Include(m => m.Patient)
-            //                            .Include(m => m.PhysicianEmployee)
-            //                            .Include(m => m.ScribeEmployee)
-            //                            .Include(m => m.ServiceType)
-            //                        .FirstOrDefaultAsync(m => m.PatientVisitStagingId == id);
             if (patientVisitStaging == null)
             {
                 return NotFound();
             }
 
-            //var viewModel = _mapper.Map<PatientVisitsStagingViewModel>(patientVisitStaging);
             return View(patientVisitStaging);
         }
 
@@ -408,7 +367,6 @@ namespace Consilient.WebApp.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Read IFormFile into a byte array
             byte[] fileBytes;
             await using (var ms = new MemoryStream())
             {

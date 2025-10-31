@@ -4,6 +4,7 @@
     {
         IEmployeesApi Employees { get; }
         IFacilitiesApi Facilities { get; }
+        IGraphQlApi GraphQl { get; }
         IInsurancesApi Insurances { get; }
         IPatientsApi Patients { get; }
         IPatientVisitsApi PatientVisits { get; }

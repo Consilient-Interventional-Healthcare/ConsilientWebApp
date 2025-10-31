@@ -13,6 +13,7 @@ namespace Consilient.Api.Client
             _httpClient = httpClientFactory.Invoke();
             Employees = new EmployeesApi(_httpClient);
             Facilities = new FacilitiesApi(_httpClient);
+            GraphQl = new GraphQlApi(_httpClient);
             Insurances = new InsurancesApi(_httpClient);
             Patients = new PatientsApi(_httpClient);
             PatientVisits = new PatientVisitsApi(_httpClient);
@@ -22,13 +23,13 @@ namespace Consilient.Api.Client
 
         public IEmployeesApi Employees { get; }
         public IFacilitiesApi Facilities { get; }
+        public IGraphQlApi GraphQl { get; }
         public IInsurancesApi Insurances { get; }
         public IPatientsApi Patients { get; }
         public IPatientVisitsApi PatientVisits { get; }
         public IServiceTypesApi ServiceTypes { get; }
         public IStagingPatientVisitsApi StagingPatientVisits { get; }
 
-        // Finalizer in case Dispose isn't called
         ~ConsilientApiClient()
         {
             Dispose(disposing: false);
@@ -41,11 +42,8 @@ namespace Consilient.Api.Client
 
             if (disposing)
             {
-                // dispose managed resources
                 _httpClient.Dispose();
             }
-
-            // no unmanaged resources to free
 
             _disposed = true;
         }

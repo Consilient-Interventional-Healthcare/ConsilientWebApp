@@ -17,7 +17,6 @@ namespace Consilient.Infrastructure.ExcelImporter
 
         public IEnumerable<TData> Import(string filename)
         {
-            var allPatients = new List<TData>();
             Logger.LogInformation("Starting Excel import for file: {FileName}", filename);
 
             using var workbook = WorkbookFactory.Create(configuration.CanConvertFile, filename);
@@ -27,11 +26,13 @@ namespace Consilient.Infrastructure.ExcelImporter
             Logger.LogInformation("Found {WorksheetCount} worksheets to process after filtering.",
                 filteredWorksheets.Count);
 
-            foreach (var worksheet in filteredWorksheets)
-            {
-                var patientsInSheet = ProcessWorksheet(worksheet);
-                allPatients.AddRange(patientsInSheet);
-            }
+            var allPatients = filteredWorksheets.SelectMany(ProcessWorksheet).ToList();
+
+            //foreach (var worksheet in filteredWorksheets)
+            //{
+            //    var patientsInSheet = ProcessWorksheet(worksheet);
+            //    allPatients.AddRange(patientsInSheet);
+            //}
 
             Logger.LogInformation("Excel import finished for file: {FileName}", filename);
             return allPatients;

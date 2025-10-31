@@ -22,7 +22,6 @@ namespace Consilient.Api.Client
                 });
             });
 
-            // Register each API property as scoped, resolved from the root client instance
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Employees);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Facilities);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Insurances);

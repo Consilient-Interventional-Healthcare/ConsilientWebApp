@@ -12,7 +12,6 @@ namespace Consilient.Api.Infra
             var t = context.Metadata.ModelType;
             if (t == typeof(DateTime) || t == typeof(DateTime?))
             {
-                // Use BinderTypeModelBinder so DI can resolve the actual binder if needed
                 return new BinderTypeModelBinder(typeof(YyyyMmDdDateModelBinder));
             }
 

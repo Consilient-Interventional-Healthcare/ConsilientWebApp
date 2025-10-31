@@ -2,6 +2,7 @@ using Consilient.Api.Infra;
 using Consilient.Api.Init;
 using Consilient.Constants;
 using Consilient.Data;
+using Consilient.Data.GraphQL;
 using Consilient.Employees.Services;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
@@ -38,10 +39,10 @@ namespace Consilient.Api
 
                 var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
 
-                // Add services to the container.
                 //var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
 
                 builder.Services.RegisterDataContext(defaultConnectionString);
+                builder.Services.RegisterGraphQlServices();
                 builder.Services.RegisterEmployeeServices();
                 builder.Services.RegisterInsuranceServices();
                 builder.Services.RegisterPatientServices();

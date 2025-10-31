@@ -49,7 +49,6 @@ namespace Consilient.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Apply all IEntityTypeConfiguration implementations from this assembly (Mappings folder).
             modelBuilder.ApplyConfigurationsFromAssembly(GetType().Assembly);
         }
     }

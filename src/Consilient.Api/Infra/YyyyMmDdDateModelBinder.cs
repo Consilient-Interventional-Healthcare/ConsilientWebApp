@@ -13,7 +13,6 @@ namespace Consilient.Api.Infra
             var value = valueResult.FirstValue;
             if (string.IsNullOrWhiteSpace(value))
             {
-                // no value; leave as not bound so regular validation can handle required checks
                 return Task.CompletedTask;
             }
 
@@ -36,7 +35,6 @@ namespace Consilient.Api.Infra
 
             if (underlyingType != typeof(DateTime))
             {
-                // Unsupported type for this binder - let default binders handle it
                 return Task.CompletedTask;
             }
             if (DateTime.TryParseExact(value, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
