@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Delete Insurance";
 
-    string NullDash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v!;
+    string NullDash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
 }
 
 <div class="px-4 sm:px-0">
@@ -21,7 +21,7 @@
                 @Html.DisplayNameFor(m => m.InsuranceCode)
             </dt>
             <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-                @NullDash(Model?.InsuranceCode)
+                @NullDash(Model.InsuranceCode)
             </dd>
         </div>
 
@@ -31,7 +31,7 @@
                 @Html.DisplayNameFor(m => m.InsuranceDescription)
             </dt>
             <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-                @NullDash(Model?.InsuranceDescription)
+                @NullDash(Model.InsuranceDescription)
             </dd>
         </div>
 
@@ -41,13 +41,13 @@
                 @Html.DisplayNameFor(m => m.PhysicianIncluded)
             </dt>
             <dd class="mt-1 text-sm leading-6 sm:col-span-2 sm:mt-0">
-                @if (Model?.PhysicianIncluded == true)
+                @if (Model.PhysicianIncluded.HasValue && Model.PhysicianIncluded.Value)
                 {
                     <span class="inline-flex items-center rounded-full bg-green-50 ring-1 ring-inset ring-green-500 px-2 py-0.5 text-xs font-medium text-green-700">
                         Yes
                     </span>
                 }
-                else if (Model?.PhysicianIncluded == false)
+                else if (Model.PhysicianIncluded.HasValue && !Model.PhysicianIncluded.Value)
                 {
                     <span class="inline-flex items-center rounded-full bg-red-50 ring-1 ring-inset ring-red-500 px-2 py-0.5 text-xs font-medium text-red-700">
                         No
@@ -68,13 +68,13 @@
                 @Html.DisplayNameFor(m => m.IsContracted)
             </dt>
             <dd class="mt-1 text-sm leading-6 sm:col-span-2 sm:mt-0">
-                @if (Model?.IsContracted == true)
+                @if (Model.IsContracted.HasValue && Model.IsContracted.Value)
                 {
                     <span class="inline-flex items-center rounded-full bg-green-50 ring-1 ring-inset ring-green-500 px-2 py-0.5 text-xs font-medium text-green-700">
                         Contracted
                     </span>
                 }
-                else if (Model?.IsContracted == false)
+                else if (Model.IsContracted.HasValue && !Model.IsContracted.Value)
                 {
                     <span class="inline-flex items-center rounded-full bg-red-50 ring-1 ring-inset ring-red-500 px-2 py-0.5 text-xs font-medium text-red-700">
                         Not Contracted
@@ -95,7 +95,7 @@
                 @Html.DisplayNameFor(m => m.CodeAndDescription)
             </dt>
             <dd class="mt-1 text-sm leading-6 text-gray-700 sm:col-span-2 sm:mt-0">
-                @NullDash(Model?.CodeAndDescription)
+                @NullDash(Model.CodeAndDescription)
             </dd>
         </div>
     </dl>

@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Consilient.WebApp.ViewModels
 {
@@ -14,22 +12,22 @@ namespace Consilient.WebApp.ViewModels
         public int? Cptcode { get; set; }
 
         [Display(Name = "Code and Description")]
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public string? CodeAndDescription { get; set; } = null!;
+        //[DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public string? CodeAndDescription { get; set; } 
 
-        [ValidateNever]
-        public virtual ICollection<ContractViewModel> Contracts { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<ContractViewModel> Contracts { get; set; } = [];
 
-        [ValidateNever]
-        public virtual ICollection<FacilityPayViewModel> FacilityPays { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<FacilityPayViewModel> FacilityPays { get; set; } = [];
 
-        [ValidateNever]
-        public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
 
-        [ValidateNever]
-        public virtual ICollection<PatientVisitsStagingViewModel> PatientVisitsStagings { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<PatientVisitsStagingViewModel> PatientVisitsStagings { get; set; } = [];
 
-        [ValidateNever]
-        public virtual ICollection<ProviderPayViewModel> ProviderPays { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<ProviderPayViewModel> ProviderPays { get; set; } = [];
     }
 }

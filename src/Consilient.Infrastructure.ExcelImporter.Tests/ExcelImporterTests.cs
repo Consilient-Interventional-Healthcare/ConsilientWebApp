@@ -3,13 +3,16 @@ using Consilient.Infrastructure.ExcelImporter.Models;
 using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests
 {
     [TestClass]
     public class ExcelImporterTests
     {
-        public TestContext TestContext { get; set; }
+        [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+        public TestContext TestContext { get; set; } = null!;
+
         private readonly IEnumerable<string> _worksheetNames = [
           "PatientAdmissionReportXLS",
           "Joseph 100",
@@ -43,11 +46,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             var expectedFilteredNames = new List<string> {
                 "Joseph 100",
                 "Torrico 300",
-                "Jordan 300",
+                "Jordan 300"
             };
 
             // Act
-            var filteredSheets = ExcelImporter.FilterWorksheets(mockWorksheets.Object, _regexPatterns);
+            var filteredSheets = ExcelImporter.FilterWorksheets(mockWorksheets.Object, [.._regexPatterns]);
             var filteredSheetNames = filteredSheets.Select(ws => ws.Name).ToList();
 
             // Assert
@@ -59,18 +62,18 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
         public void Import_ShouldReturnExpectedData()
         {
             // Arrange
-            var filePath = @"Files\DoctorAssignments.xls";
+            const string filePath = @"Files\DoctorAssignments.xls";
             var loggerFactory = LoggerFactory.Create(builder => builder.AddDebug());
             var excelImporter = new ExcelImporter(
                 new ExcelImporterConfiguration
                 {
                     WorksheetFilters = _regexPatterns
                 },
-                loggerFactory
+                loggerFactory.CreateLogger<ExcelImporter>()
             );
 
             // Act
-            var result = excelImporter.Import(filePath);
+            var result = excelImporter.Import(filePath).ToList();
 
             // Write result to a CSV file
             var outputDirectory = Directory.GetParent(TestContext.TestRunDirectory!)!.FullName;
@@ -79,35 +82,35 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
 
             // Assert
             Assert.IsNotNull(result);
-            Assert.AreEqual(30, result.Count());
+            Assert.HasCount(30, result);
             var first = result.First();
             var patientData = new PatientData
             {
-                CaseID = "2404805",
+                CaseId = "2404805",
                 Name = "Smith, Liam",
-                MRN = "124461",
+                Mrn = "124461",
                 Sex = "Female",
                 Age = 77,
-                DOB = new DateTime(1988, 5, 21),
+                Dob = new DateTime(1988, 5, 21),
                 Room = "101",
                 Bed = "A",
-                DOA = new DateTime(2024, 12, 19, 12, 6, 0),
-                LOS = 301,
+                Doa = new DateTime(2024, 12, 19, 12, 6, 0),
+                Los = 301,
                 AttendingPhysician = "Torrico, Tyler",
                 PrimaryInsurance = "HUMANA",
                 AdmDx = "F29 - Unspecified psychosis not due to a substance or known physiological condition"
             };
 
-            Assert.AreEqual(patientData.CaseID, first.CaseID);
+            Assert.AreEqual(patientData.CaseId, first.CaseId);
             Assert.AreEqual(patientData.Name, first.Name);
-            Assert.AreEqual(patientData.MRN, first.MRN);
+            Assert.AreEqual(patientData.Mrn, first.Mrn);
             Assert.AreEqual(patientData.Sex, first.Sex);
             Assert.AreEqual(patientData.Age, first.Age);
-            Assert.AreEqual(patientData.DOB, first.DOB);
+            Assert.AreEqual(patientData.Dob, first.Dob);
             Assert.AreEqual(patientData.Room, first.Room);
             Assert.AreEqual(patientData.Bed, first.Bed);
-            Assert.AreEqual(patientData.DOA, first.DOA);
-            Assert.AreEqual(patientData.LOS, first.LOS);
+            Assert.AreEqual(patientData.Doa, first.Doa);
+            Assert.AreEqual(patientData.Los, first.Los);
             Assert.AreEqual(patientData.AttendingPhysician, first.AttendingPhysician);
             Assert.AreEqual(patientData.PrimaryInsurance, first.PrimaryInsurance);
             Assert.AreEqual(patientData.AdmDx, first.AdmDx);

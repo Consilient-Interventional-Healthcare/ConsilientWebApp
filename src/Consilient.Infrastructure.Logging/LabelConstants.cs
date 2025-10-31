@@ -2,7 +2,7 @@
 {
     public static class LabelConstants
     {
-        public readonly static string App = "app";
-        public readonly static string Env = "env";
+        public const string App = "app";
+        public const string Env = "env";
     }
 }

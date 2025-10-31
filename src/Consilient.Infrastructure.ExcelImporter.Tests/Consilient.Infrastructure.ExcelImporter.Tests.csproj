@@ -35,4 +35,12 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="D:\Work\Consilient\src\Consilient.Infrastructure.ExcelImporter.Tests\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\Work\Consilient\src\Consilient.Infrastructure.ExcelImporter.Tests\.editorconfig" />
+  </ItemGroup>
+
 </Project>

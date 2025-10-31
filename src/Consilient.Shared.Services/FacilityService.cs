@@ -9,8 +9,6 @@ namespace Consilient.Shared.Services
 {
     public class FacilityService(ConsilientDbContext dataContext) : IFacilityService
     {
-        private readonly ConsilientDbContext _dataContext = dataContext;
-
         public async Task<FacilityDto> CreateAsync(CreateFacilityRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -18,8 +16,8 @@ namespace Consilient.Shared.Services
             var entity = request.Adapt<Facility>();
             try
             {
-                await _dataContext.Facilities.AddAsync(entity);
-                await _dataContext.SaveChangesAsync();
+                await dataContext.Facilities.AddAsync(entity);
+                await dataContext.SaveChangesAsync();
             }
             catch (DbUpdateException ex)
             {
@@ -38,7 +36,7 @@ namespace Consilient.Shared.Services
 
             try
             {
-                var affected = await _dataContext.Facilities
+                var affected = await dataContext.Facilities
                     .Where(f => f.FacilityId == id)
                     .ExecuteDeleteAsync();
 
@@ -52,7 +50,7 @@ namespace Consilient.Shared.Services
 
         public async Task<IEnumerable<FacilityDto>> GetAllAsync()
         {
-            var dtos = await _dataContext.Facilities
+            var dtos = await dataContext.Facilities
                 .AsNoTracking()
                 .ProjectToType<FacilityDto>()
                 .ToListAsync();
@@ -62,7 +60,7 @@ namespace Consilient.Shared.Services
 
         public async Task<FacilityDto?> GetByIdAsync(int id)
         {
-            var dto = await _dataContext.Facilities
+            var dto = await dataContext.Facilities
                 .AsNoTracking()
                 .Where(f => f.FacilityId == id)
                 .ProjectToType<FacilityDto>()
@@ -82,7 +80,7 @@ namespace Consilient.Shared.Services
 
             try
             {
-                var affected = await _dataContext.Facilities
+                var affected = await dataContext.Facilities
                     .Where(f => f.FacilityId == id)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(f => f.FacilityName, f => request.FacilityName ?? f.FacilityName)
@@ -95,7 +93,7 @@ namespace Consilient.Shared.Services
                 }
 
                 // Return the updated DTO via a no-tracking projection.
-                return await _dataContext.Facilities
+                return await dataContext.Facilities
                     .AsNoTracking()
                     .Where(f => f.FacilityId == id)
                     .ProjectToType<FacilityDto>()

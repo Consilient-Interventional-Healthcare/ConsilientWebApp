@@ -4,6 +4,6 @@ namespace Consilient.BackgroundHost.Configuration
 {
     public class EmailSettings
     {
-        public MonitorConfiguration Monitor { get; set; } = null!;
+        public MonitorConfiguration Monitor { get; } = null!;
     }
 }

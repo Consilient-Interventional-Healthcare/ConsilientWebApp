@@ -1,18 +1,21 @@
-﻿namespace Consilient.Data;
-
-public partial class PayrollDatum
+﻿namespace Consilient.Data
 {
-    public int PayrollDataId { get; set; }
 
-    public int PayrollPeriodId { get; set; }
 
-    public int ProviderPayId { get; set; }
+    public class PayrollDatum
+    {
+        public int PayrollDataId { get; set; }
 
-    public int Count { get; set; }
+        public int PayrollPeriodId { get; set; }
 
-    public DateOnly Date { get; set; }
+        public int ProviderPayId { get; set; }
 
-    public virtual PayrollPeriod PayrollPeriod { get; set; } = null!;
+        public int Count { get; set; }
 
-    public virtual ProviderPay ProviderPay { get; set; } = null!;
+        public DateOnly Date { get; set; }
+
+        public virtual PayrollPeriod PayrollPeriod { get; set; } = null!;
+
+        public virtual ProviderPay ProviderPay { get; set; } = null!;
+    }
 }

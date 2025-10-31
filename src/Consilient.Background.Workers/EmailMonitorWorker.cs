@@ -1,17 +1,15 @@
-﻿using Consilient.Infrastructure.EmailMonitor.Contracts;
+﻿using Consilient.Background.Workers.Contracts;
+using Consilient.Infrastructure.EmailMonitor.Contracts;
 using Hangfire;
-using Microsoft.Extensions.Logging;
 
 namespace Consilient.Background.Workers
 {
     [DisableConcurrentExecution(timeoutInSeconds: 3600)]
-    public class EmailMonitorWorker(IEmailMonitor monitor, ILoggerFactory loggerFactory) : BaseRecurringWorker(loggerFactory)
+    public class EmailMonitorWorker(IEmailMonitor monitor) : IRecurringWorker
     {
-        private readonly IEmailMonitor _monitor = monitor;
-
-        protected override async Task PerformJob(CancellationToken cancellationToken)
+        public Task Run(CancellationToken cancellationToken = default)
         {
-            await _monitor.MonitorEmailAsync(cancellationToken);
+            return monitor.MonitorEmailAsync(cancellationToken);
         }
     }
 }

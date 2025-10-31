@@ -19,7 +19,7 @@ namespace Consilient.Infrastructure.EmailMonitor
                 throw new InvalidOperationException("No email processors are configured.");
             }
             using var client = new ImapClient();
-            await client.ConnectAsync(configuration.Host, configuration.Port, configuration.UseSSL, cancellationToken);
+            await client.ConnectAsync(configuration.Host, configuration.Port, configuration.UseSsl, cancellationToken);
             await client.AuthenticateAsync(configuration.UserName, configuration.Password, cancellationToken);
 
             var inbox = client.Inbox;

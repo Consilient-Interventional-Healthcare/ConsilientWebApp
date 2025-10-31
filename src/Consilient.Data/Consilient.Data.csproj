@@ -17,4 +17,12 @@
     <Folder Include="Mappings\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="D:\Work\Consilient\src\Consilient.Data\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\Work\Consilient\src\Consilient.Data\.editorconfig" />
+  </ItemGroup>
+
 </Project>

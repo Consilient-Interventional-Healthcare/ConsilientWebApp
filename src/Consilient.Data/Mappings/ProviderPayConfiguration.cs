@@ -17,17 +17,17 @@ namespace Consilient.Data.Mappings
             entity.Property(e => e.PayUnit).HasMaxLength(100);
             entity.Property(e => e.ServiceTypeId).HasColumnName("ServiceTypeID");
 
-            entity.HasOne(d => d.Employee).WithMany(p => p.ProviderPays)
+            entity.HasOne(d => d.Employee).WithMany()
                 .HasForeignKey(d => d.EmployeeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProviderPay_Employee");
 
-            entity.HasOne(d => d.Facility).WithMany(p => p.ProviderPays)
+            entity.HasOne(d => d.Facility).WithMany()
                 .HasForeignKey(d => d.FacilityId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProviderPay_Facility");
 
-            entity.HasOne(d => d.ServiceType).WithMany(p => p.ProviderPays)
+            entity.HasOne(d => d.ServiceType).WithMany()
                 .HasForeignKey(d => d.ServiceTypeId)
                 .HasConstraintName("FK_ProviderPay_ServiceType");
         }

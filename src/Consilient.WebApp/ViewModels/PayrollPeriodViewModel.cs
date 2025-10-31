@@ -12,6 +12,6 @@
 
         public DateOnly? PayrollProcessingStartDate { get; set; }
 
-        public virtual ICollection<PayrollDatumViewModel> PayrollData { get; set; } = [];
+        //public virtual ICollection<PayrollDatumViewModel> PayrollData { get; set; } = [];
     }
 }

@@ -24,7 +24,7 @@
 
         public virtual FacilityViewModel Facility { get; set; } = null!;
 
-        public virtual ICollection<ProviderContractViewModel> ProviderContracts { get; set; } = [];
+        //public virtual ICollection<ProviderContractViewModel> ProviderContracts { get; set; } = [];
 
         public virtual ServiceTypeViewModel ServiceType { get; set; } = null!;
     }

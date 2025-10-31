@@ -1,3 +1,4 @@
+using Consilient.Api.Client.Models;
 using Consilient.Shared.Contracts.Dtos;
 using Consilient.Shared.Contracts.Requests;
 

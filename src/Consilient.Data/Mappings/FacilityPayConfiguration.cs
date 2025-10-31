@@ -16,12 +16,12 @@ namespace Consilient.Data.Mappings
             entity.Property(e => e.RevenueAmount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.ServiceTypeId).HasColumnName("ServiceTypeID");
 
-            entity.HasOne(d => d.Facility).WithMany(p => p.FacilityPays)
+            entity.HasOne(d => d.Facility).WithMany()
                 .HasForeignKey(d => d.FacilityId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_FacilityPay_Facility");
 
-            entity.HasOne(d => d.ServiceType).WithMany(p => p.FacilityPays)
+            entity.HasOne(d => d.ServiceType).WithMany()
                 .HasForeignKey(d => d.ServiceTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_FacilityPay_ServiceType");

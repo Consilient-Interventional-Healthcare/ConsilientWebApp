@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Consilient.WebApp.ViewModels
 {
@@ -22,9 +21,9 @@ namespace Consilient.WebApp.ViewModels
         [Display(Name = "Code and Description")]
         public string CodeAndDescription { get; set; } = null!;
 
-        [ValidateNever]
-        public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
-        [ValidateNever]
-        public virtual ICollection<PatientVisitsStagingViewModel> PatientVisitsStagings { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<PatientVisitsStagingViewModel> PatientVisitsStagings { get; set; } = [];
     }
 }

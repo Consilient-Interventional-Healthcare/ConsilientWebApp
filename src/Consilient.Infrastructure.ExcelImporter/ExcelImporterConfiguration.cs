@@ -4,6 +4,6 @@
     {
         public bool CanConvertFile { get; set; } = true;
 
-        public IEnumerable<string> WorksheetFilters { get; set; } = [];
+        public IEnumerable<string> WorksheetFilters { get; init; } = [];
     }
 }

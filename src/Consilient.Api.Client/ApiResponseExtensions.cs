@@ -1,14 +1,12 @@
-﻿namespace Consilient.Api.Client
+﻿using Consilient.Api.Client.Models;
+
+namespace Consilient.Api.Client
 {
     public static class ApiResponseExtensions
     {
         public static T? Unwrap<T>(this ApiResponse<T> response)
         {
-            if (!response.IsSuccess)
-            {
-                throw new InvalidOperationException($"API call failed with status code {response.StatusCode}: {response.ErrorMessage}");
-            }
-            return response.Data;
+            return response.IsSuccess ? response.Data : throw new InvalidOperationException($"API call failed with status code {response.StatusCode}: {response.ErrorMessage}");
         }
     }
 }

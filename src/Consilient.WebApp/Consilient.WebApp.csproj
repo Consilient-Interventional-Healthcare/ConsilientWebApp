@@ -21,6 +21,9 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Compile Remove="MappingProfile.cs" />
+	  <Compile Remove="Models\AuthorizationModels\AzureAdAuthHelper.cs" />
+	  <Compile Remove="Models\AuthorizationModels\ClientClaim.cs" />
+	  <Compile Remove="Models\AuthorizationModels\ClientPrincipal.cs" />
 	  <Compile Remove="Models\Contract.cs" />
 	  <Compile Remove="Models\Employee.cs" />
 	  <Compile Remove="Models\Facility.cs" />
@@ -37,14 +40,23 @@
 	  <Compile Remove="Models\VwPatientVisit.cs" />
 	  <Compile Remove="Models\VwPatientVisitsCompareToLive.cs" />
 	  <Compile Remove="Models\VwPatientVisitsStaging.cs" />
+	  <Compile Remove="ViewModels\ContractViewModel.cs" />
+	  <Compile Remove="ViewModels\FacilityPayViewModel.cs" />
+	  <Compile Remove="ViewModels\PayrollDatumViewModel.cs" />
+	  <Compile Remove="ViewModels\PayrollPeriodViewModel.cs" />
+	  <Compile Remove="ViewModels\ProviderContractViewModel.cs" />
+	  <Compile Remove="ViewModels\ProviderPayViewModel.cs" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Content Remove="Views\PatientVisitsStaging\Index.cshtml" />
+	  <Content Remove="Views\PatientVisits\Index.cshtml" />
 	</ItemGroup>
 
 
 
 
 	<ItemGroup>
-    <PackageReference Include="AutoMapper" Version="15.0.1" />
-    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="LinqKit" Version="1.3.8" />
     <PackageReference Include="Microsoft.Identity.Web" Version="3.13.2" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Tailwind.MSBuild" Version="1.1.0">
@@ -68,6 +80,13 @@
 	  <ProjectReference Include="..\Consilient.Constants\Consilient.Constants.csproj" />
 	  <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />
 	  <ProjectReference Include="..\Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj" />
+	</ItemGroup>
+
+
+
+
+	<ItemGroup>
+	  <Folder Include="Models\AuthorizationModels\" />
 	</ItemGroup>
 
 </Project>

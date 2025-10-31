@@ -1,20 +1,22 @@
-﻿namespace Consilient.Data;
-
-public partial class Insurance
+﻿namespace Consilient.Data
 {
-    public int InsuranceId { get; set; }
 
-    public string? InsuranceCode { get; set; }
+    public class Insurance
+    {
+        public int InsuranceId { get; set; }
 
-    public string? InsuranceDescription { get; set; }
+        public string? InsuranceCode { get; set; }
 
-    public bool? PhysicianIncluded { get; set; }
+        public string? InsuranceDescription { get; set; }
 
-    public bool? IsContracted { get; set; }
+        public bool? PhysicianIncluded { get; set; }
 
-    public string CodeAndDescription { get; set; } = null!;
+        public bool? IsContracted { get; set; }
 
-    public virtual ICollection<PatientVisit> PatientVisits { get; set; } = [];
+        public string CodeAndDescription { get; set; } = null!;
 
-    public virtual ICollection<PatientVisitStaging> PatientVisitsStagings { get; set; } = [];
+        //public virtual ICollection<PatientVisit> PatientVisits { get; set; } = [];
+
+        //public virtual ICollection<PatientVisitStaging> PatientVisitsStagings { get; set; } = [];
+    }
 }

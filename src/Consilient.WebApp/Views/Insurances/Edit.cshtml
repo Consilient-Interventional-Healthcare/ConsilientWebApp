@@ -41,23 +41,23 @@
                         @Html.DisplayNameFor(m => m.PhysicianIncluded)
                     </label>
                     <div class="mt-2 sm:col-span-2 sm:mt-0">
-                        <fieldset class="flex flex-wrap gap-6">
+                        <fieldset id="PhysicianIncluded" class="flex flex-wrap gap-6">
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                                 <input name="PhysicianIncluded" value="true" type="radio"
                                        class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
-                                       @(Model?.PhysicianIncluded == true ? "checked" : null) />
+                                       @(Model.PhysicianIncluded == true ? "checked" : null) />
                                 Yes
                             </label>
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                                 <input name="PhysicianIncluded" value="false" type="radio"
                                        class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
-                                       @(Model?.PhysicianIncluded == false ? "checked" : null) />
+                                       @(Model.PhysicianIncluded == false ? "checked" : null) />
                                 No
                             </label>
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                                 <input name="PhysicianIncluded" value="" type="radio"
                                        class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
-                                       @(Model?.PhysicianIncluded == null ? "checked" : null) />
+                                       @(Model.PhysicianIncluded == null ? "checked" : null) />
                                 Unknown
                             </label>
                         </fieldset>
@@ -71,23 +71,23 @@
                         @Html.DisplayNameFor(m => m.IsContracted)
                     </label>
                     <div class="mt-2 sm:col-span-2 sm:mt-0">
-                        <fieldset class="flex flex-wrap gap-6">
+                        <fieldset id="IsContracted" class="flex flex-wrap gap-6">
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                                 <input name="IsContracted" value="true" type="radio"
                                        class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
-                                       @(Model?.IsContracted == true ? "checked" : null) />
+                                       @(Model.IsContracted == true ? "checked" : null) />
                                 Yes
                             </label>
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                                 <input name="IsContracted" value="false" type="radio"
                                        class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
-                                       @(Model?.IsContracted == false ? "checked" : null) />
+                                       @(Model.IsContracted == false ? "checked" : null) />
                                 No
                             </label>
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700">
                                 <input name="IsContracted" value="" type="radio"
                                        class="h-4 w-4 border-gray-300 text-brand-blue accent-brand-blue focus:ring-brand-blue"
-                                       @(Model?.IsContracted == null ? "checked" : null) />
+                                       @(Model.IsContracted == null ? "checked" : null) />
                                 Unknown
                             </label>
                         </fieldset>

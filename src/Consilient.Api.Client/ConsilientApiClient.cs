@@ -1,134 +1,59 @@
 ﻿using Consilient.Api.Client.Contracts;
-using System.Reflection;
+using Consilient.Api.Client.Modules;
 
 namespace Consilient.Api.Client
 {
-    internal class ConsilientApiClient : IConsilientApiClient, IDisposable, IAsyncDisposable
+    internal class ConsilientApiClient : IConsilientApiClient, IDisposable
     {
-        // Keep references to instantiated children so we can dispose them if they require disposal.
-        private readonly List<object> _children = [];
-
-        //private readonly ConsilientApiClientConfiguration _configuration;
-        //private readonly IHttpClientFactory _httpClientFactory;
-        private readonly Func<HttpClient> _httpClientFactory;
+        private readonly HttpClient _httpClient;
         private bool _disposed;
 
         public ConsilientApiClient(Func<HttpClient> httpClientFactory)
         {
-            //_configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
-
-            InitializeChildren();
+            _httpClient = httpClientFactory.Invoke();
+            Employees = new EmployeesApi(_httpClient);
+            Facilities = new FacilitiesApi(_httpClient);
+            Insurances = new InsurancesApi(_httpClient);
+            Patients = new PatientsApi(_httpClient);
+            PatientVisits = new PatientVisitsApi(_httpClient);
+            ServiceTypes = new ServiceTypesApi(_httpClient);
+            StagingPatientVisits = new StagingPatientVisitsApi(_httpClient);
         }
 
-        public IEmployeesApi Employees { get; private set; } = null!;
-        public IFacilitiesApi Facilities { get; private set; } = null!;
-        public IInsurancesApi Insurances { get; private set; } = null!;
-        public IPatientsApi Patients { get; private set; } = null!;
-        public IPatientVisitsApi PatientVisits { get; private set; } = null!;
-        public IServiceTypesApi ServiceTypes { get; private set; } = null!;
-        public IStagingPatientVisitsApi StagingPatientVisits { get; private set; } = null!;
+        public IEmployeesApi Employees { get; }
+        public IFacilitiesApi Facilities { get; }
+        public IInsurancesApi Insurances { get; }
+        public IPatientsApi Patients { get; }
+        public IPatientVisitsApi PatientVisits { get; }
+        public IServiceTypesApi ServiceTypes { get; }
+        public IStagingPatientVisitsApi StagingPatientVisits { get; }
 
-        // Synchronous dispose: dispose any child that implements IDisposable or IAsyncDisposable.
+        // Finalizer in case Dispose isn't called
+        ~ConsilientApiClient()
+        {
+            Dispose(disposing: false);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // dispose managed resources
+                _httpClient.Dispose();
+            }
+
+            // no unmanaged resources to free
+
+            _disposed = true;
+        }
+
         public void Dispose()
         {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-
-            foreach (var child in _children)
-            {
-                try
-                {
-                    if (child is IDisposable d)
-                    {
-                        d.Dispose();
-                    }
-                    else if (child is IAsyncDisposable ad)
-                    {
-                        // run async dispose synchronously
-                        ad.DisposeAsync().AsTask().GetAwaiter().GetResult();
-                    }
-                }
-                catch
-                {
-                    // swallow: best-effort dispose of children
-                }
-            }
-
+            Dispose(disposing: true);
             GC.SuppressFinalize(this);
-        }
-
-        // Async dispose: prefer async disposal when available.
-        public async ValueTask DisposeAsync()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-
-            foreach (var child in _children)
-            {
-                try
-                {
-                    if (child is IAsyncDisposable ad)
-                    {
-                        await ad.DisposeAsync().ConfigureAwait(false);
-                    }
-                    else if (child is IDisposable d)
-                    {
-                        d.Dispose();
-                    }
-                }
-                catch
-                {
-                    // swallow: best-effort dispose of children
-                }
-            }
-
-            GC.SuppressFinalize(this);
-        }
-
-        private static object? CreateInstanceWithKnownServices(Type implType, HttpClient httpClient)
-        {
-            // Create an instance with a single HttpClient constructor parameter
-            return Activator.CreateInstance(implType, [httpClient]);
-        }
-
-        private void InitializeChildren()
-        {
-            // find public instance properties that are interfaces and writable
-            var properties = GetType()
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.CanWrite && p.PropertyType.IsInterface);
-
-            // search for implementations in this assembly (adjust if implementations live elsewhere)
-            var assembly = typeof(ConsilientApiClient).Assembly;
-            foreach (var prop in properties)
-            {
-                // find a concrete implementation assignable to the interface
-                var implType = assembly.GetTypes()
-                    .FirstOrDefault(t => prop.PropertyType.IsAssignableFrom(t) && t.IsClass && !t.IsAbstract);
-
-                if (implType == null)
-                {
-                    continue;
-                }
-
-                var httpClient = _httpClientFactory.Invoke();
-
-                var instance = CreateInstanceWithKnownServices(implType, httpClient);
-                if (instance != null)
-                {
-                    prop.SetValue(this, instance);
-                    _children.Add(instance);
-                }
-            }
         }
     }
 }

@@ -10,12 +10,10 @@ namespace Consilient.WebApp.Controllers
     [Authorize]
     public class FacilitiesController(IFacilitiesApi facilitiesApi) : Controller
     {
-        private readonly IFacilitiesApi _facilitiesApi = facilitiesApi;
-
         // GET: Facilities
         public async Task<IActionResult> Index()
         {
-            var facilities = (await _facilitiesApi.GetAllAsync()).Unwrap();
+            var facilities = (await facilitiesApi.GetAllAsync()).Unwrap();
             return View(facilities);
         }
 
@@ -27,7 +25,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var facility = (await _facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
+            var facility = (await facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
             if (facility == null)
             {
                 return NotFound();
@@ -49,16 +47,16 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(FacilityViewModel viewModel)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var facility = (await _facilitiesApi.CreateAsync(new CreateFacilityRequest
-                {
-                    FacilityName = viewModel.FacilityName,
-                    FacilityAbbreviation = viewModel.FacilityAbbreviation
-                })).Unwrap();
-                return RedirectToAction(nameof(Index));
+                return View(viewModel);
             }
-            return View(viewModel);
+            _ = (await facilitiesApi.CreateAsync(new CreateFacilityRequest
+            {
+                FacilityName = viewModel.FacilityName,
+                FacilityAbbreviation = viewModel.FacilityAbbreviation
+            })).Unwrap();
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Facilities/Edit/5
@@ -69,7 +67,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var facility = (await _facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
+            var facility = (await facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
             if (facility == null)
             {
                 return NotFound();
@@ -84,20 +82,20 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, FacilityViewModel viewModel)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var facility = (await _facilitiesApi.UpdateAsync(id, new UpdateFacilityRequest
-                {
-                    FacilityName = viewModel.FacilityName,
-                    FacilityAbbreviation = viewModel.FacilityAbbreviation
-                })).Unwrap();
-                if (facility == null)
-                {
-                    return NotFound();
-                }
-                return RedirectToAction(nameof(Index));
+                return View(viewModel);
             }
-            return View(viewModel);
+            var facility = (await facilitiesApi.UpdateAsync(id, new UpdateFacilityRequest
+            {
+                FacilityName = viewModel.FacilityName,
+                FacilityAbbreviation = viewModel.FacilityAbbreviation
+            })).Unwrap();
+            if (facility == null)
+            {
+                return NotFound();
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Facilities/Delete/5
@@ -108,7 +106,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var facility = (await _facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
+            var facility = (await facilitiesApi.GetByIdAsync(id.Value)).Unwrap();
             if (facility == null)
             {
                 return NotFound();
@@ -121,7 +119,7 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var deleted = (await _facilitiesApi.DeleteAsync(id)).Unwrap();
+            var deleted = (await facilitiesApi.DeleteAsync(id)).Unwrap();
             if (!deleted)
             {
                 return NotFound();

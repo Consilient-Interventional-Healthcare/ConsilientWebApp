@@ -14,6 +14,7 @@ using Consilient.Shared.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 
 namespace Consilient.BackgroundHost
 {
@@ -28,36 +29,65 @@ namespace Consilient.BackgroundHost
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
-            // Add services to the container.
-            var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
-            var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
-            var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
+            var logger = CreateLogger(builder);
+            Log.Logger = logger;
+            try
+            {
+                Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
 
-            builder.Services.RegisterDataContext(defaultConnectionString);
-            builder.Services.RegisterEmailMonitorServices(applicationSettings.Email.Monitor);
-            builder.Services.RegisterEmployeeServices();
-            builder.Services.RegisterHangfireServices(hangfireConnectionString);
-            builder.Services.RegisterInsuranceServices();
-            builder.Services.RegisterPatientServices();
-            builder.Services.RegisterSharedServices();
+                // Add services to the container.
+                var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
+                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
+                var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
 
-            var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging).Get<LoggingConfiguration>() ?? throw new NullReferenceException($"{ApplicationConstants.ConfigurationFiles.AppSettings} missing");
+                builder.Services.RegisterDataContext(defaultConnectionString);
+                builder.Services.RegisterEmailMonitorServices(applicationSettings.Email.Monitor);
+                builder.Services.RegisterEmployeeServices();
+                builder.Services.RegisterHangfireServices(hangfireConnectionString);
+                builder.Services.RegisterInsuranceServices();
+                builder.Services.RegisterPatientServices();
+                builder.Services.RegisterSharedServices();
+
+
+                builder.Services.RegisterLogging(logger);
+
+                var app = builder.Build();
+
+                //app.UseSerilog();
+                app.UseHangfireDashboard(string.Empty, new DashboardOptions
+                {
+                    DashboardTitle = $"{builder.Environment.ApplicationName} ({builder.Environment.EnvironmentName.ToUpper()})",
+                    Authorization = [new MyAuthorizationFilter()]
+                });
+
+                app.Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly");
+                throw;
+            }
+            finally
+            {
+                Log.Information("Shutting down {App}", builder.Environment.ApplicationName);
+                Log.CloseAndFlush();
+            }
+        }
+
+        private static ILogger CreateLogger(WebApplicationBuilder builder)
+        {
+            var loggingConfiguration =
+                builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)
+                    .Get<LoggingConfiguration>() ??
+                throw new NullReferenceException($"{ApplicationConstants.ConfigurationFiles.AppSettings} missing");
+
             var labels = new Dictionary<string, string>
             {
                 { LabelConstants.App, builder.Environment.ApplicationName },
                 { LabelConstants.Env, builder.Environment.EnvironmentName.ToLower() }
             };
-            builder.Services.RegisterLogging(loggingConfiguration, labels);
-
-            var app = builder.Build();
-
-            app.UseHangfireDashboard(string.Empty, new DashboardOptions
-            {
-                DashboardTitle = $"{builder.Environment.ApplicationName} ({builder.Environment.EnvironmentName.ToUpper()})",
-                Authorization = [new MyAuthorizationFilter()]
-            });
-
-            app.Run();
+            var logger = LoggerFactory.Create(loggingConfiguration, labels);
+            return logger;
         }
     }
 }

@@ -1,20 +1,22 @@
-﻿namespace Consilient.Data;
-
-public partial class Patient
+﻿namespace Consilient.Data
 {
-    public int PatientId { get; set; }
 
-    public int PatientMrn { get; set; }
+    public class Patient
+    {
+        public int PatientId { get; set; }
 
-    public string? PatientFirstName { get; set; }
+        public int PatientMrn { get; set; }
 
-    public string? PatientLastName { get; set; }
+        public string? PatientFirstName { get; set; }
 
-    public DateOnly? PatientBirthDate { get; set; }
+        public string? PatientLastName { get; set; }
 
-    public string PatientFullName { get; set; } = null!;
+        public DateOnly? PatientBirthDate { get; set; }
 
-    public virtual ICollection<PatientVisit> PatientVisits { get; set; } = [];
+        public string PatientFullName { get; set; } = null!;
 
-    public virtual ICollection<PatientVisitStaging> PatientVisitsStagings { get; set; } = [];
+        //public virtual ICollection<PatientVisit> PatientVisits { get; set; } = [];
+
+        //public virtual ICollection<PatientVisitStaging> PatientVisitsStagings { get; set; } = [];
+    }
 }

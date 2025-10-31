@@ -83,7 +83,7 @@
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                 <dt class="text-sm/6 font-medium text-gray-900">Physician</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Model.PhysicianEmployee?.FullName
+                    @Model.PhysicianEmployee.FullName
                 </dd>
             </div>
 
@@ -91,7 +91,7 @@
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                 <dt class="text-sm/6 font-medium text-gray-900">Nurse Practitioner</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Model.NursePractitionerEmployee?.FullName
+                    @Model.NursePractitionerEmployee.FullName
                 </dd>
             </div>
 
@@ -99,7 +99,7 @@
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                 <dt class="text-sm/6 font-medium text-gray-900">Cosigning Physician</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Model.CosigningPhysicianEmployee?.FullName
+                    @Model.CosigningPhysicianEmployee.FullName
                 </dd>
             </div>
 
@@ -107,7 +107,7 @@
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                 <dt class="text-sm/6 font-medium text-gray-900">Scribe</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Model.ScribeEmployee?.FullName
+                    @Model.ScribeEmployee.FullName
                 </dd>
             </div>
 
@@ -128,7 +128,7 @@
 
         @* Optional edit if you have a route *@
         <a asp-action="Edit"
-           asp-route-id="@Model?.PatientVisitId"
+           asp-route-id="@Model.PatientVisitId"
            class="inline-flex items-center justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
             Edit
         </a>

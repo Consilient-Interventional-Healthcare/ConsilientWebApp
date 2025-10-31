@@ -28,7 +28,7 @@
                 <div class="sm:grid sm:grid-cols-3 sm:items-start sm:gap-4 sm:py-6">
                     <label for="PatientMrnInput" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5">Patient MRN (search)</label>
                     <div class="mt-2 sm:col-span-2 sm:mt-0">
-                        <input type="number" id="PatientMrnInput" value="@Model.Patient?.PatientMrn"
+                        <input type="number" id="PatientMrnInput" value="@Model.Patient.PatientMrn"
                                class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-blue sm:max-w-xs sm:text-sm/6" />
                         <p class="mt-1 text-xs text-gray-500">Enter MRN and press <span class="font-semibold">Tab</span> to search existing patients.</p>
                     </div>
@@ -187,69 +187,69 @@
 
                 </div>
             </div>
-
-    <!-- Actions -->
-    <div class="mt-6 flex items-center justify-end gap-x-6">
-        <a asp-action="Index" asp-route-selectedDate="@TempData["SelectedDate"]"
-           class="text-sm/6 font-semibold text-gray-900 cursor-pointer">Back to List</a>
-        <button type="submit"
-                class="inline-flex justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
-            Create
-        </button>
+        </section>
+        <!-- Actions -->
+        <div class="mt-6 flex items-center justify-end gap-x-6">
+            <a asp-action="Index" asp-route-selectedDate="@TempData["SelectedDate"]"
+               class="text-sm/6 font-semibold text-gray-900 cursor-pointer">Back to List</a>
+            <button type="submit"
+                    class="inline-flex justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+                Create
+            </button>
+        </div>
     </div>
 </form>
+
 
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
     <script>
-        (function () {
-            // Patients list for MRN match
-            var patients = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                            Model.PatientsSelectList.Select(p => new { id = p.Value, text = p.Text })
-                    ));
+            (function () {
+                // Patients list for MRN match
+                var patients = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.PatientsSelectList.Select(p => new { id = p.Value, text = p.Text })));
 
-        const mrnInput = document.getElementById("PatientMrnInput");
-        const existingRadio = document.getElementById("useExisting");
-        const newRadio = document.getElementById("createNew");
-        const patientSelect = document.querySelector("select[name='PatientId']");
-        const newPatientFields = document.getElementById("newPatientFields");
-        const existingBlock = document.getElementById("existingPatientSelect");
-        const newPatientMrnInput = document.getElementById("NewPatient_PatientMrn");
+    const mrnInput = document.getElementById("PatientMrnInput");
+    const existingRadio = document.getElementById("useExisting");
+    const newRadio = document.getElementById("createNew");
+    const patientSelect = document.querySelector("select[name='PatientId']");
+    const newPatientFields = document.getElementById("newPatientFields");
+    const existingBlock = document.getElementById("existingPatientSelect");
+    const newPatientMrnInput = document.getElementById("NewPatient_PatientMrn");
 
-            function setMode(mode) {
-                const isExisting = mode === "existing";
-                existingBlock?.classList.toggle("hidden", !isExisting);
-                newPatientFields?.classList.toggle("hidden", isExisting);
+                function setMode(mode) {
+                    const isExisting = mode === "existing";
+                    existingBlock?.classList.toggle("hidden", !isExisting);
+                    newPatientFields?.classList.toggle("hidden", isExisting);
 
-                if (patientSelect) patientSelect.disabled = !isExisting;
-                newPatientFields?.querySelectorAll("input, select, textarea").forEach(el => {
-                    el.disabled = isExisting;
-                });
-            }
-
-            existingRadio?.addEventListener("change", () => setMode("existing"));
-            newRadio?.addEventListener("change", () => setMode("new"));
-
-            // MRN -> try to match existing patient on blur (TAB)
-            mrnInput?.addEventListener("blur", function () {
-                const entered = (mrnInput.value || "").trim();
-                if (!entered) return;
-                const match = patients.find(p => (p.text || "").startsWith(entered));
-                if (match) {
-                    existingRadio.checked = true;
-                    setMode("existing");
-                    if (patientSelect) patientSelect.value = match.id;
-                } else {
-                    newRadio.checked = true;
-                    setMode("new");
-                    if (newPatientMrnInput) newPatientMrnInput.value = entered;
+                    if (patientSelect) patientSelect.disabled = !isExisting;
+                    newPatientFields?.querySelectorAll("input, select, textarea").forEach(el => {
+                        el.disabled = isExisting;
+                    });
                 }
-            });
 
-            // init
-            setMode(existingRadio?.checked ? "existing" : "new");
-        })();
+                existingRadio?.addEventListener("change", () => setMode("existing"));
+                newRadio?.addEventListener("change", () => setMode("new"));
+
+                // MRN -> try to match existing patient on blur (TAB)
+                mrnInput?.addEventListener("blur", function () {
+                    const entered = (mrnInput.value || "").trim();
+                    if (!entered) return;
+                    const match = patients.find(p => (p.text || "").startsWith(entered));
+                    if (match) {
+                        existingRadio.checked = true;
+                        setMode("existing");
+                        if (patientSelect) patientSelect.value = match.id;
+                    } else {
+                        newRadio.checked = true;
+                        setMode("new");
+                        if (newPatientMrnInput) newPatientMrnInput.value = entered;
+                    }
+                });
+
+                // init
+                setMode(existingRadio?.checked ? "existing" : "new");
+            })();
     </script>
 }

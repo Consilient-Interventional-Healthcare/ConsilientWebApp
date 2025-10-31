@@ -4,83 +4,48 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Consilient.Api.Controllers
 {
+
+
     [Route("[controller]")]
     [ApiController]
     public class ServiceTypesController(IServiceTypeService serviceTypeService) : ControllerBase
     {
-        private readonly IServiceTypeService _serviceTypeService = serviceTypeService ?? throw new ArgumentNullException(nameof(serviceTypeService));
+        private readonly IServiceTypeService _serviceTypeService =
+            serviceTypeService ?? throw new ArgumentNullException(nameof(serviceTypeService));
 
         [HttpPost]
-        public async Task<IActionResult> CreateServiceType([FromBody] CreateServiceTypeRequest request)
+        public async Task<IActionResult> Create([FromBody] CreateServiceTypeRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-
-            try
-            {
-                var created = await _serviceTypeService.CreateAsync(request);
-                return CreatedAtAction(nameof(GetServiceTypeById), new { id = created.ServiceTypeId }, created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            var created = await _serviceTypeService.CreateAsync(request).ConfigureAwait(false);
+            return CreatedAtAction(nameof(GetById), new { id = created.ServiceTypeId }, created);
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteServiceType(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _serviceTypeService.DeleteAsync(id);
-            if (!deleted)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
+            var deleted = await _serviceTypeService.DeleteAsync(id).ConfigureAwait(false);
+            return deleted ? NoContent() : NotFound();
         }
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetServiceTypeById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var item = await _serviceTypeService.GetByIdAsync(id);
-            if (item == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(item);
+            var item = await _serviceTypeService.GetByIdAsync(id).ConfigureAwait(false);
+            return item == null ? NotFound() : Ok(item);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetServiceTypes()
+        public async Task<IActionResult> GetAll()
         {
-            var items = await _serviceTypeService.GetAllAsync();
+            var items = await _serviceTypeService.GetAllAsync().ConfigureAwait(false);
             return Ok(items);
         }
+
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateServiceType(int id, [FromBody] UpdateServiceTypeRequest request)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateServiceTypeRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-
-            try
-            {
-                var updated = await _serviceTypeService.UpdateAsync(id, request);
-                if (updated == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            var updated = await _serviceTypeService.UpdateAsync(id, request).ConfigureAwait(false);
+            return updated == null ? NotFound() : Ok(updated);
         }
     }
 }

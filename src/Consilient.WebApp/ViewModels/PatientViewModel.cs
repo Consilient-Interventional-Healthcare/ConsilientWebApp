@@ -4,7 +4,6 @@ namespace Consilient.WebApp.ViewModels
 {
     public class PatientViewModel
     {
-        public int PatientId { get; set; }
 
         [Display(Name = "MRN")]
         public int PatientMrn { get; set; }
@@ -21,8 +20,8 @@ namespace Consilient.WebApp.ViewModels
         [Display(Name = "Name")]
         public string PatientFullName { get; set; } = null!;
 
-        public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
+        //public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
 
-        public virtual ICollection<PatientVisitsStagingViewModel> PatientVisitsStagings { get; set; } = [];
+        //public virtual ICollection<PatientVisitsStagingViewModel> PatientVisitsStagings { get; set; } = [];
     }
 }

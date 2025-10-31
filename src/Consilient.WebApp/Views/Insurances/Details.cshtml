@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Insurance Details";
 
-    string NullDash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v!;
+    string NullDash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
 }
 
 <div class="sm:flex sm:items-center">
@@ -21,7 +21,7 @@
                 @Html.DisplayNameFor(m => m.InsuranceCode)
             </dt>
             <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                @NullDash(Model?.InsuranceCode)
+                @NullDash(Model.InsuranceCode)
             </dd>
         </div>
 
@@ -31,7 +31,7 @@
                 @Html.DisplayNameFor(m => m.InsuranceDescription)
             </dt>
             <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                @NullDash(Model?.InsuranceDescription)
+                @NullDash(Model.InsuranceDescription)
             </dd>
         </div>
 
@@ -41,7 +41,7 @@
                 @Html.DisplayNameFor(m => m.PhysicianIncluded)
             </dt>
             <dd class="mt-1 text-sm/6 sm:col-span-2 sm:mt-0">
-                @if (Model?.PhysicianIncluded == true)
+                @if (Model.PhysicianIncluded == true)
                 {
                     <span class="inline-flex items-center rounded-full bg-green-50 ring-1 ring-inset ring-green-500 px-2 py-0.5 text-xs font-medium text-green-700">
                         Yes
@@ -62,7 +62,7 @@
                 @Html.DisplayNameFor(m => m.IsContracted)
             </dt>
             <dd class="mt-1 text-sm/6 sm:col-span-2 sm:mt-0">
-                @if (Model?.IsContracted == true)
+                @if (Model.IsContracted == true)
                 {
                     <span class="inline-flex items-center rounded-full bg-green-50 ring-1 ring-inset ring-green-500 px-2 py-0.5 text-xs font-medium text-green-700">
                         Contracted
@@ -83,14 +83,14 @@
                 @Html.DisplayNameFor(m => m.CodeAndDescription)
             </dt>
             <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                @NullDash(Model?.CodeAndDescription)
+                @NullDash(Model.CodeAndDescription)
             </dd>
         </div>
     </dl>
 </div>
 
 <div class="mt-6 flex items-center gap-x-4">
-    <a asp-action="Edit" asp-route-id="@Model?.InsuranceId"
+    <a asp-action="Edit" asp-route-id="@Model.InsuranceId"
        class="inline-flex justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
         Edit
     </a>

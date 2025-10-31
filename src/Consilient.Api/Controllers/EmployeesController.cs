@@ -11,81 +11,45 @@ namespace Consilient.Api.Controllers
         private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
 
         [HttpPost]
-        public async Task<IActionResult> CreateEmployee([FromBody] CreateEmployeeRequest request)
+        public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-            var created = await _employeeService.CreateAsync(request);
-            return CreatedAtAction(nameof(GetEmployeeById), new { id = created.EmployeeId }, created);
+            var created = await _employeeService.CreateAsync(request).ConfigureAwait(false);
+            return CreatedAtAction(nameof(GetById), new { id = created.EmployeeId }, created);
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteEmployee(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _employeeService.DeleteAsync(id);
-            if (!deleted)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
+            var deleted = await _employeeService.DeleteAsync(id).ConfigureAwait(false);
+            return deleted ? NoContent() : NotFound();
         }
 
         [HttpGet("email/{email}")]
         public async Task<IActionResult> GetByEmail(string email)
         {
-            var employee = await _employeeService.GetByEmailAsync(email);
-            if (employee == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(employee);
+            var employee = await _employeeService.GetByEmailAsync(email).ConfigureAwait(false);
+            return employee == null ? NotFound() : Ok(employee);
         }
 
-        [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetEmployeeById(int id)
+        [HttpGet("{id:int}", Name = "GetEmployeeById")]
+        public async Task<IActionResult> GetById(int id)
         {
-            var employee = await _employeeService.GetByIdAsync(id);
-            if (employee == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(employee);
+            var employee = await _employeeService.GetByIdAsync(id).ConfigureAwait(false);
+            return employee == null ? NotFound() : Ok(employee);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetEmployees()
+        public async Task<IActionResult> GetAll()
         {
-            var employees = await _employeeService.GetAllAsync();
+            var employees = await _employeeService.GetAllAsync().ConfigureAwait(false);
             return Ok(employees);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateEmployee(int id, [FromBody] UpdateEmployeeRequest request)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateEmployeeRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-
-            try
-            {
-                var updated = await _employeeService.UpdateAsync(id, request);
-                if (updated == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            var updated = await _employeeService.UpdateAsync(id, request).ConfigureAwait(false);
+            return updated == null ? NotFound() : Ok(updated);
         }
     }
 }

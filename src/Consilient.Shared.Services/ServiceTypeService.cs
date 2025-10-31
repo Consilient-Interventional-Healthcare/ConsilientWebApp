@@ -9,8 +9,6 @@ namespace Consilient.Shared.Services
 {
     public class ServiceTypeService(ConsilientDbContext dataContext) : IServiceTypeService
     {
-        private readonly ConsilientDbContext _dataContext = dataContext;
-
         public async Task<ServiceTypeDto> CreateAsync(CreateServiceTypeRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -18,8 +16,8 @@ namespace Consilient.Shared.Services
             var entity = request.Adapt<ServiceType>();
             try
             {
-                await _dataContext.ServiceTypes.AddAsync(entity);
-                await _dataContext.SaveChangesAsync();
+                await dataContext.ServiceTypes.AddAsync(entity);
+                await dataContext.SaveChangesAsync();
             }
             catch (DbUpdateException ex)
             {
@@ -38,7 +36,7 @@ namespace Consilient.Shared.Services
 
             try
             {
-                var affected = await _dataContext.ServiceTypes
+                var affected = await dataContext.ServiceTypes
                     .Where(st => st.ServiceTypeId == id)
                     .ExecuteDeleteAsync();
 
@@ -52,7 +50,7 @@ namespace Consilient.Shared.Services
 
         public async Task<IEnumerable<ServiceTypeDto>> GetAllAsync()
         {
-            var dtos = await _dataContext.ServiceTypes
+            var dtos = await dataContext.ServiceTypes
                 .AsNoTracking()
                 .ProjectToType<ServiceTypeDto>()
                 .ToListAsync();
@@ -62,7 +60,7 @@ namespace Consilient.Shared.Services
 
         public async Task<ServiceTypeDto?> GetByIdAsync(int id)
         {
-            var dto = await _dataContext.ServiceTypes
+            var dto = await dataContext.ServiceTypes
                 .AsNoTracking()
                 .Where(st => st.ServiceTypeId == id)
                 .ProjectToType<ServiceTypeDto>()
@@ -82,7 +80,7 @@ namespace Consilient.Shared.Services
 
             try
             {
-                var affected = await _dataContext.ServiceTypes
+                var affected = await dataContext.ServiceTypes
                     .Where(st => st.ServiceTypeId == id)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(st => st.Description, st => request.Description ?? st.Description)
@@ -94,7 +92,7 @@ namespace Consilient.Shared.Services
                     return null;
                 }
 
-                return await _dataContext.ServiceTypes
+                return await dataContext.ServiceTypes
                     .AsNoTracking()
                     .Where(st => st.ServiceTypeId == id)
                     .ProjectToType<ServiceTypeDto>()

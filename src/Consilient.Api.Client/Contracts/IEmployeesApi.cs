@@ -1,4 +1,5 @@
-﻿using Consilient.Employees.Contracts.Dtos;
+﻿using Consilient.Api.Client.Models;
+using Consilient.Employees.Contracts.Dtos;
 using Consilient.Employees.Contracts.Requests;
 
 namespace Consilient.Api.Client.Contracts

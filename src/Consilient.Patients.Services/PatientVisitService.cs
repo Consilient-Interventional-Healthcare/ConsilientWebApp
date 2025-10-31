@@ -9,15 +9,13 @@ namespace Consilient.Patients.Services
 {
     internal class PatientVisitService(ConsilientDbContext dataContext) : IPatientVisitService
     {
-        private readonly ConsilientDbContext _dataContext = dataContext;
-
         public async Task<PatientVisitDto?> CreateAsync(CreatePatientVisitRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
 
             var entity = request.Adapt<PatientVisit>();
-            _dataContext.PatientVisits.Add(entity);
-            await _dataContext.SaveChangesAsync();
+            dataContext.PatientVisits.Add(entity);
+            await dataContext.SaveChangesAsync();
 
             return entity.Adapt<PatientVisitDto>();
         }
@@ -30,8 +28,8 @@ namespace Consilient.Patients.Services
             }
             try
             {
-                var affected = await _dataContext.PatientVisitsStagings
-                    .Where(e => e.PatientVisitStagingId == id)
+                var affected = await dataContext.PatientVisits
+                    .Where(e => e.PatientVisitId == id)
                     .ExecuteDeleteAsync();
 
                 return affected > 0;
@@ -42,27 +40,37 @@ namespace Consilient.Patients.Services
             }
         }
 
-        public async Task<IEnumerable<PatientVisitDto>> GetByDateAsync(DateTime date)
+        public async Task<IEnumerable<PatientVisitDto>> GetByDateAsync(DateOnly date)
         {
-            var patientVisits = await _dataContext.PatientVisitsStagings
+            var patientVisits = await dataContext.PatientVisits
                 .AsNoTracking()
-                .Where(e => e.DateServiced == DateOnly.FromDateTime(date))
+                .Where(e => e.DateServiced == date)
                 .ProjectToType<PatientVisitDto>()
                 .ToListAsync();
             return patientVisits;
         }
 
+        public async Task<IEnumerable<PatientVisitDto>> GetByEmployeeAsync(int employeeId)
+        {
+            var patientVisits = await dataContext.PatientVisits
+                    .AsNoTracking()
+                    .Where(e => e.PhysicianEmployeeId == employeeId || e.NursePractitionerEmployeeId == employeeId)
+                    .ProjectToType<PatientVisitDto>()
+                    .ToListAsync();
+            return patientVisits;
+        }
+
         public async Task<PatientVisitDto?> GetByIdAsync(int id)
         {
-            var patientVisit = await _dataContext.PatientVisits.FindAsync(id);
-            return patientVisit?.Adapt<StagingPatientVisitDto>();
+            var patientVisit = await dataContext.PatientVisits.FindAsync(id);
+            return patientVisit?.Adapt<PatientVisitDto>();
         }
 
         public async Task<PatientVisitDto?> UpdateAsync(int id, UpdatePatientVisitRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var affected = await _dataContext.PatientVisits
+            var affected = await dataContext.PatientVisits
                 .Where(e => e.PatientVisitId == id)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(e => e.CosigningPhysicianEmployeeId, _ => request.CosigningPhysicianEmployeeId)
@@ -81,7 +89,7 @@ namespace Consilient.Patients.Services
                 return null;
             }
 
-            return await _dataContext.PatientVisits
+            return await dataContext.PatientVisits
                 .AsNoTracking()
                 .Where(e => e.PatientVisitId == id)
                 .ProjectToType<PatientVisitDto>()

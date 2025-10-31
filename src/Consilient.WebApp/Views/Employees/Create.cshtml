@@ -62,7 +62,7 @@
                     <label asp-for="Role" class="block text-sm/6 font-medium text-gray-900 sm:pt-1.5"></label>
                     <div class="mt-2 sm:col-span-2 sm:mt-0">
                         @* If you have RolesSelectList like on Edit, use the select. Otherwise, keep the input. *@
-                        @if (Model?.RolesSelectList != null && Model.RolesSelectList.Any())
+                        @if (Model.RolesSelectList.Any())
                         {
                             <div class="grid grid-cols-1 sm:max-w-xs">
                                 <select asp-for="Role" asp-items="Model.RolesSelectList"

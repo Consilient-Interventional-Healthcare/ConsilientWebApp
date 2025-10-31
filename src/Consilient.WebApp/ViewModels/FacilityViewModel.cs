@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Consilient.WebApp.ViewModels
 {
@@ -13,19 +12,19 @@ namespace Consilient.WebApp.ViewModels
         [Display(Name = "Facility Abbreviation")]
         public string? FacilityAbbreviation { get; set; }
 
-        [ValidateNever]
-        public virtual ICollection<ContractViewModel> Contracts { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<ContractViewModel> Contracts { get; set; } = [];
 
-        [ValidateNever]
-        public virtual ICollection<FacilityPayViewModel> FacilityPays { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<FacilityPayViewModel> FacilityPays { get; set; } = [];
 
-        [ValidateNever]
-        public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
 
-        [ValidateNever]
-        public virtual ICollection<PatientVisitsStagingViewModel> PatientVisitsStagings { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<PatientVisitsStagingViewModel> PatientVisitsStagings { get; set; } = [];
 
-        [ValidateNever]
-        public virtual ICollection<ProviderPayViewModel> ProviderPays { get; set; } = [];
+        //[ValidateNever]
+        //public virtual ICollection<ProviderPayViewModel> ProviderPays { get; set; } = [];
     }
 }

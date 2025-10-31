@@ -2,9 +2,12 @@ networks:
   consilient-net:
     driver: bridge
     name: consilient-net
+  ollama-docker:
+    external: false
 
 volumes:
   consilient-mssql-data:
+  ollama_data:
 
 services:
 
@@ -24,6 +27,8 @@ services:
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro  # Add this
+      - /var/run/docker.sock:/var/run/docker.sock:ro              # Add this
     command: -config.file=/etc/promtail/config.yml
     networks:
       - consilient-net
@@ -34,9 +39,10 @@ services:
     ports:
       - 3000:3000
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: "admin" # change in production
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - loki
     networks:
@@ -70,6 +76,45 @@ services:
       - consilient-net
     restart: unless-stopped
 
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    ports:
+      - 7869:11434
+    volumes:
+      - .:/code
+      - ./ollama/ollama:/root/.ollama
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: always
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - ollama-docker
+
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama-webui
+    volumes:
+      - ./ollama/ollama-webui:/app/backend/data
+    depends_on:
+      - ollama
+    ports:
+      - "8070:8080"
+    environment: # https://docs.openwebui.com/getting-started/env-configuration#default_models
+      - OLLAMA_BASE_URLS=http://ollama:11434 #comma separated ollama hosts
+      - ENV=dev
+      - WEBUI_AUTH=False
+      - WEBUI_NAME=valiantlynx AI
+      - WEBUI_URL=http://localhost:8070
+      - WEBUI_SECRET_KEY=t0p-s3cr3t
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    networks:
+      - ollama-docker
+
   consilient.webapp:
     image: ${DOCKER_REGISTRY-}consilientwebapp
     container_name: consilient.webapp.container
@@ -82,7 +127,6 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
     ports:
       - "8080:8080"
-      - "8081:8081"
     depends_on:
       db:
         condition: service_healthy
@@ -101,7 +145,6 @@ services:
       ASPNETCORE_ENVIRONMENT: "Development"
     ports:
       - "8090:8090"
-      - "8091:8091"
     depends_on:
       db:
         condition: service_healthy

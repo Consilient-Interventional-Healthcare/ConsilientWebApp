@@ -9,12 +9,10 @@ namespace Consilient.WebApp.Controllers
     [Authorize]
     public class EmployeesController(IEmployeesApi employeesApi) : Controller
     {
-        private readonly IEmployeesApi _employeesApi = employeesApi;
-
         // GET: Employees
         public async Task<IActionResult> Index()
         {
-            var providers = (await _employeesApi.GetAllAsync()).Unwrap();
+            var providers = (await employeesApi.GetAllAsync()).Unwrap();
             return View(providers);
         }
 
@@ -26,7 +24,7 @@ namespace Consilient.WebApp.Controllers
                 throw new ArgumentNullException(nameof(id));
             }
 
-            var employee = (await _employeesApi.GetByIdAsync(id.Value)).Unwrap();
+            var employee = (await employeesApi.GetByIdAsync(id.Value)).Unwrap();
             if (employee == null)
             {
                 return NotFound();
@@ -48,22 +46,22 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EmployeeViewModel viewModel)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                (await _employeesApi.CreateAsync(new Employees.Contracts.Requests.CreateEmployeeRequest
-                {
-                    CanApproveVisits = viewModel.CanApproveVisits,
-                    Email = viewModel.Email,
-                    FirstName = viewModel.FirstName,
-                    IsAdministrator = viewModel.IsAdministrator,
-                    IsProvider = viewModel.IsProvider,
-                    LastName = viewModel.LastName,
-                    Role = viewModel.Role,
-                    TitleExtension = viewModel.TitleExtension
-                })).Unwrap();
-                return RedirectToAction(nameof(Index));
+                return View(viewModel);
             }
-            return View(viewModel);
+            (await employeesApi.CreateAsync(new Employees.Contracts.Requests.CreateEmployeeRequest
+            {
+                CanApproveVisits = viewModel.CanApproveVisits,
+                Email = viewModel.Email,
+                FirstName = viewModel.FirstName,
+                IsAdministrator = viewModel.IsAdministrator,
+                IsProvider = viewModel.IsProvider,
+                LastName = viewModel.LastName,
+                Role = viewModel.Role,
+                TitleExtension = viewModel.TitleExtension
+            })).Unwrap();
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Employees/Edit/5
@@ -74,7 +72,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var employee = (await _employeesApi.GetByIdAsync(id.Value)).Unwrap();
+            var employee = (await employeesApi.GetByIdAsync(id.Value)).Unwrap();
             if (employee == null)
             {
                 return NotFound();
@@ -87,27 +85,27 @@ namespace Consilient.WebApp.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, EmployeeViewModel viewModel)
+        public async Task<IActionResult> Edit(EmployeeViewModel viewModel)
         {
             if (ModelState.IsValid)
             {
-                var employee = (await _employeesApi.UpdateAsync(viewModel.EmployeeId, new Employees.Contracts.Requests.UpdateEmployeeRequest
-                {
-                    CanApproveVisits = viewModel.CanApproveVisits,
-                    FirstName = viewModel.FirstName,
-                    IsAdministrator = viewModel.IsAdministrator,
-                    IsProvider = viewModel.IsProvider,
-                    LastName = viewModel.LastName,
-                    Role = viewModel.Role,
-                    TitleExtension = viewModel.TitleExtension
-                })).Unwrap();
-                if (employee == null)
-                {
-                    return NotFound();
-                }
-                return RedirectToAction(nameof(Index));
+                return View(viewModel);
             }
-            return View(viewModel);
+            var employee = (await employeesApi.UpdateAsync(viewModel.EmployeeId, new Employees.Contracts.Requests.UpdateEmployeeRequest
+            {
+                CanApproveVisits = viewModel.CanApproveVisits,
+                FirstName = viewModel.FirstName,
+                IsAdministrator = viewModel.IsAdministrator,
+                IsProvider = viewModel.IsProvider,
+                LastName = viewModel.LastName,
+                Role = viewModel.Role,
+                TitleExtension = viewModel.TitleExtension
+            })).Unwrap();
+            if (employee == null)
+            {
+                return NotFound();
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Employees/Delete/5
@@ -118,7 +116,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var employee = (await _employeesApi.GetByIdAsync(id.Value)).Unwrap();
+            var employee = (await employeesApi.GetByIdAsync(id.Value)).Unwrap();
             if (employee == null)
             {
                 return NotFound();
@@ -131,7 +129,7 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var deleted = (await _employeesApi.DeleteAsync(id)).Unwrap();
+            var deleted = (await employeesApi.DeleteAsync(id)).Unwrap();
             if (!deleted)
             {
                 return NotFound();

@@ -5,35 +5,31 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Consilient.Api.Controllers
 {
+
     [Route("patients/visits/staging")]
     [ApiController]
     public class StagingPatientVisitsController(IStagingPatientVisitService stagingPatientVisitService) : ControllerBase
     {
-        private readonly IStagingPatientVisitService _stagingPatientVisitService = stagingPatientVisitService;
 
-        [HttpGet("by-date/{date}")]
-        public async Task<IActionResult> GetByDate([ModelBinder(BinderType = typeof(YyyyMmDdDateModelBinder))] DateTime date)
+        [HttpGet("date/{date}")]
+        public async Task<IActionResult> GetByDate(
+            [ModelBinder(BinderType = typeof(YyyyMmDdDateModelBinder))] DateOnly date)
         {
-            var results = await _stagingPatientVisitService.GetByDateAsync(date).ConfigureAwait(false);
+            var results = await stagingPatientVisitService.GetByDateAsync(date).ConfigureAwait(false);
             return Ok(results);
         }
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var visit = await _stagingPatientVisitService.GetByIdAsync(id).ConfigureAwait(false);
+            var visit = await stagingPatientVisitService.GetByIdAsync(id).ConfigureAwait(false);
             return visit is null ? NotFound() : Ok(visit);
         }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateStagingPatientVisitRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-
-            var created = await _stagingPatientVisitService.CreateAsync(request).ConfigureAwait(false);
+            var created = await stagingPatientVisitService.CreateAsync(request).ConfigureAwait(false);
             if (created is null)
             {
                 return BadRequest();
@@ -45,20 +41,37 @@ namespace Consilient.Api.Controllers
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateStagingPatientVisitRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-
-            var updated = await _stagingPatientVisitService.UpdateAsync(id, request).ConfigureAwait(false);
+            var updated = await stagingPatientVisitService.UpdateAsync(id, request).ConfigureAwait(false);
             return updated is null ? NotFound() : Ok(updated);
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _stagingPatientVisitService.DeleteAsync(id).ConfigureAwait(false);
+            var deleted = await stagingPatientVisitService.DeleteAsync(id).ConfigureAwait(false);
             return deleted ? NoContent() : NotFound();
+        }
+
+        [HttpPost("push-approved")]
+        public async Task<IActionResult> PushApprovedPatientVisits()
+        {
+            var pushedCount = await stagingPatientVisitService.PushApprovedPatientVisitsAsync().ConfigureAwait(false);
+            return Ok(pushedCount);
+        }
+
+        [HttpPost("upload-spreadsheet")]
+        public async Task<IActionResult> UploadSpreadsheet([FromForm] IFormFile file)
+        {
+            if (file.Length == 0)
+            {
+                return BadRequest("No file uploaded.");
+            }
+
+            using var uploadStream = new MemoryStream();
+            await file.CopyToAsync(uploadStream).ConfigureAwait(false);
+            uploadStream.Position = 0;
+            var result = await stagingPatientVisitService.UploadSpreadsheetAsync(uploadStream).ConfigureAwait(false);
+            return Ok(result);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Consilient.Patients.Contracts;
+using Consilient.Patients.Contracts.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,12 +10,20 @@ namespace Consilient.Api.Controllers
     [Authorize]
     public class PatientsController(IPatientService patientService) : ControllerBase
     {
-        private readonly IPatientService _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
 
-        [HttpGet("{mrn}")]
-        public async Task<IActionResult> GetByMRN(int mrn)
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreatePatientRequest request)
         {
-            var patient = await _patientService.GetByMrnAsync(mrn);
+            var created = await patientService.CreateAsync(request).ConfigureAwait(false);
+            return created is null
+                ? BadRequest()
+                : CreatedAtAction(nameof(GetByMrn), new { mrn = created.PatientMrn }, created);
+        }
+
+        [HttpGet("{mrn:int}")]
+        public async Task<IActionResult> GetByMrn(int mrn)
+        {
+            var patient = await patientService.GetByMrnAsync(mrn);
             if (patient == null)
             {
                 return NotFound();

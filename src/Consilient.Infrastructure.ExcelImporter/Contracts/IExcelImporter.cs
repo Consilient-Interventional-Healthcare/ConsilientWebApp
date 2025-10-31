@@ -1,9 +1,7 @@
-﻿using Consilient.Infrastructure.ExcelImporter.Models;
-
-namespace Consilient.Infrastructure.ExcelImporter.Contracts
+﻿namespace Consilient.Infrastructure.ExcelImporter.Contracts
 {
-    public interface IExcelImporter
+    public interface IExcelImporter<out TData> where TData : class
     {
-        public IEnumerable<PatientData> Import(string filename);
+        IEnumerable<TData> Import(string filename);
     }
 }

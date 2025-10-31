@@ -6,4 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EditorConfigFiles Remove="D:\Work\Consilient\src\Consilient.Employees.Contracts\Requests\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="D:\Work\Consilient\src\Consilient.Employees.Contracts\.editorconfig" />
+  </ItemGroup>
+
 </Project>

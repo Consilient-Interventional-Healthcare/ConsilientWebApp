@@ -9,8 +9,6 @@ namespace Consilient.Insurances.Services
 {
     public class InsuranceService(ConsilientDbContext dataContext) : IInsuranceService
     {
-        private readonly ConsilientDbContext _dataContext = dataContext;
-
         public async Task<InsuranceDto> CreateAsync(CreateInsuranceRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -19,8 +17,8 @@ namespace Consilient.Insurances.Services
 
             try
             {
-                await _dataContext.Insurances.AddAsync(entity);
-                await _dataContext.SaveChangesAsync();
+                await dataContext.Insurances.AddAsync(entity);
+                await dataContext.SaveChangesAsync();
             }
             catch (DbUpdateException ex)
             {
@@ -32,7 +30,7 @@ namespace Consilient.Insurances.Services
 
         public async Task<IEnumerable<InsuranceDto>> GetAllAsync()
         {
-            var dtos = await _dataContext.Insurances
+            var dtos = await dataContext.Insurances
                 .AsNoTracking()
                 .ProjectToType<InsuranceDto>()
                 .ToListAsync();
@@ -42,7 +40,7 @@ namespace Consilient.Insurances.Services
 
         public async Task<InsuranceDto?> GetByIdAsync(int id)
         {
-            var insurance = await _dataContext.Insurances.FindAsync(id);
+            var insurance = await dataContext.Insurances.FindAsync(id);
             return insurance?.Adapt<InsuranceDto>();
         }
 
@@ -50,7 +48,7 @@ namespace Consilient.Insurances.Services
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var existing = await _dataContext.Insurances.FindAsync(id);
+            var existing = await dataContext.Insurances.FindAsync(id);
             if (existing == null)
             {
                 return null;
@@ -61,7 +59,7 @@ namespace Consilient.Insurances.Services
 
             try
             {
-                await _dataContext.SaveChangesAsync();
+                await dataContext.SaveChangesAsync();
             }
             catch (DbUpdateException ex)
             {

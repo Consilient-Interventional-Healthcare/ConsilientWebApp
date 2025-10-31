@@ -1,12 +1,10 @@
-﻿@using Consilient.WebApp.Models.AuthorizationModels
-@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
-@{
+﻿@{
     // Helper to mark a sidebar link "active" based on controller + (optional) action
     bool IsActive(string controller, string? action = null)
     {
-        var routeData = ViewContext?.RouteData?.Values;
-        var currentController = (string?)(routeData?["controller"] ?? "");
-        var currentAction = (string?)(routeData?["action"] ?? "");
+        var routeData = ViewContext.RouteData.Values;
+        var currentController = (string?)(routeData["controller"] ?? "");
+        var currentAction = (string?)(routeData["action"] ?? "");
         var ctrlMatch = string.Equals(controller, currentController, StringComparison.OrdinalIgnoreCase);
         var actMatch = action == null || string.Equals(action, currentAction, StringComparison.OrdinalIgnoreCase);
         return ctrlMatch && actMatch;
@@ -80,15 +78,15 @@
 
                       <!-- Patient Visits -->
                       @{
-                        var activePV = IsActive("PatientVisits");
+                        var activePv = IsActive("PatientVisits");
                       }
                       <li>
                         <a asp-area="" asp-controller="PatientVisits" asp-action="Index"
-                           class="@C(activePV,
+                                               class="@C(activePv,
                              "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
                              "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"
-                               class="@C(activePV, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
+                                                     class="@C(activePv, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
                             <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Z" stroke-linecap="round" stroke-linejoin="round" />
                           </svg>
                           Patient Encounters
@@ -176,9 +174,9 @@
 
                       <div class="min-w-0">
                         <div class="truncate">
-                          @(User?.Identity?.IsAuthenticated == true ? User.Identity.Name : "Guest")
+                          @(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Guest")
                         </div>
-                        @if (User?.Identity?.IsAuthenticated == true && User.IsInRole("Administrator"))
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Administrator"))
                         {
                           <div class="text-xs text-brand-yellow">Administrator</div>
                         }
@@ -238,7 +236,7 @@
               <ul role="list" class="-mx-2 space-y-1">
                 @{
                   var dHome = IsActive("Home", "Index");
-                  var dPV = IsActive("PatientVisits");
+                  var dPv = IsActive("PatientVisits");
                   var dSub = IsActive("PatientVisitsStaging");
                 }
                 <li>
@@ -255,11 +253,11 @@
                 </li>
                 <li>
                   <a asp-area="" asp-controller="PatientVisits" asp-action="Index"
-                     class="@C(dPV,
+                                   class="@C(dPv,
                        "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
                        "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"
-                         class="@C(dPV, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
+                                         class="@C(dPv, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
                       <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Z" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                     Patient Encounters
@@ -332,7 +330,7 @@
             <li class="mt-auto -mx-6">
               <div class="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-brand-blue border-t border-gray-200">
                 @{
-                    var displayName = User?.Identity?.IsAuthenticated == true ? User.Identity.Name : "0";
+                    var displayName = User.Identity?.IsAuthenticated == true ? User.Identity.Name : "0";
                     var initial = string.IsNullOrEmpty(displayName) ? "?" : displayName[0].ToString().ToUpper();
                 }
 
@@ -342,9 +340,9 @@
                 </span>
                 <div class="min-w-0">
                   <div class="truncate">
-                    @(User?.Identity?.IsAuthenticated == true ? User.Identity.Name : "Guest")
+                    @(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Guest")
                   </div>
-                  @if (User?.Identity?.IsAuthenticated == true && User.IsInRole("Administrator"))
+                  @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Administrator"))
                   {
                     <div class="text-xs text-brand-yellow">Administrator</div>
                   }

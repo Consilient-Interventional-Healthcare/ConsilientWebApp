@@ -1,6 +1,6 @@
 ﻿namespace Consilient.Patients.Contracts.Requests
 {
-        public class UpdatePatientVisitRequest
+    public class UpdatePatientVisitRequest
     {
 
         public DateOnly DateServiced { get; set; }

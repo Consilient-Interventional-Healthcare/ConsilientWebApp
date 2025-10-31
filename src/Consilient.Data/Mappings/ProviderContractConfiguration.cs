@@ -13,12 +13,12 @@ namespace Consilient.Data.Mappings
             entity.Property(e => e.ContractId).HasColumnName("ContractID");
             entity.Property(e => e.EmployeeId).HasColumnName("EmployeeID");
 
-            entity.HasOne(d => d.Contract).WithMany(p => p.ProviderContracts)
+            entity.HasOne(d => d.Contract).WithMany()
                 .HasForeignKey(d => d.ContractId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProviderContracts_Contract");
 
-            entity.HasOne(d => d.Employee).WithMany(p => p.ProviderContracts)
+            entity.HasOne(d => d.Employee).WithMany()
                 .HasForeignKey(d => d.EmployeeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProviderContracts_Employee");

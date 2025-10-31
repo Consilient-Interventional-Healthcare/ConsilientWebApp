@@ -19,7 +19,7 @@
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
     <None Include="docker-compose.yml" />
-    <None Include="grafana\provisioning\loki.yml" />
+    <None Include="grafana\provisioning\datasources\loki.yml" />
     <None Include="KillContainers.ps1" />
     <None Include="loki-config.yml" />
     <None Include="promtail-config.yml" />

@@ -1,9 +1,10 @@
 using Consilient.Api.Client.Contracts;
+using Consilient.Api.Client.Models;
 using Consilient.Employees.Contracts.Dtos;
 using Consilient.Employees.Contracts.Requests;
 using System.Net.Http.Json;
 
-namespace Consilient.Api.Client
+namespace Consilient.Api.Client.Modules
 {
     internal class EmployeesApi(HttpClient httpClient) : BaseApi(httpClient), IEmployeesApi
     {
@@ -43,21 +44,21 @@ namespace Consilient.Api.Client
             return await CreateApiResponse<EmployeeDto?>(resp);
         }
 
-        static class Routes
+        private static class Routes
         {
-            public const string Base = "/employees";
+            private const string _base = "/employees";
 
-            public static string Create() => Base;
+            public static string Create() => _base;
 
-            public static string Delete(int id) => $"{Base}/{id}";
+            public static string Delete(int id) => $"{_base}/{id}";
 
-            public static string GetAll() => Base;
+            public static string GetAll() => _base;
 
-            public static string GetByEmail(string email) => $"{Base}/email/{Uri.EscapeDataString(email)}";
+            public static string GetByEmail(string email) => $"{_base}/email/{Uri.EscapeDataString(email)}";
 
-            public static string GetById(int id) => $"{Base}/{id}";
+            public static string GetById(int id) => $"{_base}/{id}";
 
-            public static string Update(int id) => $"{Base}/{id}";
+            public static string Update(int id) => $"{_base}/{id}";
         }
     }
 }

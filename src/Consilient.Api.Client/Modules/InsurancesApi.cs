@@ -1,9 +1,10 @@
 ﻿using Consilient.Api.Client.Contracts;
+using Consilient.Api.Client.Models;
 using Consilient.Insurances.Contracts.Dtos;
 using Consilient.Insurances.Contracts.Requests;
 using System.Net.Http.Json;
 
-namespace Consilient.Api.Client
+namespace Consilient.Api.Client.Modules
 {
     internal class InsurancesApi(HttpClient client) : BaseApi(client), IInsurancesApi
     {
@@ -37,15 +38,15 @@ namespace Consilient.Api.Client
             return await CreateApiResponse<InsuranceDto>(resp);
         }
 
-        static class Routes
+        private static class Routes
         {
-            public const string Base = "/insurances";
+            private const string _base = "/insurances";
 
-            public static string Create() => Base;
-            public static string Delete(int id) => $"{Base}/{id}";
-            public static string GetAll() => Base;
-            public static string GetById(int id) => $"{Base}/{id}";
-            public static string Update(int id) => $"{Base}/{id}";
+            public static string Create() => _base;
+            public static string Delete(int id) => $"{_base}/{id}";
+            public static string GetAll() => _base;
+            public static string GetById(int id) => $"{_base}/{id}";
+            public static string Update(int id) => $"{_base}/{id}";
         }
     }
 }

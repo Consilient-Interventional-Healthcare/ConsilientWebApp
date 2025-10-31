@@ -10,7 +10,7 @@ namespace Consilient.BackgroundHost.Init
         {
             services.AddSingleton<IBackgroundJobClient, BackgroundJobClient>();
             services.AddSingleton<IRecurringJobManager, RecurringJobManager>();
-            services.AddHangfire((provider, config) =>
+            services.AddHangfire(config =>
             {
                 config.UseSqlServerStorage(connectionString, new SqlServerStorageOptions
                 {
@@ -29,7 +29,7 @@ namespace Consilient.BackgroundHost.Init
             {
                 options.ShutdownTimeout = TimeSpan.FromMinutes(30);
                 options.WorkerCount = Math.Max(Environment.ProcessorCount, 20);
-                var workerRegistration = new WorkerRegistration(provider.GetRequiredService<IBackgroundJobClient>(), provider.GetRequiredService<IRecurringJobManager>(), provider.GetRequiredService<JobStorage>());
+                var workerRegistration = new WorkerRegistration(provider.GetRequiredService<IRecurringJobManager>(), provider.GetRequiredService<JobStorage>());
                 workerRegistration.Register();
             });
 

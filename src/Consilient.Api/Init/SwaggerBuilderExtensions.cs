@@ -17,7 +17,7 @@ namespace Consilient.Api.Init
             });
         }
 
-        public static IApplicationBuilder UseSwagger(this IApplicationBuilder app, string appId, string apiVersion)
+        public static void UseSwagger(this IApplicationBuilder app, string appId, string apiVersion)
         {
             app.UseSwagger();
             app.UseSwaggerUI(c =>
@@ -26,7 +26,6 @@ namespace Consilient.Api.Init
                 c.DocumentTitle = appId;
                 c.RoutePrefix = string.Empty;
             });
-            return app;
         }
     }
 }

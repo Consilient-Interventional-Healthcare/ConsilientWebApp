@@ -1,30 +1,33 @@
-﻿namespace Consilient.Data;
-
-public partial class Contract
+﻿namespace Consilient.Data
 {
-    public int ContractId { get; set; }
 
-    public string? ContractName { get; set; }
 
-    public int EmployeeId { get; set; }
+    public class Contract
+    {
+        public int ContractId { get; set; }
 
-    public int FacilityId { get; set; }
+        public string? ContractName { get; set; }
 
-    public int ServiceTypeId { get; set; }
+        public int EmployeeId { get; set; }
 
-    public string PayType { get; set; } = null!;
+        public int FacilityId { get; set; }
 
-    public bool WeekendFlag { get; set; }
+        public int ServiceTypeId { get; set; }
 
-    public bool SupervisingFlag { get; set; }
+        public string PayType { get; set; } = null!;
 
-    public decimal? Amount { get; set; }
+        public bool WeekendFlag { get; set; }
 
-    public virtual Employee Employee { get; set; } = null!;
+        public bool SupervisingFlag { get; set; }
 
-    public virtual Facility Facility { get; set; } = null!;
+        public decimal? Amount { get; set; }
 
-    public virtual ICollection<ProviderContract> ProviderContracts { get; set; } = [];
+        public virtual Employee Employee { get; set; } = null!;
 
-    public virtual ServiceType ServiceType { get; set; } = null!;
+        public virtual Facility Facility { get; set; } = null!;
+
+        //public virtual ICollection<ProviderContract> ProviderContracts { get; set; } = [];
+
+        public virtual ServiceType ServiceType { get; set; } = null!;
+    }
 }

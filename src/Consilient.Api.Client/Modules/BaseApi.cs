@@ -1,8 +1,8 @@
 ﻿using Consilient.Api.Client.Contracts;
-using Consilient.Shared.Contracts.Dtos;
+using Consilient.Api.Client.Models;
 using System.Net.Http.Json;
 
-namespace Consilient.Api.Client
+namespace Consilient.Api.Client.Modules
 {
     internal abstract class BaseApi(HttpClient httpClient) : IApi
     {

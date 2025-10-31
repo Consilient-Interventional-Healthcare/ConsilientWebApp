@@ -1,11 +1,13 @@
-﻿namespace Consilient.WebApp.ViewModels
+﻿using Consilient.Patients.Contracts.Dtos;
+
+namespace Consilient.WebApp.ViewModels
 {
     public class PatientVisitsIndexViewModel
     {
-        public List<Consilient.WebApp.ViewModels.PatientVisitViewModel> PatientVisits = [];
+        public List<PatientVisitDto> PatientVisits { get; set; } = [];
 
-        public Dictionary<string, int> PhysicianSummaries { get; set; } = [];
-        public Dictionary<string, int> NursePractitionerSummaries { get; set; } = [];
-        public Dictionary<string, int> ScribeSummaries { get; set; } = [];
+        //public Dictionary<string, int> PhysicianSummaries { get; set; } = [];
+        //public Dictionary<string, int> NursePractitionerSummaries { get; set; } = [];
+        //public Dictionary<string, int> ScribeSummaries { get; set; } = [];
     }
 }

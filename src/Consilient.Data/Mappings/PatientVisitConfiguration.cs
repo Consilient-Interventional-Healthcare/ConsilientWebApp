@@ -20,38 +20,38 @@ namespace Consilient.Data.Mappings
             entity.Property(e => e.ScribeEmployeeId).HasColumnName("ScribeEmployeeID");
             entity.Property(e => e.ServiceTypeId).HasColumnName("ServiceTypeID");
 
-            entity.HasOne(d => d.CosigningPhysicianEmployee).WithMany(p => p.PatientVisitCosigningPhysicianEmployees)
+            entity.HasOne(d => d.CosigningPhysicianEmployee).WithMany()
                 .HasForeignKey(d => d.CosigningPhysicianEmployeeId)
                 .HasConstraintName("FK_PatientVisits_CosignPhysicianEmployee");
 
-            entity.HasOne(d => d.Facility).WithMany(p => p.PatientVisits)
+            entity.HasOne(d => d.Facility).WithMany()
                 .HasForeignKey(d => d.FacilityId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PatientVisits_Facility");
 
-            entity.HasOne(d => d.Insurance).WithMany(p => p.PatientVisits)
+            entity.HasOne(d => d.Insurance).WithMany()
                 .HasForeignKey(d => d.InsuranceId)
                 .HasConstraintName("FK_PatientVisits_Insurances");
 
-            entity.HasOne(d => d.NursePractitionerEmployee).WithMany(p => p.PatientVisitNursePractitionerEmployees)
+            entity.HasOne(d => d.NursePractitionerEmployee).WithMany()
                 .HasForeignKey(d => d.NursePractitionerEmployeeId)
                 .HasConstraintName("FK_PatientVisits_NursePractitioner");
 
-            entity.HasOne(d => d.Patient).WithMany(p => p.PatientVisits)
+            entity.HasOne(d => d.Patient).WithMany()
                 .HasForeignKey(d => d.PatientId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PatientVisits_Patient");
 
-            entity.HasOne(d => d.PhysicianEmployee).WithMany(p => p.PatientVisitPhysicianEmployees)
+            entity.HasOne(d => d.PhysicianEmployee).WithMany()
                 .HasForeignKey(d => d.PhysicianEmployeeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PatientVisits_Physician");
 
-            entity.HasOne(d => d.ScribeEmployee).WithMany(p => p.PatientVisitScribeEmployees)
+            entity.HasOne(d => d.ScribeEmployee).WithMany()
                 .HasForeignKey(d => d.ScribeEmployeeId)
                 .HasConstraintName("FK_PatientVisits_Scribe");
 
-            entity.HasOne(d => d.ServiceType).WithMany(p => p.PatientVisits)
+            entity.HasOne(d => d.ServiceType).WithMany()
                 .HasForeignKey(d => d.ServiceTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PatientVisits_ServiceType");

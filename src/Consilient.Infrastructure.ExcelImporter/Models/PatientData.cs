@@ -8,7 +8,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Models
         /// <summary>
         /// Gets or sets the Case ID.
         /// </summary>
-        public string CaseID { get; set; } = string.Empty;
+        public string CaseId { get; set; } = string.Empty;
         /// <summary>
         /// Gets or sets the patient's name.
         /// </summary>
@@ -16,7 +16,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Models
         /// <summary>
         /// Gets or sets the Medical Record Number.
         /// </summary>
-        public string MRN { get; set; } = string.Empty;
+        public string Mrn { get; set; } = string.Empty;
         /// <summary>
         /// Gets or sets the patient's sex.
         /// </summary>
@@ -28,7 +28,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Models
         /// <summary>
         /// Gets or sets the patient's Date of Birth. This can be nullable.
         /// </summary>
-        public DateTime? DOB { get; set; }
+        public DateTime? Dob { get; set; }
         /// <summary>
         /// Gets or sets the patient's room number.
         /// </summary>
@@ -40,11 +40,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Models
         /// <summary>
         /// Gets or sets the Date of Admission.
         /// </summary>
-        public DateTime DOA { get; set; }
+        public DateTime Doa { get; set; }
         /// <summary>
         /// Gets or sets the Length of Stay in days.
         /// </summary>
-        public int LOS { get; set; }
+        public int Los { get; set; }
         /// <summary>
         /// Gets or sets the attending physician's name.
         /// </summary>

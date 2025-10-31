@@ -9,23 +9,21 @@ namespace Consilient.Employees.Services
 {
     public class EmployeeService(ConsilientDbContext dataContext) : IEmployeeService
     {
-        private readonly ConsilientDbContext _dataContext = dataContext;
-
         public async Task<EmployeeDto> CreateAsync(CreateEmployeeRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
 
             if (!string.IsNullOrWhiteSpace(request.Email))
             {
-                var exists = await _dataContext.Employees.AnyAsync(e => e.Email == request.Email);
+                var exists = await dataContext.Employees.AnyAsync(e => e.Email == request.Email);
                 if (exists)
                 {
                     throw new InvalidOperationException("An employee with the specified email already exists.");
                 }
             }
             var entity = request.Adapt<Employee>();
-            _dataContext.Employees.Add(entity);
-            await _dataContext.SaveChangesAsync();
+            dataContext.Employees.Add(entity);
+            await dataContext.SaveChangesAsync();
 
             return entity.Adapt<EmployeeDto>();
         }
@@ -38,7 +36,7 @@ namespace Consilient.Employees.Services
             }
             try
             {
-                var affected = await _dataContext.Employees
+                var affected = await dataContext.Employees
                     .Where(e => e.EmployeeId == id)
                     .ExecuteDeleteAsync();
 
@@ -52,7 +50,7 @@ namespace Consilient.Employees.Services
 
         public async Task<IEnumerable<EmployeeDto>> GetAllAsync()
         {
-            var dtos = await _dataContext.Employees
+            var dtos = await dataContext.Employees
                 .AsNoTracking()
                 .ProjectToType<EmployeeDto>()
                 .ToListAsync();
@@ -64,7 +62,7 @@ namespace Consilient.Employees.Services
         {
             ArgumentNullException.ThrowIfNull(email);
 
-            var dto = await _dataContext.Employees
+            var dto = await dataContext.Employees
                 .AsNoTracking()
                 .Where(e => e.Email == email)
                 .ProjectToType<EmployeeDto>()
@@ -74,7 +72,7 @@ namespace Consilient.Employees.Services
         }
         public async Task<EmployeeDto?> GetByIdAsync(int id)
         {
-            var employee = await _dataContext.Employees.FindAsync(id);
+            var employee = await dataContext.Employees.FindAsync(id);
             return employee?.Adapt<EmployeeDto>();
         }
 
@@ -82,7 +80,7 @@ namespace Consilient.Employees.Services
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var affected = await _dataContext.Employees
+            var affected = await dataContext.Employees
                 .Where(e => e.EmployeeId == id)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(e => e.FirstName, _ => request.FirstName)

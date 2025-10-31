@@ -1,6 +1,4 @@
 ﻿namespace Consilient.Api.Client.Contracts
 {
-    public interface IApi
-    {
-    }
+    public interface IApi;
 }

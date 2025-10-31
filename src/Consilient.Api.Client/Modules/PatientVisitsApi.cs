@@ -1,9 +1,10 @@
 ﻿using Consilient.Api.Client.Contracts;
+using Consilient.Api.Client.Models;
 using Consilient.Patients.Contracts.Dtos;
 using Consilient.Patients.Contracts.Requests;
 using System.Net.Http.Json;
 
-namespace Consilient.Api.Client
+namespace Consilient.Api.Client.Modules
 {
     internal class PatientVisitsApi(HttpClient httpClient) : BaseApi(httpClient), IPatientVisitsApi
     {
@@ -19,9 +20,15 @@ namespace Consilient.Api.Client
             return await CreateApiResponse<bool>(resp);
         }
 
-        public async Task<ApiResponse<IEnumerable<PatientVisitDto>>> GetByDateAsync(DateTime date)
+        public async Task<ApiResponse<IEnumerable<PatientVisitDto>>> GetByDateAsync(DateOnly date)
         {
             var resp = await HttpClient.GetAsync(Routes.GetByDate(date)).ConfigureAwait(false);
+            return await CreateApiResponse<IEnumerable<PatientVisitDto>>(resp);
+        }
+
+        public async Task<ApiResponse<IEnumerable<PatientVisitDto>>> GetByEmployeeAsync(int employeeId)
+        {
+            var resp = await HttpClient.GetAsync(Routes.GetByEmployee(employeeId)).ConfigureAwait(false);
             return await CreateApiResponse<IEnumerable<PatientVisitDto>>(resp);
         }
 
@@ -37,14 +44,15 @@ namespace Consilient.Api.Client
             return await CreateApiResponse<PatientVisitDto?>(resp);
         }
 
-        static class Routes
+        private static class Routes
         {
-            public const string Base = "/patients/visits";
-            public static string Create() => $"{Base}";
-            public static string Delete(int id) => $"{Base}/{id}";
-            public static string? GetByDate(DateTime date) => $"{Base}/by-date/{date}";
-            public static string? GetById(int id) => $"{Base}/{id}";
-            public static string Update(int id) => $"{Base}/{id}";
+            private const string _base = "/patients/visits";
+            public static string Create() => $"{_base}";
+            public static string Delete(int id) => $"{_base}/{id}";
+            public static string GetByDate(DateOnly date) => $"{_base}/date/{date:yyyyMMdd}";
+            public static string GetByEmployee(int employeeId) => $"{_base}/employee/{employeeId}";
+            public static string GetById(int id) => $"{_base}/{id}";
+            public static string Update(int id) => $"{_base}/{id}";
         }
     }
 }

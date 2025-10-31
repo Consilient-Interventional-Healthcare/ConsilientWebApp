@@ -23,6 +23,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Helpers
         /// <summary>
         /// Creates an <see cref="IXLWorkbook"/> from the specified file.
         /// </summary>
+        /// <param name="canConvertFile">Indicates whether the file can be converted</param>
         /// <param name="filename">The path to the Excel file.</param>
         /// <returns>An <see cref="IXLWorkbook"/> instance.</returns>
         /// <remarks>
@@ -49,9 +50,9 @@ namespace Consilient.Infrastructure.ExcelImporter.Helpers
         private static XLWorkbook ConvertXlsToXlsx(Stream xlsStream)
         {
             using var reader = ExcelReaderFactory.CreateReader(xlsStream);
-            var ds = reader.AsDataSet(new ExcelDataSetConfiguration()
+            var ds = reader.AsDataSet(new ExcelDataSetConfiguration
             {
-                ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
+                ConfigureDataTable = _ => new ExcelDataTableConfiguration
                 {
                     UseHeaderRow = true // Use first row as header
                 }

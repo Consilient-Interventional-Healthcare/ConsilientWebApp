@@ -10,12 +10,10 @@ namespace Consilient.WebApp.Controllers
     [Authorize]
     public class InsurancesController(IInsurancesApi insurancesApi) : Controller
     {
-        private readonly IInsurancesApi _insurancesApi = insurancesApi;
-
         // GET: Insurances
         public async Task<IActionResult> Index()
         {
-            var insurances = await _insurancesApi.GetAllAsync();
+            var insurances = await insurancesApi.GetAllAsync();
             return View(insurances);
         }
 
@@ -27,7 +25,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var insurance = await _insurancesApi.GetByIdAsync(id.Value);
+            var insurance = (await insurancesApi.GetByIdAsync(id.Value)).Unwrap();
             if (insurance == null)
             {
                 return NotFound();
@@ -49,18 +47,18 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(InsuranceViewModel viewModel)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var insurance = await _insurancesApi.CreateAsync(new CreateInsuranceRequest
-                {
-                    InsuranceCode = viewModel.InsuranceCode,
-                    InsuranceDescription = viewModel.InsuranceDescription,
-                    PhysicianIncluded = viewModel.PhysicianIncluded,
-                    IsContracted = viewModel.IsContracted
-                });
-                return RedirectToAction(nameof(Index));
+                return View(viewModel);
             }
-            return View(viewModel);
+            _ = await insurancesApi.CreateAsync(new CreateInsuranceRequest
+            {
+                InsuranceCode = viewModel.InsuranceCode,
+                InsuranceDescription = viewModel.InsuranceDescription,
+                PhysicianIncluded = viewModel.PhysicianIncluded,
+                IsContracted = viewModel.IsContracted
+            });
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Insurances/Edit/5
@@ -71,7 +69,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var insurance = await _insurancesApi.GetByIdAsync(id.Value);
+            var insurance = (await insurancesApi.GetByIdAsync(id.Value)).Unwrap();
             if (insurance == null)
             {
                 return NotFound();
@@ -91,24 +89,23 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-
-                var insurance = (await _insurancesApi.UpdateAsync(viewModel.InsuranceId, new UpdateInsuranceRequest
-                {
-                    InsuranceCode = viewModel.InsuranceCode,
-                    InsuranceDescription = viewModel.InsuranceDescription,
-                    PhysicianIncluded = viewModel.PhysicianIncluded,
-                    IsContracted = viewModel.IsContracted
-                })).Unwrap();
-
-                if (insurance == null)
-                {
-                    return NotFound();
-                }
-                return RedirectToAction(nameof(Index));
+                return View(viewModel);
             }
-            return View(viewModel);
+            var insurance = (await insurancesApi.UpdateAsync(viewModel.InsuranceId, new UpdateInsuranceRequest
+            {
+                InsuranceCode = viewModel.InsuranceCode,
+                InsuranceDescription = viewModel.InsuranceDescription,
+                PhysicianIncluded = viewModel.PhysicianIncluded,
+                IsContracted = viewModel.IsContracted
+            })).Unwrap();
+
+            if (insurance == null)
+            {
+                return NotFound();
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Insurances/Delete/5
@@ -119,7 +116,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var insurance = await _insurancesApi.GetByIdAsync(id.Value);
+            var insurance = (await insurancesApi.GetByIdAsync(id.Value)).Unwrap();
             if (insurance == null)
             {
                 return NotFound();
@@ -132,7 +129,7 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var deleted = (await _insurancesApi.DeleteAsync(id)).Unwrap();
+            var deleted = (await insurancesApi.DeleteAsync(id)).Unwrap();
             if (!deleted)
             {
                 return NotFound();

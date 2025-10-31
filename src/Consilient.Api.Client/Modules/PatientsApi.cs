@@ -1,9 +1,10 @@
 ﻿using Consilient.Api.Client.Contracts;
+using Consilient.Api.Client.Models;
 using Consilient.Patients.Contracts.Dtos;
 using Consilient.Patients.Contracts.Requests;
 using System.Net.Http.Json;
 
-namespace Consilient.Api.Client
+namespace Consilient.Api.Client.Modules
 {
     internal class PatientsApi(HttpClient httpClient) : BaseApi(httpClient), IPatientsApi
     {
@@ -25,12 +26,12 @@ namespace Consilient.Api.Client
             return await CreateApiResponse<PatientDto?>(resp);
         }
 
-        static class Routes
+        private static class Routes
         {
-            public const string Base = "/patients";
-            public static string Create() => $"{Base}";
-            public static string GetAll() => Base;
-            public static string GetByMrn(int mrn) => $"{Base}/{mrn}";
+            private const string _base = "/patients";
+            public static string Create() => $"{_base}";
+            public static string GetAll() => _base;
+            public static string GetByMrn(int mrn) => $"{_base}/{mrn}";
         }
     }
 }

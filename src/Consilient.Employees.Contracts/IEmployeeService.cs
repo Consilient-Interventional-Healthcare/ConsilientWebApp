@@ -50,7 +50,7 @@ namespace Consilient.Employees.Contracts
         /// Updates an existing employee.
         /// </summary>
         /// <param name="id">The id of the employee to update.</param>
-        /// <param name="employee">The updated employee values. Must not be <see langword="null"/>.</param>
+        /// <param name="request">The updated employee values. Must not be <see langword="null"/>.</param>
         /// <returns>
         /// A <see cref="Task"/> that resolves to the updated <see cref="EmployeeDto"/> if the employee was found and updated, otherwise <see langword="null"/>.
         /// </returns>

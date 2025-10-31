@@ -8,67 +8,32 @@ namespace Consilient.Api.Controllers
     [ApiController]
     public class InsurancesController(IInsuranceService insuranceService) : ControllerBase
     {
-        private readonly IInsuranceService _insuranceService = insuranceService ?? throw new ArgumentNullException(nameof(insuranceService));
-
         [HttpPost]
-        public async Task<IActionResult> CreateInsurance([FromBody] CreateInsuranceRequest request)
+        public async Task<IActionResult> Create([FromBody] CreateInsuranceRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-
-            try
-            {
-                var created = await _insuranceService.CreateAsync(request);
-                return CreatedAtAction(nameof(GetInsuranceById), new { id = created?.InsuranceId }, created);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            var created = await insuranceService.CreateAsync(request).ConfigureAwait(false);
+            return CreatedAtAction(nameof(GetById), new { id = created.InsuranceId }, created);
         }
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetInsuranceById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var insurance = await _insuranceService.GetByIdAsync(id);
-            if (insurance == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(insurance);
+            var insurance = await insuranceService.GetByIdAsync(id).ConfigureAwait(false);
+            return insurance == null ? NotFound() : Ok(insurance);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetInsurances()
+        public async Task<IActionResult> GetAll()
         {
-            var items = await _insuranceService.GetAllAsync();
+            var items = await insuranceService.GetAllAsync().ConfigureAwait(false);
             return Ok(items);
         }
+
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateInsurance(int id, [FromBody] UpdateInsuranceRequest request)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateInsuranceRequest request)
         {
-            if (request == null)
-            {
-                return BadRequest();
-            }
-
-            try
-            {
-                var updated = await _insuranceService.UpdateAsync(id, request);
-                if (updated == null)
-                {
-                    return NotFound();
-                }
-
-                return Ok(updated);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { error = ex.Message });
-            }
+            var updated = await insuranceService.UpdateAsync(id, request).ConfigureAwait(false);
+            return updated == null ? NotFound() : Ok(updated);
         }
     }
 }

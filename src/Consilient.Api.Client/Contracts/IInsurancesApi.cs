@@ -1,4 +1,5 @@
-﻿using Consilient.Insurances.Contracts.Dtos;
+﻿using Consilient.Api.Client.Models;
+using Consilient.Insurances.Contracts.Dtos;
 using Consilient.Insurances.Contracts.Requests;
 
 namespace Consilient.Api.Client.Contracts

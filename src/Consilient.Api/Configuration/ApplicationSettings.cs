@@ -1,6 +1,4 @@
 ﻿namespace Consilient.Api.Configuration
 {
-    internal class ApplicationSettings
-    {
-    }
+    internal class ApplicationSettings;
 }

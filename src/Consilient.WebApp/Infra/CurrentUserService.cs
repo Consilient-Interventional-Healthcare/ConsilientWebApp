@@ -4,14 +4,12 @@ namespace Consilient.WebApp.Infra
 {
     public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
     {
-        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-
         public string? UserId
         {
             get
             {
-                var ctx = _httpContextAccessor.HttpContext;
-                if (ctx?.User?.Identity?.IsAuthenticated != true)
+                var ctx = httpContextAccessor.HttpContext;
+                if (ctx?.User.Identity?.IsAuthenticated != true)
                 {
                     return null;
                 }
@@ -31,8 +29,8 @@ namespace Consilient.WebApp.Infra
         {
             get
             {
-                var ctx = _httpContextAccessor.HttpContext;
-                if (ctx?.User?.Identity?.IsAuthenticated != true)
+                var ctx = httpContextAccessor.HttpContext;
+                if (ctx?.User.Identity?.IsAuthenticated != true)
                 {
                     return null;
                 }

@@ -28,17 +28,17 @@ namespace Consilient.WebApp.ViewModels
 
         public int? ScribeEmployeeId { get; set; }
 
-        [Display(Name = "NP Approved")]
-        public bool NursePractitionerApproved { get; set; }
+        //[Display(Name = "NP Approved")]
+        //public bool NursePractitionerApproved { get; set; }
 
-        [Display(Name = "Physician Approved")]
-        public bool PhysicianApproved { get; set; }
+        //[Display(Name = "Physician Approved")]
+        //public bool PhysicianApproved { get; set; }
 
-        [Display(Name = "Physician Approved By")]
-        public string? PhysicianApprovedBy { get; set; }
+        //[Display(Name = "Physician Approved By")]
+        //public string? PhysicianApprovedBy { get; set; }
 
-        [Display(Name = "Physician Approved Date/Time")]
-        public DateTime? PhysicianApprovedDateTime { get; set; }
+        //[Display(Name = "Physician Approved Date/Time")]
+        //public DateTime? PhysicianApprovedDateTime { get; set; }
 
         public bool AddedToMainTable { get; set; }
 
@@ -50,37 +50,37 @@ namespace Consilient.WebApp.ViewModels
 
         [ValidateNever]
         [Display(Name = "Cosigning")]
-        public virtual EmployeeViewModel CosigningPhysicianEmployee { get; set; } = new EmployeeViewModel();
+        public EmployeeViewModel CosigningPhysicianEmployee { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Facility")]
-        public virtual FacilityViewModel Facility { get; set; } = new FacilityViewModel();
+        public FacilityViewModel Facility { get; set; } = null!;
 
-        [ValidateNever]
-        [Display(Name = "Insurance")]
-        public virtual InsuranceViewModel Insurance { get; set; } = new InsuranceViewModel();
+        //[ValidateNever]
+        //[Display(Name = "Insurance")]
+        //public InsuranceViewModel Insurance { get; set; } = new InsuranceViewModel();
 
         [ValidateNever]
         [Display(Name = "NP")]
-        public virtual EmployeeViewModel NursePractitionerEmployee { get; set; } = new EmployeeViewModel();
+        public EmployeeViewModel NursePractitionerEmployee { get; set; } = null!;
 
         [ValidateNever]
-        public virtual PatientViewModel Patient { get; set; } = new PatientViewModel();
+        public PatientViewModel Patient { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Physician")]
-        public virtual EmployeeViewModel PhysicianEmployee { get; set; } = new EmployeeViewModel();
+        public EmployeeViewModel PhysicianEmployee { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Scribe")]
-        public virtual EmployeeViewModel ScribeEmployee { get; set; } = new EmployeeViewModel();
+        public EmployeeViewModel ScribeEmployee { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Service")]
-        public virtual ServiceTypeViewModel ServiceType { get; set; } = new ServiceTypeViewModel();
+        public ServiceTypeViewModel ServiceType { get; set; } = null!;
 
         public List<SelectListItem> CosigningPhysiciansSelectList { get; set; } = [];
-        public List<SelectListItem> InsurancesSelectList { get; set; } = [];
+        //public List<SelectListItem> InsurancesSelectList { get; set; } = [];
         public List<SelectListItem> FacilitiesSelectList { get; set; } = [];
         public List<SelectListItem> NursePractitionersSelectList { get; set; } = [];
         public List<SelectListItem> PatientsSelectList { get; set; } = [];
@@ -89,7 +89,7 @@ namespace Consilient.WebApp.ViewModels
         public List<SelectListItem> ServiceTypesSelectList { get; set; } = [];
 
         [ValidateNever]
-        public virtual PatientViewModel NewPatient { get; set; } = new PatientViewModel();
+        public PatientViewModel NewPatient { get; set; } = null!;
 
     }
 }

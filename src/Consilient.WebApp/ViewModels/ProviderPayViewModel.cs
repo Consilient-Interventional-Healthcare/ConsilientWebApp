@@ -20,7 +20,7 @@
 
         public virtual FacilityViewModel Facility { get; set; } = new FacilityViewModel();
 
-        public virtual ICollection<PayrollDatumViewModel> PayrollData { get; set; } = [];
+        //public virtual ICollection<PayrollDatumViewModel> PayrollData { get; set; } = [];
 
         public virtual ServiceTypeViewModel ServiceType { get; set; } = new ServiceTypeViewModel();
     }

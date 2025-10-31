@@ -15,12 +15,12 @@ namespace Consilient.Data.Mappings
             entity.Property(e => e.PayrollPeriodId).HasColumnName("PayrollPeriodID");
             entity.Property(e => e.ProviderPayId).HasColumnName("ProviderPayID");
 
-            entity.HasOne(d => d.PayrollPeriod).WithMany(p => p.PayrollData)
+            entity.HasOne(d => d.PayrollPeriod).WithMany()
                 .HasForeignKey(d => d.PayrollPeriodId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PayrollData_PayrollPeriod");
 
-            entity.HasOne(d => d.ProviderPay).WithMany(p => p.PayrollData)
+            entity.HasOne(d => d.ProviderPay).WithMany()
                 .HasForeignKey(d => d.ProviderPayId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PayrollData_ProviderPay");

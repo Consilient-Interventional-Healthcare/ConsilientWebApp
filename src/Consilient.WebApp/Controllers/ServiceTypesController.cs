@@ -9,12 +9,10 @@ namespace Consilient.WebApp.Controllers
     [Authorize]
     public class ServiceTypesController(IServiceTypesApi serviceTypesApi) : Controller
     {
-        private readonly IServiceTypesApi _serviceTypesApi = serviceTypesApi;
-
         // GET: ServiceTypes
         public async Task<IActionResult> Index()
         {
-            var serviceTypes = (await _serviceTypesApi.GetAllAsync()).Unwrap();
+            var serviceTypes = (await serviceTypesApi.GetAllAsync()).Unwrap();
             return View(serviceTypes);
         }
 
@@ -26,7 +24,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var serviceType = (await _serviceTypesApi.GetByIdAsync(id.Value)).Unwrap();
+            var serviceType = (await serviceTypesApi.GetByIdAsync(id.Value)).Unwrap();
             if (serviceType == null)
             {
                 return NotFound();
@@ -48,16 +46,16 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ServiceTypeViewModel viewModel)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                (await _serviceTypesApi.CreateAsync(new Shared.Contracts.Requests.CreateServiceTypeRequest
-                {
-                    CptCode = viewModel.Cptcode,
-                    Description = viewModel.Description
-                })).Unwrap();
-                return RedirectToAction(nameof(Index));
+                return View(viewModel);
             }
-            return View(viewModel);
+            (await serviceTypesApi.CreateAsync(new Shared.Contracts.Requests.CreateServiceTypeRequest
+            {
+                CptCode = viewModel.Cptcode,
+                Description = viewModel.Description
+            })).Unwrap();
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: ServiceTypes/Edit/5
@@ -68,7 +66,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var serviceType = (await _serviceTypesApi.GetByIdAsync(id.Value)).Unwrap();
+            var serviceType = (await serviceTypesApi.GetByIdAsync(id.Value)).Unwrap();
             if (serviceType == null)
             {
                 return NotFound();
@@ -90,18 +88,18 @@ namespace Consilient.WebApp.Controllers
 
             if (ModelState.IsValid)
             {
-                var serviceType = (await _serviceTypesApi.UpdateAsync(id, new Shared.Contracts.Requests.UpdateServiceTypeRequest
-                {
-                    CptCode = viewModel.Cptcode,
-                    Description = viewModel.Description
-                })).Unwrap();
-                if (serviceType == null)
-                {
-                    return NotFound();
-                }
-                return RedirectToAction(nameof(Index));
+                return View(viewModel);
             }
-            return View(viewModel);
+            var serviceType = (await serviceTypesApi.UpdateAsync(id, new Shared.Contracts.Requests.UpdateServiceTypeRequest
+            {
+                CptCode = viewModel.Cptcode,
+                Description = viewModel.Description
+            })).Unwrap();
+            if (serviceType == null)
+            {
+                return NotFound();
+            }
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: ServiceTypes/Delete/5
@@ -112,7 +110,7 @@ namespace Consilient.WebApp.Controllers
                 return NotFound();
             }
 
-            var serviceType = await _serviceTypesApi.GetByIdAsync(id.Value);
+            var serviceType = (await serviceTypesApi.GetByIdAsync(id.Value)).Unwrap();
             if (serviceType == null)
             {
                 return NotFound();
@@ -125,7 +123,7 @@ namespace Consilient.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var deleted = (await _serviceTypesApi.DeleteAsync(id)).Unwrap();
+            var deleted = (await serviceTypesApi.DeleteAsync(id)).Unwrap();
             if (!deleted)
             {
                 return NotFound();

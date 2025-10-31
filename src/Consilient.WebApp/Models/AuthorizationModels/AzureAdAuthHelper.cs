@@ -24,7 +24,7 @@ namespace Consilient.WebApp.Models.AuthorizationModels
 
             var clientPrincipal = JsonSerializer.Deserialize<ClientPrincipal>(json, _cachedJsonOptions);
 
-            var claims = clientPrincipal?.Claims?.Select(c => new Claim(c.Type, c.Value)) ?? [];
+            var claims = clientPrincipal?.Claims.Select(c => new Claim(c.Type, c.Value)) ?? [];
             return new ClaimsPrincipal(new ClaimsIdentity(claims, clientPrincipal?.AuthenticationType));
         }
     }

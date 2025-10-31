@@ -5,20 +5,20 @@ namespace Consilient.Api.Client
 {
     public static class ConsilientApiClientRegistrationExtension
     {
-        public static void AddConsilientApiClient(this IServiceCollection services, ConsilientApiClientConfiguration configuration, Func<string> getUserNameFunc)
+        public static void AddConsilientApiClient(this IServiceCollection services, ConsilientApiClientConfiguration configuration, Func<IServiceProvider, string?> getUserNameFunc)
         {
             ArgumentNullException.ThrowIfNull(configuration);
+            ArgumentNullException.ThrowIfNull(getUserNameFunc);
 
-
-            // Register the root client; pass IHttpClientFactory so ConsilientApiClient can create the named client.
             services.AddScoped<IConsilientApiClient>(sp =>
             {
                 return new ConsilientApiClient(() =>
                 {
-                    return new HttpClient(new AddUserToHeaderHandler(getUserNameFunc))
+                    return new HttpClient(new AddUserToHeaderHandler(GetUserName))
                     {
                         BaseAddress = new Uri(configuration.BaseUrl)
                     };
+                    string? GetUserName() => getUserNameFunc(sp);
                 });
             });
 
