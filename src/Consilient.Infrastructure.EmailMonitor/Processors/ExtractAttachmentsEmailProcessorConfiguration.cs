@@ -2,8 +2,8 @@
 {
     public class ExtractAttachmentsEmailProcessorConfiguration
     {
-        public string SavePath { get; set; } = string.Empty;
-        public IEnumerable<string> ExtensionFilter { get; set; } = [];
-        public IEnumerable<string> ContentTypeFilter { get; set; } = [];
+        public required string SavePath { get; init; } = string.Empty;
+        public required IEnumerable<string> ExtensionFilter { get; init; } = [];
+        public required IEnumerable<string> ContentTypeFilter { get; init; } = [];
     }
 }

@@ -4,6 +4,6 @@ namespace Consilient.WebApp.Configuration
 {
     internal class ApplicationSettings
     {
-        public ConsilientApiClientConfiguration ApiClient { get; } = null!;
+        public required ConsilientApiClientConfiguration ApiClient { get; init; } = null!;
     }
 }

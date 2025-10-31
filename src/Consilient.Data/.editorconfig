@@ -1,3 +1,4 @@
 [*.cs]
 # Suppress ReSharper warning for classes with virtual members never inherited
 resharper_class_with_virtual_members_never_inherited_global_highlighting = none
+resharper_property_can_be_made_init_only_global_highlighting = none

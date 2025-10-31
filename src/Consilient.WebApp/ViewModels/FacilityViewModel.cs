@@ -4,13 +4,13 @@ namespace Consilient.WebApp.ViewModels
 {
     public class FacilityViewModel
     {
-        public int FacilityId { get; set; }
+        public int FacilityId { get; init; }
 
         [Display(Name = "Facility Name")]
-        public string? FacilityName { get; set; }
+        public string? FacilityName { get; init; }
 
         [Display(Name = "Facility Abbreviation")]
-        public string? FacilityAbbreviation { get; set; }
+        public string? FacilityAbbreviation { get; init; }
 
         //[ValidateNever]
         //public virtual ICollection<ContractViewModel> Contracts { get; set; } = [];

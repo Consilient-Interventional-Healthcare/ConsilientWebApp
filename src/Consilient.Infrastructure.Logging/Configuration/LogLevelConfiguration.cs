@@ -3,7 +3,7 @@
 
     public class LogLevelConfiguration
     {
-        public string Default { get; } = "Information";
-        public string MicrosoftAspNetCore { get; } = "Warning";
+        public required string Default { get; init; } = "Information";
+        public required string MicrosoftAspNetCore { get; init; } = "Warning";
     }
 }

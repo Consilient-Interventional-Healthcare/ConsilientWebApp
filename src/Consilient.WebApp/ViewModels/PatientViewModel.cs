@@ -9,16 +9,16 @@ namespace Consilient.WebApp.ViewModels
         public int PatientMrn { get; set; }
 
         [Display(Name = "Patient First Name")]
-        public string? PatientFirstName { get; set; }
+        public string? PatientFirstName { get; init; }
 
         [Display(Name = "Patient Last Name")]
-        public string? PatientLastName { get; set; }
+        public string? PatientLastName { get; init; }
 
         [Display(Name = "Patient Birth Date")]
-        public DateOnly? PatientBirthDate { get; set; }
+        public DateOnly? PatientBirthDate { get; init; }
 
         [Display(Name = "Name")]
-        public string PatientFullName { get; set; } = null!;
+        public string PatientFullName { get; init; } = null!;
 
         //public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
 

@@ -2,6 +2,6 @@
 {
     internal class ApplicationSettings
     {
-        public required EmailSettings Email { get; init; }
+        public required EmailSettings Email { get; init; } = null!;
     }
 }

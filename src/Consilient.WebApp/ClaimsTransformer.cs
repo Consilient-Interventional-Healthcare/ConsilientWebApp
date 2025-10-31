@@ -11,7 +11,7 @@ namespace Consilient.WebApp
         public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
         {
             var email = principal.FindFirst(ClaimTypes.Email)?.Value
-                     ?? principal.FindFirst("preferred_username")?.Value;
+                        ?? principal.FindFirst("preferred_username")?.Value;
 
             email = email?.ToLower();
 
@@ -19,25 +19,29 @@ namespace Consilient.WebApp
             {
                 return principal;
             }
+
             var employee = (await employeesApi.GetByEmailAsync(email)).Unwrap()!;
-            var identity = (ClaimsIdentity)principal.Identity!;
 
             if (employee.IsAdministrator)
             {
-                if (!principal.IsInRole(ApplicationConstants.Roles.Administrator))
-                {
-                    identity.AddClaim(new Claim(ClaimTypes.Role, ApplicationConstants.Roles.Administrator));
-                }
+                AddClaim(principal, ApplicationConstants.Roles.Administrator);
             }
 
             if (employee.CanApproveVisits)
             {
-                if (!principal.IsInRole(ApplicationConstants.Permissions.CanApproveVisits))
-                {
-                    identity.AddClaim(new Claim(ClaimTypes.Role, ApplicationConstants.Permissions.CanApproveVisits));
-                }
+                AddClaim(principal, ApplicationConstants.Permissions.CanApproveVisits);
             }
+
             return principal;
+        }
+
+        private static void AddClaim(ClaimsPrincipal principal, string role)
+        {
+            var identity = (ClaimsIdentity)principal.Identity!;
+            if (!principal.IsInRole(role))
+            {
+                identity.AddClaim(new Claim(ClaimTypes.Role, role));
+            }
         }
     }
 

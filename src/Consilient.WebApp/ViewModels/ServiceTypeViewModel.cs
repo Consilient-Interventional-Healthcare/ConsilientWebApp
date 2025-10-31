@@ -4,16 +4,16 @@ namespace Consilient.WebApp.ViewModels
 {
     public class ServiceTypeViewModel
     {
-        public int ServiceTypeId { get; set; }
+        public int ServiceTypeId { get; init; }
 
-        public string? Description { get; set; }
+        public string? Description { get; init; }
 
         [Display(Name = "CPT Code")]
-        public int? Cptcode { get; set; }
+        public int? Cptcode { get; init; }
 
         [Display(Name = "Code and Description")]
         //[DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public string? CodeAndDescription { get; set; } 
+        public string? CodeAndDescription { get; init; } 
 
         //[ValidateNever]
         //public virtual ICollection<ContractViewModel> Contracts { get; set; } = [];

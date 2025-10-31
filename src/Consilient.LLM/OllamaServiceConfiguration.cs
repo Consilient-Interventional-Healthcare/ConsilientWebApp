@@ -2,7 +2,7 @@
 {
     public class OllamaServiceConfiguration
     {
-        public string BaseUrl { get; set; } = string.Empty;
-        public string DefaultModel { get; set; } = string.Empty;
+        public required string BaseUrl { get; init; } = string.Empty;
+        public required string DefaultModel { get; init; } = string.Empty;
     }
 }

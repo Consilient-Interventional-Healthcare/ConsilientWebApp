@@ -2,8 +2,8 @@
 {
     public class ExcelImporterConfiguration
     {
-        public bool CanConvertFile { get; set; } = true;
+        public required bool CanConvertFile { get; init; } = true;
 
-        public IEnumerable<string> WorksheetFilters { get; init; } = [];
+        public required IEnumerable<string> WorksheetFilters { get; init; } = [];
     }
 }

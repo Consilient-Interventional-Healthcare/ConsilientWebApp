@@ -24,22 +24,26 @@ namespace Consilient.Infrastructure.ExcelImporter.Helpers
         /// Creates an <see cref="IXLWorkbook"/> from the specified file.
         /// </summary>
         /// <param name="canConvertFile">Indicates whether the file can be converted</param>
-        /// <param name="filename">The path to the Excel file.</param>
+        /// <param name="fileName">The path to the Excel file.</param>
         /// <returns>An <see cref="IXLWorkbook"/> instance.</returns>
         /// <remarks>
         /// If the file is an .xls file, it is converted to .xlsx format in-memory.
         /// The returned workbook should be disposed by the caller.
         /// </remarks>
-        public static IXLWorkbook Create(bool canConvertFile, string filename)
+        public static IXLWorkbook Create(bool canConvertFile, string fileName)
         {
-            if (canConvertFile && Path.GetExtension(filename).Equals(".xls", StringComparison.OrdinalIgnoreCase))
+            if (!CanConvertFile(canConvertFile, fileName))
             {
-                using var stream = File.Open(filename, FileMode.Open, FileAccess.Read);
-                return ConvertXlsToXlsx(stream);
+                // For .xlsx files, ClosedXML can handle the file path directly.
+                return new XLWorkbook(fileName);
             }
+            using var stream = File.Open(fileName, FileMode.Open, FileAccess.Read);
+            return ConvertXlsToXlsx(stream);
+        }
 
-            // For .xlsx files, ClosedXML can handle the file path directly.
-            return new XLWorkbook(filename);
+        private static bool CanConvertFile(bool canConvertFile, string fileName)
+        {
+            return canConvertFile && Path.GetExtension(fileName).Equals(".xls", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

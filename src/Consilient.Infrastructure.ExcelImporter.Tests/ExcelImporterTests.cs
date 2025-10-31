@@ -67,6 +67,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             var excelImporter = new ExcelImporter(
                 new ExcelImporterConfiguration
                 {
+                    CanConvertFile = true,
                     WorksheetFilters = _regexPatterns
                 },
                 loggerFactory.CreateLogger<ExcelImporter>()

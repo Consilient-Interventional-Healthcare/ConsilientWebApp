@@ -2,7 +2,7 @@
 {
     public class GrafanaLokiConfiguration
     {
-        public string Url { get; } = string.Empty;
-        public int BatchPostingLimit { get; } = 100;
+        public required string Url { get; init; } = string.Empty;
+        public required int BatchPostingLimit { get; init; } = 100;
     }
 }

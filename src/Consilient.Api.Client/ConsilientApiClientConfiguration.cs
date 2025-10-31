@@ -2,6 +2,6 @@
 {
     public class ConsilientApiClientConfiguration
     {
-        public string BaseUrl { get; set; } = string.Empty;
+        public required string BaseUrl { get; init; } = string.Empty;
     }
 }

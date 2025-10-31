@@ -13,6 +13,7 @@ end_of_line = lf
 [*.cs]
 # C# naming rule: private fields must begin with underscore and use camelCase (e.g. _myField)
 resharper_arrange_namespace_body_highlighting=none
+resharper_class_never_instantiated_global_highlighting=none
 
 # Symbol group: private fields
 dotnet_naming_symbols.private_fields.applicable_kinds = field

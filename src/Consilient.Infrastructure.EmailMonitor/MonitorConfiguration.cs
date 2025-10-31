@@ -4,12 +4,12 @@ namespace Consilient.Infrastructure.EmailMonitor
 {
     public class MonitorConfiguration
     {
-        public string Host { get; } = string.Empty;
-        public int Port { get; } = 0;
-        public bool UseSsl { get; } = false;
-        public string UserName { get; } = string.Empty;
-        public string Password { get; } = string.Empty;
-        public int SearchLookbackDays { get; } = 7;
-        public ExtractAttachmentsEmailProcessorConfiguration ExtractAttachmentsEmailProcessor { get; } = null!;
+        public required string Host { get; init; } = string.Empty;
+        public required int Port { get; init; } = 0;
+        public required bool UseSsl { get; init; } = false;
+        public required string UserName { get; init; } = string.Empty;
+        public required string Password { get; init; } = string.Empty;
+        public required int SearchLookbackDays { get; init; } = 7;
+        public required ExtractAttachmentsEmailProcessorConfiguration ExtractAttachmentsEmailProcessor { get; init; } = null!;
     }
 }

@@ -69,6 +69,7 @@
 
 
 	<ItemGroup>
+	  <None Include="D:\Work\Consilient\src\Consilient.WebApp\.editorconfig" />
 	  <None Include="wwwroot\images\default.jpg" />
 	</ItemGroup>
 
@@ -87,6 +88,13 @@
 
 	<ItemGroup>
 	  <Folder Include="Models\AuthorizationModels\" />
+	</ItemGroup>
+
+
+
+
+	<ItemGroup>
+	  <EditorConfigFiles Remove="D:\Work\Consilient\src\Consilient.WebApp\.editorconfig" />
 	</ItemGroup>
 
 </Project>

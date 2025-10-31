@@ -162,7 +162,7 @@ namespace Consilient.WebApp.Controllers
 
             int patientId;
 
-            if (viewModel.ServiceTypeId == 0 || viewModel.ServiceTypeId == null)
+            if ((viewModel.ServiceTypeId ?? 0) == 0)
             {
                 ModelState.AddModelError("ServiceTypeId", "The Service Type field is required.");
                 await CreateSelectLists(viewModel);
@@ -179,7 +179,7 @@ namespace Consilient.WebApp.Controllers
                 if (patient != null)
                 {
                     TempData["ErrorMessage"] = $"Patient with MRN {viewModel.NewPatient.PatientMrn} already exists. Please select the patient from the dropdown.";
-                    viewModel.NewPatient = new PatientViewModel(); // clears values of new patient
+                    viewModel.NewPatient = new PatientViewModel();
                     viewModel.Patient.PatientMrn = patient.PatientMrn;
                     await CreateSelectLists(viewModel);
                     return View(viewModel);
