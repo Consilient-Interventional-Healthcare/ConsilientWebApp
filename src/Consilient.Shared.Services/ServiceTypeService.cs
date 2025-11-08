@@ -1,4 +1,5 @@
 ﻿using Consilient.Data;
+using Consilient.Data.Entities;
 using Consilient.Shared.Contracts;
 using Consilient.Shared.Contracts.Dtos;
 using Consilient.Shared.Contracts.Requests;
@@ -37,7 +38,7 @@ namespace Consilient.Shared.Services
             try
             {
                 var affected = await dataContext.ServiceTypes
-                    .Where(st => st.ServiceTypeId == id)
+                    .Where(st => st.Id == id)
                     .ExecuteDeleteAsync();
 
                 return affected > 0;
@@ -62,7 +63,7 @@ namespace Consilient.Shared.Services
         {
             var dto = await dataContext.ServiceTypes
                 .AsNoTracking()
-                .Where(st => st.ServiceTypeId == id)
+                .Where(st => st.Id == id)
                 .ProjectToType<ServiceTypeDto>()
                 .FirstOrDefaultAsync();
 
@@ -81,7 +82,7 @@ namespace Consilient.Shared.Services
             try
             {
                 var affected = await dataContext.ServiceTypes
-                    .Where(st => st.ServiceTypeId == id)
+                    .Where(st => st.Id == id)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(st => st.Description, st => request.Description ?? st.Description)
                         .SetProperty(st => st.Cptcode, st => request.CptCode ?? st.Cptcode)
@@ -94,7 +95,7 @@ namespace Consilient.Shared.Services
 
                 return await dataContext.ServiceTypes
                     .AsNoTracking()
-                    .Where(st => st.ServiceTypeId == id)
+                    .Where(st => st.Id == id)
                     .ProjectToType<ServiceTypeDto>()
                     .FirstOrDefaultAsync();
             }

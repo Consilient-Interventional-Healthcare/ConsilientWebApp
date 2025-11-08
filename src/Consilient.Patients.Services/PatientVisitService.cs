@@ -1,4 +1,5 @@
 ﻿using Consilient.Data;
+using Consilient.Data.Entities;
 using Consilient.Patients.Contracts;
 using Consilient.Patients.Contracts.Dtos;
 using Consilient.Patients.Contracts.Requests;
@@ -13,7 +14,7 @@ namespace Consilient.Patients.Services
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var entity = request.Adapt<PatientVisit>();
+            var entity = request.Adapt<Visit>();
             dataContext.PatientVisits.Add(entity);
             await dataContext.SaveChangesAsync();
 
@@ -29,7 +30,7 @@ namespace Consilient.Patients.Services
             try
             {
                 var affected = await dataContext.PatientVisits
-                    .Where(e => e.PatientVisitId == id)
+                    .Where(e => e.Id == id)
                     .ExecuteDeleteAsync();
 
                 return affected > 0;
@@ -71,10 +72,10 @@ namespace Consilient.Patients.Services
             ArgumentNullException.ThrowIfNull(request);
 
             var affected = await dataContext.PatientVisits
-                .Where(e => e.PatientVisitId == id)
+                .Where(e => e.Id == id)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(e => e.CosigningPhysicianEmployeeId, _ => request.CosigningPhysicianEmployeeId)
-                    .SetProperty(e => e.FacilityId, _ => request.FacilityId)
+                    //.SetProperty(e => e.FacilityId, _ => request.FacilityId)
                     .SetProperty(e => e.InsuranceId, _ => request.InsuranceId)
                     .SetProperty(e => e.IsScribeServiceOnly, _ => request.IsScribeServiceOnly)
                     .SetProperty(e => e.IsSupervising, _ => request.IsSupervising)
@@ -91,7 +92,7 @@ namespace Consilient.Patients.Services
 
             return await dataContext.PatientVisits
                 .AsNoTracking()
-                .Where(e => e.PatientVisitId == id)
+                .Where(e => e.Id == id)
                 .ProjectToType<PatientVisitDto>()
                 .FirstOrDefaultAsync();
         }

@@ -7,14 +7,31 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Contract.cs" />
+    <Compile Remove="Entities\Contract.cs" />
+    <Compile Remove="Entities\FacilityPay.cs" />
+    <Compile Remove="Entities\PayrollDatum.cs" />
+    <Compile Remove="Entities\PayrollPeriod.cs" />
+    <Compile Remove="Entities\ProviderContract.cs" />
+    <Compile Remove="Entities\ProviderPay.cs" />
+    <Compile Remove="FacilityPay.cs" />
+    <Compile Remove="Configurations\ContractConfiguration.cs" />
+    <Compile Remove="Configurations\FacilityPayConfiguration.cs" />
+    <Compile Remove="Configurations\PayrollDatumConfiguration.cs" />
+    <Compile Remove="Configurations\PayrollPeriodConfiguration.cs" />
+    <Compile Remove="Configurations\ProviderContractConfiguration.cs" />
+    <Compile Remove="Configurations\ProviderPayConfiguration.cs" />
+    <Compile Remove="PayrollDatum.cs" />
+    <Compile Remove="PayrollPeriod.cs" />
+    <Compile Remove="ProviderContract.cs" />
+    <Compile Remove="ProviderPay.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.10" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Mappings\" />
   </ItemGroup>
 
   <ItemGroup>

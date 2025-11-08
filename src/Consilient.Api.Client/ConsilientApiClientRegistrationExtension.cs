@@ -14,11 +14,12 @@ namespace Consilient.Api.Client
             {
                 return new ConsilientApiClient(() =>
                 {
-                    return new HttpClient(new AddUserToHeaderHandler(GetUserName))
-                    {
-                        BaseAddress = new Uri(configuration.BaseUrl)
-                    };
-                    string? GetUserName() => getUserNameFunc(sp);
+                    //return new HttpClient(new AddUserToHeaderHandler(GetUserName, new HttpClientHandler()))
+                    //{
+                    //    BaseAddress = new Uri(configuration.BaseUrl)
+                    //};
+                    //string? GetUserName() => getUserNameFunc(sp);
+                    return new HttpClient();
                 });
             });
 

@@ -400,9 +400,9 @@ namespace Consilient.WebApp.Controllers
                 .Where(p => p.Role == ApplicationConstants.Roles.Physician)
                 .Select(p => new SelectListItem
                 {
-                    Value = p.EmployeeId.ToString(),
+                    Value = p.Id.ToString(),
                     Text = p.FullName,
-                    Selected = p.EmployeeId == viewModel.PhysicianEmployeeId
+                    Selected = p.Id == viewModel.PhysicianEmployeeId
                 })
                 .ToList();
 
@@ -431,9 +431,9 @@ namespace Consilient.WebApp.Controllers
             var nurseList = employees.Where(p => p.Role == ApplicationConstants.Roles.NursePracticioner)
                 .Select(p => new SelectListItem
                 {
-                    Value = p.EmployeeId.ToString(),
+                    Value = p.Id.ToString(),
                     Text = p.FullName,
-                    Selected = p.EmployeeId == viewModel.NursePractitionerEmployeeId
+                    Selected = p.Id == viewModel.NursePractitionerEmployeeId
                 })
                 .ToList();
 
@@ -553,9 +553,9 @@ namespace Consilient.WebApp.Controllers
             var scribeList = employees.Where(p => p.Role == ApplicationConstants.Roles.Scribe)
                 .Select(p => new SelectListItem
                 {
-                    Value = p.EmployeeId.ToString(),
+                    Value = p.Id.ToString(),
                     Text = p.FullName,
-                    Selected = p.EmployeeId == viewModel.ScribeEmployeeId
+                    Selected = p.Id == viewModel.ScribeEmployeeId
                 })
                 .ToList();
 
@@ -615,9 +615,9 @@ namespace Consilient.WebApp.Controllers
             var cosigningPhysicianList = employees.Where(p => p.Role == ApplicationConstants.Roles.Physician)
                 .Select(p => new SelectListItem
                 {
-                    Value = p.EmployeeId.ToString(),
+                    Value = p.Id.ToString(),
                     Text = p.FullName,
-                    Selected = p.EmployeeId == viewModel.CosigningPhysicianEmployeeId
+                    Selected = p.Id == viewModel.CosigningPhysicianEmployeeId
                 })
                 .ToList();
 
@@ -681,9 +681,9 @@ namespace Consilient.WebApp.Controllers
                 .Where(p => p.IsProvider)
                 .Select(p => new SelectListItem
                 {
-                    Value = p.EmployeeId.ToString(),
+                    Value = p.Id.ToString(),
                     Text = p.FullName,
-                    Selected = p.EmployeeId == viewModel.SelectedProviderId
+                    Selected = p.Id == viewModel.SelectedProviderId
                 })
                 .ToList();
             // Only add default if no match was selected

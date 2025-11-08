@@ -1,5 +1,6 @@
 ﻿using ClosedXML.Excel;
 using Consilient.Data;
+using Consilient.Data.Entities;
 using Consilient.Patients.Contracts;
 using Consilient.Patients.Contracts.Dtos;
 using Consilient.Patients.Contracts.Requests;
@@ -31,7 +32,7 @@ namespace Consilient.Patients.Services
             try
             {
                 var affected = await dataContext.PatientVisits
-                    .Where(e => e.PatientVisitId == id)
+                    .Where(e => e.Id == id)
                     .ExecuteDeleteAsync();
 
                 return affected > 0;
@@ -80,7 +81,7 @@ namespace Consilient.Patients.Services
             }
             foreach (var patientVisitStaging in approvedPatientVisitsStaging)
             {
-                var patientVisit = patientVisitStaging.Adapt<PatientVisit>();
+                var patientVisit = patientVisitStaging.Adapt<Visit>();
                 dataContext.Update(patientVisit);
 
                 patientVisitStaging.AddedToMainTable = true; // Mark as added to main table
@@ -95,7 +96,7 @@ namespace Consilient.Patients.Services
             ArgumentNullException.ThrowIfNull(request);
 
             var affected = await dataContext.PatientVisitsStagings
-                .Where(e => e.PatientVisitStagingId == id)
+                .Where(e => e.Id == id)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(e => e.CosigningPhysicianEmployeeId, _ => request.CosigningPhysicianEmployeeId)
                     .SetProperty(e => e.FacilityId, _ => request.FacilityId)
@@ -115,7 +116,7 @@ namespace Consilient.Patients.Services
 
             return await dataContext.PatientVisitsStagings
                 .AsNoTracking()
-                .Where(e => e.PatientVisitStagingId == id)
+                .Where(e => e.Id == id)
                 .ProjectToType<StagingPatientVisitDto>()
                 .FirstOrDefaultAsync();
         }
@@ -138,7 +139,7 @@ namespace Consilient.Patients.Services
                 {
                     var facilityId = dataContext.Facilities
                             .Where(f => f.FacilityName == "Santa Rosa Hospital")
-                            .Select(f => f.FacilityId)
+                            .Select(f => f.Id)
                             .FirstOrDefault();
 
                     if (facilityId == 0)
@@ -149,7 +150,7 @@ namespace Consilient.Patients.Services
                     var serviceTypeId = dataContext.ServiceTypes
                         .Where(s => s.Cptcode == Convert.ToInt32(row.Cell(4).GetString().Trim())
                                     && s.Description == row.Cell(5).GetString().Trim())
-                        .Select(s => s.ServiceTypeId)
+                        .Select(s => s.Id)
                         .FirstOrDefault();
 
                     if (serviceTypeId == 0)
@@ -159,7 +160,7 @@ namespace Consilient.Patients.Services
 
                     var physicianEmployeeId = dataContext.Employees
                             .Where(e => e.LastName == row.Cell(6).GetString().Trim())
-                            .Select(e => e.EmployeeId)
+                            .Select(e => e.Id)
                             .FirstOrDefault();
 
                     if (physicianEmployeeId == 0)
@@ -171,7 +172,7 @@ namespace Consilient.Patients.Services
 
                     var nursePractitionerEmployeeId = dataContext.Employees
                             .Where(e => e.LastName == nursePractitionerCell)
-                            .Select(e => e.EmployeeId)
+                            .Select(e => e.Id)
                             .FirstOrDefault();
 
                     if (!string.IsNullOrEmpty(nursePractitionerCell) && nursePractitionerEmployeeId == 0)
@@ -188,7 +189,7 @@ namespace Consilient.Patients.Services
 
                         scribeEmployeeId = dataContext.Employees
                                 .Where(e => (e.FirstName ?? string.Empty).Equals(scribeFirstName, StringComparison.CurrentCultureIgnoreCase) && (e.LastName ?? string.Empty).ToLower().Substring(0, 1) == scribeLastInitial)
-                                .Select(e => e.EmployeeId)
+                                .Select(e => e.Id)
                                 .FirstOrDefault();
                     }
 

@@ -1,4 +1,5 @@
 ﻿using Consilient.Data;
+using Consilient.Data.Entities;
 using Consilient.Shared.Contracts;
 using Consilient.Shared.Contracts.Dtos;
 using Consilient.Shared.Contracts.Requests;
@@ -37,7 +38,7 @@ namespace Consilient.Shared.Services
             try
             {
                 var affected = await dataContext.Facilities
-                    .Where(f => f.FacilityId == id)
+                    .Where(f => f.Id == id)
                     .ExecuteDeleteAsync();
 
                 return affected > 0;
@@ -62,7 +63,7 @@ namespace Consilient.Shared.Services
         {
             var dto = await dataContext.Facilities
                 .AsNoTracking()
-                .Where(f => f.FacilityId == id)
+                .Where(f => f.Id == id)
                 .ProjectToType<FacilityDto>()
                 .FirstOrDefaultAsync();
 
@@ -81,7 +82,7 @@ namespace Consilient.Shared.Services
             try
             {
                 var affected = await dataContext.Facilities
-                    .Where(f => f.FacilityId == id)
+                    .Where(f => f.Id == id)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(f => f.FacilityName, f => request.FacilityName ?? f.FacilityName)
                         .SetProperty(f => f.FacilityAbbreviation, f => request.FacilityAbbreviation ?? f.FacilityAbbreviation)
@@ -95,7 +96,7 @@ namespace Consilient.Shared.Services
                 // Return the updated DTO via a no-tracking projection.
                 return await dataContext.Facilities
                     .AsNoTracking()
-                    .Where(f => f.FacilityId == id)
+                    .Where(f => f.Id == id)
                     .ProjectToType<FacilityDto>()
                     .FirstOrDefaultAsync();
             }

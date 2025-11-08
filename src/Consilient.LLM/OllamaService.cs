@@ -14,7 +14,6 @@ namespace Consilient.LLM
             {
                 Prompt = prompt,
                 Model = _defaultModel
-
             }, cancellationToken))
             {
                 if (response != null)

@@ -1,4 +1,5 @@
 ﻿using Consilient.Data;
+using Consilient.Data.Entities;
 using Consilient.Employees.Contracts;
 using Consilient.Employees.Contracts.Dtos;
 using Consilient.Employees.Contracts.Requests;
@@ -37,7 +38,7 @@ namespace Consilient.Employees.Services
             try
             {
                 var affected = await dataContext.Employees
-                    .Where(e => e.EmployeeId == id)
+                    .Where(e => e.Id == id)
                     .ExecuteDeleteAsync();
 
                 return affected > 0;
@@ -81,7 +82,7 @@ namespace Consilient.Employees.Services
             ArgumentNullException.ThrowIfNull(request);
 
             var affected = await dataContext.Employees
-                .Where(e => e.EmployeeId == id)
+                .Where(e => e.Id == id)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(e => e.FirstName, _ => request.FirstName)
                     .SetProperty(e => e.LastName, _ => request.LastName)

@@ -60,7 +60,8 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpPost("upload-spreadsheet")]
-        public async Task<IActionResult> UploadSpreadsheet([FromForm] IFormFile file)
+        //[Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadSpreadsheet(IFormFile file)
         {
             if (file.Length == 0)
             {

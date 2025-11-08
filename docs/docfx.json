@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+  "build": {
+    "content": [
+      {
+        "src": ".",
+        "files": [ "**/swagger.yml" ],
+        "dest": "api"
+      }
+    ],
+    "resource": [
+      {
+        "files": [ "images/**" ]
+      }
+    ],
+    "output": "_site",
+    "template": [
+      "default",
+      "modern"
+    ],
+    "globalMetadata": {
+      "_appName": "Consilient",
+      "_appTitle": "Consilient",
+      "_enableSearch": true,
+      "pdf": false
+    }
+  }
+}

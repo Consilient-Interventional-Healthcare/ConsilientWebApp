@@ -8,6 +8,20 @@
         "dotnet-ef"
       ],
       "rollForward": false
+    },
+    "docfx": {
+      "version": "2.78.4",
+      "commands": [
+        "docfx"
+      ],
+      "rollForward": false
+    },
+    "swashbuckle.aspnetcore.cli": {
+      "version": "9.0.6",
+      "commands": [
+        "swagger"
+      ],
+      "rollForward": false
     }
   }
 }

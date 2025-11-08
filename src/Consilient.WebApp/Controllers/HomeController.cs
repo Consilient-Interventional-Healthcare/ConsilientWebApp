@@ -32,7 +32,7 @@ namespace Consilient.WebApp.Controllers
             {
                 return View(viewModel);
             }
-            var employeeVisits = (await stagingPatientVisitsApi.GetByEmployeeAsync(employee.EmployeeId)).Unwrap()!
+            var employeeVisits = (await stagingPatientVisitsApi.GetByEmployeeAsync(employee.Id)).Unwrap()!
                 .Where(e => e.DateServiced >= viewModel.LowerDateRange)
                 .ToList(); // lower date range set within the view model
             viewModel.EncountersToday = employeeVisits.Count;
