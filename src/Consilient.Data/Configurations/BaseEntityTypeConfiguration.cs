@@ -12,8 +12,8 @@ namespace Consilient.Data.Configurations
         {
             entity.HasKey(e => e.Id).HasName($"PK_{typeof(TEntity).Name}");
             entity.Property(e => e.Id).IsRequired().ValueGeneratedOnAdd();
-            entity.Property(a => a.CreatedAtUtc).IsRequired();
-            entity.Property(a => a.UpdatedAtUtc).IsRequired();
+            entity.Property(a => a.CreatedAtUtc).IsRequired().HasDefaultValueSql("SYSUTCDATETIME()");
+            entity.Property(a => a.UpdatedAtUtc).IsRequired().HasDefaultValueSql("SYSUTCDATETIME()");
 
             entity.Property(e => e.RowVersion)
                    .IsRowVersion()

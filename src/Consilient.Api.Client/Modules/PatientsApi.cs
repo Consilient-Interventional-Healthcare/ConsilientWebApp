@@ -2,7 +2,6 @@
 using Consilient.Api.Client.Models;
 using Consilient.Patients.Contracts.Dtos;
 using Consilient.Patients.Contracts.Requests;
-using System.Net.Http.Json;
 
 namespace Consilient.Api.Client.Modules
 {
@@ -10,19 +9,19 @@ namespace Consilient.Api.Client.Modules
     {
         public async Task<ApiResponse<PatientDto?>> CreateAsync(CreatePatientRequest request)
         {
-            var resp = await HttpClient.PostAsJsonAsync(Routes.Create(), request).ConfigureAwait(false);
+            var resp = await PostAsync(Routes.Create(), request).ConfigureAwait(false);
             return await CreateApiResponse<PatientDto?>(resp);
         }
 
         public async Task<ApiResponse<IEnumerable<PatientDto>>> GetAllAsync()
         {
-            var resp = await HttpClient.GetAsync(Routes.GetAll()).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetAll()).ConfigureAwait(false);
             return await CreateApiResponse<IEnumerable<PatientDto>>(resp);
         }
 
         public async Task<ApiResponse<PatientDto?>> GetByMrnAsync(int mrn)
         {
-            var resp = await HttpClient.GetAsync(Routes.GetByMrn(mrn)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetByMrn(mrn)).ConfigureAwait(false);
             return await CreateApiResponse<PatientDto?>(resp);
         }
 

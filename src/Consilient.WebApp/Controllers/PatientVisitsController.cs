@@ -7,18 +7,29 @@ using Microsoft.AspNetCore.Mvc;
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class PatientVisitsController(IPatientVisitsApi patientVisitsApi, IGraphQlApi graphQlApi) : Controller
+    public class PatientVisitsController(IGraphQlApi graphQlApi) : Controller
     {
         // GET: PatientVisits
         public async Task<IActionResult> Index(DateOnly? selectedDate)
         {
             selectedDate ??= DateOnly.FromDateTime(DateTime.Now.AddDays(-1));
-            var patientVisits = (await graphQlApi.Query<PatientVisitViewModel>("").ConfigureAwait(false)).Unwrap()!;
+            var query = @"query {
+                patientVisits {
+                    id, dateServiced
+                }
+            }";
+            var patientVisits = (await graphQlApi.Query(query).ConfigureAwait(false))
+                .Unwrap()!
+                .Unwrap<IEnumerable<PatientVisitViewModel>>("patientVisits")!;
             var viewModel = new PatientVisitsIndexViewModel
             {
                 PatientVisits = [.. patientVisits]
             };
             ViewBag.SelectedDate = selectedDate.Value;
+            viewModel.PhysicianSummaries ??= [];
+            viewModel.NursePractitionerSummaries ??= [];
+            viewModel.ScribeSummaries ??= [];
+
             foreach (var visit in viewModel.PatientVisits)
             {
                 var physicianName = visit.PhysicianEmployee?.FullName ?? "Unknown Physician";
@@ -67,7 +78,14 @@ namespace Consilient.WebApp.Controllers
         // GET: PatientVisits/Details/5
         public async Task<IActionResult> Details(int id)
         {
-            var patientVisit = (await patientVisitsApi.GetByIdAsync(id)).Unwrap();
+            var query = @"query {
+                patientVisits {
+                id
+                }
+            }";
+            var patientVisit = (await graphQlApi.Query(query).ConfigureAwait(false))
+                .Unwrap()!
+                .Unwrap<IEnumerable<PatientVisitViewModel>>("patientVisits")!.SingleOrDefault();
             if (patientVisit == null)
             {
                 return NotFound();

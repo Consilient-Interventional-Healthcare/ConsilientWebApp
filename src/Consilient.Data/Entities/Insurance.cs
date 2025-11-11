@@ -13,8 +13,6 @@
 
         public bool? IsContracted { get; set; }
 
-        public string CodeAndDescription { get; set; } = null!;
-
         //public virtual ICollection<PatientVisit> PatientVisits { get; set; } = [];
 
         //public virtual ICollection<PatientVisitStaging> PatientVisitsStagings { get; set; } = [];

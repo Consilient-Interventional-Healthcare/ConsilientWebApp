@@ -13,6 +13,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Models
         /// Gets or sets the patient's name.
         /// </summary>
         public string Name { get; init; } = string.Empty;
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
         /// <summary>
         /// Gets or sets the Medical Record Number.
         /// </summary>
@@ -57,5 +59,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Models
         /// Gets or sets the admitting diagnosis.
         /// </summary>
         public string AdmDx { get; init; } = string.Empty;
+        public DateOnly? ServiceDate { get; init; }
+        public int? FacilityId { get; init; }
     }
 }

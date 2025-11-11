@@ -38,7 +38,9 @@ namespace Consilient.Api.Client
         private void Dispose(bool disposing)
         {
             if (_disposed)
+            {
                 return;
+            }
 
             if (disposing)
             {

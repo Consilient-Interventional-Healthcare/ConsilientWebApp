@@ -1,5 +1,6 @@
 ﻿using Consilient.Api.Client;
 using Consilient.Api.Client.Contracts;
+using Consilient.Insurances.Contracts.Dtos;
 using Consilient.Insurances.Contracts.Requests;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +14,9 @@ namespace Consilient.WebApp.Controllers
         // GET: Insurances
         public async Task<IActionResult> Index()
         {
-            var insurances = await insurancesApi.GetAllAsync();
+            var insurances = (await insurancesApi.GetAllAsync())
+                .Unwrap()!
+               .Select(MapToViewModel);
             return View(insurances);
         }
 
@@ -30,8 +33,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-
-            return View(insurance);
+            var insuranceViewModel = MapToViewModel(insurance);
+            return View(insuranceViewModel);
         }
 
         // GET: Insurances/Create
@@ -74,7 +77,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(insurance);
+            var insuranceViewModel = MapToViewModel(insurance);
+            return View(insuranceViewModel);
         }
 
         // POST: Insurances/Edit/5
@@ -121,7 +125,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(insurance);
+            var insuranceViewModel = MapToViewModel(insurance);
+            return View(insuranceViewModel);
         }
 
         // POST: Insurances/Delete/5
@@ -136,5 +141,14 @@ namespace Consilient.WebApp.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+        private static InsuranceViewModel MapToViewModel(InsuranceDto dto) => new()
+        {
+            InsuranceId = dto.InsuranceId,
+            InsuranceCode = dto.InsuranceCode,
+            InsuranceDescription = dto.InsuranceDescription,
+            PhysicianIncluded = dto.PhysicianIncluded,
+            IsContracted = dto.IsContracted
+        };
     }
 }

@@ -16,8 +16,6 @@
 
         public int? NursePractitionerEmployeeId { get; set; }
 
-        public int IsSupervising { get; set; }
-
         public int? ScribeEmployeeId { get; set; }
 
         public int? CosigningPhysicianEmployeeId { get; set; }

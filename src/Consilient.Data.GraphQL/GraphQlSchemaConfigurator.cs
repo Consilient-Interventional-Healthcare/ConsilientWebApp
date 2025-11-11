@@ -22,13 +22,12 @@ namespace Consilient.Data.GraphQL
             //patientVisitType.AddField(m => m.AdmissionNumber, nameof(PatientVisit.AdmissionNumber));
             patientVisitType.AddField(m => m.CosigningPhysicianEmployee, nameof(Visit.CosigningPhysicianEmployee));
             patientVisitType.AddField(m => m.DateServiced, nameof(Visit.DateServiced));
-            //patientVisitType.AddField(m => m.Facility, nameof(PatientVisit.Facility));
+            patientVisitType.AddField(m => m.Facility, nameof(Visit.Facility));
+            patientVisitType.AddField(m => m.Id, nameof(Visit.Id));
             patientVisitType.AddField(m => m.Insurance, nameof(Visit.Insurance));
             patientVisitType.AddField(m => m.IsScribeServiceOnly, nameof(Visit.IsScribeServiceOnly));
-            patientVisitType.AddField(m => m.IsSupervising, nameof(Visit.IsSupervising));
             patientVisitType.AddField(m => m.NursePractitionerEmployee, nameof(Visit.NursePractitionerEmployee));
-            //patientVisitType.AddField(m => m.Patient, nameof(PatientVisit.Patient));
-            patientVisitType.AddField(m => m.Id, nameof(Visit.Id));
+            patientVisitType.AddField(m => m.Patient, nameof(Visit.Patient));
             patientVisitType.AddField(m => m.PhysicianEmployee, nameof(Visit.PhysicianEmployee));
             patientVisitType.AddField(m => m.ScribeEmployee, nameof(Visit.ScribeEmployee));
             patientVisitType.AddField(m => m.ServiceType, nameof(Visit.ServiceType));

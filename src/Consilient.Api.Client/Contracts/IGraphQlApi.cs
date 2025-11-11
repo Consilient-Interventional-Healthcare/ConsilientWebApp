@@ -4,6 +4,6 @@ namespace Consilient.Api.Client.Contracts
 {
     public interface IGraphQlApi : IApi
     {
-        Task<ApiResponse<IEnumerable<TData>>> Query<TData>(string query);
+        Task<ApiResponse<GraphQlResponse>> Query(string query);
     }
 }

@@ -19,12 +19,16 @@ namespace Consilient.Api.Client
                     //    BaseAddress = new Uri(configuration.BaseUrl)
                     //};
                     //string? GetUserName() => getUserNameFunc(sp);
-                    return new HttpClient();
+                    return new HttpClient
+                    {
+                        BaseAddress = new Uri(configuration.BaseUrl)
+                    };
                 });
             });
 
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Employees);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Facilities);
+            services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().GraphQl);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Insurances);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Patients);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().PatientVisits);

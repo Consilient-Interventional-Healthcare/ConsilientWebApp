@@ -36,26 +36,26 @@ namespace Consilient.WebApp.ViewModels
 
         [ValidateNever]
         [Display(Name = "Cosigning Physician")]
-        public EmployeeViewModel CosigningPhysicianEmployee { get; set; } = null!;
+        public EmployeeViewModel? CosigningPhysicianEmployee { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Facility")]
-        public FacilityViewModel Facility { get; set; } = null!;
+        public FacilityViewModel? Facility { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Insurance")]
-        public InsuranceViewModel Insurance { get; set; } = null!;
+        public InsuranceViewModel? Insurance { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Nurse Practitioner")]
-        public EmployeeViewModel NursePractitionerEmployee { get; set; } = null!;
+        public EmployeeViewModel? NursePractitionerEmployee { get; set; } = null!;
 
         [ValidateNever]
-        public PatientViewModel Patient { get; set; } = null!;
+        public PatientViewModel? Patient { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Physician")]
-        public EmployeeViewModel PhysicianEmployee { get; set; } = null!;
+        public EmployeeViewModel? PhysicianEmployee { get; set; } = null!;
 
         [ValidateNever]
         [Display(Name = "Scribe")]
@@ -63,7 +63,7 @@ namespace Consilient.WebApp.ViewModels
 
         [ValidateNever]
         [Display(Name = "Service Type")]
-        public ServiceTypeViewModel ServiceType { get; set; } = null!;
+        public ServiceTypeViewModel? ServiceType { get; set; } = null!;
 
 
         //public List<SelectListItem> CosigningPhysiciansSelectList { get; set; } = [];

@@ -11,9 +11,6 @@ namespace Consilient.Data.Configurations
             entity.ToTable("ServiceTypes", ConsilientDbContext.Schemas.Clinical);
 
             entity.Property(e => e.Id).HasColumnName("ServiceTypeID");
-            entity.Property(e => e.CodeAndDescription)
-                .HasMaxLength(133)
-                .HasComputedColumnSql("((isnull(CONVERT([nvarchar],[CPTCode]),'')+' - ')+isnull([Description],''))", false);
             entity.Property(e => e.Cptcode).HasColumnName("CPTCode");
             entity.Property(e => e.Description).HasMaxLength(100);
         }

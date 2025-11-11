@@ -34,14 +34,14 @@ namespace Consilient.Data.Configurations
                    .IsRequired(false)
                    .HasColumnType("date");
 
-            entity.HasOne<Patient>()
+            entity.HasOne(e => e.Patient)
                    .WithMany()
                    .HasForeignKey(e => e.PatientId)
                    .IsRequired()
                    .OnDelete(DeleteBehavior.Restrict)
                    .HasConstraintName("FK_Hospitalizations_Patients_PatientId");
 
-            entity.HasOne<Facility>()
+            entity.HasOne(e => e.Facility)
                    .WithMany()
                    .HasForeignKey(e => e.FacilityId)
                    .IsRequired()

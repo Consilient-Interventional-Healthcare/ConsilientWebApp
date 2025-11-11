@@ -15,9 +15,6 @@ namespace Consilient.Data.Configurations
 
             entity.Property(e => e.Id).HasColumnName("PatientID");
             entity.Property(e => e.PatientFirstName).HasMaxLength(50);
-            entity.Property(e => e.PatientFullName)
-                .HasMaxLength(101)
-                .HasComputedColumnSql("((isnull([PatientFirstName],'')+' ')+isnull([PatientLastName],''))", false);
             entity.Property(e => e.PatientLastName).HasMaxLength(50);
             entity.Property(e => e.PatientMrn).HasColumnName("PatientMRN");
         }

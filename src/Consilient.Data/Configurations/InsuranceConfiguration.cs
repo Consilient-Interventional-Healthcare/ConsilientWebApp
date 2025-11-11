@@ -11,9 +11,6 @@ namespace Consilient.Data.Configurations
             entity.ToTable("Insurances", ConsilientDbContext.Schemas.Clinical);
 
             entity.Property(e => e.Id).HasColumnName("InsuranceID");
-            entity.Property(e => e.CodeAndDescription)
-                .HasMaxLength(113)
-                .HasComputedColumnSql("((isnull([InsuranceCode],'')+' - ')+isnull([InsuranceDescription],''))", false);
             entity.Property(e => e.InsuranceCode).HasMaxLength(10);
             entity.Property(e => e.InsuranceDescription).HasMaxLength(100);
             entity.Property(e => e.IsContracted).HasDefaultValue(false);

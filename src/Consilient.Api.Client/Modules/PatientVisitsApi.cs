@@ -2,7 +2,6 @@
 using Consilient.Api.Client.Models;
 using Consilient.Patients.Contracts.Dtos;
 using Consilient.Patients.Contracts.Requests;
-using System.Net.Http.Json;
 
 namespace Consilient.Api.Client.Modules
 {
@@ -10,37 +9,37 @@ namespace Consilient.Api.Client.Modules
     {
         public async Task<ApiResponse<PatientVisitDto?>> CreateAsync(CreatePatientVisitRequest request)
         {
-            var resp = await HttpClient.PostAsJsonAsync(Routes.Create(), request).ConfigureAwait(false);
+            var resp = await PostAsync(Routes.Create(), request).ConfigureAwait(false);
             return await CreateApiResponse<PatientVisitDto?>(resp);
         }
 
         public async Task<ApiResponse<bool>> DeleteAsync(int id)
         {
-            var resp = await HttpClient.DeleteAsync(Routes.Delete(id)).ConfigureAwait(false);
+            var resp = await DeleteAsync(Routes.Delete(id)).ConfigureAwait(false);
             return await CreateApiResponse<bool>(resp);
         }
 
         public async Task<ApiResponse<IEnumerable<PatientVisitDto>>> GetByDateAsync(DateOnly date)
         {
-            var resp = await HttpClient.GetAsync(Routes.GetByDate(date)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetByDate(date)).ConfigureAwait(false);
             return await CreateApiResponse<IEnumerable<PatientVisitDto>>(resp);
         }
 
         public async Task<ApiResponse<IEnumerable<PatientVisitDto>>> GetByEmployeeAsync(int employeeId)
         {
-            var resp = await HttpClient.GetAsync(Routes.GetByEmployee(employeeId)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetByEmployee(employeeId)).ConfigureAwait(false);
             return await CreateApiResponse<IEnumerable<PatientVisitDto>>(resp);
         }
 
         public async Task<ApiResponse<PatientVisitDto?>> GetByIdAsync(int id)
         {
-            var resp = await HttpClient.GetAsync(Routes.GetById(id)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetById(id)).ConfigureAwait(false);
             return await CreateApiResponse<PatientVisitDto?>(resp);
         }
 
         public async Task<ApiResponse<PatientVisitDto?>> UpdateAsync(int id, UpdatePatientVisitRequest request)
         {
-            var resp = await HttpClient.PutAsJsonAsync(Routes.Update(id), request).ConfigureAwait(false);
+            var resp = await PutAsync(Routes.Update(id), request).ConfigureAwait(false);
             return await CreateApiResponse<PatientVisitDto?>(resp);
         }
 

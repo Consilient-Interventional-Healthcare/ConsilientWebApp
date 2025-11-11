@@ -1,5 +1,6 @@
 ﻿using Consilient.Api.Client;
 using Consilient.Api.Client.Contracts;
+using Consilient.Shared.Contracts.Dtos;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,9 @@ namespace Consilient.WebApp.Controllers
         // GET: ServiceTypes
         public async Task<IActionResult> Index()
         {
-            var serviceTypes = (await serviceTypesApi.GetAllAsync()).Unwrap();
+            var serviceTypes = (await serviceTypesApi.GetAllAsync())
+                .Unwrap()!
+                .Select(MapToViewModel);
             return View(serviceTypes);
         }
 
@@ -29,8 +32,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-
-            return View(serviceType);
+            var serviceTypeViewModel = MapToViewModel(serviceType);
+            return View(serviceTypeViewModel);
         }
 
         // GET: ServiceTypes/Create
@@ -71,7 +74,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(serviceType);
+            var serviceTypeViewModel = MapToViewModel(serviceType);
+            return View(serviceTypeViewModel);
         }
 
         // POST: ServiceTypes/Edit/5
@@ -115,7 +119,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(serviceType);
+            var serviceTypeViewModel = MapToViewModel(serviceType);
+            return View(serviceTypeViewModel);
         }
 
         // POST: ServiceTypes/Delete/5
@@ -130,5 +135,14 @@ namespace Consilient.WebApp.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+        private static ServiceTypeViewModel MapToViewModel(ServiceTypeDto serviceType) =>
+            new()
+            {
+                CodeAndDescription = serviceType.CodeAndDescription,
+                Cptcode = serviceType.CptCode,
+                Description = serviceType.Description,
+                ServiceTypeId = serviceType.ServiceTypeId
+            };
     }
 }

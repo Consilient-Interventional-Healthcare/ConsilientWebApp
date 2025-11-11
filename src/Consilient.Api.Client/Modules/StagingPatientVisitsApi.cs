@@ -3,7 +3,6 @@ using Consilient.Api.Client.Models;
 using Consilient.Patients.Contracts.Dtos;
 using Consilient.Patients.Contracts.Requests;
 using Consilient.Patients.Contracts.Results;
-using System.Net.Http.Json;
 
 namespace Consilient.Api.Client.Modules
 {
@@ -11,54 +10,50 @@ namespace Consilient.Api.Client.Modules
     {
         public async Task<ApiResponse<StagingPatientVisitDto?>> CreateAsync(CreateStagingPatientVisitRequest request)
         {
-            var resp = await HttpClient.PostAsJsonAsync(Routes.Create(), request).ConfigureAwait(false);
+            var resp = await PostAsync(Routes.Create(), request).ConfigureAwait(false);
             return await CreateApiResponse<StagingPatientVisitDto?>(resp);
         }
 
         public async Task<ApiResponse<bool>> DeleteAsync(int id)
         {
-            var resp = await HttpClient.DeleteAsync(Routes.Delete(id)).ConfigureAwait(false);
+            var resp = await DeleteAsync(Routes.Delete(id)).ConfigureAwait(false);
             return await CreateApiResponse<bool>(resp);
         }
 
         public async Task<ApiResponse<IEnumerable<StagingPatientVisitDto>>> GetByDateAsync(DateOnly date)
         {
-            var resp = await HttpClient.GetAsync(Routes.GetByDate(date)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetByDate(date)).ConfigureAwait(false);
             return await CreateApiResponse<IEnumerable<StagingPatientVisitDto>>(resp);
         }
 
         public async Task<ApiResponse<IEnumerable<StagingPatientVisitDto>>> GetByEmployeeAsync(int employeeId)
         {
-            var resp = await HttpClient.GetAsync(Routes.GetByEmployee(employeeId)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetByEmployee(employeeId)).ConfigureAwait(false);
             return await CreateApiResponse<IEnumerable<StagingPatientVisitDto>>(resp);
         }
 
         public async Task<ApiResponse<StagingPatientVisitDto?>> GetByIdAsync(int id)
         {
-            var resp = await HttpClient.GetAsync(Routes.GetById(id)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetById(id)).ConfigureAwait(false);
             return await CreateApiResponse<StagingPatientVisitDto?>(resp);
         }
 
         public async Task<ApiResponse<int>> PushApprovedPatientVisitsAsync()
         {
-            var resp = await HttpClient.PostAsync(Routes.PushApprovedPatientVisits(), null).ConfigureAwait(false);
+            var resp = await PostAsync(Routes.PushApprovedPatientVisits(), null).ConfigureAwait(false);
             return await CreateApiResponse<int>(resp);
         }
 
         public async Task<ApiResponse<StagingPatientVisitDto?>> UpdateAsync(int id, UpdateStagingPatientVisitRequest request)
         {
-            var resp = await HttpClient.PutAsJsonAsync(Routes.Update(id), request).ConfigureAwait(false);
+            var resp = await PutAsync(Routes.Update(id), request).ConfigureAwait(false);
             return await CreateApiResponse<StagingPatientVisitDto?>(resp);
         }
 
         public async Task<ApiResponse<UploadSpreadsheetResult>> UploadSpreadsheetAsync(Models.File file)
         {
             ArgumentNullException.ThrowIfNull(file);
-            using var form = new MultipartFormDataContent();
-            var byteContent = new ByteArrayContent(file.Content);
-            byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
-            form.Add(byteContent, "file", file.FileName);
-            var resp = await HttpClient.PostAsync(Routes.UploadSpreadsheet(), form).ConfigureAwait(false);
+            var resp = await PostAsync(Routes.UploadSpreadsheet(), null, [file]).ConfigureAwait(false);
             return await CreateApiResponse<UploadSpreadsheetResult>(resp);
         }
         private static class Routes

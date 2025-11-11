@@ -8,6 +8,7 @@ namespace Consilient.Data.Configurations
     {
         public override void Configure(EntityTypeBuilder<Visit> entity)
         {
+            base.Configure(entity);
             entity.ToTable("PatientVisits", ConsilientDbContext.Schemas.Clinical);
 
             //entity.HasAlternateKey(e => new { e.HospitalizationId, e.DateServiced, e.ServiceTypeId, e.PhysicianEmployeeId, e.NursePractitionerEmployeeId })
@@ -18,14 +19,10 @@ namespace Consilient.Data.Configurations
             entity.Property(e => e.DateServiced).HasColumnType("date");
             entity.Property(e => e.CosigningPhysicianEmployeeId).HasColumnName("CosigningPhysicianEmployeeID");
             entity.Property(e => e.InsuranceId).HasColumnName("InsuranceID");
-            entity.Property(e => e.IsSupervising).HasComputedColumnSql("(case when [NursePractitionerEmployeeID] IS NULL then (0) else (1) end)", false);
             entity.Property(e => e.NursePractitionerEmployeeId).HasColumnName("NursePractitionerEmployeeID");
             entity.Property(e => e.PhysicianEmployeeId).HasColumnName("PhysicianEmployeeID");
             entity.Property(e => e.ScribeEmployeeId).HasColumnName("ScribeEmployeeID");
             entity.Property(e => e.ServiceTypeId).HasColumnName("ServiceTypeID");
-
-            //entity.Property(e => e.FacilityId).HasColumnName("FacilityID");
-            //entity.Property(e => e.PatientId).HasColumnName("PatientID");
 
             entity.HasOne(d => d.Hospitalization).WithMany()
                 .HasForeignKey(d => d.HospitalizationId)
@@ -58,15 +55,6 @@ namespace Consilient.Data.Configurations
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PatientVisits_ServiceType");
 
-
-            //entity.HasOne(d => d.Facility).WithMany()
-            //    .HasForeignKey(d => d.FacilityId)
-            //    .OnDelete(DeleteBehavior.ClientSetNull)
-            //    .HasConstraintName("FK_PatientVisits_Facility");
-            //entity.HasOne(d => d.Patient).WithMany()
-            //    .HasForeignKey(d => d.PatientId)
-            //    .OnDelete(DeleteBehavior.ClientSetNull)
-            //    .HasConstraintName("FK_PatientVisits_Patient");
         }
     }
 }

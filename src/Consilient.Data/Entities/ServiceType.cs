@@ -9,8 +9,6 @@
 
         public int? Cptcode { get; set; }
 
-        public string CodeAndDescription { get; set; } = null!;
-
         //public virtual ICollection<Contract> Contracts { get; set; } = [];
 
         //public virtual ICollection<FacilityPay> FacilityPays { get; set; } = [];

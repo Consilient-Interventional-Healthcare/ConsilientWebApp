@@ -1,5 +1,6 @@
 ﻿using Consilient.Api.Client;
 using Consilient.Api.Client.Contracts;
+using Consilient.Shared.Contracts.Dtos;
 using Consilient.Shared.Contracts.Requests;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +14,9 @@ namespace Consilient.WebApp.Controllers
         // GET: Facilities
         public async Task<IActionResult> Index()
         {
-            var facilities = (await facilitiesApi.GetAllAsync()).Unwrap();
+            var facilities = (await facilitiesApi.GetAllAsync())
+                .Unwrap()!
+                .Select(MapToViewModel);
             return View(facilities);
         }
 
@@ -30,8 +33,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-
-            return View(facility);
+            var facilityViewModel = MapToViewModel(facility);
+            return View(facilityViewModel);
         }
 
         // GET: Facilities/Create
@@ -72,7 +75,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(facility);
+            var facilityViewModel = MapToViewModel(facility);
+            return View(facilityViewModel);
         }
 
         // POST: Facilities/Edit/5
@@ -111,7 +115,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(facility);
+            var facilityViewModel = MapToViewModel(facility);
+            return View(facilityViewModel);
         }
 
         // POST: Facilities/Delete/5
@@ -126,5 +131,12 @@ namespace Consilient.WebApp.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+        private static FacilityViewModel MapToViewModel(FacilityDto dto) => new()
+        {
+            FacilityId = dto.FacilityId,
+            FacilityName = dto.FacilityName,
+            FacilityAbbreviation = dto.FacilityAbbreviation
+        };
     }
 }

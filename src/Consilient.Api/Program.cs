@@ -10,14 +10,10 @@ using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using GraphQL.Server.Ui.GraphiQL;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Consilient.Api
 {
@@ -45,7 +41,7 @@ namespace Consilient.Api
                 //var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
                 if (!string.IsNullOrEmpty(defaultConnectionString))
                 {
-                    builder.Services.RegisterDataContext(defaultConnectionString);
+                    builder.Services.RegisterDataContext(defaultConnectionString, builder.Environment.IsProduction());
                 }
                 builder.Services.RegisterGraphQlServices();
                 builder.Services.RegisterEmployeeServices();
@@ -170,7 +166,7 @@ namespace Consilient.Api
             return logger;
         }
 
-        private static Serilog.ILogger CreateTrivialLogger(WebApplicationBuilder builder)
+        private static Serilog.Core.Logger CreateTrivialLogger(WebApplicationBuilder builder)
         {
             return new LoggerConfiguration()
                 .MinimumLevel.Information()

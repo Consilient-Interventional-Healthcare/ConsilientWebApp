@@ -2,7 +2,7 @@
 {
 
 
-    public class Visit: BaseEntity<int>
+    public class Visit : BaseEntity<int>
     {
         public virtual Employee? CosigningPhysicianEmployee { get; set; }
         public int? CosigningPhysicianEmployeeId { get; set; }
@@ -14,7 +14,6 @@
         public int? InsuranceId { get; set; }
 
         public bool IsScribeServiceOnly { get; set; }
-        public int IsSupervising { get; set; }
         public virtual Employee? NursePractitionerEmployee { get; set; }
 
         public int? NursePractitionerEmployeeId { get; set; }
@@ -25,12 +24,7 @@
         public int? ScribeEmployeeId { get; set; }
         public virtual ServiceType ServiceType { get; set; } = null!;
         public int ServiceTypeId { get; set; }
-        //public int PatientId { get; set; }
-
-        //public int FacilityId { get; set; }
-
-        //public int? AdmissionNumber { get; set; }
-        //public virtual Patient Patient { get; set; } = null!;
-        //public virtual Facility Facility { get; set; } = null!;
+        public virtual Patient Patient { get { return Hospitalization.Patient; } }
+        public virtual Facility Facility { get { return Hospitalization.Facility; } }
     }
 }

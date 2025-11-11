@@ -78,7 +78,6 @@ namespace Consilient.Patients.Services
                     //.SetProperty(e => e.FacilityId, _ => request.FacilityId)
                     .SetProperty(e => e.InsuranceId, _ => request.InsuranceId)
                     .SetProperty(e => e.IsScribeServiceOnly, _ => request.IsScribeServiceOnly)
-                    .SetProperty(e => e.IsSupervising, _ => request.IsSupervising)
                     .SetProperty(e => e.NursePractitionerEmployeeId, _ => request.NursePractitionerEmployeeId)
                     .SetProperty(e => e.PhysicianEmployeeId, _ => request.PhysicianEmployeeId)
                     .SetProperty(e => e.ScribeEmployeeId, _ => request.ScribeEmployeeId)

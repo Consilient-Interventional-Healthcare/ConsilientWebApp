@@ -1,5 +1,6 @@
 ﻿using Consilient.Api.Client;
 using Consilient.Api.Client.Contracts;
+using Consilient.Employees.Contracts.Dtos;
 using Consilient.WebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,9 @@ namespace Consilient.WebApp.Controllers
         // GET: Employees
         public async Task<IActionResult> Index()
         {
-            var providers = (await employeesApi.GetAllAsync()).Unwrap();
+            var providers = (await employeesApi.GetAllAsync())
+                .Unwrap()!
+                .Select(MapToViewModel);
             return View(providers);
         }
 
@@ -29,7 +32,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(employee);
+            var employeeViewModel = MapToViewModel(employee);
+            return View(employeeViewModel);
         }
 
         // GET: Employees/Create
@@ -77,7 +81,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(employee);
+            var employeeViewModel = MapToViewModel(employee);
+            return View(employeeViewModel);
         }
 
         // POST: Employees/Edit/5
@@ -121,7 +126,8 @@ namespace Consilient.WebApp.Controllers
             {
                 return NotFound();
             }
-            return View(employee);
+            var employeeViewModel = MapToViewModel(employee);
+            return View(employeeViewModel);
         }
 
         // POST: Employees/Delete/5
@@ -136,5 +142,20 @@ namespace Consilient.WebApp.Controllers
             }
             return RedirectToAction(nameof(Index));
         }
+
+        private static EmployeeViewModel MapToViewModel(EmployeeDto employee) =>
+            new()
+            {
+                CanApproveVisits = employee.CanApproveVisits,
+                Email = employee.Email,
+                EmployeeId = employee.Id,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                FullName = employee.FullName,
+                IsAdministrator = employee.IsAdministrator,
+                IsProvider = employee.IsProvider,
+                Role = employee.Role,
+                TitleExtension = employee.TitleExtension
+            };
     }
 }

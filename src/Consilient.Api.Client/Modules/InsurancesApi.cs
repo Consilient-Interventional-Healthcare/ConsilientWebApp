@@ -2,7 +2,6 @@
 using Consilient.Api.Client.Models;
 using Consilient.Insurances.Contracts.Dtos;
 using Consilient.Insurances.Contracts.Requests;
-using System.Net.Http.Json;
 
 namespace Consilient.Api.Client.Modules
 {
@@ -10,31 +9,31 @@ namespace Consilient.Api.Client.Modules
     {
         public async Task<ApiResponse<InsuranceDto>> CreateAsync(CreateInsuranceRequest request)
         {
-            var resp = await HttpClient.PostAsJsonAsync(Routes.Create(), request).ConfigureAwait(false);
+            var resp = await PostAsync(Routes.Create(), request).ConfigureAwait(false);
             return await CreateApiResponse<InsuranceDto>(resp);
         }
 
         public async Task<ApiResponse<bool>> DeleteAsync(int id)
         {
-            var resp = await HttpClient.DeleteAsync(Routes.Delete(id)).ConfigureAwait(false);
+            var resp = await DeleteAsync(Routes.Delete(id)).ConfigureAwait(false);
             return await CreateApiResponse<bool>(resp);
         }
 
         public async Task<ApiResponse<IEnumerable<InsuranceDto>>> GetAllAsync()
         {
-            var resp = await HttpClient.GetAsync(Routes.GetAll()).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetAll()).ConfigureAwait(false);
             return await CreateApiResponse<IEnumerable<InsuranceDto>>(resp);
         }
 
         public async Task<ApiResponse<InsuranceDto?>> GetByIdAsync(int id)
         {
-            var resp = await HttpClient.GetAsync(Routes.GetById(id)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetById(id)).ConfigureAwait(false);
             return await CreateApiResponse<InsuranceDto?>(resp);
         }
 
         public async Task<ApiResponse<InsuranceDto>> UpdateAsync(int id, UpdateInsuranceRequest request)
         {
-            var resp = await HttpClient.PutAsJsonAsync(Routes.Update(id), request).ConfigureAwait(false);
+            var resp = await PutAsync(Routes.Update(id), request).ConfigureAwait(false);
             return await CreateApiResponse<InsuranceDto>(resp);
         }
 

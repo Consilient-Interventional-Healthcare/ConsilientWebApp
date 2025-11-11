@@ -52,8 +52,14 @@ namespace Consilient.WebApp.Controllers
             ViewBag.SelectedProvider = selectedProviderId;
 
             // API returns IEnumerable<T>, so compile the expression to Func<T,bool> before applying Where
-            var query = $@"{sDate.Value}";
-            var patientVisitsStaging = (await apiClient.GraphQl.Query<PatientVisitsStagingViewModel>(query)).Unwrap()!
+            var query = @"query {
+                patientVisits {
+                id
+                }
+            }";
+            var patientVisitsStaging = (await apiClient.GraphQl.Query(query))
+                .Unwrap()!
+                .Unwrap<IEnumerable<PatientVisitsStagingViewModel>>("patientVisits")!
                 .Where(predicate.Compile())
                 .ToList();
 

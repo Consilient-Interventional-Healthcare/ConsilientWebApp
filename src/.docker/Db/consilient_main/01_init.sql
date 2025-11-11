@@ -1,129 +1,221 @@
-CREATE ROLE [compensation_full]
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END;
 GO
-CREATE ROLE [clinical_full]
+BEGIN TRANSACTION;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20251111023227_Initial'
+)
+BEGIN
+	IF DATABASE_PRINCIPAL_ID('compensation_full') IS NULL
+		CREATE ROLE [compensation_full]
+
+	IF DATABASE_PRINCIPAL_ID('clinical_full') IS NULL
+		CREATE ROLE [clinical_full]
+
+	IF DATABASE_PRINCIPAL_ID('billing_full') IS NULL
+		CREATE ROLE [billing_full]
+
+	IF DATABASE_PRINCIPAL_ID('admin_full') IS NULL
+		CREATE ROLE [admin_full]
+
+    IF SCHEMA_ID(N'Billing') IS NULL EXEC(N'CREATE SCHEMA [Billing];');
+    IF SCHEMA_ID(N'Clinical') IS NULL EXEC(N'CREATE SCHEMA [Clinical];');
+    IF SCHEMA_ID(N'Compensation') IS NULL EXEC(N'CREATE SCHEMA [Compensation];');
+    IF SCHEMA_ID(N'Reference') IS NULL EXEC(N'CREATE SCHEMA [Reference];');
+    
+    CREATE TABLE [Compensation].[Employees] (
+        [EmployeeID] int NOT NULL IDENTITY,
+        [FirstName] nvarchar(50) NULL,
+        [LastName] nvarchar(50) NULL,
+        [TitleExtension] nvarchar(2) NULL,
+        [IsProvider] bit NOT NULL,
+        [Role] nvarchar(50) NULL,
+        [IsAdministrator] bit NOT NULL,
+        [Email] nvarchar(100) NULL,
+        [CanApproveVisits] bit NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_Employees] PRIMARY KEY ([EmployeeID])
+    );
+    
+    ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [IsProvider]
+    ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [IsAdministrator]
+    ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [CanApproveVisits]
+
+    CREATE TABLE [Clinical].[Facilities] (
+        [FacilityID] int NOT NULL IDENTITY,
+        [FacilityName] nvarchar(100) NULL,
+        [FacilityAbbreviation] nvarchar(10) NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_Facilities] PRIMARY KEY ([FacilityID])
+    );
+    
+    CREATE TABLE [Clinical].[Insurances] (
+        [InsuranceID] int NOT NULL IDENTITY,
+        [InsuranceCode] nvarchar(10) NULL,
+        [InsuranceDescription] nvarchar(100) NULL,
+        [PhysicianIncluded] bit NULL DEFAULT CAST(0 AS bit),
+        [IsContracted] bit NULL DEFAULT CAST(0 AS bit),
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_Insurances] PRIMARY KEY ([InsuranceID])
+    );
+       
+    CREATE TABLE [Clinical].[Patients] (
+        [PatientID] int NOT NULL IDENTITY,
+        [PatientMRN] int NOT NULL,
+        [PatientFirstName] nvarchar(50) NULL,
+        [PatientLastName] nvarchar(50) NULL,
+        [PatientBirthDate] date NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_Patients] PRIMARY KEY ([PatientID]),
+        CONSTRAINT [AK_Patients_PatientMrn] UNIQUE ([PatientMRN])
+    );
+    
+    CREATE TABLE [Clinical].[ServiceTypes] (
+        [ServiceTypeID] int NOT NULL IDENTITY,
+        [Description] nvarchar(100) NULL,
+        [CPTCode] int NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_ServiceTypes] PRIMARY KEY ([ServiceTypeID])
+    );
+    
+    CREATE TABLE [Clinical].[Hospitalizations] (
+        [Id] int NOT NULL IDENTITY,
+        [PatientId] int NOT NULL,
+        [CaseId] int NOT NULL,
+        [FacilityId] int NOT NULL,
+        [AdmissionDate] date NOT NULL,
+        [DischargeDate] date NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_Hospitalization] PRIMARY KEY ([Id]),
+        CONSTRAINT [AK_Hospitalizations_CaseId] UNIQUE ([CaseId]),
+        CONSTRAINT [AK_Hospitalizations_CaseId_PatientId] UNIQUE ([CaseId], [PatientId]),
+        CONSTRAINT [FK_Hospitalizations_Facilities_FacilityId] FOREIGN KEY ([FacilityId]) REFERENCES [Clinical].[Facilities] ([FacilityID]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_Hospitalizations_Patients_PatientId] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([PatientID]) ON DELETE NO ACTION
+    );
+    
+    CREATE TABLE [Clinical].[PatientVisits_Staging] (
+        [PatientVisit_StagingID] int NOT NULL IDENTITY,
+        [DateServiced] date NOT NULL,
+        [PatientID] int NOT NULL,
+        [FacilityID] int NOT NULL,
+        [AdmissionNumber] int NULL,
+        [InsuranceID] int NULL,
+        [ServiceTypeID] int NULL,
+        [PhysicianEmployeeID] int NOT NULL,
+        [NursePractitionerEmployeeID] int NULL,
+        [ScribeEmployeeID] int NULL,
+        [NursePractitionerApproved] bit NOT NULL,
+        [PhysicianApproved] bit NOT NULL,
+        [PhysicianApprovedBy] nvarchar(100) NULL,
+        [PhysicianApprovedDateTime] datetime NULL,
+        [AddedToMainTable] bit NOT NULL,
+        [CosigningPhysicianEmployeeID] int NULL,
+        [IsScribeServiceOnly] bit NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_PatientVisits_Staging] PRIMARY KEY ([PatientVisit_StagingID]),
+        CONSTRAINT [FK_PatientVisits_Staging_CosignPhysicianEmployee] FOREIGN KEY ([CosigningPhysicianEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
+        CONSTRAINT [FK_PatientVisits_Staging_Facility] FOREIGN KEY ([FacilityID]) REFERENCES [Clinical].[Facilities] ([FacilityID]),
+        CONSTRAINT [FK_PatientVisits_Staging_Insurance] FOREIGN KEY ([InsuranceID]) REFERENCES [Clinical].[Insurances] ([InsuranceID]),
+        CONSTRAINT [FK_PatientVisits_Staging_NursePractitioner] FOREIGN KEY ([NursePractitionerEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
+        CONSTRAINT [FK_PatientVisits_Staging_Patient] FOREIGN KEY ([PatientID]) REFERENCES [Clinical].[Patients] ([PatientID]),
+        CONSTRAINT [FK_PatientVisits_Staging_Physician] FOREIGN KEY ([PhysicianEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
+        CONSTRAINT [FK_PatientVisits_Staging_Scribe] FOREIGN KEY ([ScribeEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
+        CONSTRAINT [FK_PatientVisits_Staging_ServiceType] FOREIGN KEY ([ServiceTypeID]) REFERENCES [Clinical].[ServiceTypes] ([ServiceTypeID])
+    );
+    
+    ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [NursePractitionerApproved]
+    ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [PhysicianApproved]
+    ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [AddedToMainTable]
+    ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [IsScribeServiceOnly]
+    
+    CREATE TABLE [Clinical].[PatientVisits] (
+        [PatientVisitID] int NOT NULL IDENTITY,
+        [CosigningPhysicianEmployeeID] int NULL,
+        [DateServiced] date NOT NULL,
+        [HospitalizationID] int NOT NULL,
+        [InsuranceID] int NULL,
+        [IsScribeServiceOnly] bit NOT NULL,
+        [NursePractitionerEmployeeID] int NULL,
+        [PhysicianEmployeeID] int NOT NULL,
+        [ScribeEmployeeID] int NULL,
+        [ServiceTypeID] int NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_PatientVisits] PRIMARY KEY ([PatientVisitID]),
+        CONSTRAINT [FK_PatientVisits_CosignPhysicianEmployee] FOREIGN KEY ([CosigningPhysicianEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
+        CONSTRAINT [FK_PatientVisits_Hospitalizations] FOREIGN KEY ([HospitalizationID]) REFERENCES [Clinical].[Hospitalizations] ([Id]),
+        CONSTRAINT [FK_PatientVisits_Insurances] FOREIGN KEY ([InsuranceID]) REFERENCES [Clinical].[Insurances] ([InsuranceID]),
+        CONSTRAINT [FK_PatientVisits_NursePractitioner] FOREIGN KEY ([NursePractitionerEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
+        CONSTRAINT [FK_PatientVisits_Physician] FOREIGN KEY ([PhysicianEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
+        CONSTRAINT [FK_PatientVisits_Scribe] FOREIGN KEY ([ScribeEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
+        CONSTRAINT [FK_PatientVisits_ServiceType] FOREIGN KEY ([ServiceTypeID]) REFERENCES [Clinical].[ServiceTypes] ([ServiceTypeID])
+    );
+    
+    ALTER TABLE [Clinical].[PatientVisits] ADD  DEFAULT ((0)) FOR [IsScribeServiceOnly]
+    
+    CREATE INDEX [IX_Hospitalizations_FacilityId] ON [Clinical].[Hospitalizations] ([FacilityId]);
+    
+    CREATE INDEX [IX_Hospitalizations_PatientId] ON [Clinical].[Hospitalizations] ([PatientId]);
+    
+    CREATE INDEX [IX_PatientVisits_CosigningPhysicianEmployeeID] ON [Clinical].[PatientVisits] ([CosigningPhysicianEmployeeID]);
+    
+    CREATE INDEX [IX_PatientVisits_HospitalizationID] ON [Clinical].[PatientVisits] ([HospitalizationID]);
+    
+    CREATE INDEX [IX_PatientVisits_InsuranceID] ON [Clinical].[PatientVisits] ([InsuranceID]);
+    
+    CREATE INDEX [IX_PatientVisits_NursePractitionerEmployeeID] ON [Clinical].[PatientVisits] ([NursePractitionerEmployeeID]);
+    
+    CREATE INDEX [IX_PatientVisits_PhysicianEmployeeID] ON [Clinical].[PatientVisits] ([PhysicianEmployeeID]);
+    
+    CREATE INDEX [IX_PatientVisits_ScribeEmployeeID] ON [Clinical].[PatientVisits] ([ScribeEmployeeID]);
+    
+    CREATE INDEX [IX_PatientVisits_ServiceTypeID] ON [Clinical].[PatientVisits] ([ServiceTypeID]);
+    
+    CREATE INDEX [IX_PatientVisits_Staging_CosigningPhysicianEmployeeID] ON [Clinical].[PatientVisits_Staging] ([CosigningPhysicianEmployeeID]);
+    
+    CREATE INDEX [IX_PatientVisits_Staging_FacilityID] ON [Clinical].[PatientVisits_Staging] ([FacilityID]);
+    
+    CREATE INDEX [IX_PatientVisits_Staging_InsuranceID] ON [Clinical].[PatientVisits_Staging] ([InsuranceID]);
+    
+    CREATE INDEX [IX_PatientVisits_Staging_NursePractitionerEmployeeID] ON [Clinical].[PatientVisits_Staging] ([NursePractitionerEmployeeID]);
+    
+    CREATE INDEX [IX_PatientVisits_Staging_PatientID] ON [Clinical].[PatientVisits_Staging] ([PatientID]);
+    
+    CREATE INDEX [IX_PatientVisits_Staging_PhysicianEmployeeID] ON [Clinical].[PatientVisits_Staging] ([PhysicianEmployeeID]);
+    
+    CREATE INDEX [IX_PatientVisits_Staging_ScribeEmployeeID] ON [Clinical].[PatientVisits_Staging] ([ScribeEmployeeID]);
+    
+    CREATE INDEX [IX_PatientVisits_Staging_ServiceTypeID] ON [Clinical].[PatientVisits_Staging] ([ServiceTypeID]);
+    
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20251111023227_Initial', N'9.0.10');
+END;
+COMMIT;
 GO
-CREATE ROLE [admin_full]
-GO
-CREATE SCHEMA [Billing]
-GO
-CREATE SCHEMA [Clinical]
-GO
-CREATE SCHEMA [Compensation]
-GO
-CREATE SCHEMA [Reference]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [Clinical].[Facilities](
-	[FacilityID] [int] IDENTITY(1,1) NOT NULL,
-	[FacilityName] [nvarchar](100) NULL,
-	[FacilityAbbreviation] [nvarchar](10) NULL,
- CONSTRAINT [PK_Facilities] PRIMARY KEY CLUSTERED 
-(
-	[FacilityID] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [Clinical].[Insurances](
-	[InsuranceID] [int] IDENTITY(1,1) NOT NULL,
-	[InsuranceCode] [nvarchar](10) NULL,
-	[InsuranceDescription] [nvarchar](100) NULL,
-	[PhysicianIncluded] [bit] NULL,
-	[IsContracted] [bit] NULL,
-	[CodeAndDescription]  AS ((isnull([InsuranceCode],'')+' - ')+isnull([InsuranceDescription],'')),
- CONSTRAINT [PK_Insurances] PRIMARY KEY CLUSTERED 
-(
-	[InsuranceID] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [Clinical].[Patients](
-	[PatientID] [int] IDENTITY(1,1) NOT NULL,
-	[PatientMRN] [int] NOT NULL,
-	[PatientFirstName] [nvarchar](50) NULL,
-	[PatientLastName] [nvarchar](50) NULL,
-	[PatientBirthDate] [date] NULL,
-	[PatientFullName]  AS ((isnull([PatientFirstName],'')+' ')+isnull([PatientLastName],'')),
- CONSTRAINT [PK_Patients] PRIMARY KEY CLUSTERED 
-(
-	[PatientID] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY],
- CONSTRAINT [UQ_Patients_PatientMRN] UNIQUE NONCLUSTERED 
-(
-	[PatientMRN] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [Clinical].[ServiceTypes](
-	[ServiceTypeID] [int] IDENTITY(1,1) NOT NULL,
-	[Description] [nvarchar](100) NULL,
-	[CPTCode] [int] NULL,
-	[CodeAndDescription]  AS ((isnull(CONVERT([nvarchar],[CPTCode]),'')+' - ')+isnull([Description],'')),
- CONSTRAINT [PK_ServiceTypes] PRIMARY KEY CLUSTERED 
-(
-	[ServiceTypeID] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [Compensation].[Employees](
-	[EmployeeID] [int] IDENTITY(1,1) NOT NULL,
-	[FirstName] [nvarchar](50) NULL,
-	[LastName] [nvarchar](50) NULL,
-	[TitleExtension] [nvarchar](2) NULL,
-	[IsProvider] [bit] NOT NULL,
-	[Role] [nvarchar](50) NULL,
-	[FullName]  AS (case when [TitleExtension] IS NULL then (isnull([FirstName],'')+' ')+isnull([LastName],'') else (((isnull([FirstName],'')+' ')+isnull([LastName],''))+', ')+isnull([TitleExtension],'') end),
-	[IsAdministrator] [bit] NOT NULL,
-	[Email] [nvarchar](100) NULL,
-	[CanApproveVisits] [bit] NOT NULL,
- CONSTRAINT [PK_Employees] PRIMARY KEY CLUSTERED 
-(
-	[EmployeeID] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [Clinical].[PatientVisits](
-	[PatientVisitID] [int] IDENTITY(1,1) NOT NULL,
-	[DateServiced] [date] NOT NULL,
-	[PatientID] [int] NOT NULL,
-	[FacilityID] [int] NOT NULL,
-	[AdmissionNumber] [int] NULL,
-	[InsuranceID] [int] NULL,
-	[ServiceTypeID] [int] NOT NULL,
-	[PhysicianEmployeeID] [int] NOT NULL,
-	[NursePractitionerEmployeeID] [int] NULL,
-	[IsSupervising]  AS (case when [NursePractitionerEmployeeID] IS NULL then (0) else (1) end),
-	[ScribeEmployeeID] [int] NULL,
-	[CosigningPhysicianEmployeeID] [int] NULL,
-	[IsScribeServiceOnly] [bit] NOT NULL,
- CONSTRAINT [PK_PatientVisits] PRIMARY KEY CLUSTERED 
-(
-	[PatientVisitID] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
-GO
+/*
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -197,34 +289,6 @@ LEFT JOIN
 	Compensation.Employees SE ON PV.ScribeEmployeeID = SE.EmployeeID
 LEFT JOIN
 	Compensation.Employees CPE ON PV.CosigningPhysicianEmployeeID = CPE.EmployeeID
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [Clinical].[PatientVisits_Staging](
-	[PatientVisit_StagingID] [int] IDENTITY(1,1) NOT NULL,
-	[DateServiced] [date] NOT NULL,
-	[PatientID] [int] NOT NULL,
-	[FacilityID] [int] NOT NULL,
-	[AdmissionNumber] [int] NULL,
-	[InsuranceID] [int] NULL,
-	[ServiceTypeID] [int] NULL,
-	[PhysicianEmployeeID] [int] NOT NULL,
-	[NursePractitionerEmployeeID] [int] NULL,
-	[ScribeEmployeeID] [int] NULL,
-	[NursePractitionerApproved] [bit] NOT NULL,
-	[PhysicianApproved] [bit] NOT NULL,
-	[PhysicianApprovedBy] [nvarchar](100) NULL,
-	[PhysicianApprovedDateTime] [datetime] NULL,
-	[AddedToMainTable] [bit] NOT NULL,
-	[CosigningPhysicianEmployeeID] [int] NULL,
-	[IsScribeServiceOnly] [bit] NOT NULL,
- CONSTRAINT [PK_PatientVisits_Staging] PRIMARY KEY CLUSTERED 
-(
-	[PatientVisit_StagingID] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
 GO
 SET ANSI_NULLS ON
 GO
@@ -349,7 +413,6 @@ CREATE TABLE [Reference].[County](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  View [Billing].[vw_JasperReport]    Script Date: 11/6/2025 11:51:42 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -497,7 +560,6 @@ FROM
 WHERE
     b.BatchDTS = mrb.MostRecentBatchDTS
 GO
-/****** Object:  Table [Billing].[JasperReportStaging]    Script Date: 11/6/2025 11:51:42 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1206,7 +1268,6 @@ PRIMARY KEY CLUSTERED
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [Compensation].[FacilityPay]    Script Date: 10/23/2025 6:44:54 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1224,7 +1285,6 @@ CREATE TABLE [Compensation].[FacilityPay](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [Compensation].[PayrollData]    Script Date: 10/23/2025 6:44:54 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1241,7 +1301,6 @@ CREATE TABLE [Compensation].[PayrollData](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [Compensation].[PayrollPeriods]    Script Date: 10/23/2025 6:44:54 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1258,7 +1317,6 @@ CREATE TABLE [Compensation].[PayrollPeriods](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [Compensation].[ProviderContracts]    Script Date: 10/23/2025 6:44:54 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1275,7 +1333,6 @@ CREATE TABLE [Compensation].[ProviderContracts](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [Compensation].[ProviderPay]    Script Date: 10/23/2025 6:44:54 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -1294,113 +1351,14 @@ CREATE TABLE [Compensation].[ProviderPay](
 )WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-ALTER TABLE [Clinical].[Insurances] ADD  DEFAULT ((0)) FOR [PhysicianIncluded]
-GO
-ALTER TABLE [Clinical].[Insurances] ADD  DEFAULT ((0)) FOR [IsContracted]
-GO
+
 ALTER TABLE [Clinical].[PatientVisit_Staging] ADD  DEFAULT ((0)) FOR [IsApproved]
-GO
-ALTER TABLE [Clinical].[PatientVisits] ADD  DEFAULT ((0)) FOR [IsScribeServiceOnly]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [NursePractitionerApproved]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [PhysicianApproved]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [AddedToMainTable]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [IsScribeServiceOnly]
 GO
 --ALTER TABLE [Compensation].[Contracts] ADD  DEFAULT ((0)) FOR [WeekendFlag]
 --GO
 --ALTER TABLE [Compensation].[Contracts] ADD  DEFAULT ((0)) FOR [SupervisingFlag]
 --GO
-ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [IsProvider]
-GO
-ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [IsAdministrator]
-GO
-ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [CanApproveVisits]
-GO
 ALTER TABLE [Compensation].[PayrollData] ADD  DEFAULT ((0)) FOR [Count]
-GO
-ALTER TABLE [Clinical].[PatientVisits]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_CosignPhysicianEmployee] FOREIGN KEY([CosigningPhysicianEmployeeID])
-REFERENCES [Compensation].[Employees] ([EmployeeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits] CHECK CONSTRAINT [FK_PatientVisits_CosignPhysicianEmployee]
-GO
-ALTER TABLE [Clinical].[PatientVisits]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Facility] FOREIGN KEY([FacilityID])
-REFERENCES [Clinical].[Facilities] ([FacilityID])
-GO
-ALTER TABLE [Clinical].[PatientVisits] CHECK CONSTRAINT [FK_PatientVisits_Facility]
-GO
-ALTER TABLE [Clinical].[PatientVisits]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Insurances] FOREIGN KEY([InsuranceID])
-REFERENCES [Clinical].[Insurances] ([InsuranceID])
-GO
-ALTER TABLE [Clinical].[PatientVisits] CHECK CONSTRAINT [FK_PatientVisits_Insurances]
-GO
-ALTER TABLE [Clinical].[PatientVisits]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_NursePractitioner] FOREIGN KEY([NursePractitionerEmployeeID])
-REFERENCES [Compensation].[Employees] ([EmployeeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits] CHECK CONSTRAINT [FK_PatientVisits_NursePractitioner]
-GO
-ALTER TABLE [Clinical].[PatientVisits]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Patient] FOREIGN KEY([PatientID])
-REFERENCES [Clinical].[Patients] ([PatientID])
-GO
-ALTER TABLE [Clinical].[PatientVisits] CHECK CONSTRAINT [FK_PatientVisits_Patient]
-GO
-ALTER TABLE [Clinical].[PatientVisits]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Physician] FOREIGN KEY([PhysicianEmployeeID])
-REFERENCES [Compensation].[Employees] ([EmployeeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits] CHECK CONSTRAINT [FK_PatientVisits_Physician]
-GO
-ALTER TABLE [Clinical].[PatientVisits]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Scribe] FOREIGN KEY([ScribeEmployeeID])
-REFERENCES [Compensation].[Employees] ([EmployeeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits] CHECK CONSTRAINT [FK_PatientVisits_Scribe]
-GO
-ALTER TABLE [Clinical].[PatientVisits]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_ServiceType] FOREIGN KEY([ServiceTypeID])
-REFERENCES [Clinical].[ServiceTypes] ([ServiceTypeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits] CHECK CONSTRAINT [FK_PatientVisits_ServiceType]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Staging_CosignPhysicianEmployee] FOREIGN KEY([CosigningPhysicianEmployeeID])
-REFERENCES [Compensation].[Employees] ([EmployeeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] CHECK CONSTRAINT [FK_PatientVisits_Staging_CosignPhysicianEmployee]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Staging_Facility] FOREIGN KEY([FacilityID])
-REFERENCES [Clinical].[Facilities] ([FacilityID])
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] CHECK CONSTRAINT [FK_PatientVisits_Staging_Facility]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Staging_Insurance] FOREIGN KEY([InsuranceID])
-REFERENCES [Clinical].[Insurances] ([InsuranceID])
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] CHECK CONSTRAINT [FK_PatientVisits_Staging_Insurance]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Staging_NursePractitioner] FOREIGN KEY([NursePractitionerEmployeeID])
-REFERENCES [Compensation].[Employees] ([EmployeeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] CHECK CONSTRAINT [FK_PatientVisits_Staging_NursePractitioner]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Staging_Patient] FOREIGN KEY([PatientID])
-REFERENCES [Clinical].[Patients] ([PatientID])
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] CHECK CONSTRAINT [FK_PatientVisits_Staging_Patient]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Staging_Physician] FOREIGN KEY([PhysicianEmployeeID])
-REFERENCES [Compensation].[Employees] ([EmployeeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] CHECK CONSTRAINT [FK_PatientVisits_Staging_Physician]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Staging_Scribe] FOREIGN KEY([ScribeEmployeeID])
-REFERENCES [Compensation].[Employees] ([EmployeeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] CHECK CONSTRAINT [FK_PatientVisits_Staging_Scribe]
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging]  WITH CHECK ADD  CONSTRAINT [FK_PatientVisits_Staging_ServiceType] FOREIGN KEY([ServiceTypeID])
-REFERENCES [Clinical].[ServiceTypes] ([ServiceTypeID])
-GO
-ALTER TABLE [Clinical].[PatientVisits_Staging] CHECK CONSTRAINT [FK_PatientVisits_Staging_ServiceType]
 GO
 --ALTER TABLE [Compensation].[Contracts]  WITH CHECK ADD  CONSTRAINT [FK_Contracts_Employee] FOREIGN KEY([EmployeeID])
 --REFERENCES [Compensation].[Employees] ([EmployeeID])
@@ -1609,17 +1567,17 @@ SELECT
 FROM
 	preBatch
 WHERE
-	NOT (NonShortDoyleOnlyFLG = 1 AND NonShortDoyleFLG = 0) /*Removes Short Doyle patients when county only pays for non short doyle*/
+	NOT (NonShortDoyleOnlyFLG = 1 AND NonShortDoyleFLG = 0) --Removes Short Doyle patients when county only pays for non short doyle
 )
-/*Turn this into a sp that does the following
+--Turn this into a sp that does the following
 Uploads results of this query to a Batch table (all batches/PatientVisits submitted to Regena already does this
 Also creates list of patients to invoice to the hospital and inserts into a a table showing that
 Also creates a list of patients where we don't have complete info from Jasper Report and starts counting age of visits so we can follow up when they hit a certain threshhold
  --most of these should update as Jasper report gets updated
  --If it's all in one SP, we won't have to run a sequence of SPs every day
-*/
-/*This table doesn't currently have a pk due to patient that duplicates on June 12 Need to resolve this so we can know keep track of which results have
-already been inserted into the table as it will grow incrementally*/
+
+--This table doesn't currently have a pk due to patient that duplicates on June 12 Need to resolve this so we can know keep track of which results have
+already been inserted into the table as it will grow incrementally
 INSERT INTO Consilient.Billing.Batch(
 	BatchID
 	,ServiceDTS
@@ -1770,8 +1728,8 @@ SELECT
 		ON p.NursePractitionerJoinID = np.ProviderJoinID
 )
 ,Invoice AS(
-SELECT /*Need to clean out columns not needed downstream
-Need to build out in Power BI Report Builder*/
+SELECT --Need to clean out columns not needed downstream
+Need to build out in Power BI Report Builder
 	b.VisitForPaymentID AS InvoiceID
 	,b.AttendingPhysicianNM
 	,b.MidlevelNM
@@ -1784,7 +1742,7 @@ Need to build out in Power BI Report Builder*/
 	,COALESCE(b.InclusiveFLG,0) AS InclusiveFLG
 	,CASE 
 		WHEN RenderingLocationNM = 'Santa Rosa Behavioral Healthcare Hospital' AND ServiceDTS > CONVERT(DATE,'2025-07-13') AND InclusiveFLG = 1 THEN 1
-		/*Everything at Ventura is Contractually Invoiced for now*/
+		--Everything at Ventura is Contractually Invoiced for now
 		WHEN RenderingLocationNM = 'Ventura' THEN 1
 		ELSE 0
 	END AS InvoiceFLG
@@ -1833,7 +1791,7 @@ SELECT
 	InvoiceID
 	,ServiceDTS
 	,CASE WHEN DATEPART(WEEKDAY, ServiceDTS) IN (1,7) THEN 1 ELSE 0 END AS WeekendFLG
-	,InvoicePeriodDSC /*Becomes insignificant once data lag is introduced*/
+	,InvoicePeriodDSC --Becomes insignificant once data lag is introduced
 	,AttendingPhysicianNM
 	,MidlevelNM
 	,PatientNM
@@ -1842,8 +1800,8 @@ SELECT
 	,CPTDSC
 	,RenderingLocationNM
 	,InvoiceAMT
-	,InvoiceEligibleDTS /*Use this as parameter for Invoice Generation in PBI Report Builder so patients
-	whose insurance data lagged from previous invoice periods will get invoiced as soon as data is present*/
+	,InvoiceEligibleDTS --Use this as parameter for Invoice Generation in PBI Report Builder so patients
+	whose insurance data lagged from previous invoice periods will get invoiced as soon as data is present
 FROM
 	ClinicalInvoice AS v
 WHERE
@@ -1866,7 +1824,7 @@ CREATE PROCEDURE [dbo].[GetClinicianEarnings]
 @PayrollDTS DATE
 AS
 BEGIN
-/*
+--
 Payroll SP V2
 Key difference is that that this query is table driven rather than code driven.
 
@@ -1883,7 +1841,7 @@ own query that persists a table. Also need to build out queries that clearly def
 and a summary table that left joins the population to all metric tables for the final table that drives the end solution
 
 This runs against the prod structure, may need to modify when pointed toward Matt's dev structure
-*/
+
 WITH PatientVisitsInPayroll AS(
 SELECT
 	md.FullName AS ProviderNM
@@ -2178,12 +2136,12 @@ SELECT
 	,p.ServiceDTS
 	,p.ProviderNM
 	,p.AccompanyingProviderNM
-	,COALESCE(p.CPTDSC,p.PayTypeNM) AS ServiceDSC /*Change this column in existing payroll table and PowerBi Report Builder*/
+	,COALESCE(p.CPTDSC,p.PayTypeNM) AS ServiceDSC --Change this column in existing payroll table and PowerBi Report Builder
 	,RateAMT
 	,p.ExpenseAMT
 	,p.EarningsTypeDSC 
-	,p.CountCNT /*Need to add this to existing payroll and PowerBI Report Builder*/
-	,p.FacilityNM /*Need to add this to existing payroll and PowerBI Report Builder*/
+	,p.CountCNT --Need to add this to existing payroll and PowerBI Report Builder
+	,p.FacilityNM --Need to add this to existing payroll and PowerBI Report Builder
 	,COALESCE(pe.EntityNM,p.ProviderNM) AS PayToNM
 	,GETDATE() AS CreatedDTS
 FROM
@@ -2203,12 +2161,12 @@ INSERT Consilient.Compensation.Payroll(
 	,ServiceDTS
 	,ProviderNM
 	,AccompanyingProviderNM
-	,ServiceDSC /*CPTDSC Need to modify this name in the table*/
+	,ServiceDSC --CPTDSC Need to modify this name in the table
 	,RateAMT
 	,ExpenseAMT
 	,EarningsTypeDSC
-	,CountCNT /*ProcedureCNT Need to Modify This in the table*/
-	,FacilityNM /*Need to add this field to the table*/
+	,CountCNT --ProcedureCNT Need to Modify This in the table
+	,FacilityNM --Need to add this field to the table
 	,PayToNM 
 	,CreatedDTS
 	)
@@ -2219,12 +2177,12 @@ SELECT
 	,ServiceDTS
 	,ProviderNM
 	,AccompanyingProviderNM
-	,ServiceDSC /*Change this column in existing payroll table and PowerBi Report Builder*/
+	,ServiceDSC --Change this column in existing payroll table and PowerBi Report Builder
 	,RateAMT
 	,ExpenseAMT
 	,EarningsTypeDSC 
-	,CountCNT /*Need to add this to existing payroll and PowerBI Report Builder*/
-	,FacilityNM /*Need to add this to existing payroll and PowerBI Report Builder*/
+	,CountCNT --Need to add this to existing payroll and PowerBI Report Builder
+	,FacilityNM --Need to add this to existing payroll and PowerBI Report Builder
 	,PayToNM
 	,CreatedDTS
 FROM
@@ -2243,6 +2201,10 @@ ORDER BY
 ;
 SELECT * FROM Consilient.Compensation.Payroll WHERE PayrollPayDTS = @PayrollDTS
 END
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
 GO
 CREATE PROCEDURE [dbo].[GetCMOEarningsStatements]
 AS
@@ -2559,7 +2521,7 @@ GROUP BY
 	,ProviderNM
 	,InvoiceAMT
 HAVING
-	COUNT(*) = 2 /*No Stipend if whole weekend isn't worked*/
+	COUNT(*) = 2 --No Stipend if whole weekend isn't worked
 )
 INSERT INTO Consilient.Billing.InvoiceWeekendRevenue(
 	WeekendStartDTS
@@ -2589,7 +2551,6 @@ END
 
 
 GO
-/****** Object:  StoredProcedure [dbo].[GetMidlevelEarningsStatements]    Script Date: 11/6/2025 11:51:42 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -2660,7 +2621,7 @@ INSERT INTO Consilient.Compensation.Payroll(
 	,CreatedDTS
 	)
 SELECT
-	CONCAT(c.ServiceDTS,'.',c.ProviderNM,'.',c.EarningsTypeDSC,'.',c.CPTDSC,'.',c.AccompanyingProviderNM) AS PayrollID /*Added Accompanying ProviderNM to pk 8/1/25, should I modify previous data to include this in the value?*/
+	CONCAT(c.ServiceDTS,'.',c.ProviderNM,'.',c.EarningsTypeDSC,'.',c.CPTDSC,'.',c.AccompanyingProviderNM) AS PayrollID --Added Accompanying ProviderNM to pk 8/1/25, should I modify previous data to include this in the value?
 	,c.PayrollPayDTS
 	,c.PayrollPeriodDSC
 	,c.ServiceDTS
@@ -2722,7 +2683,7 @@ FROM
 	LEFT JOIN Compensation.ProviderRate AS pr
 		ON p.AttendingPhysicianJoinID = pr.ProviderJoinID
 			AND p.CPTCD = pr.CPTCD
-			AND CASE WHEN p.NursePractitionerJoinID IS NULL THEN 0 ELSE 1 END = pr.SupervisingFLG /*Crappy join, need to rework*/
+			AND CASE WHEN p.NursePractitionerJoinID IS NULL THEN 0 ELSE 1 END = pr.SupervisingFLG --Crappy join, need to rework
 		
 	LEFT JOIN Reference.Provider AS rpmd
 		ON p.AttendingPhysicianJoinID = rpmd.ProviderJoinID
@@ -2857,8 +2818,8 @@ FROM
 	LEFT JOIN Consilient.Reference.Provider AS np
 		ON p.NursePractitionerJoinID = np.ProviderJoinID
 )
-/*This table doesn't currently have a pk due to patient that duplicates on June 12 Need to resolve this so we can know keep track of which results have
-already been inserted into the table as it will grow incrementally*/
+--This table doesn't currently have a pk due to patient that duplicates on June 12 Need to resolve this so we can know keep track of which results have
+already been inserted into the table as it will grow incrementally
 INSERT INTO Consilient.Billing.VisitsReadyForPayment(
 	VisitForPaymentID
 	,ServiceDTS
@@ -2935,8 +2896,8 @@ SELECT DISTINCT
 	,e.PayrollPeriodDSC
 	,p.ServiceDTS
 	,pr.ProviderNM +' '+ pr.ProviderCredentialsDSC AS ProviderNM
-	,/*CASE WHEN DATEPART(WEEKDAY, p.ServiceDTS) IN (1,7) THEN 2250 ELSE 2250 END Get rid of below Case Statement that was written
-	to account for the unathorized weekend worked and return to the commented out case statement*/
+	,--CASE WHEN DATEPART(WEEKDAY, p.ServiceDTS) IN (1,7) THEN 2250 ELSE 2250 END Get rid of below Case Statement that was written
+	to account for the unathorized weekend worked and return to the commented out case statement
 	CASE WHEN p.ServiceDTS = CONVERT(DATE,'2025-06-21') THEN 500 ELSE 2250 END AS ExpenseAMT
 	,COUNT(p.PatientNM) AS ProcedureCNT
 	,'Weekend Coverage' AS EarningsTypeDSC
@@ -3019,7 +2980,7 @@ SET NOCOUNT ON;
 --    ------------------------------------------------------------------------------------------------------------------------------------
 TRUNCATE TABLE Consilient.Billing.Visits;
 
-INSERT INTO Consilient.Billing.Visits (/*Need to add a primary key once the 6/12 encounter join issue is fixed*/
+INSERT INTO Consilient.Billing.Visits (--Need to add a primary key once the 6/12 encounter join issue is fixed
 	VisitForPaymentID 
 	,FacilityID
 	,CaseID
@@ -3073,7 +3034,7 @@ INSERT INTO Consilient.Billing.Visits (/*Need to add a primary key once the 6/12
 	,AdmissionReportPhysicianIncludedFLG
 	,DischargeReportPhysicianIncludedFLG
     )
-/*Persist Results in Consilient.Billing.Visits*/
+--Persist Results in Consilient.Billing.Visits
 SELECT DISTINCT --9,427
 	CONCAT(p.DateServiced,' - ',pat.PatientMRN,' - ', st.CPTCode) AS VisitForPaymentID 
 	,p.FacilityID
@@ -3140,7 +3101,7 @@ SELECT DISTINCT --9,427
 	,CASE WHEN dil.InsuranceCarrierGroupNM = 'MCAL' AND p.FacilityID = 1 THEN 1 
 		   WHEN p.FacilityID = 2 and dj.PrimaryInsuranceNM LIKE '%County%' THEN 1
 		ELSE 0 END AS DischargeReportCountyFLG
-	,j.PhysicianIncludedFLG AS AdmissionReportPhysicianIncludedFLG /*Currently just used on Ventura as Santa Rosa links to Insurance Lookup table for non short doyle info*/
+	,j.PhysicianIncludedFLG AS AdmissionReportPhysicianIncludedFLG --Currently just used on Ventura as Santa Rosa links to Insurance Lookup table for non short doyle info
 	,dj.PhysicianIncludedFLG AS DischargeReportPhysicianIncludedFLG
  FROM
 	Consilient.Clinical.PatientVisits AS p
@@ -3204,7 +3165,7 @@ SELECT DISTINCT --9,427
 	LEFT JOIN Consilient.Billing.Credentialing AS c
 		ON md.EmployeeID = c.EmployeeID
 			AND il.InsuranceCarrierGroupNM = c.CarrierNM
-/*Shows Duplicates
+--Shows Duplicates
 WHERE
 	CONCAT(p.DateServiced,' - ',pat.PatientMRN,' - ', st.CPTCode)  IN ('2025-06-12 - 120696 - 90792'
 ,'2025-06-12 - 120696 - 99239'--Travis Smith known issue
@@ -3212,7 +3173,7 @@ WHERE
 ,'2025-08-14 - 126343 - 90792'--Veronica Holt looks like she might be duplicated on the Jasper Report
 ,'2025-08-15 - 126343 - 99233'
 ,'2025-08-16 - 126343 - 99233')
-*/
+
 ;
     ------------------------------------------------------------------------------------------------------------------------------------
     -- Step 2: Create batches to send to Billing Team -> Consilient.Billing.Batch
@@ -3431,7 +3392,7 @@ SELECT
 FROM
 	SantaRosaBatch
 WHERE
-	NOT (NonShortDoyleOnlyFLG = 1 AND NonShortDoyleFLG = 0) /*Removes Short Doyle patients when county only pays for non short doyle*/
+	NOT (NonShortDoyleOnlyFLG = 1 AND NonShortDoyleFLG = 0) --Removes Short Doyle patients when county only pays for non short doyle
 
 UNION ALL
 
@@ -3545,8 +3506,8 @@ WHERE
 ----    -- Step 3 : Create Invoice to send to Hospital -> Consilient.Billing.InvoiceClinical
 ----    ------------------------------------------------------------------------------------------------------------------------------------
 WITH Invoice AS(
-SELECT /*Need to clean out columns not needed downstream
-Need to build out in Power BI Report Builder*/
+SELECT --Need to clean out columns not needed downstream
+Need to build out in Power BI Report Builder
 	b.VisitForPaymentID AS InvoiceID
 	,b.CaseID
 	,b.FacilityID
@@ -3565,7 +3526,7 @@ Need to build out in Power BI Report Builder*/
 	,COALESCE(b.AdmissionReportInclusiveFLG,0) AS InclusiveFLG
 	,CASE 
 		WHEN b.FacilityID = 1 AND ServiceDTS > CONVERT(DATE,'2025-07-13') AND b.AdmissionReportInclusiveFLG = 1 THEN 1
-		/*No Ventura Contract*/
+		--No Ventura Contract
 		WHEN b.FacilityID = 2 THEN 0
 		ELSE 0
 	END AS InvoiceFLG
@@ -3659,7 +3620,7 @@ SELECT
 	,CaseID
 	,ServiceDTS
 	,CASE WHEN DATEPART(WEEKDAY, ServiceDTS) IN (1,7) THEN 1 ELSE 0 END AS WeekendFLG
-	,InvoicePeriodDSC /*Becomes insignificant once data lag is introduced*/
+	,InvoicePeriodDSC --Becomes insignificant once data lag is introduced
 	,InvoicePeriodEndDTS
 	,AttendingPhysicianNM
 	,MidlevelNM
@@ -3670,8 +3631,8 @@ SELECT
 	,CPTDSC
 	,RenderingLocationNM
 	,InvoiceAMT
-	,InvoiceEligibleDTS /*Use this as parameter for Invoice Generation in PBI Report Builder so patients
-	whose insurance data lagged from previous invoice periods will get invoiced as soon as data is present*/
+	,InvoiceEligibleDTS --Use this as parameter for Invoice Generation in PBI Report Builder so patients
+	whose insurance data lagged from previous invoice periods will get invoiced as soon as data is present
 FROM
 	ClinicalInvoice AS v
 WHERE
@@ -3710,7 +3671,7 @@ FROM
 	Visits AS b
 WHERE
 	DATEPART(WEEKDAY, b.ServiceDTS) IN (1,7)
-	AND b.FacilityID = 1 /*Only contracted for this at Santa Rosa*/
+	AND b.FacilityID = 1 --Only contracted for this at Santa Rosa
 )
 ,PhysicianWeekendVisitCountPerDayPre AS(
 SELECT
@@ -3724,7 +3685,7 @@ FROM
 	Visits AS b
 WHERE
 	DATEPART(WEEKDAY, b.ServiceDTS) IN (1,7)
-	AND b.FacilityID = 1 /*Only contracted for this at Santa Rosa*/
+	AND b.FacilityID = 1 --Only contracted for this at Santa Rosa
 GROUP BY
 	DATEADD(DAY, - (DATEPART(WEEKDAY, b.ServiceDTS) + @@DATEFIRST - 7) % 7, b.ServiceDTS)
 	,b.ServiceDTS
@@ -3793,7 +3754,7 @@ FROM
 	Consilient.Billing.Visits AS b
 WHERE
 	DATEPART(WEEKDAY, b.ServiceDTS) IN (1,7)
-	AND b.FacilityID = 1 /*Only contracted for this at Santa Rosa*/
+	AND b.FacilityID = 1 --Only contracted for this at Santa Rosa
 	AND MidlevelNM IS NOT NULL
 )
 ,MidlevelPre2 AS(
@@ -3962,3 +3923,156 @@ WHERE
 		)
 END;
 GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TYPE dbo.Assignments AS TABLE
+(
+    CaseId               NVARCHAR(50)    NOT NULL,
+    FirstName            NVARCHAR(50)    NULL,
+    LastName             NVARCHAR(50)    NULL,
+    Mrn                  NVARCHAR(50)    NOT NULL,
+    Sex                  NVARCHAR(10)    NULL,
+    Dob                  DATE            NULL,
+    DateServiced         DATE            NOT NULL,
+    Room                 NVARCHAR(50)    NOT NULL,
+    Bed                  NVARCHAR(50)    NOT NULL,
+    Doa                  DATETIME2       NULL,
+    Los                  INT             NOT NULL,
+    AttendingPhysician   NVARCHAR(200)   NOT NULL,
+    PrimaryInsurance     NVARCHAR(200)   NOT NULL,
+    AdmDx                NVARCHAR(500)   NOT NULL,
+    FacilityId           INT             NOT NULL
+);
+GO
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- Stored procedure that merges rows from the table-valued parameter into dbo.Patients
+CREATE OR ALTER PROCEDURE dbo.ImportAssignments
+    @Rows dbo.PatientDataType READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+            -- Validate that all FacilityIds exist in the Facilities table
+            IF EXISTS (
+                SELECT 1
+                FROM @Rows r
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM [Clinical].[Facilities] f
+                    WHERE f.FacilityID = r.FacilityId
+                )
+            )
+            BEGIN
+                DECLARE @InvalidFacilities NVARCHAR(MAX);
+                DECLARE @ErrorMessage NVARCHAR(MAX);
+                
+                SELECT @InvalidFacilities = STRING_AGG(CAST(r.FacilityId AS NVARCHAR(10)), ', ')
+                FROM (
+                    SELECT DISTINCT r.FacilityId
+                    FROM @Rows r
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM [Clinical].[Facilities] f
+                        WHERE f.FacilityID = r.FacilityId
+                    )
+                ) r;
+                
+                SET @ErrorMessage = 'One or more FacilityIds do not exist in the Facilities table: ' + @InvalidFacilities;
+                THROW 50001, @ErrorMessage, 1;
+            END;
+
+            -- Insert missing patients (where MRN doesn't exist in Patients table)
+            INSERT INTO [Clinical].[Patients] (
+                [PatientMRN],
+                [PatientFirstName],
+                [PatientLastName],
+                [PatientBirthDate]
+            )
+            SELECT DISTINCT
+                CAST(r.Mrn AS INT) AS PatientMRN,
+                r.FirstName AS PatientFirstName,
+                r.LastName AS PatientLastName,
+                CAST(r.Dob AS DATE) AS PatientBirthDate
+            FROM @Rows r
+            WHERE NOT EXISTS (
+                SELECT 1 
+                FROM [Clinical].[Patients] p 
+                WHERE p.PatientMRN = CAST(r.Mrn AS INT)
+            )
+            AND ISNUMERIC(r.Mrn) = 1;  -- Ensure MRN is numeric before casting
+
+            -- Insert missing hospitalizations (where CaseId doesn't exist in Hospitalizations table)
+            INSERT INTO [Clinical].[Hospitalizations] (
+                [CaseId],
+                [PatientId],
+                [FacilityId],
+                [AdmissionDate],
+                [DischargeDate]
+            )
+            SELECT DISTINCT
+                r.CaseId,
+                p.PatientID,
+                r.FacilityId,
+                CAST(r.Doa AS DATE) AS AdmissionDate,
+                NULL AS DischargeDate
+            FROM @Rows r
+            INNER JOIN [Clinical].[Patients] p ON p.PatientMRN = CAST(r.Mrn AS INT)
+            WHERE NOT EXISTS (
+                SELECT 1 
+                FROM [Clinical].[Hospitalizations] h 
+                WHERE h.CaseId = r.CaseId
+            )
+            AND ISNUMERIC(r.Mrn) = 1;  -- Ensure MRN is numeric before casting
+
+            -- Insert patient visits (where combination doesn't exist)
+            INSERT INTO [Clinical].[PatientVisits] (
+                [HospitalizationID],
+                [DateServiced],
+                [ServiceTypeID],
+                [PhysicianEmployeeID],
+                [InsuranceID],
+                [NursePractitionerEmployeeID],
+                [CosigningPhysicianEmployeeID],
+                [ScribeEmployeeID]
+            )
+            SELECT DISTINCT
+                h.Id AS HospitalizationID,
+                CAST(ISNULL(r.DateServiced, r.Doa) AS DATE) AS DateServiced,
+                r.ServiceTypeId,
+                r.PhysicianEmployeeId,
+                r.InsuranceId,
+                NULL AS NursePractitionerEmployeeID,
+                NULL AS CosigningPhysicianEmployeeID,
+                NULL AS ScribeEmployeeID
+            FROM @Rows r
+            INNER JOIN [Clinical].[Patients] p ON p.PatientMRN = CAST(r.Mrn AS INT)
+            INNER JOIN [Clinical].[Hospitalizations] h ON h.CaseId = r.CaseId AND h.PatientId = p.PatientID
+            WHERE r.ServiceTypeId IS NOT NULL  -- Only insert if we have service type
+                AND r.PhysicianEmployeeId IS NOT NULL  -- Only insert if we have physician
+                AND NOT EXISTS (
+                    SELECT 1 
+                    FROM [Clinical].[PatientVisits] v 
+                    WHERE v.HospitalizationID = h.Id
+                        AND v.DateServiced = CAST(ISNULL(r.DateServiced, r.Doa) AS DATE)
+                        AND v.ServiceTypeID = r.ServiceTypeId
+                        AND v.PhysicianEmployeeID = r.PhysicianEmployeeId
+                )
+            AND ISNUMERIC(r.Mrn) = 1;
+        COMMIT TRAN;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            ROLLBACK TRAN;
+        THROW;
+    END CATCH
+END;
+GO
+*/
