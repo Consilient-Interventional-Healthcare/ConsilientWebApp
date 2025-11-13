@@ -18,7 +18,7 @@ namespace Consilient.WebApp.ViewModels
         public DateOnly? PatientBirthDate { get; init; }
 
         [Display(Name = "Name")]
-        public string PatientFullName { get; init; } = null!;
+        public string PatientFullName { get { return Helpers.NameHelpers.GetFullName(PatientFirstName, PatientLastName); } }
 
         //public virtual ICollection<PatientVisitViewModel> PatientVisits { get; set; } = [];
 

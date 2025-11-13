@@ -56,18 +56,18 @@
                         {
                             <tr>
                                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 sm:pl-0">@item.DateServiced.ToString("yyyy-MM-dd")</td>
-                                @*                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.Patient.PatientMrn</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.Patient.PatientFullName</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.Patient?.PatientMrn</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.Patient?.PatientFullName</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.AdmissionNumber</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.Facility.FacilityAbbreviation</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.ServiceType.CodeAndDescription</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.Facility?.FacilityAbbreviation</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.ServiceType?.CodeAndDescription</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.PhysicianEmployee?.FullName</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.NursePractitionerEmployee?.FullName</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.ScribeEmployee?.FullName</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@item.CosigningPhysicianEmployee?.FullName</td>
                                 <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                                    <a asp-action="Details" asp-route-id="@item.PatientVisitId" class="text-brand-blue hover:text-brand-blue-dark">Details</a>
-                                </td> *@
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="text-brand-blue hover:text-brand-blue-dark">Details</a>
+                                </td>
                             </tr>
                         }
                     }
@@ -128,7 +128,7 @@
                     </dl>
 
                     <div class="mt-4 flex justify-end">
-                        <a asp-action="Details" asp-route-id="@item.PatientVisitId" class="text-sm font-medium text-brand-blue hover:text-brand-blue-dark">Details</a>
+                        <a asp-action="Details" asp-route-id="@item.Id" class="text-sm font-medium text-brand-blue hover:text-brand-blue-dark">Details</a>
                     </div>
                 </div>
             }

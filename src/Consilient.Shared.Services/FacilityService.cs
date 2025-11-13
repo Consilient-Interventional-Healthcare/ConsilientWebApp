@@ -84,8 +84,8 @@ namespace Consilient.Shared.Services
                 var affected = await dataContext.Facilities
                     .Where(f => f.Id == id)
                     .ExecuteUpdateAsync(s => s
-                        .SetProperty(f => f.FacilityName, f => request.FacilityName ?? f.FacilityName)
-                        .SetProperty(f => f.FacilityAbbreviation, f => request.FacilityAbbreviation ?? f.FacilityAbbreviation)
+                        .SetProperty(f => f.Name, f => request.FacilityName ?? f.Name)
+                        .SetProperty(f => f.Abbreviation, f => request.FacilityAbbreviation ?? f.Abbreviation)
                     );
 
                 if (affected == 0)

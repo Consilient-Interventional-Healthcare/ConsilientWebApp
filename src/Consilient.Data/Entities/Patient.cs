@@ -3,13 +3,13 @@
 
     public class Patient : BaseEntity<int>
     {
-        public int PatientMrn { get; set; }
+        public int Mrn { get; set; }
 
-        public string? PatientFirstName { get; set; }
+        public string FirstName { get; set; } = string.Empty;
 
-        public string? PatientLastName { get; set; }
+        public string LastName { get; set; } = string.Empty;
 
-        public DateOnly? PatientBirthDate { get; set; }
+        public DateOnly? BirthDate { get; set; }
 
     }
 }

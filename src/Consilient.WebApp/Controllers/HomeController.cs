@@ -11,7 +11,7 @@ using static Consilient.WebApp.ViewModels.HomeIndexViewModel;
 namespace Consilient.WebApp.Controllers
 {
     [Authorize]
-    public class HomeController(IEmployeesApi employeesApi, IStagingPatientVisitsApi stagingPatientVisitsApi, ICurrentUserService currentUserService) : Controller
+    public class HomeController(IEmployeesApi employeesApi, IVisitsStagingApi visitsStagingApi, ICurrentUserService currentUserService) : Controller
     {
         public async Task<IActionResult> Index(TimeframeOptions? timeframe)
         {
@@ -32,7 +32,7 @@ namespace Consilient.WebApp.Controllers
             {
                 return View(viewModel);
             }
-            var employeeVisits = (await stagingPatientVisitsApi.GetByEmployeeAsync(employee.Id)).Unwrap()!
+            var employeeVisits = (await visitsStagingApi.GetByEmployeeAsync(employee.Id)).Unwrap()!
                 .Where(e => e.DateServiced >= viewModel.LowerDateRange)
                 .ToList(); // lower date range set within the view model
             viewModel.EncountersToday = employeeVisits.Count;

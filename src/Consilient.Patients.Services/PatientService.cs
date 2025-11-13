@@ -13,7 +13,7 @@ namespace Consilient.Patients.Services
         public async Task<PatientDto?> CreateAsync(CreatePatientRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            var exists = await dataContext.Patients.AnyAsync(e => e.PatientMrn == request.PatientMrn);
+            var exists = await dataContext.Patients.AnyAsync(e => e.Mrn == request.PatientMrn);
             if (exists)
             {
                 throw new InvalidOperationException("A patient with the specified MRN already exists.");
@@ -27,7 +27,7 @@ namespace Consilient.Patients.Services
 
         public async Task<PatientDto?> GetByMrnAsync(int mrn)
         {
-            var patient = await dataContext.Patients.FirstOrDefaultAsync(p => p.PatientMrn == mrn);
+            var patient = await dataContext.Patients.FirstOrDefaultAsync(p => p.Mrn == mrn);
             return patient?.Adapt<PatientDto>();
         }
     }

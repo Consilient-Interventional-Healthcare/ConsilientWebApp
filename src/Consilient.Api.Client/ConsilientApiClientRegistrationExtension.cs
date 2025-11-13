@@ -31,9 +31,9 @@ namespace Consilient.Api.Client
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().GraphQl);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Insurances);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Patients);
-            services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().PatientVisits);
+            services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Visits);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().ServiceTypes);
-            services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().StagingPatientVisits);
+            services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().VisitsStaging);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Consilient.Employees.Contracts;
+using Consilient.Employees.Contracts.Dtos;
 using Consilient.Employees.Contracts.Requests;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,10 +7,8 @@ namespace Consilient.Api.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class EmployeesController(IEmployeeService employeeService) : ControllerBase
+    public class EmployeesController(IEmployeeService _employeeService) : ControllerBase
     {
-        private readonly IEmployeeService _employeeService = employeeService ?? throw new ArgumentNullException(nameof(employeeService));
-
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
         {
@@ -22,6 +21,13 @@ namespace Consilient.Api.Controllers
         {
             var deleted = await _employeeService.DeleteAsync(id).ConfigureAwait(false);
             return deleted ? NoContent() : NotFound();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var employees = await _employeeService.GetAllAsync().ConfigureAwait(false);
+            return Ok(employees);
         }
 
         [HttpGet("email/{email}")]
@@ -38,11 +44,11 @@ namespace Consilient.Api.Controllers
             return employee == null ? NotFound() : Ok(employee);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("visit-counts")]
+        public async Task<ActionResult<List<EmployeeVisitCountDto>>> GetEmployeesWithVisitCount([FromQuery] DateOnly date)
         {
-            var employees = await _employeeService.GetAllAsync().ConfigureAwait(false);
-            return Ok(employees);
+            var result = await _employeeService.GetEmployeesWithVisitCountPerDayAsync(date);
+            return Ok(result);
         }
 
         [HttpPut("{id:int}")]

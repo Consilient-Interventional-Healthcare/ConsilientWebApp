@@ -12,7 +12,7 @@ namespace Consilient.Api.Controllers
         public async Task<IActionResult> Create([FromBody] CreateInsuranceRequest request)
         {
             var created = await insuranceService.CreateAsync(request).ConfigureAwait(false);
-            return CreatedAtAction(nameof(GetById), new { id = created.InsuranceId }, created);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpGet("{id:int}")]

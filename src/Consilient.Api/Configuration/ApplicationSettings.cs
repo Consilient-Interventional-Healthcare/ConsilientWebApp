@@ -1,4 +1,7 @@
 ﻿namespace Consilient.Api.Configuration
 {
-    internal class ApplicationSettings;
+    public class ApplicationSettings
+    {
+        public required FileUploadSettings FileUpload { get; init; }
+    }
 }

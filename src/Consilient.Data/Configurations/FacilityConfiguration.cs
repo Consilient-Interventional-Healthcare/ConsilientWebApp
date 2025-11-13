@@ -4,15 +4,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Consilient.Data.Configurations
 {
-    internal class FacilityConfiguration : IEntityTypeConfiguration<Facility>
+    internal class FacilityConfiguration : BaseEntityTypeConfiguration<Facility>
     {
-        public void Configure(EntityTypeBuilder<Facility> entity)
+        public override void Configure(EntityTypeBuilder<Facility> entity)
         {
+            base.Configure(entity);
             entity.ToTable("Facilities", ConsilientDbContext.Schemas.Clinical);
 
-            entity.Property(e => e.Id).HasColumnName("FacilityID");
-            entity.Property(e => e.FacilityAbbreviation).HasMaxLength(10);
-            entity.Property(e => e.FacilityName).HasMaxLength(100);
+            entity.Property(e => e.Abbreviation).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
         }
     }
 }

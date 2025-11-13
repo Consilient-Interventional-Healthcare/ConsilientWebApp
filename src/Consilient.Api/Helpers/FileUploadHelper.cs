@@ -1,0 +1,50 @@
+using Consilient.Api.Configuration;
+
+namespace Consilient.Api.Helpers
+{
+    public class FileUploadHelper(FileUploadSettings settings)
+    {
+        private readonly FileUploadSettings _settings = settings;
+
+        public FileValidationResult ValidateFile(IFormFile? file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return FileValidationResult.Failure("No file uploaded.");
+            }
+
+            // Validate file extension
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!_settings.AllowedExtensions.Contains(extension))
+            {
+                return FileValidationResult.Failure(
+                    $"File type {extension} is not allowed. Only {string.Join(", ", _settings.AllowedExtensions)} files are accepted.");
+            }
+
+            // Validate file size
+            if (file.Length > _settings.MaxFileSizeBytes)
+            {
+                var maxSizeMb = _settings.MaxFileSizeBytes / (1024.0 * 1024.0);
+                return FileValidationResult.Failure(
+                    $"File size exceeds the maximum limit of {maxSizeMb:F1}MB.");
+            }
+
+            return FileValidationResult.Success();
+        }
+
+        public async Task<string> SaveFileAsync(IFormFile file, CancellationToken cancellationToken = default)
+        {
+            var uploadsPath = _settings.UploadPath;
+            Directory.CreateDirectory(uploadsPath);
+
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+
+            await using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true);
+            await file.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+
+            return filePath;
+        }
+    }
+}

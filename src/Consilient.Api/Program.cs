@@ -1,4 +1,5 @@
-using Consilient.Api.Infra;
+using Consilient.Api.Hubs;
+using Consilient.Api.Infra.ModelBinders;
 using Consilient.Api.Init;
 using Consilient.Constants;
 using Consilient.Data;
@@ -9,6 +10,7 @@ using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
+using Consilient.Visits.Services;
 using GraphQL.Server.Ui.GraphiQL;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
@@ -37,6 +39,7 @@ namespace Consilient.Api
                 Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
 
                 var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default);
+                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire);
 
                 //var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
                 if (!string.IsNullOrEmpty(defaultConnectionString))
@@ -48,8 +51,24 @@ namespace Consilient.Api
                 builder.Services.RegisterInsuranceServices();
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
+                builder.Services.RegisterVisitServices();
 
                 builder.Services.RegisterLogging(logger);
+                builder.Services.RegisterHangfire(hangfireConnectionString);
+
+                // ===== Configure CORS =====
+                builder.Services.AddCors(options =>
+                {
+                    options.AddDefaultPolicy(policy =>
+                    {
+                        policy.WithOrigins(
+                                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+                                ?? ["http://localhost:3000", "http://localhost:5173"])
+                            .AllowAnyMethod()
+                            .AllowAnyHeader()
+                            .AllowCredentials(); // Required for SignalR
+                    });
+                });
 
                 // ===== Configure Authentication =====
                 // Example: JWT Bearer. Adjust to your auth provider/settings in appsettings.json (Jwt:Authority, Jwt:Audience).
@@ -97,7 +116,7 @@ namespace Consilient.Api
                         ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
                     });
                 builder.Services.AddSwaggerGen(builder.Environment.ApplicationName, version);
-
+                builder.Services.AddSignalR();
 
 
                 var app = builder.Build();
@@ -119,11 +138,14 @@ namespace Consilient.Api
                     app.UseHsts();
                 }
 
+                app.UseCors(); // Must be before UseAuthentication/UseAuthorization
+
                 app.UseAuthentication();
                 app.UseAuthorization();
 
                 app.MapHealthChecks("/health");
                 app.MapControllers();
+                app.MapHub<ProgressHub>("/hubs/import-progress");
                 app.Run();
             }
             catch (Exception ex)

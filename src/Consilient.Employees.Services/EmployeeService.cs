@@ -4,6 +4,7 @@ using Consilient.Employees.Contracts;
 using Consilient.Employees.Contracts.Dtos;
 using Consilient.Employees.Contracts.Requests;
 using Mapster;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.Employees.Services
@@ -75,6 +76,41 @@ namespace Consilient.Employees.Services
         {
             var employee = await dataContext.Employees.FindAsync(id);
             return employee?.Adapt<EmployeeDto>();
+        }
+
+        public async Task<List<EmployeeVisitCountDto>> GetEmployeesWithVisitCountPerDayAsync(DateOnly date)
+        {
+            var result = await dataContext.Database.SqlQueryRaw<EmployeeVisitCountDto>(@"
+                SELECT
+                    E.Id AS EmployeeId,
+                    E.LastName AS EmployeeLastName,
+                    E.FirstName AS EmployeeFirstName,
+                    E.Role,
+                    F.Id AS FacilityId,
+                    F.Abbreviation AS FacilityAbbreviation,
+                    P.Id AS PatientId,
+                    P.MRN AS PatientMRN,
+                    P.LastName AS PatientLastName,
+                    P.FirstName AS PatientFirstName,
+                    V.Id AS VisitId,
+                    V.DateServiced,
+                    V.Room,
+                    V.Bed
+                FROM Compensation.Employees AS E
+                INNER JOIN Clinical.VisitAttendants AS VA 
+                    ON E.Id = VA.EmployeeId
+                INNER JOIN Clinical.Visits AS V 
+                    ON VA.VisitID = V.Id
+                INNER JOIN Clinical.Hospitalizations AS H
+                    ON H.Id = V.HospitalizationId
+                INNER JOIN Clinical.Facilities AS F 
+                    ON F.Id = H.FacilityId
+                INNER JOIN Clinical.Patients AS P
+                    ON P.Id = H.PatientId
+                WHERE V.DateServiced = @date
+                ORDER BY V.DateServiced, E.LastName, E.FirstName, P.LastName, P.FirstName
+            ", new SqlParameter("@date", date)).ToListAsync();
+            return result;
         }
 
         public async Task<EmployeeDto?> UpdateAsync(int id, UpdateEmployeeRequest request)

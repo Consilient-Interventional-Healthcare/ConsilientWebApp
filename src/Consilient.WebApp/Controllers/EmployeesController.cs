@@ -151,7 +151,6 @@ namespace Consilient.WebApp.Controllers
                 EmployeeId = employee.Id,
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
-                FullName = employee.FullName,
                 IsAdministrator = employee.IsAdministrator,
                 IsProvider = employee.IsProvider,
                 Role = employee.Role,

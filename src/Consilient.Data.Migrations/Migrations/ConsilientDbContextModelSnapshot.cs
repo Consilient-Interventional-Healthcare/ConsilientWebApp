@@ -26,53 +26,64 @@ namespace Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("EmployeeID");
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("CanApproveVisits")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.Property<string>("Email")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsAdministrator")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsProvider")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Role")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
 
                     b.Property<string>("TitleExtension")
                         .HasMaxLength(2)
                         .HasColumnType("nvarchar(2)");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.HasKey("Id");
 
@@ -83,28 +94,36 @@ namespace Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("FacilityID");
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FacilityAbbreviation")
+                    b.Property<string>("Abbreviation")
+                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
-                    b.Property<string>("FacilityName")
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.HasKey("Id");
 
@@ -126,7 +145,9 @@ namespace Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.Property<DateOnly?>("DischargeDate")
                         .HasColumnType("date");
@@ -145,7 +166,9 @@ namespace Migrations
                         .HasColumnName("RowVersion");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.HasKey("Id")
                         .HasName("PK_Hospitalization");
@@ -169,23 +192,22 @@ namespace Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("InsuranceID");
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CodeAndDescription")
+                    b.Property<string>("Code")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("InsuranceCode")
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
-                    b.Property<string>("InsuranceDescription")
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -200,11 +222,16 @@ namespace Migrations
                         .HasDefaultValue(false);
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.HasKey("Id");
 
@@ -215,97 +242,252 @@ namespace Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("PatientID");
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateOnly?>("PatientBirthDate")
+                    b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("date");
 
-                    b.Property<string>("PatientFirstName")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
-                    b.Property<string>("PatientFullName")
+                    b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PatientLastName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("PatientMrn")
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Mrn")
                         .HasColumnType("int")
-                        .HasColumnName("PatientMRN");
+                        .HasColumnName("MRN");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.HasKey("Id");
 
-                    b.HasAlternateKey("PatientMrn")
-                        .HasName("AK_Patients_PatientMrn");
+                    b.HasAlternateKey("Mrn")
+                        .HasName("AK_Patients_MRN");
 
                     b.ToTable("Patients", "Clinical");
                 });
 
-            modelBuilder.Entity("Consilient.Data.Entities.PatientVisitStaging", b =>
+            modelBuilder.Entity("Consilient.Data.Entities.ServiceType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Cptcode")
                         .HasColumnType("int")
-                        .HasColumnName("PatientVisit_StagingID");
+                        .HasColumnName("CPTCode");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ServiceTypes", "Clinical");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.Visit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Bed")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<DateOnly>("DateServiced")
+                        .HasColumnType("date");
+
+                    b.Property<int>("HospitalizationId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsScribeServiceOnly")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Room")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<int>("ServiceTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id")
+                        .HasName("PK_Visit");
+
+                    b.HasIndex("HospitalizationId");
+
+                    b.HasIndex("ServiceTypeId")
+                        .HasDatabaseName("IX_Visits_ServiceTypeId");
+
+                    b.HasIndex(new[] { "DateServiced" }, "IX_Visits_DateServiced");
+
+                    b.ToTable("Visits", "Clinical");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.VisitAttendant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("VisitId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id")
+                        .HasName("PK_VisitAttendant");
+
+                    b.HasAlternateKey("VisitId", "EmployeeId")
+                        .HasName("AK_VisitAttendants_VisitId_EmployeeId");
+
+                    b.HasIndex("EmployeeId")
+                        .HasDatabaseName("IX_VisitAttendants_EmployeeId");
+
+                    b.HasIndex("VisitId")
+                        .HasDatabaseName("IX_VisitAttendants_VisitId");
+
+                    b.ToTable("VisitAttendants", "Clinical");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.VisitStaging", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("AddedToMainTable")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<int?>("AdmissionNumber")
                         .HasColumnType("int");
 
                     b.Property<int?>("CosigningPhysicianEmployeeId")
-                        .HasColumnType("int")
-                        .HasColumnName("CosigningPhysicianEmployeeID");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.Property<DateOnly>("DateServiced")
                         .HasColumnType("date");
 
                     b.Property<int>("FacilityId")
-                        .HasColumnType("int")
-                        .HasColumnName("FacilityID");
+                        .HasColumnType("int");
 
                     b.Property<int?>("InsuranceId")
-                        .HasColumnType("int")
-                        .HasColumnName("InsuranceID");
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsScribeServiceOnly")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("NursePractitionerApproved")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<int?>("NursePractitionerEmployeeId")
-                        .HasColumnType("int")
-                        .HasColumnName("NursePractitionerEmployeeID");
+                        .HasColumnType("int");
 
                     b.Property<int>("PatientId")
-                        .HasColumnType("int")
-                        .HasColumnName("PatientID");
+                        .HasColumnType("int");
 
                     b.Property<bool>("PhysicianApproved")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("PhysicianApprovedBy")
                         .HasMaxLength(100)
@@ -315,23 +497,25 @@ namespace Migrations
                         .HasColumnType("datetime");
 
                     b.Property<int>("PhysicianEmployeeId")
-                        .HasColumnType("int")
-                        .HasColumnName("PhysicianEmployeeID");
+                        .HasColumnType("int");
 
                     b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
 
                     b.Property<int?>("ScribeEmployeeId")
-                        .HasColumnType("int")
-                        .HasColumnName("ScribeEmployeeID");
+                        .HasColumnType("int");
 
                     b.Property<int?>("ServiceTypeId")
-                        .HasColumnType("int")
-                        .HasColumnName("ServiceTypeID");
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.HasKey("Id");
 
@@ -351,267 +535,7 @@ namespace Migrations
 
                     b.HasIndex("ServiceTypeId");
 
-                    b.ToTable("PatientVisits_Staging", "Clinical");
-                });
-
-            modelBuilder.Entity("Consilient.Data.Entities.ServiceType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("ServiceTypeID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CodeAndDescription")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("Cptcode")
-                        .HasColumnType("int")
-                        .HasColumnName("CPTCode");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ServiceTypes", "Clinical");
-                });
-
-            modelBuilder.Entity("Consilient.Data.Entities.Visit", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("PatientVisitID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CosigningPhysicianEmployeeId")
-                        .HasColumnType("int")
-                        .HasColumnName("CosigningPhysicianEmployeeID");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateOnly>("DateServiced")
-                        .HasColumnType("date");
-
-                    b.Property<int>("HospitalizationId")
-                        .HasColumnType("int")
-                        .HasColumnName("HospitalizationID");
-
-                    b.Property<int?>("InsuranceId")
-                        .HasColumnType("int")
-                        .HasColumnName("InsuranceID");
-
-                    b.Property<bool>("IsScribeServiceOnly")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("IsSupervising")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("NursePractitionerEmployeeId")
-                        .HasColumnType("int")
-                        .HasColumnName("NursePractitionerEmployeeID");
-
-                    b.Property<int>("PhysicianEmployeeId")
-                        .HasColumnType("int")
-                        .HasColumnName("PhysicianEmployeeID");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<int?>("ScribeEmployeeId")
-                        .HasColumnType("int")
-                        .HasColumnName("ScribeEmployeeID");
-
-                    b.Property<int>("ServiceTypeId")
-                        .HasColumnType("int")
-                        .HasColumnName("ServiceTypeID");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CosigningPhysicianEmployeeId");
-
-                    b.HasIndex("HospitalizationId");
-
-                    b.HasIndex("InsuranceId");
-
-                    b.HasIndex("NursePractitionerEmployeeId");
-
-                    b.HasIndex("PhysicianEmployeeId");
-
-                    b.HasIndex("ScribeEmployeeId");
-
-                    b.HasIndex("ServiceTypeId");
-
-                    b.ToTable("PatientVisits", "Clinical");
-                });
-
-            modelBuilder.Entity("Consilient.Data.Entities.VwPatientVisit", b =>
-                {
-                    b.Property<DateOnly>("DateServiced")
-                        .HasColumnType("date");
-
-                    b.Property<string>("FacilityName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Insurance")
-                        .HasMaxLength(113)
-                        .HasColumnType("nvarchar(113)");
-
-                    b.Property<string>("NursePractitioner")
-                        .HasMaxLength(105)
-                        .HasColumnType("nvarchar(105)");
-
-                    b.Property<string>("PatientName")
-                        .HasMaxLength(101)
-                        .HasColumnType("nvarchar(101)");
-
-                    b.Property<int>("PatientVisitId")
-                        .HasColumnType("int")
-                        .HasColumnName("PatientVisitID");
-
-                    b.Property<string>("Physician")
-                        .HasMaxLength(105)
-                        .HasColumnType("nvarchar(105)");
-
-                    b.Property<string>("Scribe")
-                        .HasMaxLength(105)
-                        .HasColumnType("nvarchar(105)");
-
-                    b.Property<string>("ServiceType")
-                        .HasMaxLength(133)
-                        .HasColumnType("nvarchar(133)");
-
-                    b.ToTable((string)null);
-
-                    b.ToView("vw_PatientVisits", "Clinical");
-                });
-
-            modelBuilder.Entity("Consilient.Data.Entities.VwPatientVisitsCompareToLive", b =>
-                {
-                    b.Property<string>("AttendingPhysicianJoinId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("AttendingPhysicianJoinID");
-
-                    b.Property<int?>("CaseId")
-                        .HasColumnType("int")
-                        .HasColumnName("CaseID");
-
-                    b.Property<string>("CosignPhysicianJoinId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("CosignPhysicianJoinID");
-
-                    b.Property<int?>("Cptcd")
-                        .HasColumnType("int")
-                        .HasColumnName("CPTCD");
-
-                    b.Property<int?>("ImportFileNm")
-                        .HasColumnType("int")
-                        .HasColumnName("ImportFileNM");
-
-                    b.Property<string>("InsuranceNm")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("InsuranceNM");
-
-                    b.Property<int?>("ModifiedDts")
-                        .HasColumnType("int")
-                        .HasColumnName("ModifiedDTS");
-
-                    b.Property<int?>("Mrn")
-                        .HasColumnType("int")
-                        .HasColumnName("MRN");
-
-                    b.Property<string>("NursePractitionerJoinId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("NursePractitionerJoinID");
-
-                    b.Property<DateOnly?>("PatientBirthDts")
-                        .HasColumnType("date")
-                        .HasColumnName("PatientBirthDTS");
-
-                    b.Property<string>("PatientNm")
-                        .HasMaxLength(101)
-                        .HasColumnType("nvarchar(101)")
-                        .HasColumnName("PatientNM");
-
-                    b.Property<string>("ScribeNm")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("ScribeNM");
-
-                    b.Property<DateOnly>("ServiceDts")
-                        .HasColumnType("date")
-                        .HasColumnName("ServiceDTS");
-
-                    b.ToTable((string)null);
-
-                    b.ToView("vw_PatientVisits_CompareToLive", "Clinical");
-                });
-
-            modelBuilder.Entity("Consilient.Data.Entities.VwPatientVisitsStaging", b =>
-                {
-                    b.Property<DateOnly>("DateServiced")
-                        .HasColumnType("date");
-
-                    b.Property<string>("FacilityName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Insurance")
-                        .HasMaxLength(113)
-                        .HasColumnType("nvarchar(113)");
-
-                    b.Property<string>("NursePractitioner")
-                        .HasMaxLength(105)
-                        .HasColumnType("nvarchar(105)");
-
-                    b.Property<string>("PatientName")
-                        .HasMaxLength(101)
-                        .HasColumnType("nvarchar(101)");
-
-                    b.Property<int>("PatientVisitStagingId")
-                        .HasColumnType("int")
-                        .HasColumnName("PatientVisit_StagingID");
-
-                    b.Property<string>("Physician")
-                        .HasMaxLength(105)
-                        .HasColumnType("nvarchar(105)");
-
-                    b.Property<string>("Scribe")
-                        .HasMaxLength(105)
-                        .HasColumnType("nvarchar(105)");
-
-                    b.Property<string>("ServiceType")
-                        .HasMaxLength(133)
-                        .HasColumnType("nvarchar(133)");
-
-                    b.ToTable((string)null);
-
-                    b.ToView("vw_PatientVisits_Staging", "Clinical");
+                    b.ToTable("VisitsStaging", "Clinical");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Hospitalization", b =>
@@ -635,50 +559,90 @@ namespace Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("Consilient.Data.Entities.PatientVisitStaging", b =>
+            modelBuilder.Entity("Consilient.Data.Entities.Visit", b =>
+                {
+                    b.HasOne("Consilient.Data.Entities.Hospitalization", "Hospitalization")
+                        .WithMany()
+                        .HasForeignKey("HospitalizationId")
+                        .IsRequired()
+                        .HasConstraintName("FK_Visits_Hospitalizations_HospitalizationId");
+
+                    b.HasOne("Consilient.Data.Entities.ServiceType", "ServiceType")
+                        .WithMany()
+                        .HasForeignKey("ServiceTypeId")
+                        .IsRequired()
+                        .HasConstraintName("FK_Visits_ServiceTypes_ServiceTypeId");
+
+                    b.Navigation("Hospitalization");
+
+                    b.Navigation("ServiceType");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.VisitAttendant", b =>
+                {
+                    b.HasOne("Consilient.Data.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_VisitAttendants_Employees_EmployeeId");
+
+                    b.HasOne("Consilient.Data.Entities.Visit", "Visit")
+                        .WithMany("VisitAttendants")
+                        .HasForeignKey("VisitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_VisitAttendants_Visits_VisitId");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Visit");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.VisitStaging", b =>
                 {
                     b.HasOne("Consilient.Data.Entities.Employee", "CosigningPhysicianEmployee")
                         .WithMany()
                         .HasForeignKey("CosigningPhysicianEmployeeId")
-                        .HasConstraintName("FK_PatientVisits_Staging_CosignPhysicianEmployee");
+                        .HasConstraintName("FK_VisitsStaging_CosignPhysicianEmployee");
 
                     b.HasOne("Consilient.Data.Entities.Facility", "Facility")
                         .WithMany()
                         .HasForeignKey("FacilityId")
                         .IsRequired()
-                        .HasConstraintName("FK_PatientVisits_Staging_Facility");
+                        .HasConstraintName("FK_VisitsStaging_Facility");
 
                     b.HasOne("Consilient.Data.Entities.Insurance", "Insurance")
                         .WithMany()
                         .HasForeignKey("InsuranceId")
-                        .HasConstraintName("FK_PatientVisits_Staging_Insurance");
+                        .HasConstraintName("FK_VisitsStaging_Insurance");
 
                     b.HasOne("Consilient.Data.Entities.Employee", "NursePractitionerEmployee")
                         .WithMany()
                         .HasForeignKey("NursePractitionerEmployeeId")
-                        .HasConstraintName("FK_PatientVisits_Staging_NursePractitioner");
+                        .HasConstraintName("FK_VisitsStaging_NursePractitioner");
 
                     b.HasOne("Consilient.Data.Entities.Patient", "Patient")
                         .WithMany()
                         .HasForeignKey("PatientId")
                         .IsRequired()
-                        .HasConstraintName("FK_PatientVisits_Staging_Patient");
+                        .HasConstraintName("FK_VisitsStaging_Patient");
 
                     b.HasOne("Consilient.Data.Entities.Employee", "PhysicianEmployee")
                         .WithMany()
                         .HasForeignKey("PhysicianEmployeeId")
                         .IsRequired()
-                        .HasConstraintName("FK_PatientVisits_Staging_Physician");
+                        .HasConstraintName("FK_VisitsStaging_Physician");
 
                     b.HasOne("Consilient.Data.Entities.Employee", "ScribeEmployee")
                         .WithMany()
                         .HasForeignKey("ScribeEmployeeId")
-                        .HasConstraintName("FK_PatientVisits_Staging_Scribe");
+                        .HasConstraintName("FK_VisitsStaging_Scribe");
 
                     b.HasOne("Consilient.Data.Entities.ServiceType", "ServiceType")
                         .WithMany()
                         .HasForeignKey("ServiceTypeId")
-                        .HasConstraintName("FK_PatientVisits_Staging_ServiceType");
+                        .HasConstraintName("FK_VisitsStaging_ServiceType");
 
                     b.Navigation("CosigningPhysicianEmployee");
 
@@ -699,57 +663,7 @@ namespace Migrations
 
             modelBuilder.Entity("Consilient.Data.Entities.Visit", b =>
                 {
-                    b.HasOne("Consilient.Data.Entities.Employee", "CosigningPhysicianEmployee")
-                        .WithMany()
-                        .HasForeignKey("CosigningPhysicianEmployeeId")
-                        .HasConstraintName("FK_PatientVisits_CosignPhysicianEmployee");
-
-                    b.HasOne("Consilient.Data.Entities.Hospitalization", "Hospitalization")
-                        .WithMany()
-                        .HasForeignKey("HospitalizationId")
-                        .IsRequired()
-                        .HasConstraintName("FK_PatientVisits_Hospitalizations");
-
-                    b.HasOne("Consilient.Data.Entities.Insurance", "Insurance")
-                        .WithMany()
-                        .HasForeignKey("InsuranceId")
-                        .HasConstraintName("FK_PatientVisits_Insurances");
-
-                    b.HasOne("Consilient.Data.Entities.Employee", "NursePractitionerEmployee")
-                        .WithMany()
-                        .HasForeignKey("NursePractitionerEmployeeId")
-                        .HasConstraintName("FK_PatientVisits_NursePractitioner");
-
-                    b.HasOne("Consilient.Data.Entities.Employee", "PhysicianEmployee")
-                        .WithMany()
-                        .HasForeignKey("PhysicianEmployeeId")
-                        .IsRequired()
-                        .HasConstraintName("FK_PatientVisits_Physician");
-
-                    b.HasOne("Consilient.Data.Entities.Employee", "ScribeEmployee")
-                        .WithMany()
-                        .HasForeignKey("ScribeEmployeeId")
-                        .HasConstraintName("FK_PatientVisits_Scribe");
-
-                    b.HasOne("Consilient.Data.Entities.ServiceType", "ServiceType")
-                        .WithMany()
-                        .HasForeignKey("ServiceTypeId")
-                        .IsRequired()
-                        .HasConstraintName("FK_PatientVisits_ServiceType");
-
-                    b.Navigation("CosigningPhysicianEmployee");
-
-                    b.Navigation("Hospitalization");
-
-                    b.Navigation("Insurance");
-
-                    b.Navigation("NursePractitionerEmployee");
-
-                    b.Navigation("PhysicianEmployee");
-
-                    b.Navigation("ScribeEmployee");
-
-                    b.Navigation("ServiceType");
+                    b.Navigation("VisitAttendants");
                 });
 #pragma warning restore 612, 618
         }

@@ -13,6 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Configurations\VwPatientVisitConfiguration.cs" />
+    <Compile Remove="Configurations\VwPatientVisitsCompareToLiveConfiguration.cs" />
+    <Compile Remove="Configurations\VwPatientVisitsStagingConfiguration.cs" />
     <Compile Remove="Contract.cs" />
     <Compile Remove="Entities\Contract.cs" />
     <Compile Remove="Entities\FacilityPay.cs" />
@@ -20,6 +23,9 @@
     <Compile Remove="Entities\PayrollPeriod.cs" />
     <Compile Remove="Entities\ProviderContract.cs" />
     <Compile Remove="Entities\ProviderPay.cs" />
+    <Compile Remove="Entities\VwPatientVisit.cs" />
+    <Compile Remove="Entities\VwPatientVisitsCompareToLive.cs" />
+    <Compile Remove="Entities\VwPatientVisitsStaging.cs" />
     <Compile Remove="FacilityPay.cs" />
     <Compile Remove="Configurations\ContractConfiguration.cs" />
     <Compile Remove="Configurations\FacilityPayConfiguration.cs" />

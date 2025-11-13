@@ -1,7 +1,14 @@
-﻿# Interactive loop to get migration name
-do {
-    $MigrationName = Read-Host "Enter migration name (or press Ctrl+C to exit)"
-} while (-not $MigrationName)
+﻿param(
+    [Parameter(Mandatory=$false)]
+    [string]$MigrationName
+)
+
+# Interactive loop to get migration name if not provided as parameter
+if ([string]::IsNullOrWhiteSpace($MigrationName)) {
+    do {
+        $MigrationName = Read-Host "Enter migration name (or press Ctrl+C to exit)"
+    } while (-not $MigrationName)
+}
 
 # Define your DbContexts
 $contexts = @("ConsilientDbContext")

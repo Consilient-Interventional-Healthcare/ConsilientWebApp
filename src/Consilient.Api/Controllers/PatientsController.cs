@@ -17,7 +17,7 @@ namespace Consilient.Api.Controllers
             var created = await patientService.CreateAsync(request).ConfigureAwait(false);
             return created is null
                 ? BadRequest()
-                : CreatedAtAction(nameof(GetByMrn), new { mrn = created.PatientMrn }, created);
+                : CreatedAtAction(nameof(GetByMrn), new { mrn = created.Mrn }, created);
         }
 
         [HttpGet("{mrn:int}")]

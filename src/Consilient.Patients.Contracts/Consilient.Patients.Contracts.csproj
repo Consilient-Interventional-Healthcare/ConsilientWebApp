@@ -6,4 +6,16 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Dtos\PatientVisitDto.cs" />
+    <Compile Remove="Dtos\PatientVisitDtoBase.cs" />
+    <Compile Remove="Dtos\StagingPatientVisitDto.cs" />
+    <Compile Remove="IPatientVisitService.cs" />
+    <Compile Remove="IStagingPatientVisitService.cs" />
+    <Compile Remove="Requests\CreatePatientVisitRequest.cs" />
+    <Compile Remove="Requests\CreateStagingPatientVisitRequest.cs" />
+    <Compile Remove="Requests\UpdatePatientVisitRequest.cs" />
+    <Compile Remove="Requests\UpdateStagingPatientVisitRequest.cs" />
+  </ItemGroup>
+
 </Project>

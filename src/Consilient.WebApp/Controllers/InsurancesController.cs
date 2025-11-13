@@ -144,7 +144,7 @@ namespace Consilient.WebApp.Controllers
 
         private static InsuranceViewModel MapToViewModel(InsuranceDto dto) => new()
         {
-            InsuranceId = dto.InsuranceId,
+            InsuranceId = dto.Id,
             InsuranceCode = dto.InsuranceCode,
             InsuranceDescription = dto.InsuranceDescription,
             PhysicianIncluded = dto.PhysicianIncluded,

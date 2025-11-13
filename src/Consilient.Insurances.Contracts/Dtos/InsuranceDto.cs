@@ -2,7 +2,7 @@
 {
     public class InsuranceDto
     {
-        public int InsuranceId { get; set; }
+        public int Id { get; set; }
 
         public string? InsuranceCode { get; set; }
 

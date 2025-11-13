@@ -5,6 +5,13 @@ namespace Consilient.Api.Client
 {
     public static class ApiResponseExtensions
     {
+        // Cache JsonSerializerOptions instance to avoid CA1869
+        private static readonly JsonSerializerOptions _cachedJsonSerializerOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
         public static T? Unwrap<T>(this ApiResponse<T> response)
         {
             return response.IsSuccess ? response.Data : throw new InvalidOperationException($"API call failed with status code {response.StatusCode}: {response.ErrorMessage}");
@@ -42,7 +49,8 @@ namespace Consilient.Api.Client
 
                 try
                 {
-                    return je.Deserialize<T>();
+                    // Use cached JsonSerializerOptions instance
+                    return je.Deserialize<T>(_cachedJsonSerializerOptions);
                 }
                 catch (JsonException ex)
                 {
@@ -55,7 +63,7 @@ namespace Consilient.Api.Client
             {
                 try
                 {
-                    return jd.RootElement.Deserialize<T>();
+                    return jd.RootElement.Deserialize<T>(_cachedJsonSerializerOptions);
                 }
                 catch (JsonException ex)
                 {
@@ -68,7 +76,7 @@ namespace Consilient.Api.Client
             {
                 try
                 {
-                    return JsonSerializer.Deserialize<T>(s);
+                    return JsonSerializer.Deserialize<T>(s, _cachedJsonSerializerOptions);
                 }
                 catch (JsonException ex)
                 {
@@ -79,8 +87,8 @@ namespace Consilient.Api.Client
             // Fallback: serialize the object back to JSON then deserialize to target type
             try
             {
-                var serialized = JsonSerializer.Serialize(value);
-                return JsonSerializer.Deserialize<T>(serialized);
+                var serialized = JsonSerializer.Serialize(value, _cachedJsonSerializerOptions);
+                return JsonSerializer.Deserialize<T>(serialized, _cachedJsonSerializerOptions);
             }
             catch (JsonException ex)
             {

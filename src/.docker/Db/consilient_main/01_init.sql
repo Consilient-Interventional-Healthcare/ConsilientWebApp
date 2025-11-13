@@ -7,13 +7,9 @@ BEGIN
     );
 END;
 GO
+
 BEGIN TRANSACTION;
 
-IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20251111023227_Initial'
-)
-BEGIN
 	IF DATABASE_PRINCIPAL_ID('compensation_full') IS NULL
 		CREATE ROLE [compensation_full]
 
@@ -27,75 +23,71 @@ BEGIN
 		CREATE ROLE [admin_full]
 
     IF SCHEMA_ID(N'Billing') IS NULL EXEC(N'CREATE SCHEMA [Billing];');
-    IF SCHEMA_ID(N'Clinical') IS NULL EXEC(N'CREATE SCHEMA [Clinical];');
     IF SCHEMA_ID(N'Compensation') IS NULL EXEC(N'CREATE SCHEMA [Compensation];');
+    IF SCHEMA_ID(N'Clinical') IS NULL EXEC(N'CREATE SCHEMA [Clinical];');
     IF SCHEMA_ID(N'Reference') IS NULL EXEC(N'CREATE SCHEMA [Reference];');
-    
+
     CREATE TABLE [Compensation].[Employees] (
-        [EmployeeID] int NOT NULL IDENTITY,
-        [FirstName] nvarchar(50) NULL,
-        [LastName] nvarchar(50) NULL,
+        [Id] int NOT NULL IDENTITY,
+        [FirstName] nvarchar(50) NOT NULL,
+        [LastName] nvarchar(50) NOT NULL,
         [TitleExtension] nvarchar(2) NULL,
-        [IsProvider] bit NOT NULL,
-        [Role] nvarchar(50) NULL,
-        [IsAdministrator] bit NOT NULL,
+        [IsProvider] bit NOT NULL DEFAULT CAST(0 AS bit),
+        [Role] nvarchar(50) NOT NULL,
+        [IsAdministrator] bit NOT NULL DEFAULT CAST(0 AS bit),
         [Email] nvarchar(100) NULL,
-        [CanApproveVisits] bit NOT NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [CanApproveVisits] bit NOT NULL DEFAULT CAST(0 AS bit),
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_Employees] PRIMARY KEY ([EmployeeID])
+        CONSTRAINT [PK_Employees] PRIMARY KEY ([Id])
     );
-    
-    ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [IsProvider]
-    ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [IsAdministrator]
-    ALTER TABLE [Compensation].[Employees] ADD  DEFAULT ((0)) FOR [CanApproveVisits]
 
     CREATE TABLE [Clinical].[Facilities] (
-        [FacilityID] int NOT NULL IDENTITY,
-        [FacilityName] nvarchar(100) NULL,
-        [FacilityAbbreviation] nvarchar(10) NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [Id] int NOT NULL IDENTITY,
+        [Name] nvarchar(100) NOT NULL,
+        [Abbreviation] nvarchar(10) NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_Facilities] PRIMARY KEY ([FacilityID])
+        CONSTRAINT [PK_Facilities] PRIMARY KEY ([Id])
     );
-    
+
     CREATE TABLE [Clinical].[Insurances] (
-        [InsuranceID] int NOT NULL IDENTITY,
-        [InsuranceCode] nvarchar(10) NULL,
-        [InsuranceDescription] nvarchar(100) NULL,
+        [Id] int NOT NULL IDENTITY,
+        [Code] nvarchar(10) NOT NULL,
+        [Description] nvarchar(100) NOT NULL,
         [PhysicianIncluded] bit NULL DEFAULT CAST(0 AS bit),
         [IsContracted] bit NULL DEFAULT CAST(0 AS bit),
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_Insurances] PRIMARY KEY ([InsuranceID])
+        CONSTRAINT [PK_Insurances] PRIMARY KEY ([Id])
     );
-       
+
     CREATE TABLE [Clinical].[Patients] (
-        [PatientID] int NOT NULL IDENTITY,
-        [PatientMRN] int NOT NULL,
-        [PatientFirstName] nvarchar(50) NULL,
-        [PatientLastName] nvarchar(50) NULL,
-        [PatientBirthDate] date NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [Id] int NOT NULL IDENTITY,
+        [MRN] int NOT NULL,
+        [FirstName] nvarchar(50) NOT NULL,
+        [LastName] nvarchar(50) NOT NULL,
+        [BirthDate] date NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_Patients] PRIMARY KEY ([PatientID]),
-        CONSTRAINT [AK_Patients_PatientMrn] UNIQUE ([PatientMRN])
+        CONSTRAINT [PK_Patients] PRIMARY KEY ([Id]),
+        CONSTRAINT [AK_Patients_MRN] UNIQUE ([MRN])
     );
-    
+
     CREATE TABLE [Clinical].[ServiceTypes] (
-        [ServiceTypeID] int NOT NULL IDENTITY,
-        [Description] nvarchar(100) NULL,
-        [CPTCode] int NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [Id] int NOT NULL IDENTITY,
+        [Description] nvarchar(100) NOT NULL,
+        [CPTCode] int NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_ServiceTypes] PRIMARY KEY ([ServiceTypeID])
+        CONSTRAINT [PK_ServiceTypes] PRIMARY KEY ([Id])
     );
-    
+
     CREATE TABLE [Clinical].[Hospitalizations] (
         [Id] int NOT NULL IDENTITY,
         [PatientId] int NOT NULL,
@@ -103,118 +95,113 @@ BEGIN
         [FacilityId] int NOT NULL,
         [AdmissionDate] date NOT NULL,
         [DischargeDate] date NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
         CONSTRAINT [PK_Hospitalization] PRIMARY KEY ([Id]),
         CONSTRAINT [AK_Hospitalizations_CaseId] UNIQUE ([CaseId]),
         CONSTRAINT [AK_Hospitalizations_CaseId_PatientId] UNIQUE ([CaseId], [PatientId]),
-        CONSTRAINT [FK_Hospitalizations_Facilities_FacilityId] FOREIGN KEY ([FacilityId]) REFERENCES [Clinical].[Facilities] ([FacilityID]) ON DELETE NO ACTION,
-        CONSTRAINT [FK_Hospitalizations_Patients_PatientId] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([PatientID]) ON DELETE NO ACTION
+        CONSTRAINT [FK_Hospitalizations_Facilities_FacilityId] FOREIGN KEY ([FacilityId]) REFERENCES [Clinical].[Facilities] ([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_Hospitalizations_Patients_PatientId] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([Id]) ON DELETE NO ACTION
     );
-    
-    CREATE TABLE [Clinical].[PatientVisits_Staging] (
-        [PatientVisit_StagingID] int NOT NULL IDENTITY,
+
+    CREATE TABLE [Clinical].[VisitsStaging] (
+        [Id] int NOT NULL IDENTITY,
         [DateServiced] date NOT NULL,
-        [PatientID] int NOT NULL,
-        [FacilityID] int NOT NULL,
+        [PatientId] int NOT NULL,
+        [FacilityId] int NOT NULL,
         [AdmissionNumber] int NULL,
-        [InsuranceID] int NULL,
-        [ServiceTypeID] int NULL,
-        [PhysicianEmployeeID] int NOT NULL,
-        [NursePractitionerEmployeeID] int NULL,
-        [ScribeEmployeeID] int NULL,
-        [NursePractitionerApproved] bit NOT NULL,
-        [PhysicianApproved] bit NOT NULL,
+        [InsuranceId] int NULL,
+        [ServiceTypeId] int NULL,
+        [PhysicianEmployeeId] int NOT NULL,
+        [NursePractitionerEmployeeId] int NULL,
+        [ScribeEmployeeId] int NULL,
+        [NursePractitionerApproved] bit NOT NULL DEFAULT CAST(0 AS bit),
+        [PhysicianApproved] bit NOT NULL DEFAULT CAST(0 AS bit),
         [PhysicianApprovedBy] nvarchar(100) NULL,
         [PhysicianApprovedDateTime] datetime NULL,
-        [AddedToMainTable] bit NOT NULL,
-        [CosigningPhysicianEmployeeID] int NULL,
-        [IsScribeServiceOnly] bit NOT NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [AddedToMainTable] bit NOT NULL DEFAULT CAST(0 AS bit),
+        [CosigningPhysicianEmployeeId] int NULL,
+        [IsScribeServiceOnly] bit NOT NULL DEFAULT CAST(0 AS bit),
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_PatientVisits_Staging] PRIMARY KEY ([PatientVisit_StagingID]),
-        CONSTRAINT [FK_PatientVisits_Staging_CosignPhysicianEmployee] FOREIGN KEY ([CosigningPhysicianEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
-        CONSTRAINT [FK_PatientVisits_Staging_Facility] FOREIGN KEY ([FacilityID]) REFERENCES [Clinical].[Facilities] ([FacilityID]),
-        CONSTRAINT [FK_PatientVisits_Staging_Insurance] FOREIGN KEY ([InsuranceID]) REFERENCES [Clinical].[Insurances] ([InsuranceID]),
-        CONSTRAINT [FK_PatientVisits_Staging_NursePractitioner] FOREIGN KEY ([NursePractitionerEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
-        CONSTRAINT [FK_PatientVisits_Staging_Patient] FOREIGN KEY ([PatientID]) REFERENCES [Clinical].[Patients] ([PatientID]),
-        CONSTRAINT [FK_PatientVisits_Staging_Physician] FOREIGN KEY ([PhysicianEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
-        CONSTRAINT [FK_PatientVisits_Staging_Scribe] FOREIGN KEY ([ScribeEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
-        CONSTRAINT [FK_PatientVisits_Staging_ServiceType] FOREIGN KEY ([ServiceTypeID]) REFERENCES [Clinical].[ServiceTypes] ([ServiceTypeID])
+        CONSTRAINT [PK_VisitsStaging] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_VisitsStaging_CosignPhysicianEmployee] FOREIGN KEY ([CosigningPhysicianEmployeeId]) REFERENCES [Compensation].[Employees] ([Id]),
+        CONSTRAINT [FK_VisitsStaging_Facility] FOREIGN KEY ([FacilityId]) REFERENCES [Clinical].[Facilities] ([Id]),
+        CONSTRAINT [FK_VisitsStaging_Insurance] FOREIGN KEY ([InsuranceId]) REFERENCES [Clinical].[Insurances] ([Id]),
+        CONSTRAINT [FK_VisitsStaging_NursePractitioner] FOREIGN KEY ([NursePractitionerEmployeeId]) REFERENCES [Compensation].[Employees] ([Id]),
+        CONSTRAINT [FK_VisitsStaging_Patient] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([Id]),
+        CONSTRAINT [FK_VisitsStaging_Physician] FOREIGN KEY ([PhysicianEmployeeId]) REFERENCES [Compensation].[Employees] ([Id]),
+        CONSTRAINT [FK_VisitsStaging_Scribe] FOREIGN KEY ([ScribeEmployeeId]) REFERENCES [Compensation].[Employees] ([Id]),
+        CONSTRAINT [FK_VisitsStaging_ServiceType] FOREIGN KEY ([ServiceTypeId]) REFERENCES [Clinical].[ServiceTypes] ([Id])
     );
     
-    ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [NursePractitionerApproved]
-    ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [PhysicianApproved]
-    ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [AddedToMainTable]
-    ALTER TABLE [Clinical].[PatientVisits_Staging] ADD  DEFAULT ((0)) FOR [IsScribeServiceOnly]
-    
-    CREATE TABLE [Clinical].[PatientVisits] (
-        [PatientVisitID] int NOT NULL IDENTITY,
-        [CosigningPhysicianEmployeeID] int NULL,
+    CREATE TABLE [Clinical].[Visits] (
+        [Id] int NOT NULL IDENTITY,
         [DateServiced] date NOT NULL,
-        [HospitalizationID] int NOT NULL,
-        [InsuranceID] int NULL,
-        [IsScribeServiceOnly] bit NOT NULL,
-        [NursePractitionerEmployeeID] int NULL,
-        [PhysicianEmployeeID] int NOT NULL,
-        [ScribeEmployeeID] int NULL,
-        [ServiceTypeID] int NOT NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        [HospitalizationId] int NOT NULL,
+        [IsScribeServiceOnly] bit NOT NULL DEFAULT CAST(0 AS bit),
+        [ServiceTypeId] int NOT NULL,
+        [Room] nvarchar(20) NOT NULL,
+        [Bed] nvarchar(5) NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_PatientVisits] PRIMARY KEY ([PatientVisitID]),
-        CONSTRAINT [FK_PatientVisits_CosignPhysicianEmployee] FOREIGN KEY ([CosigningPhysicianEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
-        CONSTRAINT [FK_PatientVisits_Hospitalizations] FOREIGN KEY ([HospitalizationID]) REFERENCES [Clinical].[Hospitalizations] ([Id]),
-        CONSTRAINT [FK_PatientVisits_Insurances] FOREIGN KEY ([InsuranceID]) REFERENCES [Clinical].[Insurances] ([InsuranceID]),
-        CONSTRAINT [FK_PatientVisits_NursePractitioner] FOREIGN KEY ([NursePractitionerEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
-        CONSTRAINT [FK_PatientVisits_Physician] FOREIGN KEY ([PhysicianEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
-        CONSTRAINT [FK_PatientVisits_Scribe] FOREIGN KEY ([ScribeEmployeeID]) REFERENCES [Compensation].[Employees] ([EmployeeID]),
-        CONSTRAINT [FK_PatientVisits_ServiceType] FOREIGN KEY ([ServiceTypeID]) REFERENCES [Clinical].[ServiceTypes] ([ServiceTypeID])
+        CONSTRAINT [PK_Visit] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_Visits_Hospitalizations_HospitalizationId] FOREIGN KEY ([HospitalizationId]) REFERENCES [Clinical].[Hospitalizations] ([Id]),
+        CONSTRAINT [FK_Visits_ServiceTypes_ServiceTypeId] FOREIGN KEY ([ServiceTypeId]) REFERENCES [Clinical].[ServiceTypes] ([Id])
     );
     
-    ALTER TABLE [Clinical].[PatientVisits] ADD  DEFAULT ((0)) FOR [IsScribeServiceOnly]
-    
+    CREATE TABLE [Clinical].[VisitAttendants] (
+        [Id] int NOT NULL IDENTITY,
+        [VisitId] int NOT NULL,
+        [EmployeeId] int NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_VisitAttendant] PRIMARY KEY ([Id]),
+        CONSTRAINT [AK_VisitAttendants_VisitId_EmployeeId] UNIQUE ([VisitId], [EmployeeId]),
+        CONSTRAINT [FK_VisitAttendants_Employees_EmployeeId] FOREIGN KEY ([EmployeeId]) REFERENCES [Compensation].[Employees] ([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_VisitAttendants_Visits_VisitId] FOREIGN KEY ([VisitId]) REFERENCES [Clinical].[Visits] ([Id]) ON DELETE NO ACTION
+    );
+
     CREATE INDEX [IX_Hospitalizations_FacilityId] ON [Clinical].[Hospitalizations] ([FacilityId]);
-    
+
     CREATE INDEX [IX_Hospitalizations_PatientId] ON [Clinical].[Hospitalizations] ([PatientId]);
+
+    CREATE INDEX [IX_VisitAttendants_EmployeeId] ON [Clinical].[VisitAttendants] ([EmployeeId]);
+
+    CREATE INDEX [IX_VisitAttendants_VisitId] ON [Clinical].[VisitAttendants] ([VisitId]);
+
+    CREATE INDEX [IX_Visits_DateServiced] ON [Clinical].[Visits] ([DateServiced]);
+
+    CREATE INDEX [IX_Visits_HospitalizationId] ON [Clinical].[Visits] ([HospitalizationId]);
     
-    CREATE INDEX [IX_PatientVisits_CosigningPhysicianEmployeeID] ON [Clinical].[PatientVisits] ([CosigningPhysicianEmployeeID]);
-    
-    CREATE INDEX [IX_PatientVisits_HospitalizationID] ON [Clinical].[PatientVisits] ([HospitalizationID]);
-    
-    CREATE INDEX [IX_PatientVisits_InsuranceID] ON [Clinical].[PatientVisits] ([InsuranceID]);
-    
-    CREATE INDEX [IX_PatientVisits_NursePractitionerEmployeeID] ON [Clinical].[PatientVisits] ([NursePractitionerEmployeeID]);
-    
-    CREATE INDEX [IX_PatientVisits_PhysicianEmployeeID] ON [Clinical].[PatientVisits] ([PhysicianEmployeeID]);
-    
-    CREATE INDEX [IX_PatientVisits_ScribeEmployeeID] ON [Clinical].[PatientVisits] ([ScribeEmployeeID]);
-    
-    CREATE INDEX [IX_PatientVisits_ServiceTypeID] ON [Clinical].[PatientVisits] ([ServiceTypeID]);
-    
-    CREATE INDEX [IX_PatientVisits_Staging_CosigningPhysicianEmployeeID] ON [Clinical].[PatientVisits_Staging] ([CosigningPhysicianEmployeeID]);
-    
-    CREATE INDEX [IX_PatientVisits_Staging_FacilityID] ON [Clinical].[PatientVisits_Staging] ([FacilityID]);
-    
-    CREATE INDEX [IX_PatientVisits_Staging_InsuranceID] ON [Clinical].[PatientVisits_Staging] ([InsuranceID]);
-    
-    CREATE INDEX [IX_PatientVisits_Staging_NursePractitionerEmployeeID] ON [Clinical].[PatientVisits_Staging] ([NursePractitionerEmployeeID]);
-    
-    CREATE INDEX [IX_PatientVisits_Staging_PatientID] ON [Clinical].[PatientVisits_Staging] ([PatientID]);
-    
-    CREATE INDEX [IX_PatientVisits_Staging_PhysicianEmployeeID] ON [Clinical].[PatientVisits_Staging] ([PhysicianEmployeeID]);
-    
-    CREATE INDEX [IX_PatientVisits_Staging_ScribeEmployeeID] ON [Clinical].[PatientVisits_Staging] ([ScribeEmployeeID]);
-    
-    CREATE INDEX [IX_PatientVisits_Staging_ServiceTypeID] ON [Clinical].[PatientVisits_Staging] ([ServiceTypeID]);
-    
-    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20251111023227_Initial', N'9.0.10');
-END;
+    CREATE INDEX [IX_Visits_ServiceTypeId] ON [Clinical].[Visits] ([ServiceTypeId]);
+
+    CREATE INDEX [IX_VisitsStaging_CosigningPhysicianEmployeeId] ON [Clinical].[VisitsStaging] ([CosigningPhysicianEmployeeId]);
+
+    CREATE INDEX [IX_VisitsStaging_FacilityId] ON [Clinical].[VisitsStaging] ([FacilityId]);
+
+    CREATE INDEX [IX_VisitsStaging_InsuranceId] ON [Clinical].[VisitsStaging] ([InsuranceId]);
+
+    CREATE INDEX [IX_VisitsStaging_NursePractitionerEmployeeId] ON [Clinical].[VisitsStaging] ([NursePractitionerEmployeeId]);
+
+    CREATE INDEX [IX_VisitsStaging_PatientId] ON [Clinical].[VisitsStaging] ([PatientId]);
+
+    CREATE INDEX [IX_VisitsStaging_PhysicianEmployeeId] ON [Clinical].[VisitsStaging] ([PhysicianEmployeeId]);
+
+    CREATE INDEX [IX_VisitsStaging_ScribeEmployeeId] ON [Clinical].[VisitsStaging] ([ScribeEmployeeId]);
+
+    CREATE INDEX [IX_VisitsStaging_ServiceTypeId] ON [Clinical].[VisitsStaging] ([ServiceTypeId]);
+
 COMMIT;
 GO
+
+
+
+
 /*
 SET ANSI_NULLS ON
 GO

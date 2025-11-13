@@ -16,9 +16,14 @@ namespace Consilient.Api.Client
             GraphQl = new GraphQlApi(_httpClient);
             Insurances = new InsurancesApi(_httpClient);
             Patients = new PatientsApi(_httpClient);
-            PatientVisits = new PatientVisitsApi(_httpClient);
+            Visits = new VisitsApi(_httpClient);
             ServiceTypes = new ServiceTypesApi(_httpClient);
-            StagingPatientVisits = new StagingPatientVisitsApi(_httpClient);
+            VisitsStaging = new VisitsStagingApi(_httpClient);
+        }
+
+        ~ConsilientApiClient()
+        {
+            Dispose(disposing: false);
         }
 
         public IEmployeesApi Employees { get; }
@@ -26,13 +31,14 @@ namespace Consilient.Api.Client
         public IGraphQlApi GraphQl { get; }
         public IInsurancesApi Insurances { get; }
         public IPatientsApi Patients { get; }
-        public IPatientVisitsApi PatientVisits { get; }
         public IServiceTypesApi ServiceTypes { get; }
-        public IStagingPatientVisitsApi StagingPatientVisits { get; }
+        public IVisitsApi Visits { get; }
+        public IVisitsStagingApi VisitsStaging { get; }
 
-        ~ConsilientApiClient()
+        public void Dispose()
         {
-            Dispose(disposing: false);
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         private void Dispose(bool disposing)
@@ -48,12 +54,6 @@ namespace Consilient.Api.Client
             }
 
             _disposed = true;
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

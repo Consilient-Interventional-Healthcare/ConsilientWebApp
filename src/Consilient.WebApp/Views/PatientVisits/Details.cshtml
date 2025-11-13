@@ -25,25 +25,25 @@
 
             <!-- Patient MRN -->
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientMrn)</dt>
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient!.PatientMrn)</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0 break-words">
-                    @Html.DisplayFor(m => m.Patient.PatientMrn)
+                    @Html.DisplayFor(m => m.Patient!.PatientMrn)
                 </dd>
             </div>
 
             <!-- Patient Name -->
-            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+@*             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                 <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientFullName)</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
                     @Html.DisplayFor(m => m.Patient.PatientFullName)
                 </dd>
-            </div>
+            </div> *@
 
             <!-- Birth Date -->
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientBirthDate)</dt>
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient!.PatientBirthDate)</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Html.DisplayFor(m => m.Patient.PatientBirthDate)
+                    @Html.DisplayFor(m => m.Patient!.PatientBirthDate)
                 </dd>
             </div>
 
@@ -57,25 +57,25 @@
 
             <!-- Insurance -->
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Insurance.CodeAndDescription)</dt>
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Insurance!.CodeAndDescription)</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Html.DisplayFor(m => m.Insurance.CodeAndDescription)
+                    @Html.DisplayFor(m => m.Insurance!.CodeAndDescription)
                 </dd>
             </div>
 
             <!-- Facility -->
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Facility.FacilityName)</dt>
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Facility!.FacilityName)</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Html.DisplayFor(m => m.Facility.FacilityName)
+                    @Html.DisplayFor(m => m.Facility!.FacilityName)
                 </dd>
             </div>
 
             <!-- Service Type -->
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
-                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.ServiceType.CodeAndDescription)</dt>
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.ServiceType!.CodeAndDescription)</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Html.DisplayFor(m => m.ServiceType.CodeAndDescription)
+                    @Html.DisplayFor(m => m.ServiceType!.CodeAndDescription)
                 </dd>
             </div>
 
@@ -83,7 +83,7 @@
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                 <dt class="text-sm/6 font-medium text-gray-900">Physician</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Model.PhysicianEmployee.FullName
+                    @Model.PhysicianEmployee!.FullName
                 </dd>
             </div>
 
@@ -91,7 +91,7 @@
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                 <dt class="text-sm/6 font-medium text-gray-900">Nurse Practitioner</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Model.NursePractitionerEmployee.FullName
+                    @Model.NursePractitionerEmployee!.FullName
                 </dd>
             </div>
 
@@ -99,7 +99,7 @@
             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
                 <dt class="text-sm/6 font-medium text-gray-900">Cosigning Physician</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
-                    @Model.CosigningPhysicianEmployee.FullName
+                    @Model.CosigningPhysicianEmployee!.FullName
                 </dd>
             </div>
 
@@ -128,7 +128,7 @@
 
         @* Optional edit if you have a route *@
         <a asp-action="Edit"
-           asp-route-id="@Model.PatientVisitId"
+           asp-route-id="@Model.Id"
            class="inline-flex items-center justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
             Edit
         </a>

@@ -15,15 +15,19 @@ namespace Consilient.WebApp.Controllers
             selectedDate ??= DateOnly.FromDateTime(DateTime.Now.AddDays(-1));
             var query = @"query {
                 patientVisits {
-                    id, dateServiced
+                    id, dateServiced,
+                    patient {
+    	                patientMrn, patientLastName, patientFirstName
+                    }
                 }
             }";
             var patientVisits = (await graphQlApi.Query(query).ConfigureAwait(false))
-                .Unwrap()!
-                .Unwrap<IEnumerable<PatientVisitViewModel>>("patientVisits")!;
+                .Unwrap()!;
+            
+            var patientVisitsDtos = patientVisits.Unwrap<IEnumerable<PatientVisitViewModel>>("patientVisits")!.ToList();
             var viewModel = new PatientVisitsIndexViewModel
             {
-                PatientVisits = [.. patientVisits]
+                PatientVisits = patientVisitsDtos
             };
             ViewBag.SelectedDate = selectedDate.Value;
             viewModel.PhysicianSummaries ??= [];

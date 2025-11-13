@@ -4,14 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Consilient.Data.Configurations
 {
-    internal abstract class BaseEntityTypeConfiguration<TEntity, TID> : IEntityTypeConfiguration<TEntity>
-        where TEntity : class, IEntity<TID>, IAuditableEntity
-        where TID : struct, IEquatable<TID>
+    internal abstract class BaseEntityTypeConfiguration<TEntity> : IEntityTypeConfiguration<TEntity>
+        where TEntity : class, IAuditableEntity
     {
         public virtual void Configure(EntityTypeBuilder<TEntity> entity)
         {
-            entity.HasKey(e => e.Id).HasName($"PK_{typeof(TEntity).Name}");
-            entity.Property(e => e.Id).IsRequired().ValueGeneratedOnAdd();
             entity.Property(a => a.CreatedAtUtc).IsRequired().HasDefaultValueSql("SYSUTCDATETIME()");
             entity.Property(a => a.UpdatedAtUtc).IsRequired().HasDefaultValueSql("SYSUTCDATETIME()");
 

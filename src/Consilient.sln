@@ -63,6 +63,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorConfig = .editorConfig
 		..\docs\docfx.json = ..\docs\docfx.json
+		UpdateDatabase.ps1 = UpdateDatabase.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Infrastructure.Logging", "Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj", "{44B1AA69-EE2E-4638-8ED7-E010F9E26603}"
@@ -80,6 +81,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Billing.Services", "Consilient.Billing.Services\Consilient.Billing.Services.csproj", "{CF7829F5-364D-4C11-BE79-91F8A2F24983}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Data.Migrations", "Consilient.Data.Migrations\Consilient.Data.Migrations.csproj", "{C78413CB-539C-4FA8-AEB7-3F99B66E13FB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Visits", "Visits", "{A623092F-0952-45CD-9A86-D4943A2903AC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Visits.Contracts", "Consilient.Visits.Contracts\Consilient.Visits.Contracts.csproj", "{812DC33B-655F-4AF0-910F-AB6B2CBFD474}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Visits.Services", "Consilient.Visits.Service\Consilient.Visits.Services.csproj", "{E160CBFF-2D10-4DFE-8C64-6FD6EBE87301}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -191,6 +198,14 @@ Global
 		{C78413CB-539C-4FA8-AEB7-3F99B66E13FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C78413CB-539C-4FA8-AEB7-3F99B66E13FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C78413CB-539C-4FA8-AEB7-3F99B66E13FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{812DC33B-655F-4AF0-910F-AB6B2CBFD474}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{812DC33B-655F-4AF0-910F-AB6B2CBFD474}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{812DC33B-655F-4AF0-910F-AB6B2CBFD474}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{812DC33B-655F-4AF0-910F-AB6B2CBFD474}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E160CBFF-2D10-4DFE-8C64-6FD6EBE87301}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E160CBFF-2D10-4DFE-8C64-6FD6EBE87301}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E160CBFF-2D10-4DFE-8C64-6FD6EBE87301}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E160CBFF-2D10-4DFE-8C64-6FD6EBE87301}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -223,6 +238,9 @@ Global
 		{0441198D-82EE-42E9-99AC-1F81526EB997} = {109EF5C0-A496-4C13-A9BE-8D0AAC85CE42}
 		{CF7829F5-364D-4C11-BE79-91F8A2F24983} = {109EF5C0-A496-4C13-A9BE-8D0AAC85CE42}
 		{C78413CB-539C-4FA8-AEB7-3F99B66E13FB} = {77FF3390-7B72-4B17-B4A4-48A1C42852BD}
+		{A623092F-0952-45CD-9A86-D4943A2903AC} = {22D16A09-C4B9-4BF7-B412-19C2D91A7362}
+		{812DC33B-655F-4AF0-910F-AB6B2CBFD474} = {A623092F-0952-45CD-9A86-D4943A2903AC}
+		{E160CBFF-2D10-4DFE-8C64-6FD6EBE87301} = {A623092F-0952-45CD-9A86-D4943A2903AC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {47B65B2D-42D5-4A24-9284-C134209249B7}

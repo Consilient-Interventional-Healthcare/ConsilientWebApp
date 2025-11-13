@@ -4,19 +4,18 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Consilient.Data.Configurations
 {
-    internal class PatientConfiguration : IEntityTypeConfiguration<Patient>
+    internal class PatientConfiguration : BaseEntityTypeConfiguration<Patient>
     {
-        public void Configure(EntityTypeBuilder<Patient> entity)
+        public override void Configure(EntityTypeBuilder<Patient> entity)
         {
+            base.Configure(entity);
             entity.ToTable("Patients", ConsilientDbContext.Schemas.Clinical);
 
-            entity.HasAlternateKey(e => e.PatientMrn)
-                .HasName("AK_Patients_PatientMrn");
+            entity.HasAlternateKey(e => e.Mrn).HasName("AK_Patients_MRN");
 
-            entity.Property(e => e.Id).HasColumnName("PatientID");
-            entity.Property(e => e.PatientFirstName).HasMaxLength(50);
-            entity.Property(e => e.PatientLastName).HasMaxLength(50);
-            entity.Property(e => e.PatientMrn).HasColumnName("PatientMRN");
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Mrn).IsRequired().HasColumnName("MRN");
         }
     }
 }

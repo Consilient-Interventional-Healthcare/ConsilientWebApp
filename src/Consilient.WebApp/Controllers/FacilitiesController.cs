@@ -134,9 +134,9 @@ namespace Consilient.WebApp.Controllers
 
         private static FacilityViewModel MapToViewModel(FacilityDto dto) => new()
         {
-            FacilityId = dto.FacilityId,
-            FacilityName = dto.FacilityName,
-            FacilityAbbreviation = dto.FacilityAbbreviation
+            FacilityId = dto.Id,
+            FacilityName = dto.Name,
+            FacilityAbbreviation = dto.Abbreviation
         };
     }
 }

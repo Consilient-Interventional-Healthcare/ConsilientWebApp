@@ -7,8 +7,8 @@
         IGraphQlApi GraphQl { get; }
         IInsurancesApi Insurances { get; }
         IPatientsApi Patients { get; }
-        IPatientVisitsApi PatientVisits { get; }
         IServiceTypesApi ServiceTypes { get; }
-        IStagingPatientVisitsApi StagingPatientVisits { get; }
+        IVisitsApi Visits { get; }
+        IVisitsStagingApi VisitsStaging { get; }
     }
 }

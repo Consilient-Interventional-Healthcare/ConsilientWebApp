@@ -17,7 +17,7 @@ namespace Consilient.Api.Controllers
         public async Task<IActionResult> Create([FromBody] CreateServiceTypeRequest request)
         {
             var created = await _serviceTypeService.CreateAsync(request).ConfigureAwait(false);
-            return CreatedAtAction(nameof(GetById), new { id = created.ServiceTypeId }, created);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpDelete("{id:int}")]

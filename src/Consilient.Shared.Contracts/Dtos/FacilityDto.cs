@@ -2,10 +2,10 @@
 {
     public class FacilityDto
     {
-        public int FacilityId { get; set; }
+        public int Id { get; set; }
 
-        public string? FacilityName { get; set; }
+        public string? Name { get; set; }
 
-        public string? FacilityAbbreviation { get; set; }
+        public string? Abbreviation { get; set; }
     }
 }

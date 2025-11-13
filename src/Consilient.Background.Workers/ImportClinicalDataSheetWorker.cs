@@ -1,7 +1,9 @@
 ﻿using Consilient.Background.Workers.Contracts;
+using Consilient.Background.Workers.Models;
 using Consilient.Infrastructure.ExcelImporter;
 using Consilient.Infrastructure.ExcelImporter.Helpers;
 using Consilient.Infrastructure.ExcelImporter.Models;
+using Hangfire.Server;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Globalization;
@@ -14,15 +16,118 @@ namespace Consilient.Background.Workers
         private readonly string _connectionString = connectionString;
         private readonly ExcelImporter _excelImporter = excelImporter;
 
-        public async Task Import(string filePath, DateOnly serviceDate, int facilityId)
+        // Stage constants
+        private const string _stageInitializing = "Initializing";
+        private const string _stageReadingFile = "ReadingFile";
+        private const string _stageProcessingRecords = "ProcessingRecords";
+        private const string _stageSavingData = "SavingData";
+        private const string _stageCompleted = "Completed";
+        private const string _stageFailed = "Failed";
+
+        // Event for progress reporting using the reusable WorkerProgressEventArgs
+        public event EventHandler<WorkerProgressEventArgs>? ProgressChanged;
+
+        public async Task Import(string filePath, DateOnly serviceDate, int facilityId, PerformContext context)
         {
-            var records = _excelImporter.Import(filePath);
-            FillFields(records, (r) =>
+            var jobId = context.BackgroundJob.Id;
+            try
             {
-                var (FirstName, LastName) = ImportUtilities.SplitName(r.Name);
-                return new { FirstName, LastName, serviceDate, facilityId };
-            });
-            await BulkInsertNewOnlyAsync(records);
+
+                // Report initialization
+                OnProgressChanged(new WorkerProgressEventArgs
+                {
+                    JobId = jobId,
+                    Stage = _stageInitializing,
+                    CurrentOperation = "Starting import process"
+                });
+
+                // Read Excel file
+                OnProgressChanged(new WorkerProgressEventArgs
+                {
+                    JobId = jobId,
+                    Stage = _stageReadingFile,
+                    CurrentOperation = $"Reading file: {Path.GetFileName(filePath)}"
+                });
+
+                var records = _excelImporter.Import(filePath);
+                var recordList = records.ToList();
+                var totalRecords = recordList.Count;
+
+                // Process records
+                OnProgressChanged(new WorkerProgressEventArgs
+                {
+                    JobId = jobId,
+                    Stage = _stageProcessingRecords,
+                    TotalItems = totalRecords,
+                    ProcessedItems = 0,
+                    CurrentOperation = "Processing patient records"
+                });
+
+                FillFields(recordList, (r) =>
+                {
+                    var (FirstName, LastName) = ImportUtilities.SplitName(r.Name);
+                    return new { FirstName, LastName, serviceDate, facilityId };
+                });
+
+                OnProgressChanged(new WorkerProgressEventArgs
+                {
+                    JobId = jobId,
+                    Stage = _stageProcessingRecords,
+                    TotalItems = totalRecords,
+                    ProcessedItems = totalRecords,
+                    CurrentOperation = "All records processed"
+                });
+
+                // Save to database
+                OnProgressChanged(new WorkerProgressEventArgs
+                {
+                    JobId = jobId,
+                    Stage = _stageSavingData,
+                    TotalItems = totalRecords,
+                    ProcessedItems = totalRecords,
+                    CurrentOperation = "Saving data to database"
+                });
+
+                await BulkInsertNewOnlyAsync(recordList).ConfigureAwait(false);
+
+                // Report completion with additional data
+                OnProgressChanged(new WorkerProgressEventArgs
+                {
+                    JobId = jobId,
+                    Stage = _stageCompleted,
+                    TotalItems = totalRecords,
+                    ProcessedItems = totalRecords,
+                    CurrentOperation = $"Import completed successfully. {totalRecords} records imported.",
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        ["FileName"] = Path.GetFileName(filePath),
+                        ["ServiceDate"] = serviceDate.ToString("yyyy-MM-dd"),
+                        ["FacilityId"] = facilityId,
+                        ["RecordsImported"] = totalRecords
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                OnProgressChanged(new WorkerProgressEventArgs
+                {
+                    JobId = jobId,
+                    Stage = _stageFailed,
+                    CurrentOperation = $"Import failed: {ex.Message}",
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        ["ErrorMessage"] = ex.Message,
+                        ["ErrorType"] = ex.GetType().Name
+                    }
+                });
+
+                throw;
+            }
+        }
+
+        protected virtual void OnProgressChanged(WorkerProgressEventArgs e)
+        {
+            ProgressChanged?.Invoke(this, e);
         }
 
         private static object? ConvertToTargetType(object source, Type targetType)

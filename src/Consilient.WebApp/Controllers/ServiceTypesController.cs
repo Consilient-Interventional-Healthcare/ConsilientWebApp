@@ -139,10 +139,10 @@ namespace Consilient.WebApp.Controllers
         private static ServiceTypeViewModel MapToViewModel(ServiceTypeDto serviceType) =>
             new()
             {
-                CodeAndDescription = serviceType.CodeAndDescription,
+                CodeAndDescription = $"{serviceType.CptCode} {serviceType.Description}",
                 Cptcode = serviceType.CptCode,
                 Description = serviceType.Description,
-                ServiceTypeId = serviceType.ServiceTypeId
+                ServiceTypeId = serviceType.Id
             };
     }
 }

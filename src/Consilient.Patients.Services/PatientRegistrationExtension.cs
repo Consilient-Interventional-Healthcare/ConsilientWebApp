@@ -8,8 +8,6 @@ namespace Consilient.Patients.Services
         public static void RegisterPatientServices(this IServiceCollection services)
         {
             services.AddScoped<IPatientService, PatientService>();
-            services.AddScoped<IPatientVisitService, PatientVisitService>();
-            services.AddScoped<IStagingPatientVisitService, StagingPatientVisitService>();
         }
     }
 }

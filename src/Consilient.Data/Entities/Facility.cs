@@ -2,20 +2,8 @@
 {
     public class Facility : BaseEntity<int>
     {
-        //public int FacilityId { get; set; }
+        public string Name { get; set; } = string.Empty;
 
-        public string? FacilityName { get; set; }
-
-        public string? FacilityAbbreviation { get; set; }
-
-        //public virtual ICollection<Contract> Contracts { get; set; } = [];
-
-        //public virtual ICollection<FacilityPay> FacilityPays { get; set; } = [];
-
-        //public virtual ICollection<PatientVisit> PatientVisits { get; set; } = [];
-
-        //public virtual ICollection<PatientVisitStaging> PatientVisitsStagings { get; set; } = [];
-
-        //public virtual ICollection<ProviderPay> ProviderPays { get; set; } = [];
+        public string Abbreviation { get; set; } = string.Empty;
     }
 }

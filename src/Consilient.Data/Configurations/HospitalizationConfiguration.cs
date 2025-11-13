@@ -4,18 +4,16 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Consilient.Data.Configurations
 {
-    internal class HospitalizationConfiguration : BaseEntityTypeConfiguration<Hospitalization, int>
+    internal class HospitalizationConfiguration : BaseEntityTypeConfigurationWithId<Hospitalization, int>
     {
         public override void Configure(EntityTypeBuilder<Hospitalization> entity)
         {
             base.Configure(entity);
             entity.ToTable("Hospitalizations", ConsilientDbContext.Schemas.Clinical);
 
-            entity.HasAlternateKey(e => e.CaseId)
-                .HasName("AK_Hospitalizations_CaseId");
+            entity.HasAlternateKey(e => e.CaseId).HasName("AK_Hospitalizations_CaseId");
 
-            entity.HasAlternateKey(e => new { e.CaseId, e.PatientId })
-                .HasName("AK_Hospitalizations_CaseId_PatientId");
+            entity.HasAlternateKey(e => new { e.CaseId, e.PatientId }).HasName("AK_Hospitalizations_CaseId_PatientId");
 
             entity.Property(e => e.PatientId)
                 .IsRequired();

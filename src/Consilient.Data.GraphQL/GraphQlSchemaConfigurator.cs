@@ -18,26 +18,19 @@ namespace Consilient.Data.GraphQL
 
         private static void AddTypes(SchemaProvider<ConsilientDbContext> schema)
         {
-            var patientVisitType = schema.AddType<Visit>(ToGraphQlName(nameof(Visit)), $"{ToGraphQlName(nameof(Visit))} object");
-            //patientVisitType.AddField(m => m.AdmissionNumber, nameof(PatientVisit.AdmissionNumber));
-            patientVisitType.AddField(m => m.CosigningPhysicianEmployee, nameof(Visit.CosigningPhysicianEmployee));
-            patientVisitType.AddField(m => m.DateServiced, nameof(Visit.DateServiced));
-            patientVisitType.AddField(m => m.Facility, nameof(Visit.Facility));
-            patientVisitType.AddField(m => m.Id, nameof(Visit.Id));
-            patientVisitType.AddField(m => m.Insurance, nameof(Visit.Insurance));
-            patientVisitType.AddField(m => m.IsScribeServiceOnly, nameof(Visit.IsScribeServiceOnly));
-            patientVisitType.AddField(m => m.NursePractitionerEmployee, nameof(Visit.NursePractitionerEmployee));
-            patientVisitType.AddField(m => m.Patient, nameof(Visit.Patient));
-            patientVisitType.AddField(m => m.PhysicianEmployee, nameof(Visit.PhysicianEmployee));
-            patientVisitType.AddField(m => m.ScribeEmployee, nameof(Visit.ScribeEmployee));
-            patientVisitType.AddField(m => m.ServiceType, nameof(Visit.ServiceType));
+            var visitType = schema.AddType<Visit>(ToGraphQlName(nameof(Visit)), $"{ToGraphQlName(nameof(Visit))} object");
+            visitType.AddField(m => m.DateServiced, nameof(Visit.DateServiced));
+            visitType.AddField(m => m.Hospitalization, nameof(Visit.Hospitalization));
+            visitType.AddField(m => m.Id, nameof(Visit.Id));
+            visitType.AddField(m => m.IsScribeServiceOnly, nameof(Visit.IsScribeServiceOnly));
+            visitType.AddField("patient", m => m.Hospitalization.Patient, nameof(Hospitalization.Patient));
 
             var patientType = schema.AddType<Patient>(ToGraphQlName(nameof(Patient)), $"{ToGraphQlName(nameof(Patient))} object");
-            patientType.AddField(m => m.PatientBirthDate, nameof(Patient.PatientBirthDate));
-            patientType.AddField(m => m.PatientFirstName, nameof(Patient.PatientFirstName));
+            patientType.AddField(m => m.BirthDate, nameof(Patient.BirthDate));
+            patientType.AddField(m => m.FirstName, nameof(Patient.FirstName));
             patientType.AddField(m => m.Id, nameof(Patient.Id));
-            patientType.AddField(m => m.PatientLastName, nameof(Patient.PatientLastName));
-            patientType.AddField(m => m.PatientMrn, nameof(Patient.PatientMrn));
+            patientType.AddField(m => m.LastName, nameof(Patient.LastName));
+            patientType.AddField(m => m.Mrn, nameof(Patient.Mrn));
 
             var employeeType = schema.AddType<Employee>(ToGraphQlName(nameof(Employee)), $"{ToGraphQlName(nameof(Employee))} object");
             employeeType.AddField(m => m.CanApproveVisits, nameof(Employee.CanApproveVisits));
@@ -50,13 +43,13 @@ namespace Consilient.Data.GraphQL
             employeeType.AddField(m => m.Role, nameof(Employee.Role));
 
             var facilityType = schema.AddType<Facility>(ToGraphQlName(nameof(Facility)), $"{ToGraphQlName(nameof(Facility))} object");
-            facilityType.AddField(m => m.FacilityAbbreviation, nameof(Facility.FacilityAbbreviation));
+            facilityType.AddField(m => m.Abbreviation, nameof(Facility.Abbreviation));
             facilityType.AddField(m => m.Id, nameof(Facility.Id));
-            facilityType.AddField(m => m.FacilityName, nameof(Facility.FacilityName));
+            facilityType.AddField(m => m.Name, nameof(Facility.Name));
 
             var insuranceType = schema.AddType<Insurance>(ToGraphQlName(nameof(Insurance)), $"{ToGraphQlName(nameof(Insurance))} object");
-            insuranceType.AddField(m => m.InsuranceCode, nameof(Insurance.InsuranceCode));
-            insuranceType.AddField(m => m.InsuranceDescription, nameof(Insurance.InsuranceDescription));
+            insuranceType.AddField(m => m.Code, nameof(Insurance.Code));
+            insuranceType.AddField(m => m.Description, nameof(Insurance.Description));
             insuranceType.AddField(m => m.Id, nameof(Insurance.Id));
 
             var serviceTypeType = schema.AddType<ServiceType>(ToGraphQlName(nameof(ServiceType)), $"{ToGraphQlName(nameof(ServiceType))} object");
@@ -67,9 +60,9 @@ namespace Consilient.Data.GraphQL
 
         private static void AddToQuery(SchemaType<ConsilientDbContext> query)
         {
-            var patientVisitsField = ToGraphQlName(nameof(ConsilientDbContext.PatientVisits));
+            var visitsField = ToGraphQlName(nameof(ConsilientDbContext.Visits));
             query
-                .AddField(patientVisitsField, (ctx) => ctx.PatientVisits.AsNoTracking().OrderBy(p => p.Id), $"List of {patientVisitsField}")
+                .AddField(visitsField, (ctx) => ctx.Visits.AsNoTracking().OrderBy(p => p.Id), $"List of {visitsField}")
                 .UseFilter()
                 .UseSort();
 

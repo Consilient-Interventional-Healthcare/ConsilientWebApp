@@ -34,9 +34,9 @@ namespace Consilient.Data
 
         public virtual DbSet<Patient> Patients { get; set; }
 
-        public virtual DbSet<Visit> PatientVisits { get; set; }
+        public virtual DbSet<Visit> Visits { get; set; }
 
-        public virtual DbSet<PatientVisitStaging> PatientVisitsStagings { get; set; }
+        public virtual DbSet<VisitStaging> VisitsStaging { get; set; }
 
         //public virtual DbSet<PayrollDatum> PayrollData { get; set; }
 

@@ -5,7 +5,7 @@ namespace Consilient.WebApp.ViewModels
 {
     public class PatientVisitViewModel
     {
-        public int PatientVisitId { get; set; }
+        public int Id { get; set; }
 
         [Display(Name = "Date Serviced")]
         public DateOnly DateServiced { get; set; }

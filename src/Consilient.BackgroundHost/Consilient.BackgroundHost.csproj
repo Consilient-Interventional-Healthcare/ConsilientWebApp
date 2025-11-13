@@ -41,6 +41,7 @@
     <ProjectReference Include="..\Consilient.Insurances.Services\Consilient.Insurances.Services.csproj" />
     <ProjectReference Include="..\Consilient.Patients.Services\Consilient.Patients.Services.csproj" />
     <ProjectReference Include="..\Consilient.Shared.Services\Consilient.Shared.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Visits.Service\Consilient.Visits.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -11,6 +11,7 @@ using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
+using Consilient.Visits.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -47,7 +48,7 @@ namespace Consilient.BackgroundHost
                 builder.Services.RegisterInsuranceServices();
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
-
+                builder.Services.RegisterVisitServices();
 
                 builder.Services.RegisterLogging(logger);
 

@@ -57,5 +57,6 @@ namespace Consilient.Employees.Contracts
         /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
         Task<EmployeeDto?> UpdateAsync(int id, UpdateEmployeeRequest request);
         Task<bool> DeleteAsync(int id);
+        Task<List<EmployeeVisitCountDto>> GetEmployeesWithVisitCountPerDayAsync(DateOnly date);
     }
 }
