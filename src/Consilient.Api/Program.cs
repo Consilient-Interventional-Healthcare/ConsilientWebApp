@@ -32,7 +32,8 @@ namespace Consilient.Api
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
-            var logger = CreateLogger(builder);
+            var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)?.Get<LoggingConfiguration>();
+            var logger = CreateLogger(builder, loggingConfiguration);
             Log.Logger = logger;
             try
             {
@@ -40,7 +41,10 @@ namespace Consilient.Api
 
                 var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default);
                 var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire);
-
+                if (loggingConfiguration != null)
+                {
+                    builder.Services.AddSingleton(loggingConfiguration);
+                }
                 //var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
                 if (!string.IsNullOrEmpty(defaultConnectionString))
                 {
@@ -52,7 +56,6 @@ namespace Consilient.Api
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
                 builder.Services.RegisterVisitServices();
-
                 builder.Services.RegisterLogging(logger);
                 builder.Services.RegisterHangfire(hangfireConnectionString);
 
@@ -62,7 +65,7 @@ namespace Consilient.Api
                     options.AddDefaultPolicy(policy =>
                     {
                         policy.WithOrigins(
-                                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+                                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
                                 ?? ["http://localhost:3000", "http://localhost:5173"])
                             .AllowAnyMethod()
                             .AllowAnyHeader()
@@ -160,19 +163,8 @@ namespace Consilient.Api
             }
         }
 
-        private static Serilog.ILogger CreateLogger(WebApplicationBuilder builder)
+        private static Serilog.ILogger CreateLogger(WebApplicationBuilder builder, LoggingConfiguration? loggingConfiguration)
         {
-            var loggingSection = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging);
-
-            // Use Exists() to detect missing/empty section and avoid NullReferenceException.
-            if (loggingSection == null || !loggingSection.Exists())
-            {
-                // Fallback minimal console logger so tools like `dotnet swagger tofile`
-                // can load the assembly without requiring appsettings.json.
-                return CreateTrivialLogger(builder);
-            }
-
-            var loggingConfiguration = loggingSection.Get<LoggingConfiguration>();
             if (loggingConfiguration == null)
             {
                 // Section exists but couldn't bind — still fallback rather than throw.

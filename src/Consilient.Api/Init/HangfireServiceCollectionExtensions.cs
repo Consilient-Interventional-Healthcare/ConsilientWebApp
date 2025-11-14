@@ -5,12 +5,12 @@ namespace Consilient.Api.Init
 {
     public static class HangfireServiceCollectionExtensions
     {
-        public static void RegisterHangfire(this IServiceCollection services, string hanfireConnectionString)
+        public static void RegisterHangfire(this IServiceCollection services, string hangfireConnectionString)
         {
             services.AddHangfire(config =>
             {
                 config
-                    .UseSqlServerStorage(hanfireConnectionString)
+                    .UseSqlServerStorage(hangfireConnectionString)
                     .UseActivator(new WorkerJobActivator(services.BuildServiceProvider()));
             });
         }

@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useState, type ChangeEvent, type DragEvent } from 'react';
 
-function FileUpload({ onFileSelect, acceptedFileTypes = "*", maxSizeMB = 10 }) {
-  const [selectedFile, setSelectedFile] = useState(null);
+interface FileUploadProps {
+  onFileSelect?: (file: File | null) => void;
+  acceptedFileTypes?: string;
+  maxSizeMB?: number;
+}
+
+function FileUpload({ onFileSelect, acceptedFileTypes = "*", maxSizeMB = 10 }: FileUploadProps) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     validateAndSetFile(file);
   };
 
-  const validateAndSetFile = (file) => {
+  const validateAndSetFile = (file: File | undefined) => {
     if (!file) return;
 
     setError('');
@@ -28,7 +34,7 @@ function FileUpload({ onFileSelect, acceptedFileTypes = "*", maxSizeMB = 10 }) {
     }
   };
 
-  const handleDragOver = (event) => {
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(true);
   };
@@ -37,7 +43,7 @@ function FileUpload({ onFileSelect, acceptedFileTypes = "*", maxSizeMB = 10 }) {
     setIsDragging(false);
   };
 
-  const handleDrop = (event) => {
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
     const file = event.dataTransfer.files[0];

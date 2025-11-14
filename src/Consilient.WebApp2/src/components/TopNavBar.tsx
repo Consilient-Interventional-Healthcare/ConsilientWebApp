@@ -1,31 +1,31 @@
-import { Bell, User, Search, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Link, useLocation } from "react-router-dom"
-import { navItems } from "../routes"
-import { useMemo } from "react"
+import { navItems } from "@/routes/Router"
+import { useAuth } from "@/hooks/useAuth"
+import { useActiveNavItem } from "@/hooks/useActiveNavItem"
+import { useNavigate } from "react-router-dom"
+import { LogOut } from "lucide-react"
+import config from "@/config"
 
-export function TopNavBar() {
+function TopNavBar() {
   const location = useLocation();
-  
-  // Find active nav item and its subnav
-  const activeNavItem = useMemo(() => {
-    return navItems.find(item => {
-      if (item.href === "/" && location.pathname === "/") return true;
-      if (item.href !== "/" && location.pathname.startsWith(item.href)) return true;
-      return false;
-    });
-  }, [location.pathname]);
+  const { subNavItems } = useActiveNavItem();
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
 
-  const subNavItems = activeNavItem?.subNav || [];
-  
+  const handleLogout = () => {
+    logout();
+    void navigate('/auth/login');
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
       {/* First Level Navigation */}
       <div className="flex h-16 items-center px-4 lg:px-8 gap-4">
         {/* Logo */}
         <div className="flex items-center gap-2 mr-6">
-          <h1 className="text-xl font-bold text-blue-600">Consilient</h1>
+          <h1 className="text-xl font-bold text-blue-600">{config.app.name}</h1>
         </div>
         
         {/* Navigation Links - Desktop */}
@@ -57,11 +57,13 @@ export function TopNavBar() {
         
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <User className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-5 w-5" />
+          {user && (
+            <span className="text-sm text-gray-700 hidden md:inline">
+              {user.firstName} {user.lastName}
+            </span>
+          )}
+          <Button variant="ghost" size="icon" onClick={handleLogout}>
+            <LogOut className="h-5 w-5" />
           </Button>
         </div>
       </div>
@@ -91,3 +93,5 @@ export function TopNavBar() {
     </header>
   )
 }
+
+export default TopNavBar;

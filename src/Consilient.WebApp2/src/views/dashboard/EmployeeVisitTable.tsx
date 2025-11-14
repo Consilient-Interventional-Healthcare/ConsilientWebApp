@@ -6,8 +6,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { GroupedEmployee } from "@/hooks/useEmployeeAssignmentSummary";
 
-export default function EmployeeVisitTable({ employees }) {
+interface EmployeeVisitTableProps {
+  employees: GroupedEmployee[];
+}
+
+export default function EmployeeVisitTable({ employees }: EmployeeVisitTableProps) {
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <Table>
