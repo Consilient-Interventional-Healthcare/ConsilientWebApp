@@ -1,11 +1,11 @@
 /**
  * Centralized logging service using loglevel
- * Logs to console and sends to backend API for remote storage
+ * Logs to console and sends to backend API in Loki format for remote storage
  */
 import log from 'loglevel';
+import axios from 'axios';
 import { isDevelopment, isProduction } from '@/config/env';
 import config from '@/config';
-import api from '@/services/api/ApiClient';
 
 interface LogContext {
   component?: string;
@@ -14,17 +14,25 @@ interface LogContext {
   [key: string]: unknown;
 }
 
-interface LogPayload {
+interface LokiLabel {
   app: string;
   environment: string;
   level: string;
-  message: string;
-  timestamp: string;
-  context?: LogContext;
+  component?: string;
+  userId?: string;
+}
+
+interface LokiStream {
+  stream: LokiLabel;
+  values: [string, string][];
+}
+
+interface LokiPayload {
+  streams: LokiStream[];
 }
 
 /**
- * Send logs to backend API for storage/forwarding
+ * Send logs to backend API in Loki format for storage/forwarding
  */
 async function sendToRemote(level: string, message: string, context?: LogContext): Promise<void> {
   if (!config.logging.enabled) {
@@ -32,21 +40,55 @@ async function sendToRemote(level: string, message: string, context?: LogContext
   }
 
   if (isDevelopment) {
-    console.log('[Logger] Sending to API:', { level, message, context });
+    console.log('[Logger] Sending to API in Loki format:', { level, message, context });
   }
 
   try {
-    const payload: LogPayload = {
+    const timestamp = Date.now() * 1000000; // Loki expects nanoseconds
+    
+    // Build Loki labels
+    const labels: LokiLabel = {
       app: config.app.name,
       environment: config.app.environment,
       level: level.toUpperCase(),
-      message,
-      timestamp: new Date().toISOString(),
-      context,
     };
 
-    // Send to backend API endpoint
-    await api.post('/loki/logs', payload);
+    if (context?.component) {
+      labels.component = String(context.component);
+    }
+
+    if (context?.userId) {
+      labels.userId = String(context.userId);
+    }
+
+    // Build log line with structured data
+    const logLine = {
+      message,
+      timestamp: new Date().toISOString(),
+      ...context,
+    };
+
+    // Loki streams format
+    const lokiPayload: LokiPayload = {
+      streams: [
+        {
+          stream: labels,
+          values: [[String(timestamp), JSON.stringify(logLine)]],
+        },
+      ],
+    };
+
+    // Send to backend API endpoint in Loki format
+    await axios.post(
+      `${config.api.baseUrl}${config.logging.logsEndpoint}`,
+      lokiPayload,
+      {
+        timeout: 5000, // Quick timeout for logging to avoid blocking
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
     
     if (isDevelopment) {
       console.log('[Logger] Successfully sent to API');

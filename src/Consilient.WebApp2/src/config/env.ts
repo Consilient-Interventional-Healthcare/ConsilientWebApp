@@ -7,7 +7,6 @@ interface EnvConfig {
   apiBaseUrl: string;
   appEnv: 'development' | 'staging' | 'production';
   features: {
-    enableAnalytics: boolean;
     enableDebugMode: boolean;
   };
   oauth?: {
@@ -58,7 +57,6 @@ function validateEnv(): EnvConfig {
   }
 
   // Optional feature flags
-  const enableAnalytics = getOptionalEnv('VITE_ENABLE_ANALYTICS', 'false') === 'true';
   const enableDebugMode = getOptionalEnv('VITE_ENABLE_DEBUG_MODE', 'false') === 'true';
 
   // Optional OAuth configuration
@@ -70,7 +68,6 @@ function validateEnv(): EnvConfig {
     apiBaseUrl,
     appEnv: appEnv as 'development' | 'staging' | 'production',
     features: {
-      enableAnalytics,
       enableDebugMode,
     },
   };

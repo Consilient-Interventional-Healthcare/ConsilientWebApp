@@ -33,6 +33,8 @@ const appConfig = {
   logging: {
     // In production, always enabled. In dev, controlled by VITE_ENABLE_REMOTE_LOGGING flag
     enabled: isProduction || import.meta.env.VITE_ENABLE_REMOTE_LOGGING === 'true',
+    // API endpoint for sending logs
+    logsEndpoint: '/loki/logs',
   },
 };
 
