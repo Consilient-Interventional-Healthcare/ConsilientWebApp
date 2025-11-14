@@ -1,118 +1,167 @@
-/**
- * Environment variable validation and configuration
- * This module ensures all required environment variables are present at startup
- */
-
-interface EnvConfig {
-  apiBaseUrl: string;
-  appEnv: 'development' | 'staging' | 'production';
-  features: {
-    enableDebugMode: boolean;
-  };
-  oauth?: {
-    clientId: string;
-    authority: string;
-    redirectUri: string;
-  };
-}
+import type { EnvConfig } from './config.types';
 
 /**
- * Validates that a required environment variable exists
+ * Environment configuration class that wraps and validates environment variables
+ * Provides type-safe access to environment configuration
  */
-function getRequiredEnv(key: keyof ImportMetaEnv): string {
-  const value = import.meta.env[key] as string | undefined;
-  if (!value) {
-    throw new Error(
-      `Missing required environment variable: ${key}\n` +
-      `Please check your .env file and ensure ${key} is set.\n` +
-      `See .env.example for reference.`
-    );
-  }
-  return value;
-}
+class Environment {
+  private readonly config: EnvConfig;
 
-/**
- * Gets an optional environment variable with a default value
- */
-function getOptionalEnv(key: keyof ImportMetaEnv, defaultValue: string): string {
-  const value = import.meta.env[key] as string | undefined;
-  return value ?? defaultValue;
-}
-
-/**
- * Validates and returns the application configuration
- * Throws an error if required variables are missing
- */
-function validateEnv(): EnvConfig {
-  // Required variables
-  const apiBaseUrl = getRequiredEnv('VITE_API_BASE_URL');
-  const appEnv = getOptionalEnv('VITE_APP_ENV', 'development');
-
-  // Validate appEnv is one of the allowed values
-  if (!['development', 'staging', 'production'].includes(appEnv)) {
-    throw new Error(
-      `Invalid VITE_APP_ENV value: "${appEnv}"\n` +
-      `Must be one of: development, staging, production`
-    );
+  constructor() {
+    this.config = this.buildConfig();
+    this.logConfigurationInDev();
   }
 
-  // Optional feature flags
-  const enableDebugMode = getOptionalEnv('VITE_ENABLE_DEBUG_MODE', 'false') === 'true';
+  // ============================================================================
+  // Configuration Building
+  // ============================================================================
 
-  // Optional OAuth configuration
-  const oauthClientId = import.meta.env.VITE_OAUTH_CLIENT_ID;
-  const oauthAuthority = import.meta.env.VITE_OAUTH_AUTHORITY;
-  const oauthRedirectUri = import.meta.env.VITE_OAUTH_REDIRECT_URI;
+  /**
+   * Build and validate the complete configuration from environment variables
+   */
+  private buildConfig(): EnvConfig {
+    const apiBaseUrl = this.getRequiredEnv('VITE_API_BASE_URL');
+    const appEnv = this.validateAppEnv(this.getOptionalEnv('VITE_APP_ENV', 'development'));
+    const enableDebugMode = this.getOptionalEnv('VITE_ENABLE_DEBUG_MODE', 'false') === 'true';
 
-  const config: EnvConfig = {
-    apiBaseUrl,
-    appEnv: appEnv as 'development' | 'staging' | 'production',
-    features: {
-      enableDebugMode,
-    },
-  };
+    const config: EnvConfig = {
+      apiBaseUrl,
+      appEnv,
+      features: { enableDebugMode },
+    };
 
-  // Add OAuth config if all OAuth variables are present
-  if (oauthClientId && oauthAuthority && oauthRedirectUri) {
-    config.oauth = {
-      clientId: oauthClientId,
-      authority: oauthAuthority,
-      redirectUri: oauthRedirectUri,
+    // Add MSAL configuration if all required variables are present
+    const msalConfig = this.buildMsalConfig();
+    if (msalConfig) {
+      config.msal = msalConfig;
+    }
+
+    return config;
+  }
+
+  /**
+   * Build MSAL configuration if all required variables are present
+   */
+  private buildMsalConfig(): EnvConfig['msal'] | undefined {
+    const clientId = import.meta.env.VITE_MSAL_CLIENT_ID;
+    const tenantId = import.meta.env.VITE_MSAL_TENANT_ID;
+    const authority = import.meta.env.VITE_MSAL_AUTHORITY;
+    const redirectUri = import.meta.env.VITE_MSAL_REDIRECT_URI;
+    const scopes = import.meta.env.VITE_MSAL_SCOPES;
+
+    // Return undefined if any required MSAL variable is missing
+    if (!clientId || !tenantId || !authority || !redirectUri) {
+      return undefined;
+    }
+
+    return {
+      clientId,
+      tenantId,
+      authority,
+      redirectUri,
+      scopes: scopes ? scopes.split(',').map(s => s.trim()) : ['User.Read'],
     };
   }
 
-  return config;
+  // ============================================================================
+  // Environment Variable Access
+  // ============================================================================
+
+  /**
+   * Get a required environment variable (throws if missing)
+   */
+  private getRequiredEnv(key: keyof ImportMetaEnv): string {
+    const value = import.meta.env[key] as string | undefined;
+    if (!value) {
+      throw new Error(
+        `Missing required environment variable: ${key}\n` +
+        `Please check your .env file and ensure ${key} is set.\n` +
+        `See .env.example for reference.`
+      );
+    }
+    return value;
+  }
+
+  /**
+   * Get an optional environment variable with a default value
+   */
+  private getOptionalEnv(key: keyof ImportMetaEnv, defaultValue: string): string {
+    const value = import.meta.env[key] as string | undefined;
+    return value ?? defaultValue;
+  }
+
+  // ============================================================================
+  // Validation
+  // ============================================================================
+
+  /**
+   * Validate and return the app environment value
+   */
+  private validateAppEnv(value: string): 'development' | 'staging' | 'production' {
+    const validEnvs = ['development', 'staging', 'production'] as const;
+    if (!validEnvs.includes(value as typeof validEnvs[number])) {
+      throw new Error(
+        `Invalid VITE_APP_ENV value: "${value}"\n` +
+        `Must be one of: ${validEnvs.join(', ')}`
+      );
+    }
+    return value as 'development' | 'staging' | 'production';
+  }
+
+  // ============================================================================
+  // Logging
+  // ============================================================================
+
+  /**
+   * Log configuration in development mode (excluding sensitive data)
+   */
+  private logConfigurationInDev(): void {
+    if (this.isDevelopment) {
+      // Use console.log to avoid circular dependency with logger
+      console.log('🔧 Environment Configuration:', {
+        appEnv: this.config.appEnv,
+        apiBaseUrl: this.config.apiBaseUrl,
+        features: this.config.features,
+        hasMsal: !!this.config.msal,
+      });
+    }
+  }
+
+  // ============================================================================
+  // Public Getters
+  // ============================================================================
+
+  get apiBaseUrl(): string {
+    return this.config.apiBaseUrl;
+  }
+
+  get appEnv(): 'development' | 'staging' | 'production' {
+    return this.config.appEnv;
+  }
+
+  get features() {
+    return this.config.features;
+  }
+
+  get msal() {
+    return this.config.msal;
+  }
+
+  get isDevelopment(): boolean {
+    return this.config.appEnv === 'development';
+  }
+
+  get isProduction(): boolean {
+    return this.config.appEnv === 'production';
+  }
+
+  get isDebugMode(): boolean {
+    return this.config.features.enableDebugMode || this.isDevelopment;
+  }
 }
 
 /**
- * Application configuration - validated at startup
+ * Application environment configuration - validated at startup
  * This will throw an error if required environment variables are missing
  */
-export const env = validateEnv();
-
-/**
- * Helper to check if we're in development mode
- */
-export const isDevelopment = env.appEnv === 'development';
-
-/**
- * Helper to check if we're in production mode
- */
-export const isProduction = env.appEnv === 'production';
-
-/**
- * Helper to check if debug mode is enabled
- */
-export const isDebugMode = env.features.enableDebugMode || isDevelopment;
-
-// Log configuration in development (excluding sensitive data)
-if (isDevelopment) {
-  // Use console.log here to avoid circular dependency with logger
-  // This runs before logger is initialized
-  console.log('🔧 Environment Configuration:', {
-    appEnv: env.appEnv,
-    apiBaseUrl: env.apiBaseUrl,
-    features: env.features,
-    hasOAuth: !!env.oauth,
-  });
-}
+export const env = new Environment();

@@ -8,6 +8,37 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate React and React-related libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          
+          // Separate MSAL (Azure Auth) libraries
+          'msal-vendor': ['@azure/msal-browser', '@azure/msal-react'],
+          
+          // Separate TanStack Query
+          'query-vendor': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
+          
+          // Separate UI libraries
+          'ui-vendor': [
+            '@radix-ui/react-slot',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge',
+            'lucide-react'
+          ],
+          
+          // Separate Axios and HTTP utilities
+          'http-vendor': ['axios'],
+          
+          // Separate logging libraries
+          'logging-vendor': ['loglevel', 'loglevel-plugin-remote'],
+        },
+      },
+    },
+    // Increase the warning limit if needed (default is 500 kB)
+    chunkSizeWarningLimit: 600,
   },
   server: {
     port: 5173,

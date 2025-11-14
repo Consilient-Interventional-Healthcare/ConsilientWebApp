@@ -1,8 +1,17 @@
-import { logger } from '@/services/logging/logger';
+import { logger } from '@/shared/core/logging/logger';
 
 // React Query Configuration
 export const QUERY_STALE_TIME: number = 5 * 60 * 1000; // 5 minutes
 export const QUERY_GC_TIME: number = 10 * 60 * 1000; // 10 minutes (was cacheTime)
+
+// API and Network Configuration
+export const API_CONSTANTS = {
+  /** Exponential backoff base multiplier in milliseconds (1s) */
+  RETRY_BACKOFF_BASE_MS: 1000,
+  
+  /** Remote logging request timeout in milliseconds */
+  REMOTE_LOG_TIMEOUT_MS: 5000,
+} as const;
 
 // Storage Keys
 export const STORAGE_KEYS = {
