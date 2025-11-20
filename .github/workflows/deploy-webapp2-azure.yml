@@ -3,7 +3,7 @@ name: Build and deploy Consilient.WebApp2 to Azure
 on:
   push:
     branches:
-      - '*'
+      - '**'
   workflow_dispatch:
 
 env:
