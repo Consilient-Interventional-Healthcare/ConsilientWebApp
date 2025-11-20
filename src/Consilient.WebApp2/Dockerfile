@@ -18,6 +18,7 @@ COPY . .
 
 # Create an .env file that Vite will read during build
 RUN printf "VITE_API_BASE_URL=%s\n" "${VITE_API_BASE_URL}" > .env
+RUN cat .env && env | grep VITE || true
 
 # Build the application (Vite)
 RUN npm run build

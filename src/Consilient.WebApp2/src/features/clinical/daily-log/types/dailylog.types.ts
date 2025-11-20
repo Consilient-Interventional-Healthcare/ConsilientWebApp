@@ -11,7 +11,6 @@ export interface Patient {
     gender: string;
 }
 export interface Assignment {
-  id: string;
   patient: Patient
   hospitalization: Hospitalization;
 }
