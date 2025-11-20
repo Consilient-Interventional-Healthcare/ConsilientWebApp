@@ -1,4 +1,4 @@
-import { config } from '@/config';
+import { appSettings } from '@/config/index';
 import { logger } from '@/shared/core/logging/Logger';
 
 /**
@@ -6,7 +6,7 @@ import { logger } from '@/shared/core/logging/Logger';
  * Logs request configuration errors in development mode
  */
 export function handleRequestError(error: Error): Promise<never> {
-  if (config.env.isDevelopment) {
+  if (appSettings.app.isDevelopment) {
     logger.error('Request configuration error', error, {
       component: 'ApiClient.RequestInterceptor',
     });

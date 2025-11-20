@@ -4,7 +4,8 @@ import { AuthContext } from '@/features/auth/services/AuthContext';
 import { msalService } from '@/features/auth/services/MsalService';
 import { logger } from '@/shared/core/logging/Logger';
 import type { User } from '@/features/auth/auth.types';
-  import { config } from '@/config';
+import appSettings from '@/config';
+
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -96,7 +97,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       login,
       logout,
       isLoading,
-      isAuthenticated: config.features.disableAuth ? true : !!user
+      isAuthenticated: appSettings.features.disableAuth ? true : !!user
     }}>
       {children}
     </AuthContext.Provider>

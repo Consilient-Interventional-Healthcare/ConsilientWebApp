@@ -1,6 +1,6 @@
 import { QueryClient as TanStackQueryClient } from '@tanstack/react-query';
 import { QUERY_STALE_TIME, QUERY_GC_TIME } from '@/constants';
-import config from '@/config';
+import appSettings from '@/config/index';
 import { QueryClientManager } from './QueryClient';
 
 /**
@@ -33,7 +33,7 @@ export class QueryClientFactory {
           gcTime: QUERY_GC_TIME, // Renamed from cacheTime in React Query v5
           refetchOnWindowFocus: false,
           refetchOnReconnect: true,
-          retry: config.api.retryAttempts,
+          retry: appSettings.api.retryAttempts,
           // Stale-while-revalidate pattern: show cached data immediately, refetch in background
           refetchOnMount: 'always',
           // Only attempt fetches when online to avoid unnecessary failed requests

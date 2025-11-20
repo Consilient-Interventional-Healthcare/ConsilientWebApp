@@ -1,16 +1,16 @@
-import { config } from '@/config';
+import { appSettings } from '@/config/index';
 import { employeeService } from './EmployeeService';
 import { mockEmployeeService } from './EmployeeService.mock';
 
 /**
  * Employee Service Factory
- * Exports either the real or mock service based on the VITE_USE_MOCK_SERVICES flag
+ * Exports either the real or mock service based on the USE_MOCK_SERVICES flag
  * 
- * To use mock services, set VITE_USE_MOCK_SERVICES=true in your .env file
+ * To use mock services, set USE_MOCK_SERVICES=true in your .env file
  */
 
 // Export the appropriate service based on the feature flag
-export const service = config.features.useMockServices 
+export const service = appSettings.features.useMockServices 
   ? mockEmployeeService 
   : employeeService;
 

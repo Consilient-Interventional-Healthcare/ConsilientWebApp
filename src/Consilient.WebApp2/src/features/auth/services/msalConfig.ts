@@ -1,6 +1,6 @@
 import type { Configuration, PopupRequest, RedirectRequest } from '@azure/msal-browser';
 import { LogLevel } from '@azure/msal-browser';
-import { config } from '@/config';
+import appSettings from '@/config';
 
 /**
  * MSAL Configuration
@@ -12,42 +12,42 @@ import { config } from '@/config';
  * Validate MSAL configuration and throw descriptive error if invalid
  */
 const validateMsalConfig = () => {
-  if (!config.msal) {
+  if (!appSettings.msal) {
     throw new Error(
       'MSAL configuration is missing.\n' +
       'Please set the following environment variables:\n' +
-      '  - VITE_MSAL_CLIENT_ID\n' +
-      '  - VITE_MSAL_TENANT_ID\n' +
-      '  - VITE_MSAL_AUTHORITY\n' +
-      '  - VITE_MSAL_REDIRECT_URI\n' +
+      '  - MSAL_CLIENT_ID\n' +
+      '  - MSAL_TENANT_ID\n' +
+      '  - MSAL_AUTHORITY\n' +
+      '  - MSAL_REDIRECT_URI\n' +
       'See docs/MS_ENTRA_AUTHENTICATION.md for setup instructions.'
     );
   }
   
-  if (!config.msal.clientId) {
-    throw new Error('VITE_MSAL_CLIENT_ID is required but not set');
+  if (!appSettings.msal.clientId) {
+    throw new Error('MSAL_CLIENT_ID is required but not set');
   }
   
-  if (!config.msal.authority) {
-    throw new Error('VITE_MSAL_AUTHORITY is required but not set');
+  if (!appSettings.msal.authority) {
+    throw new Error('MSAL_AUTHORITY is required but not set');
   }
   
-  if (!config.msal.redirectUri) {
-    throw new Error('VITE_MSAL_REDIRECT_URI is required but not set');
+  if (!appSettings.msal.redirectUri) {
+    throw new Error('MSAL_REDIRECT_URI is required but not set');
   }
 };
 
 // Validate config on module load if MSAL is intended to be used
-if (config.msal) {
+if (appSettings.msal) {
   validateMsalConfig();
 }
 
-// Type guard to ensure config.msal is defined
+// Type guard to ensure appSettings.msal is defined
 const getMsalConfig = () => {
-  if (!config.msal) {
-    throw new Error('MSAL configuration is not available');
-  }
-  return config.msal;
+  // if (!appSettings.msal) {
+  //   throw new Error('MSAL configuration is not available');
+  // }
+  return appSettings.msal;
 };
 
 let msalConfig: Configuration | undefined;
@@ -55,18 +55,24 @@ let loginRequest: RedirectRequest;
 let tokenRequest: PopupRequest;
 let isMsalConfigured: () => boolean;
 
-if (config.features.disableAuth) {
+if (appSettings.features.disableAuth) {
   msalConfig = undefined;
   loginRequest = { scopes: [] };
   tokenRequest = { scopes: [] };
   isMsalConfigured = () => false;
 } else {
-  const msalCfg = getMsalConfig();
+  interface MsalCfgType {
+    clientId?: string;
+    authority?: string;
+    redirectUri?: string;
+    scopes?: string[];
+  };
+  const msalCfg: MsalCfgType = getMsalConfig() ?? {};
   msalConfig = {
     auth: {
-      clientId: msalCfg.clientId,
-      authority: msalCfg.authority,
-      redirectUri: msalCfg.redirectUri,
+      clientId: msalCfg.clientId ?? '',
+      authority: msalCfg.authority ?? '',
+      redirectUri: msalCfg.redirectUri ?? '',
       navigateToLoginRequestUrl: true,
     },
     cache: {
@@ -85,21 +91,22 @@ if (config.features.disableAuth) {
               console.warn(message);
               break;
             case LogLevel.Info:
-              if (config.env.isDevelopment) console.info(message);
+              if (appSettings.app.isDevelopment) console.info(message);
               break;
             case LogLevel.Verbose:
-              if (config.env.isDevelopment) console.debug(message);
+              if (appSettings.app.isDevelopment) console.debug(message);
               break;
           }
         },
-        logLevel: config.env.isDevelopment ? LogLevel.Verbose : LogLevel.Error,
+        logLevel: appSettings.app.isDevelopment ? LogLevel.Verbose : LogLevel.Error,
         piiLoggingEnabled: false,
       },
     },
   };
-  loginRequest = { scopes: msalCfg.scopes };
-  tokenRequest = { scopes: msalCfg.scopes };
-  isMsalConfigured = () => !!(config.msal?.clientId && config.msal?.authority && config.msal?.redirectUri);
+  const scopes = Array.isArray(msalCfg.scopes) ? msalCfg.scopes : [];
+  loginRequest = { scopes };
+  tokenRequest = { scopes };
+  isMsalConfigured = () => !!(appSettings.msal?.clientId && appSettings.msal?.authority && appSettings.msal?.redirectUri);
 }
 
 export { msalConfig, loginRequest, tokenRequest, isMsalConfigured };

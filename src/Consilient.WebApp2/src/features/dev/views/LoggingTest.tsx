@@ -171,7 +171,7 @@ export default function LoggingTest() {
         <div className="text-sm space-y-2">
           <p>To test remote logging:</p>
           <ol className="list-decimal list-inside space-y-1 ml-2">
-            <li>Set <code className="bg-muted px-1 rounded">VITE_ENABLE_REMOTE_LOGGING=true</code> in your .env file</li>
+            <li>Set <code className="bg-muted px-1 rounded">ENABLE_REMOTE_LOGGING=true</code> in your .env file</li>
             <li>Restart dev server: <code className="bg-muted px-1 rounded">npm run dev</code></li>
             <li>Click any test button above</li>
             <li>Check browser Network tab for <code className="bg-muted px-1 rounded">POST /api/logs</code> requests</li>

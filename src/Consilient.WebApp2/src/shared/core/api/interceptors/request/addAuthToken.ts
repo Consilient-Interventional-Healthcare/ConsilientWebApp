@@ -1,4 +1,4 @@
-import { config } from '@/config';
+import appSettings from '@/config/index';
 import { logger } from '@/shared/core/logging/Logger';
 import { msalService } from '@/features/auth/services/MsalService';
 import type { RequestConfigWithMetadata } from '../../api.types';
@@ -23,7 +23,7 @@ export async function addAuthToken(requestConfig: RequestConfigWithMetadata): Pr
   } catch (_error) {
     // If token retrieval fails, log it but don't block the request
     // This allows non-authenticated requests to proceed
-    if (config.env.isDevelopment) {
+    if (appSettings.app.isDevelopment) {
       logger.warn('Failed to get access token for request', {
         component: 'ApiClient.RequestInterceptor',
         url: requestConfig.url,

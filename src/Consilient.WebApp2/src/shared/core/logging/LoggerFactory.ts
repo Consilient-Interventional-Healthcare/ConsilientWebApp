@@ -1,9 +1,9 @@
 import log from 'loglevel';
-import { config } from '@/config';
 import { filterPII, filterMessagePII } from './piiFilter';
 import type { LogContext } from './logging.types';
 import { RemoteLogTransport } from './remoteTransport';
 import { Logger, type LogLevel } from './Logger';
+import { appSettings } from '@/config/index';
 
 /**
  * Factory class for creating and configuring Logger instances
@@ -39,9 +39,9 @@ export class LoggerFactory {
       return;
     }
 
-    if (config.env.isDevelopment) {
+    if (appSettings.app.isDevelopment) {
       logInstance.setLevel('trace'); // Show all logs in development
-    } else if (config.env.isProduction) {
+    } else if (appSettings.app.isProduction) {
       logInstance.setLevel('warn'); // Only warnings and errors in production console
     } else {
       logInstance.setLevel('info'); // Info+ in staging
@@ -87,7 +87,7 @@ export class LoggerFactory {
           rawMethod(prefix, ...filteredMessages, contextStr);
 
           // Send to remote API if enabled
-          if (config.logging.enabled) {
+          if (appSettings.logging.enabled) {
             const logMessage = filteredMessages.map(m => String(m)).join(' ');
             void RemoteLogTransport.send(methodName, logMessage, context);
           }
@@ -100,7 +100,7 @@ export class LoggerFactory {
           rawMethod(prefix, ...filteredMessages);
 
           // Send to remote API if enabled
-          if (config.logging.enabled) {
+          if (appSettings.logging.enabled) {
             const logMessage = filteredMessages.map(m => String(m)).join(' ');
             void RemoteLogTransport.send(methodName, logMessage);
           }

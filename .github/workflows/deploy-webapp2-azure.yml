@@ -41,8 +41,7 @@ jobs:
           tags: ${{ secrets.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
             BUILD_CONFIGURATION=Release
-            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
-
+            
       - name: Deploy image to Azure Web App for Containers
         uses: azure/webapps-deploy@v2
         with:

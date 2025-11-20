@@ -1,4 +1,4 @@
-import config from '@/config';
+import appSettings from '@/config/index';
 import type { RetryableRequestConfig } from '../../api.types';
 
 /**
@@ -8,6 +8,6 @@ export function shouldRetryRequest(originalRequest: RetryableRequestConfig, stat
   return Boolean(
     originalRequest &&
     (!status || status >= 500) &&
-    (!originalRequest._retry || originalRequest._retry < config.api.retryAttempts)
+    (!originalRequest._retry || originalRequest._retry < appSettings.api.retryAttempts)
   );
 }

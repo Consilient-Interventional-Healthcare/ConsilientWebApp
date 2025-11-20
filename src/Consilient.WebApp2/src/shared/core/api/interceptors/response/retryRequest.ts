@@ -1,5 +1,5 @@
 import { type AxiosInstance } from 'axios';
-import config from '@/config';
+import appSettings from '@/config/index';
 import { logger } from '@/shared/core/logging/Logger';
 import type { RetryableRequestConfig } from '../../api.types';
 import { sleep } from './sleep';
@@ -21,7 +21,7 @@ export async function retryRequest(
   const delay = Math.pow(2, retryCount) * RETRY_BACKOFF_BASE_MS;
   await sleep(delay);
   
-  logger.warn(`Retrying request (attempt ${retryCount + 1}/${config.api.retryAttempts})`, {
+  logger.warn(`Retrying request (attempt ${retryCount + 1}/${appSettings.api.retryAttempts})`, {
     component: 'ApiClient.ResponseInterceptor',
     url: originalRequest.url,
     method: originalRequest.method?.toUpperCase(),

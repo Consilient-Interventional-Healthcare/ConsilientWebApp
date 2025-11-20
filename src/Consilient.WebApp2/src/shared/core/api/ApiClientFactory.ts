@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
-import config from '@/config';
+import appSettings from '@/config/index';
 import { addAuthToken } from './interceptors/request/addAuthToken';
 import { handleRequestError } from './interceptors/request/handleRequestError';
 import { logSuccessfulRequest } from './interceptors/response/logSuccessfulRequest';
@@ -29,7 +29,7 @@ export class ApiClientFactory {
   static create(baseUrl?: string, timeout?: number): ApiClient {
     const axiosInstance = this.createAxiosInstance(baseUrl, timeout);
     this.configureInterceptors(axiosInstance);
-    return new ApiClient(axiosInstance, baseUrl ?? config.api.baseUrl);
+    return new ApiClient(axiosInstance, baseUrl ?? appSettings.api.baseUrl);
   }
 
   /**
@@ -37,11 +37,11 @@ export class ApiClientFactory {
    */
   private static createAxiosInstance(baseUrl?: string, timeout?: number): AxiosInstance {
     return axios.create({
-      baseURL: baseUrl ?? config.api.baseUrl,
+      baseURL: baseUrl ?? appSettings.api.baseUrl,
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: timeout ?? config.api.timeout,
+      timeout: timeout ?? appSettings.api.timeout,
     });
   }
 

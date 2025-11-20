@@ -6,8 +6,8 @@ import { useAuth } from "@/shared/hooks/useAuth"
 import { useActiveNavItem } from "@/shared/hooks/useActiveNavItem"
 import { useNavigate } from "react-router-dom"
 import { LogOut } from "lucide-react"
-import config from "@/config";
 import { Icon } from "@/shared/components/ui/icon";
+import { appSettings } from '@/config/index';
 
 function TopNavBar() {
   const location = useLocation();
@@ -26,7 +26,7 @@ function TopNavBar() {
       <div className="flex h-16 items-center px-4 lg:px-8 gap-4">
         {/* Logo */}
         <div className="flex items-center gap-2 mr-6">
-          <h1 className="text-xl font-bold text-blue-600">{config.app.name}</h1>
+          <h1 className="text-xl font-bold text-blue-600">{appSettings.app.name}</h1>
         </div>
         
         {/* Navigation Links - Desktop */}

@@ -1,4 +1,4 @@
-import { config } from '@/config';
+import appSettings from '@/config/index';
 import { logger } from '@/shared/core/logging/Logger';
 import type { RequestConfigWithMetadata, RetryableRequestConfig } from '../../api.types';
 
@@ -16,7 +16,7 @@ export function logSuccessfulRequest<T = unknown>(response: {
     delete response.config._tokenRetry;
   }
   
-  if (config.env.isDevelopment) {
+  if (appSettings.app.isDevelopment) {
     const reqConfig = response.config;
     const duration = reqConfig.metadata?.startTime 
       ? Date.now() - reqConfig.metadata.startTime

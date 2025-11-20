@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import type { RouteObject } from "react-router-dom";
-import { config } from "@/config";
+import appSettings from '@/config';
 
 const LoggingTest = lazy(() => import("@/features/dev/views/LoggingTest"));
 
@@ -9,7 +9,7 @@ const LoggingTest = lazy(() => import("@/features/dev/views/LoggingTest"));
  * These routes are only available in development mode and will not be included in production builds
  */
 // Development-only routes (only included in development mode)
-export const devRoutes: RouteObject[] = config.env.isDevelopment
+export const devRoutes: RouteObject[] = appSettings.app.isDevelopment
   ? [
   {
     path: "dev",

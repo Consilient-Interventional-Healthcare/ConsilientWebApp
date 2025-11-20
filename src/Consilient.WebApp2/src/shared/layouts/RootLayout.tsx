@@ -1,10 +1,10 @@
 import { Outlet, useMatches } from "react-router-dom";
 import { useEffect, Suspense, type FC, useRef } from "react";
-import config from "@/config";
 import LoadingBar from "react-top-loading-bar";
 import LoadingBarContext from "./LoadingBarContext";
 import type { LoadingBarApi } from "./LoadingBarContext";
 import type { LoadingBarRef } from "react-top-loading-bar";
+import { appSettings } from '@/config/index';
 
 // Context moved to LoadingBarContext.ts
 
@@ -22,9 +22,9 @@ const RootLayout: FC = () => {
     const title = handle?.title;
 
     if (title) {
-      document.title = `${title} - ${config.app.name}`;
+      document.title = `${title} - ${appSettings.app.name}`;
     } else {
-      document.title = config.app.name;
+      document.title = appSettings.app.name;
     }
   }, [matches]);
 

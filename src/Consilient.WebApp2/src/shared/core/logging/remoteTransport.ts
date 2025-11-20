@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { config } from '@/config';
 import { filterPII, filterMessagePII } from './piiFilter';
 import type { LokiLabel, LokiPayload, LogContext } from './logging.types';
+import appSettings from '@/config';
 
 // Remote logging timeout constant (5 seconds)
 const REMOTE_LOG_TIMEOUT_MS = 5000;
@@ -14,11 +14,11 @@ export class RemoteLogTransport {
    * Send logs to backend API in Loki format for storage/forwarding
    */
   static async send(level: string, message: string, context?: LogContext): Promise<void> {
-    if (!config.logging.enabled) {
+    if (!appSettings.logging.enabled) {
       return;
     }
 
-    if (config.env.isDevelopment) {
+    if (appSettings.app.isDevelopment) {
       console.log('[Logger] Sending to API in Loki format:', { level, message, context });
     }
 
@@ -31,8 +31,8 @@ export class RemoteLogTransport {
       
       // Build Loki labels
       const labels: LokiLabel = {
-        app: config.app.name,
-        environment: config.app.environment,
+        app: appSettings.app.name,
+        environment: appSettings.app.environment,
         level: level.toUpperCase(),
       };
 
@@ -62,7 +62,7 @@ export class RemoteLogTransport {
 
       // Send to backend API endpoint in Loki format
       await axios.post(
-        `${config.api.baseUrl}${config.logging.logsEndpoint}`,
+        `${appSettings.api.baseUrl}${appSettings.logging.logsEndpoint}`,
         lokiPayload,
         {
           timeout: REMOTE_LOG_TIMEOUT_MS,
@@ -72,12 +72,12 @@ export class RemoteLogTransport {
         }
       );
       
-      if (config.env.isDevelopment) {
+      if (appSettings.app.isDevelopment) {
         console.log('[Logger] Successfully sent to API');
       }
     } catch (error) {
       // Silently fail in production, show errors in development
-      if (config.env.isDevelopment) {
+      if (appSettings.app.isDevelopment) {
         console.error('[Logger] Error sending to API:', error);
       }
     }
