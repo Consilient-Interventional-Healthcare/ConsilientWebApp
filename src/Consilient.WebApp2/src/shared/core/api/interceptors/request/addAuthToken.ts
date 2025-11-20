@@ -1,5 +1,5 @@
 import { config } from '@/config';
-import { logger } from '@/shared/core/logging/logger';
+import { logger } from '@/shared/core/logging/Logger';
 import { msalService } from '@/features/auth/services/MsalService';
 import type { RequestConfigWithMetadata } from '../../api.types';
 

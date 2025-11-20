@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { logger } from '@/shared/core/logging/logger';
+import { logger } from '@/shared/core/logging/Logger';
 
 interface ErrorBoundaryProps {
   children: ReactNode;

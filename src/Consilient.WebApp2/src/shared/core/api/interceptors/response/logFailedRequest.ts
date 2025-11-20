@@ -1,5 +1,5 @@
 import { type AxiosError } from 'axios';
-import { logger } from '@/shared/core/logging/logger';
+import { logger } from '@/shared/core/logging/Logger';
 import type { RetryableRequestConfig } from '../../api.types';
 
 /**

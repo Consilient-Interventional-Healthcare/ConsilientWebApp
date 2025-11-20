@@ -1,3 +1,5 @@
+import type { ProviderAssignments } from '@/features/clinical/daily-log/types/dailylog.types';
+
 interface DailyLogPatientSideBarHeaderProps {
   date: string;
   minDate: string;
@@ -6,18 +8,10 @@ interface DailyLogPatientSideBarHeaderProps {
   selectedProvider: string;
   onProviderChange: (providerId: string) => void;
   onDateChange?: (date: string) => void;
-  mockProviders: { id: string; name: string }[];
+  providerAssignments: ProviderAssignments[];
 }
 
-export function DailyLogPatientSideBarHeader({
-  date,
-  minDate,
-  maxDate,
-  selectedProvider,
-  onProviderChange,
-  onDateChange,
-  mockProviders,
-}: DailyLogPatientSideBarHeaderProps) {
+export function DailyLogPatientSideBarHeader(props: DailyLogPatientSideBarHeaderProps) {
   return (
     <div className="px-4 py-4 border-b border-gray-200 space-y-3">
       {/* Date Input */}
@@ -28,13 +22,13 @@ export function DailyLogPatientSideBarHeader({
         <input
           id="date-input"
           type="date"
-          value={date}
-          min={minDate}
-          max={maxDate}
+          value={props.date}
+          min={props.minDate}
+          max={props.maxDate}
           onChange={e => {
             const selected = e.target.value;
-            if (selected >= minDate && selected <= maxDate) {
-              onDateChange?.(selected);
+            if (selected >= props.minDate && selected <= props.maxDate) {
+              props.onDateChange?.(selected);
             }
           }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -47,17 +41,17 @@ export function DailyLogPatientSideBarHeader({
         </label>
         <select
           id="provider-select"
-          value={selectedProvider}
-          onChange={e => onProviderChange(e.target.value)}
-          disabled={!date}
+          value={props.selectedProvider}
+          onChange={e => props.onProviderChange(e.target.value)}
+          disabled={!props.date}
           className={
-            `w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white${!date ? ' bg-gray-100 cursor-not-allowed' : ''}`
+            `w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white${!props.date ? ' bg-gray-100 cursor-not-allowed' : ''}`
           }
         >
           <option value="">Select a provider...</option>
-          {mockProviders.map(provider => (
-            <option key={provider.id} value={provider.id}>
-              {provider.name}
+          {props.providerAssignments.map(providerAssignment => (
+            <option key={providerAssignment.providerId} value={providerAssignment.providerId}>
+              {providerAssignment.providerLastName}, {providerAssignment.providerFirstName}
             </option>
           ))}
         </select>

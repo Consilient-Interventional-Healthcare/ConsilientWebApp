@@ -1,6 +1,6 @@
 import { type AxiosInstance } from 'axios';
 import config from '@/config';
-import { logger } from '@/shared/core/logging/logger';
+import { logger } from '@/shared/core/logging/Logger';
 import type { RetryableRequestConfig } from '../../api.types';
 import { sleep } from './sleep';
 

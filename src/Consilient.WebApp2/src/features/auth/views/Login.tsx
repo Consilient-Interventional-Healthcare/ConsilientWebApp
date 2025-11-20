@@ -1,6 +1,6 @@
 import { Button } from "@/shared/components/ui/button";
 import { useAuth } from "@/shared/hooks/useAuth";
-import { logger } from "@/shared/core/logging/logger";
+import { logger } from "@/shared/core/logging/Logger";
 
 export default function Login() {
   const { login } = useAuth();

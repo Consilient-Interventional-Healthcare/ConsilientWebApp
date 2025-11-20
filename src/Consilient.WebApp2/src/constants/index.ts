@@ -1,4 +1,4 @@
-import { logger } from '@/shared/core/logging/logger';
+import { logger } from '@/shared/core/logging/Logger';
 
 // React Query Configuration
 export const QUERY_STALE_TIME: number = 5 * 60 * 1000; // 5 minutes

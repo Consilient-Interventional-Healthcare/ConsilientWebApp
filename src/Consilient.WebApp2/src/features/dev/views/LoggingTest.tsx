@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { logger } from '@/shared/core/logging/logger';
+import { logger } from '@/shared/core/logging/Logger';
 import { Button } from '@/shared/components/ui/button';
 
 export default function LoggingTest() {

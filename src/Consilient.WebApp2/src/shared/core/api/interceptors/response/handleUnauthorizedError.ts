@@ -1,5 +1,5 @@
 import { type AxiosError, type AxiosInstance } from 'axios';
-import { logger } from '@/shared/core/logging/logger';
+import { logger } from '@/shared/core/logging/Logger';
 import { msalService } from '@/features/auth/services/MsalService';
 import { ApiError, type RetryableRequestConfig } from '../../api.types';
 

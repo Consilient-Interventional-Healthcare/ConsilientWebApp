@@ -1,83 +1,52 @@
 import React from 'react';
 import { cn } from '@/shared/utils/utils';
 import { DailyLogPatientSideBarHeader } from './DailyLogPatientSideBarHeader';
-
-interface Patient {
-  id: string;
-  name: string;
-  room?: string;
-  status?: 'active' | 'pending' | 'completed';
-  providerId: string;
-}
-
-interface Provider {
-  id: string;
-  name: string;
-}
+import type { ProviderAssignments, Assignment } from '@/features/clinical/daily-log/types/dailylog.types';
 
 interface PatientSidebarProps {
   selectedPatientId: string | null;
   onPatientSelect: (id: string) => void;
   date: string;
-  providerId?: string;
+  providerId?: string;  
   onProviderChange?: (providerId: string) => void;
   patientId?: string;
+  providerAssignments: ProviderAssignments[];
 }
 
-// Mock providers
-const mockProviders: Provider[] = [
-  { id: 'PR001', name: 'Dr. Smith' },
-  { id: 'PR002', name: 'Dr. Johnson' },
-  { id: 'PR003', name: 'Dr. Williams' },
-];
+export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, date, providerId, onProviderChange, providerAssignments }: PatientSidebarProps) {
+  const initialProvider = providerId ?? ((Array.isArray(providerAssignments) && providerAssignments.length > 0 && providerAssignments[0]?.providerId) ? providerAssignments[0].providerId : '');
+  const [selectedProvider, setSelectedProvider] = React.useState<string>(initialProvider);
 
-// Mock data - replace with actual data fetching
-const mockPatients: Patient[] = [
-  { id: 'P001', name: 'Anderson, Jane', room: '101', status: 'active', providerId: 'PR001' },
-  { id: 'P002', name: 'Brown, Michael', room: '102', status: 'pending', providerId: 'PR001' },
-  { id: 'P003', name: 'Chen, Lisa', room: '103', status: 'active', providerId: 'PR001' },
-  { id: 'P004', name: 'Davis, Robert', room: '104', status: 'completed', providerId: 'PR002' },
-  { id: 'P005', name: 'Evans, Sarah', room: '105', status: 'active', providerId: 'PR002' },
-  { id: 'P006', name: 'Foster, James', room: '106', status: 'pending', providerId: 'PR002' },
-  { id: 'P007', name: 'Garcia, Maria', room: '107', status: 'active', providerId: 'PR002' },
-  { id: 'P008', name: 'Harris, David', room: '108', status: 'active', providerId: 'PR003' },
-  { id: 'P009', name: 'Johnson, Emma', room: '109', status: 'completed', providerId: 'PR003' },
-  { id: 'P010', name: 'Kim, Daniel', room: '110', status: 'active', providerId: 'PR003' },
-];
-
-export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, date, providerId, onProviderChange }: PatientSidebarProps) {
-  const [selectedProvider, setSelectedProvider] = React.useState<string>(providerId ?? '');
-
-  const filteredPatients = React.useMemo(() => (
-    selectedProvider
-      ? mockPatients.filter(p => p.providerId === selectedProvider)
-      : []
-  ), [selectedProvider]);
+  // Get patients for selected provider
+  const filteredAssignments: Assignment[] = React.useMemo(() => {
+    const providerAssignment = providerAssignments.find(a => a.providerId === selectedProvider);
+    return providerAssignment ? providerAssignment.assignments : [];
+  }, [providerAssignments, selectedProvider]);
 
   // Keyboard navigation for patient list
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-        if (!filteredPatients.length) return;
+        if (!filteredAssignments.length) return;
         e.preventDefault();
         if (!selectedPatientId) return;
-        const idx = filteredPatients.findIndex(p => p.id === selectedPatientId);
+        const idx = filteredAssignments.findIndex(p => p.patient.id === selectedPatientId);
         if (idx === -1) return;
         let nextIdx = idx;
         if (e.key === 'ArrowUp') {
-          nextIdx = idx === 0 ? filteredPatients.length - 1 : idx - 1;
+          nextIdx = idx === 0 ? filteredAssignments.length - 1 : idx - 1;
         } else if (e.key === 'ArrowDown') {
-          nextIdx = idx === filteredPatients.length - 1 ? 0 : idx + 1;
+          nextIdx = idx === filteredAssignments.length - 1 ? 0 : idx + 1;
         }
-        const nextPatient = filteredPatients[nextIdx];
+        const nextPatient = filteredAssignments[nextIdx];
         if (nextPatient) {
-          onPatientSelect(nextPatient.id);
+          onPatientSelect(nextPatient.patient.id);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredPatients, selectedPatientId, onPatientSelect]);
+  }, [filteredAssignments, selectedPatientId, onPatientSelect]);
 
   const handleProviderChange = (newProviderId: string) => {
     setSelectedProvider(newProviderId);
@@ -86,10 +55,10 @@ export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, dat
 
   // Auto-select first patient when provider changes or on initial load
   React.useEffect(() => {
-    if (filteredPatients.length > 0 && !selectedPatientId && filteredPatients[0]) {
-      onPatientSelect(filteredPatients[0].id);
+    if (filteredAssignments.length > 0 && !selectedPatientId && filteredAssignments[0]) {
+      onPatientSelect(filteredAssignments[0].patient.id);
     }
-  }, [filteredPatients, selectedPatientId, onPatientSelect]);
+  }, [filteredAssignments, selectedPatientId, onPatientSelect]);
 
   // Calculate min and max date for input
   const today = new Date();
@@ -108,7 +77,7 @@ export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, dat
         providerId={selectedProvider}
         selectedProvider={selectedProvider}
         onProviderChange={handleProviderChange}
-        mockProviders={mockProviders}
+        providerAssignments={providerAssignments}
       />
       {/* Patient List */}
       <div className="flex-1 overflow-y-auto">
@@ -129,7 +98,7 @@ export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, dat
             </svg>
             <p className="text-sm">Please select a provider</p>
           </div>
-        ) : filteredPatients.length === 0 ? (
+        ) : filteredAssignments.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             <svg
               className="mx-auto h-12 w-12 text-gray-400 mb-2"
@@ -147,13 +116,13 @@ export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, dat
             <p className="text-sm">No patients found</p>
           </div>
         ) : (
-          filteredPatients.map(patient => (
+          filteredAssignments.map(assignment => (
             <button
-              key={patient.id}
-              onClick={() => onPatientSelect(patient.id)}
+              key={assignment.patient.id}
+              onClick={() => onPatientSelect(assignment.patient.id)}
               className={cn(
                 'w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-l-4 border-b border-gray-100',
-                selectedPatientId === patient.id
+                selectedPatientId === assignment.patient.id
                   ? 'bg-blue-50 border-l-blue-600'
                   : 'border-l-transparent'
               )}
@@ -162,30 +131,25 @@ export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, dat
                 <div className="flex-1 min-w-0">
                   <p className={cn(
                     'text-sm font-medium truncate',
-                    selectedPatientId === patient.id
+                    selectedPatientId === assignment.patient.id
                       ? 'text-blue-900'
                       : 'text-gray-900'
                   )}>
-                    {patient.name}
+                    {assignment.patient.lastName}, {assignment.patient.firstName}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-500">{patient.id}</span>
-                    {patient.room && (
-                      <>
-                        <span className="text-gray-300">•</span>
-                        <span className="text-xs text-gray-500">Room {patient.room}</span>
-                      </>
-                    )}
+                    <span className="text-xs text-gray-500">{assignment.patient.id}</span>
+                    {/* Room not available in Assignment, so skip */}
                   </div>
                 </div>
                 {/* Status indicator */}
-                {patient.status && (
+                {assignment.hospitalization?.status && (
                   <div className="ml-2">
                     <span className={cn(
                       'inline-block w-2 h-2 rounded-full',
-                      patient.status === 'active' && 'bg-green-500',
-                      patient.status === 'pending' && 'bg-yellow-500',
-                      patient.status === 'completed' && 'bg-gray-400'
+                      assignment.hospitalization.status === 'active' && 'bg-green-500',
+                      assignment.hospitalization.status === 'pending' && 'bg-yellow-500',
+                      assignment.hospitalization.status === 'completed' && 'bg-gray-400'
                     )} />
                   </div>
                 )}
