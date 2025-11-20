@@ -6,6 +6,14 @@ export enum Environment {
   Production = 'production',
 }
 
+export enum LogLevel {
+  Trace = 'trace',
+  Debug = 'debug',
+  Info = 'info',
+  Warn = 'warn',
+  Error = 'error',
+}
+
 export interface AppSettings {
   api: {
     baseUrl: string;
@@ -35,7 +43,7 @@ export interface AppSettings {
   logging: {
     enabled: boolean;
     logsEndpoint: string;
-    level: 'trace' | 'debug' | 'info' | 'warn' | 'error';
+    level: LogLevel;
   };
 }
 
@@ -43,17 +51,17 @@ export interface AppSettings {
 declare global {
   interface Window {
     __ENV?: {
-      API_BASE_URL?: string;
+      APP_API_BASE_URL?: string;
       APP_ENV?: string;
-      ENABLE_DEBUG_MODE?: string;
-      DISABLE_AUTH?: string;
-      USE_MOCK_SERVICES?: string;
-      MSAL_CLIENT_ID?: string;
-      MSAL_TENANT_ID?: string;
-      MSAL_AUTHORITY?: string;
-      MSAL_REDIRECT_URI?: string;
-      MSAL_SCOPES?: string;
-      ENABLE_REMOTE_LOGGING?: string;
+      APP_ENABLE_DEBUG_MODE?: string;
+      APP_DISABLE_AUTH?: string;
+      APP_USE_MOCK_SERVICES?: string;
+      APP_MSAL_CLIENT_ID?: string;
+      APP_MSAL_TENANT_ID?: string;
+      APP_MSAL_AUTHORITY?: string;
+      APP_MSAL_REDIRECT_URI?: string;
+      APP_MSAL_SCOPES?: string;
+      APP_ENABLE_REMOTE_LOGGING?: string;
     };
   }
 }
@@ -77,23 +85,23 @@ function validateAppEnv(value: string | undefined): Environment {
 
 // --- Factory & Singleton ---
 function createAppSettings(): AppSettings {
-  const apiBaseUrl = getEnv('API_BASE_URL') ?? '/api';
+  const apiBaseUrl = getEnv('APP_API_BASE_URL') ?? '/api';
   const appEnv = validateAppEnv(getEnv('APP_ENV'));
-  const enableDebugMode = getEnv('ENABLE_DEBUG_MODE') === 'true';
-  const disableAuth = getEnv('DISABLE_AUTH') === 'true';
-  const useMockServices = getEnv('USE_MOCK_SERVICES') === 'true';
+  const enableDebugMode = getEnv('APP_ENABLE_DEBUG_MODE') === 'true';
+  const disableAuth = getEnv('APP_DISABLE_AUTH') === 'true';
+  const useMockServices = getEnv('APP_USE_MOCK_SERVICES') === 'true';
 
   const isProduction = appEnv === Environment.Production;
   const isDevelopment = appEnv === Environment.Development;
   const isDebugMode = enableDebugMode || isDevelopment;
-  const enableRemoteLogging = isProduction || getEnv('ENABLE_REMOTE_LOGGING') === 'true';
+  const enableRemoteLogging = isProduction || getEnv('APP_ENABLE_REMOTE_LOGGING') === 'true';
 
   // Build MSAL configuration if available
-  const clientId = getEnv('MSAL_CLIENT_ID');
-  const tenantId = getEnv('MSAL_TENANT_ID');
-  const authority = getEnv('MSAL_AUTHORITY');
-  const redirectUri = getEnv('MSAL_REDIRECT_URI');
-  const scopes = getEnv('MSAL_SCOPES');
+  const clientId = getEnv('APP_MSAL_CLIENT_ID');
+  const tenantId = getEnv('APP_MSAL_TENANT_ID');
+  const authority = getEnv('APP_MSAL_AUTHORITY');
+  const redirectUri = getEnv('APP_MSAL_REDIRECT_URI');
+  const scopes = getEnv('APP_MSAL_SCOPES');
 
   const appSettings: AppSettings = {
     api: {
@@ -117,7 +125,7 @@ function createAppSettings(): AppSettings {
     logging: {
       enabled: enableRemoteLogging,
       logsEndpoint: '/loki/logs',
-      level: 'info',
+      level: LogLevel.Info,
     },
   };
 

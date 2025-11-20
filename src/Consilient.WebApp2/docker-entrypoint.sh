@@ -10,7 +10,7 @@ EOF
 
 first=true
 # Export all environment variables that start with VITE_ or other expected keys
-for var in $(env | awk -F= '{print $1}' | grep -E '^(VITE_|MSAL_|APP_)' || true); do
+for var in $(env | awk -F= '{print $1}' | grep -E '^(APP_)' || true); do
   val=$(printf '%s' "$(printenv $var)" | sed -e 's/"/\\"/g')
   if [ "$first" = true ] ; then
     first=false
