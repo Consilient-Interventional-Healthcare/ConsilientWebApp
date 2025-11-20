@@ -16,14 +16,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Show repo files (debug)
-        run: |
-          echo "Workspace: $GITHUB_WORKSPACE"
-          ls -la "$GITHUB_WORKSPACE"
-          ls -la "$GITHUB_WORKSPACE/Consilient.WebApp2" || true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
