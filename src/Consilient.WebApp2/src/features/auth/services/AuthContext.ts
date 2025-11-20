@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { AuthContextType } from '@/features/auth/types/auth';
+import type { AuthContextType } from '@/features/auth/auth.types';
 
 const AuthContext = createContext<AuthContextType | null>(null);
 

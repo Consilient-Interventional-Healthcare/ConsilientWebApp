@@ -50,65 +50,56 @@ const getMsalConfig = () => {
   return config.msal;
 };
 
-const msalCfg = getMsalConfig();
+let msalConfig: Configuration | undefined;
+let loginRequest: RedirectRequest;
+let tokenRequest: PopupRequest;
+let isMsalConfigured: () => boolean;
 
-export const msalConfig: Configuration = {
-  auth: {
-    clientId: msalCfg.clientId,
-    authority: msalCfg.authority,
-    redirectUri: msalCfg.redirectUri,
-    navigateToLoginRequestUrl: true,
-  },
-  cache: {
-    cacheLocation: 'sessionStorage', // Use sessionStorage for better security
-    storeAuthStateInCookie: false, // Set to true if you have issues on IE11 or Edge
-  },
-  system: {
-    loggerOptions: {
-      loggerCallback: (level, message, containsPii) => {
-        if (containsPii) return; // Don't log PII
-        
-        switch (level) {
-          case LogLevel.Error:
-            console.error(message);
-            break;
-          case LogLevel.Warning:
-            console.warn(message);
-            break;
-          case LogLevel.Info:
-            if (config.env.isDevelopment) console.info(message);
-            break;
-          case LogLevel.Verbose:
-            if (config.env.isDevelopment) console.debug(message);
-            break;
-        }
-      },
-      logLevel: config.env.isDevelopment ? LogLevel.Verbose : LogLevel.Error,
-      piiLoggingEnabled: false,
+if (config.features.disableAuth) {
+  msalConfig = undefined;
+  loginRequest = { scopes: [] };
+  tokenRequest = { scopes: [] };
+  isMsalConfigured = () => false;
+} else {
+  const msalCfg = getMsalConfig();
+  msalConfig = {
+    auth: {
+      clientId: msalCfg.clientId,
+      authority: msalCfg.authority,
+      redirectUri: msalCfg.redirectUri,
+      navigateToLoginRequestUrl: true,
     },
-  },
-};
+    cache: {
+      cacheLocation: 'sessionStorage',
+      storeAuthStateInCookie: false,
+    },
+    system: {
+      loggerOptions: {
+        loggerCallback: (level, message, containsPii) => {
+          if (containsPii) return;
+          switch (level) {
+            case LogLevel.Error:
+              console.error(message);
+              break;
+            case LogLevel.Warning:
+              console.warn(message);
+              break;
+            case LogLevel.Info:
+              if (config.env.isDevelopment) console.info(message);
+              break;
+            case LogLevel.Verbose:
+              if (config.env.isDevelopment) console.debug(message);
+              break;
+          }
+        },
+        logLevel: config.env.isDevelopment ? LogLevel.Verbose : LogLevel.Error,
+        piiLoggingEnabled: false,
+      },
+    },
+  };
+  loginRequest = { scopes: msalCfg.scopes };
+  tokenRequest = { scopes: msalCfg.scopes };
+  isMsalConfigured = () => !!(config.msal?.clientId && config.msal?.authority && config.msal?.redirectUri);
+}
 
-/**
- * Scopes for login request
- * These scopes will be requested when the user logs in
- */
-export const loginRequest: RedirectRequest = {
-  scopes: msalCfg.scopes,
-};
-
-/**
- * Scopes for token request (API calls)
- * Use this when acquiring tokens for API calls
- */
-export const tokenRequest: PopupRequest = {
-  scopes: msalCfg.scopes,
-};
-
-/**
- * Check if MSAL is configured
- * Returns true if all required MSAL config is present
- */
-export const isMsalConfigured = (): boolean => {
-  return !!(config.msal?.clientId && config.msal?.authority && config.msal?.redirectUri);
-};
+export { msalConfig, loginRequest, tokenRequest, isMsalConfigured };

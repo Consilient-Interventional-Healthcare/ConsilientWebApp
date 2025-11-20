@@ -5,6 +5,7 @@ export interface RouteHandle {
   label?: string;
   title?: string;
   protected?: boolean;
+  icon?: string;
 }
 
 /**
@@ -13,7 +14,9 @@ export interface RouteHandle {
 export interface SubNavItem {
   href: string;
   label: string;
+  icon?: string;
 }
+
 
 /**
  * Main navigation item with optional sub-navigation
@@ -21,6 +24,7 @@ export interface SubNavItem {
 export interface NavItem {
   href: string;
   label: string;
+  icon?: string | undefined;
   subNav: SubNavItem[];
 }
 

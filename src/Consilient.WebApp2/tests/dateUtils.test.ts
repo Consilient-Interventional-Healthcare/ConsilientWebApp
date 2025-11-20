@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate, parseDate, isToday, isPast, isFuture, addDays, diffInDays, startOfWeek, endOfWeek, isSameDay, formatDateLong, getToday } from '../src/shared/utils/dateUtils';
+import { formatDate, parseDate, isToday, addDays, diffInDays, isSameDay, getToday } from '../src/shared/utils/dateUtils';
 
 describe('dateUtils', () => {
   it('formatDate returns YYYY-MM-DD', () => {

@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
-import { employeeService } from '@/features/employees/services/EmployeeService';
-import { logger } from '@/shared/core/logging/logger';
-import type { 
-  Employee, 
-  EmployeeWithVisitCount, 
-  CreateEmployeeDto, 
-  UpdateEmployeeDto 
-} from '@/features/employees/types/employee';
+import { service as employeeService } from '@/features/employees/services';
+import { logger } from '@/shared/core/logging/Logger';
+import type {
+  EmployeeId,
+  Employee,
+  EmployeeWithVisitCount,
+  CreateEmployeeDto,
+  UpdateEmployeeDto
+} from '@/features/employees/employee.types';
 
 /**
  * Update employee mutation variables

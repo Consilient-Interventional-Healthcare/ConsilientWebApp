@@ -6,7 +6,8 @@ import { useAuth } from "@/shared/hooks/useAuth"
 import { useActiveNavItem } from "@/shared/hooks/useActiveNavItem"
 import { useNavigate } from "react-router-dom"
 import { LogOut } from "lucide-react"
-import config from "@/config"
+import config from "@/config";
+import { Icon } from "@/shared/components/ui/icon";
 
 function TopNavBar() {
   const location = useLocation();
@@ -14,8 +15,8 @@ function TopNavBar() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     void navigate('/auth/login');
   };
 
@@ -34,19 +35,25 @@ function TopNavBar() {
             const isActive = item.href === "/" 
               ? location.pathname === "/" 
               : location.pathname.startsWith(item.href);
-            
+
+            let iconElement = null;
+            if (item.icon) {
+              iconElement = <Icon name={item.icon} className="w-5 h-5" aria-hidden="true" />;
+            }
+
             return (
               <Link
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium",
+                  "px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2",
                   "hover:bg-gray-100 transition-colors",
                   isActive
                     ? "text-blue-600 bg-blue-50"
                     : "text-gray-700 hover:text-gray-900"
                 )}
               >
+                {iconElement}
                 {item.label}
               </Link>
             );
@@ -72,21 +79,29 @@ function TopNavBar() {
       {subNavItems.length > 0 && (
         <div className="border-t bg-gray-50">
           <div className="flex items-center px-4 lg:px-8 gap-1 h-12 overflow-x-auto">
-            {subNavItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap",
-                  "hover:bg-gray-100 transition-colors",
-                  location.pathname === item.href
-                    ? "text-blue-600 bg-white shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {subNavItems.map((item) => {
+              const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + "/");
+              let iconElement = null;
+              if ('icon' in item && item.icon) {
+                iconElement = <Icon name={item.icon} className="w-4 h-4" aria-hidden="true" />;
+              }
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={cn(
+                    "px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap flex items-center gap-2",
+                    "hover:bg-gray-100 transition-colors",
+                    isActive
+                      ? "text-blue-600 bg-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  {iconElement}
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

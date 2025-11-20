@@ -1,12 +1,12 @@
 import {
   PublicClientApplication,
-  AccountInfo,
+  type AccountInfo,
   InteractionRequiredAuthError,
   BrowserAuthError,
-  EndSessionRequest
+  type EndSessionRequest
 } from '@azure/msal-browser';
 import { msalConfig, loginRequest, tokenRequest, isMsalConfigured } from './msalConfig';
-import { logger } from '@/shared/core/logging/logger';
+import { logger } from '@/shared/core/logging/Logger';
 
 /**
  * MSAL Service - Wrapper around PublicClientApplication
@@ -37,6 +37,9 @@ class MsalService {
 
     // Create new instance with promise-based lock to prevent race conditions
     this.instancePromise = (async () => {
+      if (!msalConfig) {
+        throw new Error('MSAL configuration is undefined. Please check your environment variables.');
+      }
       this.msalInstance = new PublicClientApplication(msalConfig);
       await this.initialize();
       return this.msalInstance;

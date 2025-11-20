@@ -2,8 +2,9 @@ import { useState, useEffect, type ReactNode } from 'react';
 import type { AccountInfo } from '@azure/msal-browser';
 import { AuthContext } from '@/features/auth/services/AuthContext';
 import { msalService } from '@/features/auth/services/MsalService';
-import { logger } from '@/shared/core/logging/logger';
-import type { User } from '@/features/auth/types/auth';
+import { logger } from '@/shared/core/logging/Logger';
+import type { User } from '@/features/auth/auth.types';
+  import { config } from '@/config';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -15,7 +16,7 @@ interface AuthProviderProps {
 const accountToUser = (account: AccountInfo): User => {
   const nameParts = account.name?.split(' ') ?? [];
   return {
-    id: account.homeAccountId, // Use MSAL's unique account ID
+    id: account.homeAccountId as unknown as User['id'], // Use MSAL's unique account ID (cast to branded User id)
     email: account.username,
     firstName: nameParts[0] ?? '',
     lastName: nameParts.slice(1).join(' ') ?? '',
@@ -90,7 +91,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      logout,
+      isLoading,
+      isAuthenticated: config.features.disableAuth ? true : !!user
+    }}>
       {children}
     </AuthContext.Provider>
   );

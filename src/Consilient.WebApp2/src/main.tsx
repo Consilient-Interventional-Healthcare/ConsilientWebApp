@@ -10,7 +10,7 @@ import Loading from '@/shared/components/Loading'
 import { router } from "@/shared/routes/Router"
 import { queryClient } from '@/shared/core/query/QueryClient'
 import { config } from '@/config'
-import { logger } from '@/shared/core/logging/logger'
+import { logger } from '@/shared/core/logging/Logger'
 import './index.css'
 
 const rootElement = document.getElementById('root');

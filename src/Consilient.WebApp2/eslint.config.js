@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
   // Ignore patterns
   {
-    ignores: ['dist', 'node_modules', '*.config.js', '*.config.ts', 'src/components/ui/**'],
+    ignores: ['dist', 'node_modules', '*.config.js', '*.config.ts', 'src/components/ui/**', 'tests/**'],
   },
   
   // Base JavaScript/JSX configuration
@@ -40,6 +40,7 @@ export default tseslint.config(
       parserOptions: {
         project: ['./tsconfig.json', './tsconfig.node.json'],
         tsconfigRootDir: import.meta.dirname,
+        include: ['src', 'tests'],
       },
     },
     rules: {

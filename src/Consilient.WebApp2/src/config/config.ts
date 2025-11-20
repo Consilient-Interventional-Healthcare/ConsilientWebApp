@@ -19,6 +19,8 @@ export const config = {
   // Feature Flags
   features: {
     enableDebugMode: env.features.enableDebugMode,
+    disableAuth: env.features.disableAuth,
+    useMockServices: env.features.useMockServices,
     enableRemoteLogging: env.isProduction || import.meta.env.VITE_ENABLE_REMOTE_LOGGING === 'true',
   },
 

@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { navItems, type NavItem } from '@/shared/routes/Router';
+import { type NavItem } from '@/shared/routes/router.types';
+import { navItems } from '@/shared/routes/Router';
 
 interface UseActiveNavItemReturn {
   activeNavItem: NavItem | undefined;
-  subNavItems: { href: string; label: string }[];
+  subNavItems: { href: string; label: string; icon?: string }[];
 }
 
 /**
@@ -22,7 +23,7 @@ export function useActiveNavItem(): UseActiveNavItemReturn {
     });
   }, [location.pathname]);
 
-  const subNavItems = activeNavItem?.subNav ?? [];
+  const subNavItems = activeNavItem?.subNav?.map(({ href, label, icon }) => ({ href, label, icon })) ?? [];
 
   return { activeNavItem, subNavItems };
 }

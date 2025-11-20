@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { EmployeeWithVisitCount } from '@/features/employees/types/employee';
+import type { EmployeeWithVisitCount, EmployeeId } from '@/features/employees/employee.types';
 
 export interface GroupedEmployee {
   id: EmployeeId;

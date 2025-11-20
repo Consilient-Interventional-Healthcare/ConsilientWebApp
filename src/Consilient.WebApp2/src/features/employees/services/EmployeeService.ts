@@ -1,10 +1,11 @@
 import api from '@/shared/core/api/ApiClient';
 import type { 
+  EmployeeId,
   Employee, 
   EmployeeWithVisitCount, 
   CreateEmployeeDto, 
   UpdateEmployeeDto 
-} from '@/features/employees/types/employee';
+} from '@/features/employees/employee.types';
 
 /**
  * Employee Service

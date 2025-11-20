@@ -10,6 +10,8 @@ export interface EnvConfig {
   appEnv: 'development' | 'staging' | 'production';
   features: {
     enableDebugMode: boolean;
+    disableAuth?: boolean;
+    useMockServices?: boolean;
   };
   msal?: {
     clientId: string;

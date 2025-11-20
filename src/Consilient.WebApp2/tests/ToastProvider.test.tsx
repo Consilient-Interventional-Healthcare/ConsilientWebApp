@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+import '@testing-library/jest-dom';
 import { describe, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ToastProvider } from '../src/shared/components/Toast/ToastProvider';
@@ -12,7 +12,8 @@ describe('ToastProvider', () => {
       React.useEffect(() => {
         showToast({ message: 'Hello!', type: 'success' });
       }, [showToast]);
-      return <div>{toasts.length > 0 ? toasts[0].message : 'No toast'}</div>;
+      const safeToasts = toasts ?? [];
+      return <div>{safeToasts.length > 0 && safeToasts[0] ? safeToasts[0].message : 'No toast'}</div>;
     }
     render(
       <ToastProvider>

@@ -1,4 +1,3 @@
-import { useEffect, memo } from 'react';
 import type { Toast } from './toast.types';
 
 interface ToastItemProps {

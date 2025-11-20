@@ -7,6 +7,6 @@ export const dashboardRoutes: RouteObject[] = [
   {
     index: true,
     element: <Dashboard />,
-    handle: { label: "Dashboard", title: "Dashboard", protected: true },
+    handle: { label: "Dashboard", title: "Dashboard", icon: "house", protected: true },
   },
 ];

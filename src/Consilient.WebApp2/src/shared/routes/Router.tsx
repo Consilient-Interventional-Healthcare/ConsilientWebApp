@@ -28,15 +28,16 @@ export const router = createBrowserRouter([
         ),
         children: [
           ...dashboardRoutes,
-          ...clinicalRoutes,
+            ...clinicalRoutes,
           {
             path: "billing",
             element: <div>Billing</div>,
-            handle: { 
-              label: "Billing",
-              title: "Billing",
-              protected: true,
-            },
+              handle: { 
+                label: "Billing",
+                title: "Billing",
+                icon: "file-invoice",
+                protected: true,
+              },
           },
         ],
       },
@@ -52,7 +53,7 @@ export const router = createBrowserRouter([
           {
             path: "login",
             element: <Login />,
-            handle: { title: "Sign In", protected: false },
+              handle: { title: "Sign In", protected: false },
           }
         ],
       },
@@ -99,6 +100,7 @@ export const navItems: NavItem[] = protectedChildren
             subNav.push({
               href: fullPath,
               label: childHandle.label,
+              ...(childHandle.icon ? { icon: childHandle.icon } : {}),
             });
           }
           
@@ -117,6 +119,7 @@ export const navItems: NavItem[] = protectedChildren
     return {
       href: route.path ? `/${routePath}` : '/',
       label: handle.label ?? '',
+      icon: handle.icon,
       subNav,
     };
   });

@@ -23,11 +23,13 @@ class Environment {
     const apiBaseUrl = this.getRequiredEnv('VITE_API_BASE_URL');
     const appEnv = this.validateAppEnv(this.getOptionalEnv('VITE_APP_ENV', 'development'));
     const enableDebugMode = this.getOptionalEnv('VITE_ENABLE_DEBUG_MODE', 'false') === 'true';
+    const disableAuth = this.getOptionalEnv('VITE_DISABLE_AUTH', 'false') === 'true';
+    const useMockServices = this.getOptionalEnv('VITE_USE_MOCK_SERVICES', 'false') === 'true';
 
     const config: EnvConfig = {
       apiBaseUrl,
       appEnv,
-      features: { enableDebugMode },
+      features: { enableDebugMode, disableAuth, useMockServices },
     };
 
     // Add MSAL configuration if all required variables are present
