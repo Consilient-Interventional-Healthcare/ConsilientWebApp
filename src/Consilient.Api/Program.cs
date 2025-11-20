@@ -1,3 +1,4 @@
+using Consilient.Api.Configuration;
 using Consilient.Api.Hubs;
 using Consilient.Api.Infra.ModelBinders;
 using Consilient.Api.Init;
@@ -5,6 +6,7 @@ using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Data.GraphQL;
 using Consilient.Employees.Services;
+using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Insurances.Services;
@@ -12,9 +14,13 @@ using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Visits.Services;
 using GraphQL.Server.Ui.GraphiQL;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.Identity.Web;
 using Serilog;
 
 namespace Consilient.Api
@@ -45,7 +51,7 @@ namespace Consilient.Api
                 {
                     builder.Services.AddSingleton(loggingConfiguration);
                 }
-                //var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
+                var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
                 if (!string.IsNullOrEmpty(defaultConnectionString))
                 {
                     builder.Services.RegisterDataContext(defaultConnectionString, builder.Environment.IsProduction());
@@ -73,39 +79,26 @@ namespace Consilient.Api
                     });
                 });
 
-                // ===== Configure Authentication =====
-                // Example: JWT Bearer. Adjust to your auth provider/settings in appsettings.json (Jwt:Authority, Jwt:Audience).
-                //builder.Services.AddAuthentication(options =>
-                //{
-                //    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                //    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                //})
-                //.AddJwtBearer(options =>
-                //{
-                //    // Use Authority/Audience when using an identity provider (e.g., IdentityServer, Auth0, Azure AD)
-                //    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-                //    options.SaveToken = true;
-                //    options.Authority = builder.Configuration["Jwt:Authority"];
-                //    options.Audience = builder.Configuration["Jwt:Audience"];
+                // ===== Development-only authentication toggle =====
+                var authenticationEnabled = builder.Environment.IsProduction() || builder.Environment.IsDevelopment() && applicationSettings.Authentication.Enabled;
+                if (authenticationEnabled)
+                {
+                    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                        .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
-                //    // If not using an Authority, configure TokenValidationParameters (IssuerSigningKey, etc.)
-                //    options.TokenValidationParameters = new TokenValidationParameters
-                //    {
-                //        ValidateIssuer = !string.IsNullOrEmpty(builder.Configuration["Jwt:Authority"]),
-                //        ValidateAudience = !string.IsNullOrEmpty(builder.Configuration["Jwt:Audience"]),
-                //        ValidateLifetime = true
-                //    };
-                //});
+                    builder.Services.AddAuthorization();
+                }
 
-                // Require authorization globally for all controllers by adding an AuthorizeFilter
                 builder.Services.AddControllers(options =>
                 {
-                    //var policy = new AuthorizationPolicyBuilder()
-                    //    .RequireAuthenticatedUser()
-                    //    .Build();
+                    if (authenticationEnabled)
+                    {
+                        var policy = new AuthorizationPolicyBuilder()
+                            .RequireAuthenticatedUser()
+                            .Build();
 
-                    //options.Filters.Add(new AuthorizeFilter(policy));
-
+                        options.Filters.Add(new AuthorizeFilter(policy));
+                    }
                     // ensure our provider runs before defaults
                     options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
                 }).AddNewtonsoftJson();
@@ -143,8 +136,11 @@ namespace Consilient.Api
 
                 app.UseCors(); // Must be before UseAuthentication/UseAuthorization
 
-                app.UseAuthentication();
-                app.UseAuthorization();
+                if (authenticationEnabled)
+                {
+                    app.UseAuthentication();
+                    app.UseAuthorization();
+                }
 
                 app.MapHealthChecks("/health");
                 app.MapControllers();

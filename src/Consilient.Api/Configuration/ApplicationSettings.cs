@@ -3,5 +3,11 @@
     public class ApplicationSettings
     {
         public required FileUploadSettings FileUpload { get; init; }
+        public required AuthenticationSettings Authentication { get; init; }
+    }
+
+    public class AuthenticationSettings
+    {
+        public bool Enabled { get; init; }
     }
 }

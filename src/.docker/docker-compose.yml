@@ -118,23 +118,37 @@ services:
     networks:
       - ollama-docker
 
-  consilient.webapp:
-    image: ${DOCKER_REGISTRY-}consilientwebapp
-    container_name: consilient.apps.webapp.container
+  # consilient.webapp:
+  #   image: ${DOCKER_REGISTRY-}consilientwebapp
+  #   container_name: consilient.apps.webapp.container
+  #   build:
+  #     context: ..
+  #     dockerfile: Consilient.WebApp/Dockerfile
+  #     args:
+  #       BUILD_CONFIGURATION: "Debug"
+  #   environment:
+  #     ASPNETCORE_ENVIRONMENT: "Development"
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   networks:
+  #     - consilient-net
+
+  consilient.webapp2:
+    image: ${DOCKER_REGISTRY-}consilientwebapp2
+    container_name: consilient.apps.webapp2.container
     build:
-      context: ..
-      dockerfile: Consilient.WebApp/Dockerfile
+      context: ../Consilient.WebApp2
+      dockerfile: Dockerfile
       args:
         BUILD_CONFIGURATION: "Debug"
-    environment:
-      ASPNETCORE_ENVIRONMENT: "Development"
     ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
+      - "8082:80"
     networks:
       - consilient-net
+    restart: unless-stopped
 
   consilient.api:
     image: ${DOCKER_REGISTRY-}consilientapi

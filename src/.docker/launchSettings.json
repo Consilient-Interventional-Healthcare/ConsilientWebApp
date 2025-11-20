@@ -6,7 +6,7 @@
       "serviceActions": {
         "consilient.backgroundhost": "StartDebugging",
         "consilient.api": "StartDebugging",
-        "consilient.webapp": "StartDebugging",
+        "consilient.webapp2": "StartDebugging",
         "loki": "StartWithoutDebugging",
         "promtail": "StartWithoutDebugging",
         "grafana": "StartWithoutDebugging"
