@@ -1,6 +1,8 @@
 import type { LinkExternalLoginRequest, LinkExternalLoginResult, AuthenticateUserRequest, AuthenticateUserResult } from '@/features/auth/auth.types';
 import api from '@/shared/core/api/ApiClient';
 import { JwtService } from '@/features/auth/services/JwtService';
+import { AuthServiceMock } from './AuthService.mock';
+import appSettings from '@/config';
 
 export class AuthService {
 
@@ -35,4 +37,11 @@ export class AuthService {
   logout(): void {
     JwtService.remove();
   }
+}
+
+// Factory method to get the correct AuthService implementation
+export function getAuthService() {
+  return appSettings.features.useMockServices
+    ? new AuthServiceMock()
+    : new AuthService();
 }

@@ -22,6 +22,10 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationM
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Identity.Web;
 using Serilog;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
+using Consilient.Users.Services;
+using System.Linq;
 
 namespace Consilient.Api
 {
@@ -45,17 +49,16 @@ namespace Consilient.Api
             {
                 Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
 
-                var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default);
-                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire);
+                var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new Exception($"Connection String messing: '{ApplicationConstants.ConnectionStrings.Default}'");
+                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"Connection String messing: '{ApplicationConstants.ConnectionStrings.Hangfire}'");
                 if (loggingConfiguration != null)
                 {
                     builder.Services.AddSingleton(loggingConfiguration);
                 }
                 var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
-                if (!string.IsNullOrEmpty(defaultConnectionString))
-                {
-                    builder.Services.RegisterDataContext(defaultConnectionString, builder.Environment.IsProduction());
-                }
+
+                builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
+                builder.Services.RegisterUserDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterGraphQlServices();
                 builder.Services.RegisterEmployeeServices();
                 builder.Services.RegisterInsuranceServices();
@@ -64,8 +67,20 @@ namespace Consilient.Api
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterLogging(logger);
                 builder.Services.RegisterHangfire(hangfireConnectionString);
+                builder.Services.RegisterUserServices(
+                    new UserServiceConfiguration
+                    {
+                        AllowedEmailDomains = applicationSettings.Authentication.AllowedEmailDomains,
+                        AutoProvisionUser = applicationSettings.Authentication.AutoProvisionUser
+                    },
+                    new TokenGeneratorConfiguration
+                    {
+                        Audience = applicationSettings.Authentication.Jwt.Audience,
+                        ExpiryMinutes = applicationSettings.Authentication.Jwt.ExpiryMinutes,
+                        Issuer = applicationSettings.Authentication.Jwt.Issuer,
+                        Secret = applicationSettings.Authentication.Jwt.SecretKey
+                    });
 
-                // ===== Configure CORS =====
                 builder.Services.AddCors(options =>
                 {
                     options.AddDefaultPolicy(policy =>
@@ -79,13 +94,29 @@ namespace Consilient.Api
                     });
                 });
 
-                // ===== Development-only authentication toggle =====
                 var authenticationEnabled = builder.Environment.IsProduction() || builder.Environment.IsDevelopment() && applicationSettings.Authentication.Enabled;
                 if (authenticationEnabled)
                 {
-                    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                        .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
-
+                    var auth = builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                        .AddJwtBearer(options =>
+                        {
+                            options.TokenValidationParameters = new TokenValidationParameters
+                            {
+                                ValidateIssuer = true,
+                                ValidIssuer = applicationSettings.Authentication.Jwt.Issuer,
+                                ValidateAudience = true,
+                                ValidAudience = applicationSettings.Authentication.Jwt.Audience,
+                                ValidateIssuerSigningKey = true,
+                                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(applicationSettings.Authentication.Jwt.SecretKey)),
+                                ValidateLifetime = true,
+                                ClockSkew = TimeSpan.FromSeconds(30)
+                            };
+                        });
+                    var azureAdSection = builder.Configuration.GetSection("AzureAd");
+                    if (azureAdSection.GetChildren().Any())
+                    {
+                        auth.AddMicrosoftIdentityWebApi(azureAdSection);
+                    }
                     builder.Services.AddAuthorization();
                 }
 

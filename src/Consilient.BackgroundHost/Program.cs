@@ -41,7 +41,7 @@ namespace Consilient.BackgroundHost
                 var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
                 var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
 
-                builder.Services.RegisterDataContext(defaultConnectionString, builder.Environment.IsProduction());
+                builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterEmailMonitorServices(applicationSettings.Email.Monitor);
                 builder.Services.RegisterEmployeeServices();
                 builder.Services.RegisterHangfireServices(hangfireConnectionString);

@@ -3,12 +3,14 @@ import { AuthContext } from '@/features/auth/contexts/AuthContext';
 import { msalService } from '@/features/auth/services/MsalService';
 import { logger } from '@/shared/core/logging/Logger';
 import appSettings from '@/config';
-import { Auth } from '@/features/auth/services/index'; // Use the factory
+import { getAuthService } from '@/features/auth/services/AuthService';
 import { JwtService } from '@/features/auth/services/JwtService';
 
 interface AuthProviderProps {
   children: ReactNode;
 }
+
+const authService = getAuthService();
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setLoading] = useState(true);
@@ -27,7 +29,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const account = msalService.getAccount();
 
       if (account) {
-        await Auth.linkExternalAccount({
+        await authService.linkExternalAccount({
           email: account.username,
           provider: 'msal',
           providerKey: account.homeAccountId,
@@ -44,7 +46,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (params?: { username: string; password: string }): Promise<void> => {
     if (params) {
-      await Auth.login({ email: params.username, password: params.password });
+      await authService.login({ email: params.username, password: params.password });
     } else {
       await msalService.login();
     }
@@ -52,7 +54,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async (): Promise<void> => {
     await msalService.logout();
-    Auth.logout();
+    authService.logout();
   };
 
   const user = JwtService.decode();
