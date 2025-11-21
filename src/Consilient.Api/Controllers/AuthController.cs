@@ -18,7 +18,7 @@ namespace Consilient.Api.Controllers
             var result = await _userService.AuthenticateUserAsync(request).ConfigureAwait(false);
             if (result.Succeeded)
             {
-                return Ok();
+                return Ok(result.Token);
             }
 
             return Unauthorized(new { errors = result.Errors });

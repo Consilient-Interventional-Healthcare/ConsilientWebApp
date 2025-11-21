@@ -7,18 +7,18 @@ namespace Consilient.Users.Services
     {
         private readonly TokenGenerator _tokenGenerator = new(tokenGeneratorConfiguration);
 
-        public async Task<CreateUserResult> CreateUserAsync(CreateUserRequest request)
-        {
-            var user = new IdentityUser
-            {
-                UserName = request.Email,
-                Email = request.Email
-            };
+        //public async Task<CreateUserResult> CreateUserAsync(CreateUserRequest request)
+        //{
+        //    var user = new IdentityUser
+        //    {
+        //        UserName = request.Email,
+        //        Email = request.Email
+        //    };
 
-            var result = await userManager.CreateAsync(user, request.Password).ConfigureAwait(false);
+        //    var result = await userManager.CreateAsync(user, request.Password).ConfigureAwait(false);
 
-            return new CreateUserResult(result.Succeeded, result.Errors.Select(e => e.Description));
-        }
+        //    return new CreateUserResult(result.Succeeded, result.Errors.Select(e => e.Description));
+        //}
 
         public async Task<AuthenticateUserResult> AuthenticateUserAsync(AuthenticateUserRequest request)
         {

@@ -13,18 +13,40 @@ export interface User {
 
 export interface AuthContextType {
   user: User | null;
-  login: () => Promise<void>;
+  login: (credentials?: LoginCredentials) => Promise<void>; // Accepts credentials for username/password login
   logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
 
 export interface LoginCredentials {
+  username: string; // Changed from email to username for consistency with AuthService
+  password: string;
+}
+
+export interface AuthResponse{
+  token: string;
+};
+
+export interface LinkExternalLoginResult {
+  succeeded: boolean;
+  errors?: string[];
+};
+
+export interface LinkExternalLoginRequest {
+  email: string;
+  provider: string;
+  providerKey: string;
+  providerDisplayName?: string;
+}
+
+export interface AuthenticateUserRequest {
   email: string;
   password: string;
 }
 
-export interface AuthResponse {
-  user: User;
-  token: string;
+export interface AuthenticateUserResult {
+  succeeded: boolean;
+  token?: string;
+  errors?: string[];
 }
