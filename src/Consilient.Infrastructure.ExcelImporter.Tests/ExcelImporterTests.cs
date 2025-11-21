@@ -50,7 +50,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             };
 
             // Act
-            var filteredSheets = ExcelImporter.FilterWorksheets(mockWorksheets.Object, [.._regexPatterns]);
+            var filteredSheets = ExcelImporter.FilterWorksheets(mockWorksheets.Object, [.. _regexPatterns]);
             var filteredSheetNames = filteredSheets.Select(ws => ws.Name).ToList();
 
             // Assert

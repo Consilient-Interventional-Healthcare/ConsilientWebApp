@@ -12,13 +12,13 @@
     <PackageReference Include="Hangfire" Version="1.8.22" />
     <PackageReference Include="Hangfire.Core" Version="1.8.22" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.22" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="4.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.1.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
-    <PackageReference Include="GraphQL.Server.Ui.GraphiQL" Version="8.3.2" />
+    <PackageReference Include="GraphQL.Server.Ui.GraphiQL" Version="8.3.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +32,7 @@
     <ProjectReference Include="..\Consilient.Insurances.Services\Consilient.Insurances.Services.csproj" />
     <ProjectReference Include="..\Consilient.Patients.Services\Consilient.Patients.Services.csproj" />
     <ProjectReference Include="..\Consilient.Shared.Services\Consilient.Shared.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Users.Services\Consilient.Users.Services.csproj" />
     <ProjectReference Include="..\Consilient.Visits.Service\Consilient.Visits.Services.csproj" />
   </ItemGroup>
 

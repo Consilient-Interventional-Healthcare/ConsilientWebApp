@@ -1,8 +1,8 @@
 ﻿using ClosedXML.Excel;
+using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Helpers;
 using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
-using Consilient.Infrastructure.ExcelImporter.Contracts;
 
 namespace Consilient.Infrastructure.ExcelImporter
 {

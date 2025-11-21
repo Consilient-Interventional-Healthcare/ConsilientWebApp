@@ -1,9 +1,9 @@
 ﻿using Consilient.Background.Workers;
+using Consilient.Background.Workers.Contracts;
 using Hangfire;
 using Hangfire.Storage;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
-using Consilient.Background.Workers.Contracts;
 
 namespace Consilient.BackgroundHost
 {

@@ -1,7 +1,6 @@
 ﻿using Consilient.Infrastructure.Logging.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
-using System.Text.Json;
 
 namespace Consilient.Api.Controllers
 {
@@ -51,7 +50,8 @@ namespace Consilient.Api.Controllers
 
                     return StatusCode((int)response.StatusCode);
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception occurred while forwarding logs to Loki at {LokiUrl}{PushEndpoint}", lokiUrl, pushEndpoint);
                 return StatusCode(500, "Internal server error while forwarding logs to Loki.");

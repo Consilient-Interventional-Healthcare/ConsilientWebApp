@@ -55,7 +55,7 @@ namespace Consilient.Visits.Services
         {
             var Visits = await dataContext.Visits
                     .AsNoTracking()
-                    .Where(e => e.VisitAttendants.Any(m=> m.EmployeeId == employeeId))
+                    .Where(e => e.VisitAttendants.Any(m => m.EmployeeId == employeeId))
                     .ProjectToType<VisitDto>()
                     .ToListAsync();
             return Visits;
