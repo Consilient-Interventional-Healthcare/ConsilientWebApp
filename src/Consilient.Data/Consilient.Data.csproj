@@ -45,15 +45,15 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <EditorConfigFiles Remove="D:\Work\Consilient\src\Consilient.Data\.editorconfig" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Consilient.Data.Migrations</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
-
-  <ItemGroup>
-    <None Include="D:\Work\Consilient\src\Consilient.Data\.editorconfig" />
-  </ItemGroup>
-
 </Project>

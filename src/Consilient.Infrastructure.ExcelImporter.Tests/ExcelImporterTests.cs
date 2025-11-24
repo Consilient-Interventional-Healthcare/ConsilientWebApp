@@ -1,16 +1,14 @@
 using ClosedXML.Excel;
-using Consilient.Infrastructure.ExcelImporter.Models;
 using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Diagnostics.CodeAnalysis;
+using static Consilient.Infrastructure.ExcelImporter.ExcelImporter;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests
 {
     [TestClass]
     public class ExcelImporterTests
     {
-        [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
         public TestContext TestContext { get; set; } = null!;
 
         private readonly IEnumerable<string> _worksheetNames = [
@@ -115,6 +113,45 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             Assert.AreEqual(patientData.AttendingPhysician, first.AttendingPhysician);
             Assert.AreEqual(patientData.PrimaryInsurance, first.PrimaryInsurance);
             Assert.AreEqual(patientData.AdmDx, first.AdmDx);
+        }
+
+        [TestMethod]
+        public void ImportAssignments_ShouldReturnExpectedData()
+        {
+            // Arrange
+            const string filePath = @"Files\DoctorAssignment_SAMPLE.xlsm";
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddDebug());
+            var excelImporter = new AssignmentImporter(
+                new ExcelImporterConfiguration
+                {
+                    CanConvertFile = true,
+                    WorksheetFilters = _regexPatterns
+                },
+                loggerFactory.CreateLogger<ExcelImporter>()
+            );
+
+            // Act
+            var result = excelImporter.Import(filePath).ToList();
+
+            // Write result to a CSV file
+            var outputDirectory = Directory.GetParent(TestContext.TestRunDirectory!)!.FullName;
+            var outputFilePath = Path.Combine(outputDirectory, $"{Path.GetFileNameWithoutExtension(filePath)}_{Guid.NewGuid()}_output.csv");
+            CsvTestHelper.WriteToCsv(result, outputFilePath);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.HasCount(110, result);
+            var first = result.First();
+            Assert.AreEqual("a", first.Name);
+            Assert.AreEqual("101A", first.Location);
+            Assert.AreEqual("2504156", first.HospitalNumber);
+            Assert.AreEqual(new DateTime(2025, 11, 9, 11, 14, 0), first.Admit);
+            Assert.AreEqual(9, first.LOS);
+            Assert.AreEqual("Complete", first.PsychEval);
+            Assert.AreEqual("Dr Torrico (801) 682-6148", first.AttendingMD);
+            Assert.IsTrue(string.IsNullOrWhiteSpace(first.MedicallyCleared));
+            Assert.AreEqual("NP Kristin (650) 257-0484", first.NursePractitioner);
+            Assert.AreEqual("YOLO COUNTY SHORT DOYLE", first.Insurance);
         }
     }
 }

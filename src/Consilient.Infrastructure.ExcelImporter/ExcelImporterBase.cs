@@ -97,5 +97,12 @@ namespace Consilient.Infrastructure.ExcelImporter
             Logger.LogWarning("Header row not found in worksheet '{WorksheetName}'. Skipping.", worksheet.Name);
             return [];
         }
+
+        protected IEnumerable<string> GetHeaders()
+        {
+            return [.. typeof(TData)
+                .GetProperties()
+                .Select(p => p.Name)];
+        }
     }
 }

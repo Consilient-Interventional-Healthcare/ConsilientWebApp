@@ -16,20 +16,44 @@ if ([string]::IsNullOrWhiteSpace($MigrationName)) {
 }
 
 # Define your DbContexts
-$contexts = @("ConsilientDbContext")
+$contexts = @("ConsilientDbContext", "UsersDbContext")
+
+# Path to migrations project
+$migrationsProject = Join-Path $srcRoot "Consilient.Data.Migrations"
+
+if (-not (Test-Path $migrationsProject)) {
+    Write-Host "❌ Migrations project not found at: $migrationsProject" -ForegroundColor Red
+    exit 1
+}
 
 # Add migration
 foreach ($context in $contexts) {
     Write-Host "📦 Adding migration '$MigrationName' for $context..."
     
-    $migrationsProject = Join-Path $srcRoot "Consilient.Data.Migrations"
-    
+    # Derive short name (strip trailing "DbContext" if present)
+    if ($context -match '^(.*)DbContext$') {
+        $contextShort = $matches[1]
+    } else {
+        $contextShort = $context
+    }
+
+    # Output folder per convention: Consilient.Data.Migrations/<ContextShort>/
+    $relativeOutputDir = $contextShort
+    $fullOutputDir = Join-Path $migrationsProject $relativeOutputDir
+
+    if (-not (Test-Path $fullOutputDir)) {
+        New-Item -ItemType Directory -Path $fullOutputDir | Out-Null
+    }
+
+    # Namespace per convention: Consilient.Data.Migrations.<ContextShort>
+    $namespace = "Consilient.Data.Migrations.$contextShort"
+
     dotnet ef migrations add $MigrationName `
         --context $context `
         --project $migrationsProject `
         --startup-project $migrationsProject `
-        --output-dir "." `
-        --namespace "Migrations" `
+        --output-dir $relativeOutputDir `
+        --namespace $namespace `
         --verbose
     
     if ($LASTEXITCODE -ne 0) {

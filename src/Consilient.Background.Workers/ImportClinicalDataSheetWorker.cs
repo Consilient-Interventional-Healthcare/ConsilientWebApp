@@ -2,12 +2,12 @@
 using Consilient.Background.Workers.Models;
 using Consilient.Infrastructure.ExcelImporter;
 using Consilient.Infrastructure.ExcelImporter.Helpers;
-using Consilient.Infrastructure.ExcelImporter.Models;
 using Hangfire.Server;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Globalization;
 using System.Reflection;
+using static Consilient.Infrastructure.ExcelImporter.ExcelImporter;
 
 namespace Consilient.Background.Workers
 {

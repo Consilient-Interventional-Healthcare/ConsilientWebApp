@@ -1,10 +1,9 @@
-﻿using Consilient.Data.Entities;
+﻿using Consilient.Data.Configurations;
+using Consilient.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.Data
 {
-
-
     public class ConsilientDbContext : DbContext
     {
         internal static class Schemas
@@ -23,20 +22,20 @@ namespace Consilient.Data
 
         //public virtual DbSet<Contract> Contracts { get; set; }
 
-        public virtual DbSet<Employee> Employees { get; set; }
+        public  virtual DbSet<Employee> Employees { get; set; } = null!;
 
-        public virtual DbSet<Facility> Facilities { get; set; }
+        public  virtual DbSet<Facility> Facilities { get; set; } = null!;
 
         //public virtual DbSet<FacilityPay> FacilityPays { get; set; }
-        public virtual DbSet<Hospitalization> Hospitalizations { get; set; }
+        public  virtual DbSet<Hospitalization> Hospitalizations { get; set; } = null!;
 
-        public virtual DbSet<Insurance> Insurances { get; set; }
+        public  virtual DbSet<Insurance> Insurances { get; set; } = null!;
 
-        public virtual DbSet<Patient> Patients { get; set; }
+        public  virtual DbSet<Patient> Patients { get; set; } = null!;
 
-        public virtual DbSet<Visit> Visits { get; set; }
+        public  virtual DbSet<Visit> Visits { get; set; } = null!;
 
-        public virtual DbSet<VisitStaging> VisitsStaging { get; set; }
+        public  virtual DbSet<VisitStaging> VisitsStaging { get; set; } = null!;
 
         //public virtual DbSet<PayrollDatum> PayrollData { get; set; }
 
@@ -46,7 +45,7 @@ namespace Consilient.Data
 
         //public virtual DbSet<ProviderPay> ProviderPays { get; set; }
 
-        public virtual DbSet<ServiceType> ServiceTypes { get; set; }
+        public virtual DbSet<ServiceType> ServiceTypes { get; set; } = null!;
 
         //public virtual DbSet<VwPatientVisit> VwPatientVisits { get; set; }
 
@@ -56,7 +55,14 @@ namespace Consilient.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(GetType().Assembly);
+            base.OnModelCreating(modelBuilder);
+
+            // Only apply configurations in the base "Consilient.Data.Configurations" namespace.
+            // This intentionally excludes sub-namespaces such as "Consilient.Data.Configurations.Identity"
+            // so Identity entity configurations are not picked up by the main Consilient migration.
+            modelBuilder.ApplyConfigurationsFromAssembly(
+                GetType().Assembly,
+                type => type.Namespace != null && type.Namespace == typeof(EmployeeConfiguration).Namespace);
         }
     }
 }

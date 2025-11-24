@@ -26,11 +26,11 @@ namespace Consilient.Data.Configurations
 
             entity.Property(e => e.AdmissionDate)
                    .IsRequired()
-                   .HasColumnType("date");
+                   .HasColumnType("datetime2");
 
             entity.Property(e => e.DischargeDate)
                    .IsRequired(false)
-                   .HasColumnType("date");
+                   .HasColumnType("datetime2");
 
             entity.HasOne(e => e.Patient)
                    .WithMany()

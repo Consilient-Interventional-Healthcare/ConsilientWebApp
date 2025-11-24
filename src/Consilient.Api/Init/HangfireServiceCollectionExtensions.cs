@@ -3,7 +3,7 @@ using Hangfire;
 
 namespace Consilient.Api.Init
 {
-    public static class HangfireServiceCollectionExtensions
+    internal static class HangfireServiceCollectionExtensions
     {
         public static void RegisterHangfire(this IServiceCollection services, string hangfireConnectionString)
         {

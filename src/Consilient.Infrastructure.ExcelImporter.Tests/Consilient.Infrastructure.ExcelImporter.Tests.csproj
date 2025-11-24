@@ -33,6 +33,9 @@
     <None Update="Files\DoctorAssignments.xls">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Files\DoctorAssignment_SAMPLE.xlsm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

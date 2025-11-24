@@ -22,7 +22,7 @@ namespace Consilient.Data.Configurations
             entity.Property(e => e.IsScribeServiceOnly).HasDefaultValue(false);
             entity.Property(e => e.AddedToMainTable).HasDefaultValue(false);
             entity.Property(e => e.PhysicianApprovedBy).HasMaxLength(100);
-            entity.Property(e => e.PhysicianApprovedDateTime).HasColumnType("datetime");
+            entity.Property(e => e.PhysicianApprovedDateTime).HasColumnType("datetime2");
             entity.Property(e => e.PhysicianEmployeeId);
             entity.Property(e => e.ScribeEmployeeId);
             entity.Property(e => e.ServiceTypeId);

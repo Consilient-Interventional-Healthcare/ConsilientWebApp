@@ -5,12 +5,11 @@ namespace Consilient.Users.Services
 {
     public class UserService(UserServiceConfiguration configuration, UserManager<IdentityUser> userManager, TokenGeneratorConfiguration tokenGeneratorConfiguration, Data.UsersDbContext dbContext) : IUserService
     {
-        private readonly TokenGenerator _tokenGenerator = new(tokenGeneratorConfiguration);
         private readonly Data.UsersDbContext _dbContext = dbContext;
-
+        private readonly TokenGenerator _tokenGenerator = new(tokenGeneratorConfiguration);
         public async Task<AuthenticateUserResult> AuthenticateUserAsync(AuthenticateUserRequest request)
         {
-            static AuthenticateUserResult InvalidCredentials() => new(false, null, new[] { ErrorMessages.InvalidCredentials });
+            static AuthenticateUserResult InvalidCredentials() => new(false, null, [ErrorMessages.InvalidCredentials]);
 
             // Validate credentials without creating a sign-in session
             var user = await GetUserByEmailAsync(request.Email).ConfigureAwait(false);
@@ -43,7 +42,7 @@ namespace Consilient.Users.Services
             // enforce allowed email domains for the request email
             if (!IsEmailDomainAllowed(request.Email))
             {
-                return new LinkExternalLoginResult(false, new[] { ErrorMessages.EmailDomainNotAllowed });
+                return new LinkExternalLoginResult(false, [ErrorMessages.EmailDomainNotAllowed]);
             }
 
             // Check if the external login (provider + key) is already linked to any user
@@ -57,7 +56,7 @@ namespace Consilient.Users.Services
                 // If the login is linked to a different account, reject
                 if (user == null || !string.Equals(existingLoginUser.Id, user.Id, StringComparison.Ordinal))
                 {
-                    return new LinkExternalLoginResult(false, new[] { ErrorMessages.ExternalLoginAlreadyLinked });
+                    return new LinkExternalLoginResult(false, [ErrorMessages.ExternalLoginAlreadyLinked]);
                 }
 
                 // Already linked to the same account: nothing to do
@@ -68,6 +67,22 @@ namespace Consilient.Users.Services
             return await CreateAndLinkExternalLoginAsync(user, request).ConfigureAwait(false);
         }
 
+
+        private static string[] MapIdentityErrors(IdentityResult result)
+                    => result.Errors?.Select(e => e.Description).Where(d => !string.IsNullOrWhiteSpace(d)).ToArray()
+                       ?? [ErrorMessages.UnexpectedError];
+
+        // Helper: add external login and return (succeeded, errors)
+        private async Task<(bool succeeded, string[]? errors)> AddExternalLoginAsync(IdentityUser user, UserLoginInfo login)
+        {
+            var result = await userManager.AddLoginAsync(user, login).ConfigureAwait(false);
+            if (result.Succeeded)
+            {
+                return (true, null);
+            }
+
+            return (false, MapIdentityErrors(result).ToArray());
+        }
 
         // Helper: encapsulate transactional create + add-login flow
         private async Task<LinkExternalLoginResult> CreateAndLinkExternalLoginAsync(IdentityUser? user, LinkExternalLoginRequest request)
@@ -90,13 +105,13 @@ namespace Consilient.Users.Services
                 if (user == null)
                 {
                     await transaction.RollbackAsync().ConfigureAwait(false);
-                    return new LinkExternalLoginResult(false, new[] { ErrorMessages.UserNotFound });
+                    return new LinkExternalLoginResult(false, [ErrorMessages.UserNotFound]);
                 }
 
                 if (!IsEmailDomainAllowed(user.Email))
                 {
                     await transaction.RollbackAsync().ConfigureAwait(false);
-                    return new LinkExternalLoginResult(false, new[] { ErrorMessages.EmailDomainNotAllowed });
+                    return new LinkExternalLoginResult(false, [ErrorMessages.EmailDomainNotAllowed]);
                 }
 
                 var (succeeded, addErrors) = await AddExternalLoginAsync(user, new UserLoginInfo(request.Provider, request.ProviderKey, request.ProviderDisplayName)).ConfigureAwait(false);
@@ -114,7 +129,7 @@ namespace Consilient.Users.Services
             catch (Exception)
             {
                 try { await transaction.RollbackAsync().ConfigureAwait(false); } catch { }
-                return new LinkExternalLoginResult(false, new[] { ErrorMessages.ExternalLoginFailed });
+                return new LinkExternalLoginResult(false, [ErrorMessages.ExternalLoginFailed]);
             }
         }
 
@@ -136,25 +151,7 @@ namespace Consilient.Users.Services
 
             return (null, MapIdentityErrors(result).ToArray());
         }
-
-        // Helper: add external login and return (succeeded, errors)
-        private async Task<(bool succeeded, string[]? errors)> AddExternalLoginAsync(IdentityUser user, UserLoginInfo login)
-        {
-            var result = await userManager.AddLoginAsync(user, login).ConfigureAwait(false);
-            if (result.Succeeded)
-            {
-                return (true, null);
-            }
-
-            return (false, MapIdentityErrors(result).ToArray());
-        }
-
         private Task<IdentityUser?> GetUserByEmailAsync(string email) => userManager.FindByEmailAsync(email);
-
-        private static string[] MapIdentityErrors(IdentityResult result)
-            => result.Errors?.Select(e => e.Description).Where(d => !string.IsNullOrWhiteSpace(d)).ToArray()
-               ?? new[] { ErrorMessages.UnexpectedError };
-
         private bool IsEmailDomainAllowed(string? email)
         {
             if (string.IsNullOrWhiteSpace(email))

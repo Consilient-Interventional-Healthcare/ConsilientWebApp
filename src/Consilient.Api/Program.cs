@@ -14,18 +14,12 @@ using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Visits.Services;
 using GraphQL.Server.Ui.GraphiQL;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.Mvc.Authorization;
-using Microsoft.Identity.Web;
 using Serilog;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using Consilient.Users.Services;
-using System.Linq;
 
 namespace Consilient.Api
 {
@@ -67,62 +61,17 @@ namespace Consilient.Api
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterLogging(logger);
                 builder.Services.RegisterHangfire(hangfireConnectionString);
-                builder.Services.RegisterUserServices(
-                    new UserServiceConfiguration
-                    {
-                        AllowedEmailDomains = applicationSettings.Authentication.AllowedEmailDomains,
-                        AutoProvisionUser = applicationSettings.Authentication.AutoProvisionUser
-                    },
-                    new TokenGeneratorConfiguration
-                    {
-                        Audience = applicationSettings.Authentication.Jwt.Audience,
-                        ExpiryMinutes = applicationSettings.Authentication.Jwt.ExpiryMinutes,
-                        Issuer = applicationSettings.Authentication.Jwt.Issuer,
-                        Secret = applicationSettings.Authentication.Jwt.SecretKey
-                    });
 
-                builder.Services.AddCors(options =>
-                {
-                    options.AddDefaultPolicy(policy =>
-                    {
-                        policy.WithOrigins(
-                                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-                                ?? ["http://localhost:3000", "http://localhost:5173"])
-                            .AllowAnyMethod()
-                            .AllowAnyHeader()
-                            .AllowCredentials(); // Required for SignalR
-                    });
-                });
+                // Load allowed origins from configuration (expect explicit origins). Default to secure localhost for development.
+                var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+                builder.Services.RegisterCors(allowedOrigins);
 
-                var authenticationEnabled = builder.Environment.IsProduction() || builder.Environment.IsDevelopment() && applicationSettings.Authentication.Enabled;
-                if (authenticationEnabled)
-                {
-                    var auth = builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                        .AddJwtBearer(options =>
-                        {
-                            options.TokenValidationParameters = new TokenValidationParameters
-                            {
-                                ValidateIssuer = true,
-                                ValidIssuer = applicationSettings.Authentication.Jwt.Issuer,
-                                ValidateAudience = true,
-                                ValidAudience = applicationSettings.Authentication.Jwt.Audience,
-                                ValidateIssuerSigningKey = true,
-                                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(applicationSettings.Authentication.Jwt.SecretKey)),
-                                ValidateLifetime = true,
-                                ClockSkew = TimeSpan.FromSeconds(30)
-                            };
-                        });
-                    var azureAdSection = builder.Configuration.GetSection("AzureAd");
-                    if (azureAdSection.GetChildren().Any())
-                    {
-                        auth.AddMicrosoftIdentityWebApi(azureAdSection);
-                    }
-                    builder.Services.AddAuthorization();
-                }
+                // Ensure cookies set by the app are marked secure, HttpOnly and have a sane SameSite.
+                builder.Services.RegisterCookiePolicy();
 
                 builder.Services.AddControllers(options =>
                 {
-                    if (authenticationEnabled)
+                    if (applicationSettings.Authentication.Enabled && (builder.Environment.IsProduction() || builder.Environment.IsDevelopment()))
                     {
                         var policy = new AuthorizationPolicyBuilder()
                             .RequireAuthenticatedUser()
@@ -164,9 +113,22 @@ namespace Consilient.Api
                     app.UseHttpsRedirection();
                     app.UseHsts();
                 }
+                else
+                {
+                    // In non-production, still prefer HTTPS for cookie security during local testing
+                    app.UseHttpsRedirection();
+                }
 
-                app.UseCors(); // Must be before UseAuthentication/UseAuthorization
+                // Apply cookie policy before authentication so cookies are always marked secure/httpOnly.
+                app.UseCookiePolicy();
 
+                // Use the named CORS policy
+                app.UseCors(Init.CorsServiceCollectionExtensions.DefaultCorsPolicyName); // Must be before UseAuthentication/UseAuthorization
+
+                // Rate limiting middleware (applies GlobalLimiter by default)
+                app.UseRateLimiter();
+
+                var authenticationEnabled = builder.Environment.IsProduction() || builder.Environment.IsDevelopment() && applicationSettings.Authentication.Enabled;
                 if (authenticationEnabled)
                 {
                     app.UseAuthentication();
