@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Db\consilient_main\01_init.sql" />
+    <None Include="Db\consilient_main\02_identity.sql" />
     <None Include="Db\consilient_main\seed.sql" />
     <None Include="Db\Dockerfile" />
     <None Include="db\entrypoint.sh" />

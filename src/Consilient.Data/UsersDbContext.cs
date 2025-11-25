@@ -16,6 +16,7 @@ namespace Consilient.Data
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(GetType().Assembly, type => type.Namespace != null && type.Namespace != null && type.Namespace.StartsWith(typeof(UserConfiguration).Namespace!));
+            modelBuilder.ApplyConfiguration(new RoleConfiguration());
         }
     }
 }

@@ -19,6 +19,8 @@ namespace Consilient.Data.Migrations.Factories
             return InstantiateDbContext(optionsBuilder);
         }
 
+        protected abstract (string, string) GetMigrationTableAndSchema();
+
         protected virtual TDbContext InstantiateDbContext(DbContextOptionsBuilder<TDbContext> optionsBuilder)
         {
             return (TDbContext)Activator.CreateInstance(typeof(TDbContext), optionsBuilder.Options)!;

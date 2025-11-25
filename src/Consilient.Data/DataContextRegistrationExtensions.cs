@@ -10,7 +10,8 @@ namespace Consilient.Data
             services.AddDbContext<ConsilientDbContext>(options =>
             {
                 options.ConfigureDataContext(connectionString, isProduction);
-                options.AddInterceptors(new AuditableEntityInterceptor());
+                options.AddInterceptors(new AuditableEntityInterceptor());          
+                options.ConfigureDataContext(connectionString, isProduction, "__EFMigrationsHistory_Consilient", "dbo");
             });
         }
 
@@ -18,7 +19,8 @@ namespace Consilient.Data
         {
             services.AddDbContext<UsersDbContext>(options =>
             {
-                options.ConfigureDataContext(connectionString, isProduction);
+                // Configure migrations history table inside the UseSqlServer options delegate via ConfigureDataContext
+                options.ConfigureDataContext(connectionString, isProduction, "__EFMigrationsHistory_Users", UsersDbContext.Schemas.Identity);
                 options.AddInterceptors(new AuditableEntityInterceptor());
             });
         }
