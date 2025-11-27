@@ -23,4 +23,8 @@
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Consilient\" />
+  </ItemGroup>
+
 </Project>

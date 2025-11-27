@@ -7,6 +7,7 @@ import { DailyLogEntryInput } from './components/DailyLogEntryInput';
 import { dailyLogService } from './services/DailyLogService';
 import type { ProviderAssignments, Assignment } from './types/dailylog.types';
 import LoadingBarContext from '@/shared/layouts/LoadingBarContext';
+import DailyLogPatientDetails from './components/DailyLogPatientDetails';
 
 export default function DailyLog() {
   const { date, providerId, patientId } = useLoaderData<{ date: string; providerId?: string; patientId?: string }>();
@@ -94,10 +95,24 @@ export default function DailyLog() {
       <div className="flex-1 flex flex-col bg-white overflow-hidden">
         {selectedPatientId ? (
           <>
-            <DailyLogHeader assignment={assignment} />
-            <DailyLogEntries entries={selectedPatientEntries} />
-            <div className="flex-shrink-0">
-              <DailyLogEntryInput onSubmit={handleAddLogEntry} />
+            <div className="flex flex-row h-full">
+              {/* Main log entries panel */}
+              <div className="w-3/5 flex flex-col h-full overflow-hidden">
+                <DailyLogHeader assignment={assignment} />
+                <div className="flex-1 overflow-y-auto">
+                  <DailyLogEntries entries={selectedPatientEntries} />
+                </div>
+                <div className="mt-4">
+                  <DailyLogEntryInput onSubmit={handleAddLogEntry} />
+                </div>
+              </div>
+              {/* Fixed right panel */}
+              <aside
+                className="w-2/5 border-l border-gray-200 bg-gray-50 flex-shrink-0 flex flex-col items-center overflow-y-auto"
+              >
+                <DailyLogPatientDetails assignment={assignment} />
+
+              </aside>
             </div>
           </>
         ) : null}

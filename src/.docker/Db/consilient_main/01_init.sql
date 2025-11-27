@@ -51,6 +51,18 @@ BEGIN
         [RowVersion] rowversion NOT NULL,
         CONSTRAINT [PK_Facilities] PRIMARY KEY ([Id])
     );
+    CREATE TABLE [Clinical].[HospitalizationStatuses] (
+        [Id] int NOT NULL IDENTITY,
+        [Code] nvarchar(20) NOT NULL,
+        [Name] nvarchar(100) NOT NULL,
+        [BillingCode] nvarchar(max) NOT NULL,
+        [Color] nvarchar(20) NOT NULL,
+        [DisplayOrder] int NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_HospitalizationStatus] PRIMARY KEY ([Id])
+    );
 
     CREATE TABLE [Clinical].[Insurances] (
         [Id] int NOT NULL IDENTITY,
@@ -95,6 +107,7 @@ BEGIN
         [PsychEvaluation] bit NOT NULL,
         [AdmissionDate] datetime2 NOT NULL,
         [DischargeDate] datetime2 NULL,
+        [HospitalizationStatusId] int NOT NULL,
         [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
@@ -102,6 +115,7 @@ BEGIN
         CONSTRAINT [AK_Hospitalizations_CaseId] UNIQUE ([CaseId]),
         CONSTRAINT [AK_Hospitalizations_CaseId_PatientId] UNIQUE ([CaseId], [PatientId]),
         CONSTRAINT [FK_Hospitalizations_Facilities_FacilityId] FOREIGN KEY ([FacilityId]) REFERENCES [Clinical].[Facilities] ([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_Hospitalizations_HospitalizationStatuses_HospitalizationStatusId] FOREIGN KEY ([HospitalizationStatusId]) REFERENCES [Clinical].[HospitalizationStatuses] ([Id]) ON DELETE NO ACTION,
         CONSTRAINT [FK_Hospitalizations_Patients_PatientId] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([Id]) ON DELETE NO ACTION
     );
 

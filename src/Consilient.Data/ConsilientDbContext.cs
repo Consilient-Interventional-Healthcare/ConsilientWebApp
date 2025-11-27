@@ -28,7 +28,7 @@ namespace Consilient.Data
 
         //public virtual DbSet<FacilityPay> FacilityPays { get; set; }
         public  virtual DbSet<Hospitalization> Hospitalizations { get; set; } = null!;
-
+        public  virtual DbSet<HospitalizationStatus> HospitalizationStatuses { get; set; } = null!;
         public  virtual DbSet<Insurance> Insurances { get; set; } = null!;
 
         public  virtual DbSet<Patient> Patients { get; set; } = null!;

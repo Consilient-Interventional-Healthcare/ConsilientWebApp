@@ -14,7 +14,6 @@ interface DailyLogPatientSideBarHeaderProps {
 export function DailyLogPatientSideBarHeader(props: DailyLogPatientSideBarHeaderProps) {
   return (
     <div className="px-4 py-4 border-b border-gray-200 space-y-3">
-      {/* Date Input */}
       <div className="space-y-2">
         <label htmlFor="date-input" className="text-xs font-medium text-gray-700 uppercase tracking-wide">
           Date

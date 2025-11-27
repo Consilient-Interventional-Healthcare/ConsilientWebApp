@@ -41,6 +41,21 @@ GO
 SET IDENTITY_INSERT [Clinical].[Facilities] OFF;
 GO
 
+SET IDENTITY_INSERT [Clinical].[HospitalizationStatuses] ON;
+INSERT INTO [Clinical].[HospitalizationStatuses] ([Id], [Code], [Name], [BillingCode], [Color], [DisplayOrder])
+VALUES
+(1, N'DTS', N'Acute', N'99233', N'#64ffda', 1),
+(2, N'DTO', N'Acute', N'99233', N'#64ffda', 2),
+(3, N'GD', N'Acute', N'99233', N'#64ffda', 3),
+(4, N'SND', N'Status Next Day', N'99232', N'#ffd180', 4),
+(5, N'DC', N'Discharge Summary', N'99239', N'#bbdefb', 5),
+(6, N'PP', N'Pending Placement', N'', N'#e0e0e0', 6),
+(7, N'TCON-PP', N'', N'', N'', 7),
+(8, N'PE', N'Psychiatric Evaluation', N'90792', N'#fff176', 8)
+
+SET IDENTITY_INSERT [Clinical].[HospitalizationStatuses] OFF;
+
+
 SET IDENTITY_INSERT [Clinical].[ServiceTypes] ON;
 GO
 

@@ -1,0 +1,91 @@
+{
+    "users": [
+    {
+      "id": "user-1",
+      "email": "mockuser@example.com",
+      "firstName": "Mock",
+      "lastName": "User"
+    }
+    ],
+    "patients": [
+  {
+    "id": "patient-1",
+    "firstName": "John",
+    "lastName": "Doe",
+    "dateOfBirth": "1980-01-01",
+    "gender": "male"
+  },
+  {
+    "id": "patient-2",
+    "firstName": "Jane",
+    "lastName": "Roe",
+    "dateOfBirth": "1975-05-15",
+    "gender": "female"
+  },
+  {
+    "id": "patient-3",
+    "firstName": "Sam",
+    "lastName": "Green",
+    "dateOfBirth": "1990-03-22",
+    "gender": "other"
+  }
+],
+    "hospitalizations": [
+  {
+    "id": "hosp-1",
+    "patientId": "patient-1",
+    "admissionDate": "2025-11-01",
+    "hospitalizationStatusId": 1,
+    "facilityId": "facility-1"
+  },
+  {
+    "id": "hosp-2",
+    "patientId": "patient-2",
+    "admissionDate": "2025-10-20",
+    "hospitalizationStatusId": 4,
+    "facilityId": "facility-1"
+  },
+  {
+    "id": "hosp-3",
+    "patientId": "patient-3",
+    "admissionDate": "2025-11-10",
+    "hospitalizationStatusId": 5,
+    "facilityId": "facility-2"
+  }
+],
+    "visits": [
+  {
+    "id": "visit-1",
+    "patientId": "patient-1",
+    "hospitalizationId": "hosp-1",
+    "date": "2025-11-01"
+  },
+  {
+    "id": "visit-2",
+    "patientId": "patient-2",
+    "hospitalizationId": "hosp-2",
+    "date": "2025-10-20"
+  },
+  {
+    "id": "visit-3",
+    "patientId": "patient-3",
+    "hospitalizationId": "hosp-3",
+    "date": "2025-11-10"
+  }
+],
+    "assignedProfessionals": [
+      { "visitId": "visit-1", "providerId": "provider-1", "role": "Physician" },
+      { "visitId": "visit-1", "providerId": "provider-2", "role": "Nurse" },
+      { "visitId": "visit-2", "providerId": "provider-1", "role": "Physician" },
+      { "visitId": "visit-3", "providerId": "provider-2", "role": "Nurse" }
+    ],
+    "statuses": [
+      { "id": 1, "name": "Acute" },
+      { "id": 4, "name": "Status Next Day" },
+      { "id": 5, "name": "Discharge Summary" }
+    ],
+    "providers" : [
+        { "id": "provider-1", "firstName": "Alice", "lastName": "Smith" },
+        { "id": "provider-2", "firstName": "Bob", "lastName": "Lee" }
+    ]
+}

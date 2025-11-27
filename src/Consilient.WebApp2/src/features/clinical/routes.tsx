@@ -5,7 +5,7 @@ function getTodayDate() {
   return new Date().toISOString().split('T')[0];
 }
 
-const ClinicalAssignmentsImport = lazy(() => import("@/features/clinical/assignments/views/Import"));
+const Visits = lazy(() => import("@/features/clinical/visits/views/Visits"));
 
 export const clinicalRoutes: RouteObject[] = [
   {
@@ -18,23 +18,13 @@ export const clinicalRoutes: RouteObject[] = [
     },
     children: [
       {
-        index: true,
-        element: <div>Clinical Management Overview</div>,
-      },
-      {
-        path: "assignments",
-        children: [
-          {
-            path: "import",
-            element: <ClinicalAssignmentsImport />,
-            handle: { 
-              label: "Import Assignments",
-              title: "Import Assignments",
-              icon: "file-import",
-              protected: true,
-            },
-          },
-        ],
+        path: "visits",
+        element: <Visits />,
+        handle: { 
+          label: "Visits",
+          title: "Visits",
+          protected: true,
+        }
       },
       {
         path: "daily-log",

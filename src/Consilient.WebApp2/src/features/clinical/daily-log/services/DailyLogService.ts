@@ -25,7 +25,7 @@ class DailyLogServiceImpl implements DailyLogService {
             hospitalization: {
               hospitalizationId: 'hosp-1',
               admissionDate: '2025-11-01',
-              status: 'active',
+              hospitalizationStatusId: 1,
             },
           },
           {
@@ -40,7 +40,7 @@ class DailyLogServiceImpl implements DailyLogService {
             hospitalization: {
               hospitalizationId: 'hosp-2',
               admissionDate: '2025-10-20',
-              status: 'pending',
+              hospitalizationStatusId: 4,
             },
           },
         ],
@@ -62,7 +62,7 @@ class DailyLogServiceImpl implements DailyLogService {
             hospitalization: {
               hospitalizationId: 'hosp-3',
               admissionDate: '2025-11-10',
-              status: 'completed',
+              hospitalizationStatusId: 5,
             },
           },
         ],

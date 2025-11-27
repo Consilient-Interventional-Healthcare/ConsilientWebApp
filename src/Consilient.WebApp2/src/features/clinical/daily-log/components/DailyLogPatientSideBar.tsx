@@ -2,6 +2,7 @@ import React from 'react';
 import { cn } from '@/shared/utils/utils';
 import { DailyLogPatientSideBarHeader } from './DailyLogPatientSideBarHeader';
 import type { ProviderAssignments, Assignment } from '@/features/clinical/daily-log/types/dailylog.types';
+import { HospitalizationStatusPill } from './HospitalizationStatusPill';
 
 interface PatientSidebarProps {
   selectedPatientId: string | null;
@@ -69,7 +70,6 @@ export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, dat
 
   return (
     <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full relative">
-      {/* Header */}
       <DailyLogPatientSideBarHeader
         date={date}
         minDate={minDate}
@@ -137,20 +137,10 @@ export function DailyLogPatientSideBar({ selectedPatientId, onPatientSelect, dat
                   )}>
                     {assignment.patient.lastName}, {assignment.patient.firstName}
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-500">{assignment.patient.id}</span>
-                    {/* Room not available in Assignment, so skip */}
-                  </div>
                 </div>
-                {/* Status indicator */}
-                {assignment.hospitalization?.status && (
+                {assignment.hospitalization?.hospitalizationStatusId && (
                   <div className="ml-2">
-                    <span className={cn(
-                      'inline-block w-2 h-2 rounded-full',
-                      assignment.hospitalization.status === 'active' && 'bg-green-500',
-                      assignment.hospitalization.status === 'pending' && 'bg-yellow-500',
-                      assignment.hospitalization.status === 'completed' && 'bg-gray-400'
-                    )} />
+                    <HospitalizationStatusPill statusId={assignment.hospitalization.hospitalizationStatusId} />
                   </div>
                 )}
               </div>
