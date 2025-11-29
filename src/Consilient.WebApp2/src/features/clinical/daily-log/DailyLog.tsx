@@ -5,7 +5,6 @@ import { getDailyLogService } from "./services/DailyLogServiceFactory";
 import LoadingBarContext from "@/shared/layouts/LoadingBarContext";
 import DailyLogPatientDetails from "./components/DailyLogAdditionalInfo";
 import type { DailyLogVisit } from "./dailylog.types";
-import { useAuth } from "@/shared/hooks/useAuth";
 import { DailyLogEntriesPanel } from "./components/DailyLogEntriesPanel";
 
 // At the top, outside the component:
@@ -23,10 +22,6 @@ export default function DailyLog() {
   );
   const [visits, setVisits] = useState<DailyLogVisit[]>([]);
   const loadingBar = useContext(LoadingBarContext);
-  const { user } = useAuth();
-  if (!user) {
-    throw new Error("User must be authenticated to access Daily Log");
-  }
   useEffect(() => {
     loadingBar?.start();
     dailyLogService
