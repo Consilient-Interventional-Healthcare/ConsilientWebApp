@@ -17,20 +17,18 @@ if (!rootElement) throw new Error('Root element not found');
 
 createRoot(rootElement).render(
   <StrictMode>
-    <ErrorBoundary>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <ToastProvider>
-            <ErrorBoundary fallbackMessage="An error occurred while loading the page.">
-              <Suspense fallback={<Loading message="Loading application..." />}>
-                <RouterProvider router={router} />
-              </Suspense>
-            </ErrorBoundary>
-            <ToastContainer />
-            <ReactQueryDevtools initialIsOpen={false} />
-          </ToastProvider>
-        </QueryClientProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+    <AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <ErrorBoundary fallbackMessage="An error occurred while loading the page.">
+            <Suspense fallback={<Loading message="Loading application..." />}>
+              <RouterProvider router={router} />
+            </Suspense>
+          </ErrorBoundary>
+          <ToastContainer />
+          <ReactQueryDevtools initialIsOpen={false} />
+        </ToastProvider>
+      </QueryClientProvider>
+    </AuthProvider>
   </StrictMode>,
 );

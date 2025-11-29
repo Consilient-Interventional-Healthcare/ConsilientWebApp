@@ -6,13 +6,11 @@ import { dataProvider } from '@/data/DataProvider';
 import type { HospitalizationStatus } from "@/types/db.types";
 import type { DailyLogVisit } from "../dailylog.types";
 import { logEntryTypes } from "../dailylog.types";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import * as solidIcons from '@fortawesome/free-solid-svg-icons';
 
 interface DailyLogEntriesHeaderProps {
   visit: DailyLogVisit | null;
   typeFilter?: string;
-  onTypeFilterChange?: (type: string) => void | undefined;
+  onTypeFilterChange?: ((value: string) => void) | undefined;
 }
 
 export function DailyLogEntriesHeader({
@@ -29,10 +27,7 @@ export function DailyLogEntriesHeader({
 
   const options = [
     { label: "All", value: "all" },
-    ...logEntryTypes.map(type => ({
-      label: type.label,
-      value: type.value,
-    })),
+    ...logEntryTypes
   ];
 
   return (

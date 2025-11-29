@@ -1,12 +1,10 @@
 // Project: https://github.com/alasql/alasql
 
 declare module 'alasql' {
-	import * as xlsx from 'xlsx';
+	import type * as xlsx from 'xlsx';
 
 	// Callback with error-first convention and optional data
-	interface AlaSQLCallback<T = unknown> {
-		(err: Error | null, data?: T): void;
-	}
+	type AlaSQLCallback<T = unknown> = (err: Error | null, data?: T) => void;
 
 	interface AlaSQLOptions {
 		errorlog: boolean;
@@ -35,9 +33,11 @@ declare module 'alasql' {
 	}
 
 	// compiled Statement
-	interface AlaSQLStatement {
-		<T = unknown>(params?: any, cb?: AlaSQLCallback<T>, scope?: unknown): T;
-	}
+	type AlaSQLStatement<T = unknown, P = Record<string, unknown>> = (
+		params?: P,
+		cb?: AlaSQLCallback<T>,
+		scope?: unknown
+	) => T;
 
 	// abstract Syntax Tree
 	interface AlaSQLAST {
@@ -45,36 +45,24 @@ declare module 'alasql' {
 	}
 
 	// see https://github.com/alasql/alasql/wiki/User%20Defined%20Functions
-	interface userDefinedFunction {
-		(...x: unknown[]): unknown;
-	}
+	type userDefinedFunction = (...x: unknown[]) => unknown;
 
-	interface userDefinedFunctionLookUp {
-		[x: string]: userDefinedFunction;
-	}
+	type userDefinedFunctionLookUp = Record<string, userDefinedFunction>;
 
 	// see https://github.com/alasql/alasql/wiki/User%20Defined%20Functions
-	interface userAggregator {
-		(value: unknown, accumulator: unknown, stage: number): unknown;
-	}
+	type userAggregator = (value: unknown, accumulator: unknown, stage: number) => unknown;
 
-	interface userAggregatorLookUp {
-		[x: string]: userAggregator;
-	}
+	type userAggregatorLookUp = Record<string, userAggregator>;
 
-	interface userFromFunction {
-		(
-			dataReference: unknown,
-			options: unknown,
-			callback: (res: unknown) => void,
-			index: unknown,
-			query: unknown
-		): void;
-	}
+	type userFromFunction = (
+		dataReference: unknown,
+		options: unknown,
+		callback: (res: unknown) => void,
+		index: unknown,
+		query: unknown
+	) => void;
 
-	interface userFromFunctionLookUp {
-		[x: string]: userFromFunction;
-	}
+	type userFromFunctionLookUp = Record<string, userFromFunction>;
 
 	/**
 	 * AlaSQL database object. This is a lightweight implimentation
@@ -119,52 +107,46 @@ declare module 'alasql' {
 	 *
 	 * @interface databaseLookUp
 	 */
-	interface databaseLookUp {
-		[databaseName: string]: database;
-	}
+	type databaseLookUp = Record<string, database>;
 
 	/**
 	 * AlaSQL table dictionary
 	 *
 	 * @interface tableLookUp
 	 */
-	interface tableLookUp {
-		[tableName: string]: table;
-	}
+	type tableLookUp = Record<string, table>;
 
-	interface Database {
-		new (databaseid?: string): Database;
+	class Database {
+		constructor(databaseid?: string);
 		databaseid: string;
 		dbversion: number;
-		tables: {[key: string]: unknown};
-		views: {[key: string]: unknown};
-		triggers: {[key: string]: unknown};
-		indices: {[key: string]: unknown};
-		objects: {[key: string]: unknown};
+		tables: Record<string, unknown>;
+		views: Record<string, unknown>;
+		triggers: Record<string, unknown>;
+		indices: Record<string, unknown>;
+		objects: Record<string, unknown>;
 		counter: number;
-		sqlCache: {[key: string]: unknown};
+		sqlCache: Record<string, unknown>;
 		sqlCacheSize: number;
-		astCache: {[key: string]: unknown};
+		astCache: Record<string, unknown>;
 		resetSqlCache(): void;
-		exec<T = unknown>(sql: string, params?: any, cb?: AlaSQLCallback<T>): T;
+		exec<T = unknown>(sql: string, params?: Record<string, unknown>, cb?: AlaSQLCallback<T>): T;
 		autoval(tablename: string, colname: string, getNext: boolean): unknown;
 	}
 
 	interface AlaSQL {
 		options: AlaSQLOptions;
 		error: Error;
-		<T = unknown>(sql: string, params?: any, cb?: AlaSQLCallback<T>, scope?: unknown): T;
+		<T = unknown>(sql: string, params?: unknown, cb?: AlaSQLCallback<T>, scope?: unknown): T;
 		parse(sql: string): AlaSQLAST;
-		promise<T = unknown>(sql: string, params?: any): Promise<T>;
+		promise<T = unknown>(sql: string, params?: unknown): Promise<T>;
 		fn: userDefinedFunctionLookUp;
 		from: userFromFunctionLookUp;
 		aggr: userAggregatorLookUp;
 		autoval(tablename: string, colname: string, getNext?: boolean): number;
-		yy: {};
+		yy: object;
 		setXLSX(xlsxlib: typeof xlsx): void;
-		Database: {
-			new (databaseid?: string): Database;
-		};
+		Database: new (databaseid?: string) => Database;
 
 		/**
 		 * Array of databases in the AlaSQL object.
