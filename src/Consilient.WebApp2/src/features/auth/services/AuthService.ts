@@ -1,10 +1,9 @@
-import type { LinkExternalLoginRequest, LinkExternalLoginResult, AuthenticateUserRequest, AuthenticateUserResult } from '@/features/auth/auth.types';
+import type { LinkExternalLoginRequest, LinkExternalLoginResult, AuthenticateUserRequest, AuthenticateUserResult, IAuthService } from '@/features/auth/auth.types';
 import api from '@/shared/core/api/ApiClient';
-import { JwtService } from '@/features/auth/services/JwtService';
-import { AuthServiceMock } from './AuthService.mock';
-import appSettings from '@/config';
+import { jwtService } from '@/features/auth/services/JwtService';
 
-export class AuthService {
+
+export class AuthService implements IAuthService {
 
   async linkExternalAccount(params: LinkExternalLoginRequest): Promise<void> {
     const response: LinkExternalLoginResult = await api.post('/auth/link-external', params);
@@ -21,7 +20,7 @@ export class AuthService {
     if (!response.token) {
       throw new Error(response.errors?.join(', ') ?? 'Authentication failed');
     }
-    JwtService.store(response.token);
+    jwtService.store(response.token);
     return response.token;
   }
 
@@ -30,18 +29,12 @@ export class AuthService {
     if (!response.token) {
       throw new Error(response.errors?.join(', ') ?? 'Login failed');
     }
-    JwtService.store(response.token);
+    jwtService.store(response.token);
     return response.token;
   }
 
   logout(): void {
-    JwtService.remove();
+    jwtService.remove();
   }
 }
 
-// Factory method to get the correct AuthService implementation
-export function getAuthService() {
-  return appSettings.features.useMockServices
-    ? new AuthServiceMock()
-    : new AuthService();
-}

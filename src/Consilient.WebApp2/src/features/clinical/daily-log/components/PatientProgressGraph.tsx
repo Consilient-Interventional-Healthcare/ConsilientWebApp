@@ -1,11 +1,20 @@
-import React from 'react';
-import { ComposedChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine, Scatter } from 'recharts';
-import { Clock } from 'lucide-react';
+import React from "react";
+import {
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  ReferenceLine,
+  Scatter,
+} from "recharts";
+import { Clock } from "lucide-react";
 
 export default function PatientProgressGraph(): React.ReactElement {
   const MILLISECONDS_PER_HOUR = 3600000;
   const MILLISECONDS_PER_DAY = 24 * MILLISECONDS_PER_HOUR;
-  const baseTime: number = new Date('2024-11-20T08:00:00').getTime();
+  const baseTime: number = new Date("2024-11-20T08:00:00").getTime();
 
   interface PatientDataPoint {
     time: number;
@@ -46,22 +55,72 @@ export default function PatientProgressGraph(): React.ReactElement {
   }
 
   const data: PatientDataPoint[] = [
-    { time: baseTime, status: 'Psychiatric Evaluation', statusLevel: 3, notes: 'Initial mental health assessment', isEvent: true, isPsychEval: true },
-    { time: baseTime, status: 'Acute', statusLevel: 3, notes: 'Admitted for acute care', isEvent: false },
-    { time: baseTime + 120 * MILLISECONDS_PER_HOUR, status: 'Acute', statusLevel: 3, notes: 'Acute care complete', isEvent: false },
-    { time: baseTime + 120 * MILLISECONDS_PER_HOUR, status: 'Status Next Day', statusLevel: 2, notes: 'Stable, continuing observation', isEvent: false },
-    { time: baseTime + 144 * MILLISECONDS_PER_HOUR, status: 'Status Next Day', statusLevel: 2, notes: 'Observation complete', isEvent: false },
-    { time: baseTime + 144 * MILLISECONDS_PER_HOUR, status: 'Pending Placement', statusLevel: 1, notes: 'Awaiting bed assignment', isEvent: false },
-    { time: baseTime + 168 * MILLISECONDS_PER_HOUR, status: 'Pending Placement', statusLevel: 1, notes: 'Placement confirmed', isEvent: false },
-    { time: baseTime + 168 * MILLISECONDS_PER_HOUR, status: 'Discharge Summary', statusLevel: 1, notes: 'Patient discharged', isEvent: true, isDischarge: true },
+    {
+      time: baseTime,
+      status: "Psychiatric Evaluation",
+      statusLevel: 3,
+      notes: "Initial mental health assessment",
+      isEvent: true,
+      isPsychEval: true,
+    },
+    {
+      time: baseTime,
+      status: "Acute",
+      statusLevel: 3,
+      notes: "Admitted for acute care",
+      isEvent: false,
+    },
+    {
+      time: baseTime + 120 * MILLISECONDS_PER_HOUR,
+      status: "Acute",
+      statusLevel: 3,
+      notes: "Acute care complete",
+      isEvent: false,
+    },
+    {
+      time: baseTime + 120 * MILLISECONDS_PER_HOUR,
+      status: "Status Next Day",
+      statusLevel: 2,
+      notes: "Stable, continuing observation",
+      isEvent: false,
+    },
+    {
+      time: baseTime + 144 * MILLISECONDS_PER_HOUR,
+      status: "Status Next Day",
+      statusLevel: 2,
+      notes: "Observation complete",
+      isEvent: false,
+    },
+    {
+      time: baseTime + 144 * MILLISECONDS_PER_HOUR,
+      status: "Pending Placement",
+      statusLevel: 1,
+      notes: "Awaiting bed assignment",
+      isEvent: false,
+    },
+    {
+      time: baseTime + 168 * MILLISECONDS_PER_HOUR,
+      status: "Pending Placement",
+      statusLevel: 1,
+      notes: "Placement confirmed",
+      isEvent: false,
+    },
+    {
+      time: baseTime + 168 * MILLISECONDS_PER_HOUR,
+      status: "Discharge Summary",
+      statusLevel: 1,
+      notes: "Patient discharged",
+      isEvent: true,
+      isDischarge: true,
+    },
   ];
 
   const statusConfig: StatusConfigs = {
-    3: { label: 'Acute', color: '#dc2626' },
-    2: { label: 'Status Next Day', color: '#3b82f6' },
-    1: { label: 'Pending Placement', color: '#fbbf24' },
-    psych: { label: 'Psychiatric Evaluation', color: '#8b5cf6' },
-    discharge: { label: 'Discharge Summary', color: '#10b981' },
+    3: { label: "Acute", color: "#dc2626" },
+    2: { label: "Status Next Day", color: "#3b82f6" },
+    1: { label: "Pending Placement", color: "#fbbf24" },
+    psych: { label: "Psychiatric Evaluation", color: "#8b5cf6" },
+    discharge: { label: "Discharge Summary", color: "#10b981" },
   };
 
   const segments: Segment[] = [];
@@ -76,15 +135,17 @@ export default function PatientProgressGraph(): React.ReactElement {
     if (!currentPoint.isEvent && !nextPoint.isEvent) {
       const startTime = currentPoint.time;
       const endTime = nextPoint.time;
-      const durationDays = Math.round((endTime - startTime) / MILLISECONDS_PER_DAY);
+      const durationDays = Math.round(
+        (endTime - startTime) / MILLISECONDS_PER_DAY
+      );
       segments.push({
         data: [currentPoint, nextPoint],
-        color: statusConfig[currentPoint.statusLevel]?.color ?? '#000',
+        color: statusConfig[currentPoint.statusLevel]?.color ?? "#000",
         key: `segment-${i}`,
         startTime,
         endTime,
         durationDays,
-        statusLevel: currentPoint.statusLevel
+        statusLevel: currentPoint.statusLevel,
       });
     }
   }
@@ -93,7 +154,7 @@ export default function PatientProgressGraph(): React.ReactElement {
     baseTime,
     baseTime + 120 * MILLISECONDS_PER_HOUR,
     baseTime + 144 * MILLISECONDS_PER_HOUR,
-    baseTime + 168 * MILLISECONDS_PER_HOUR
+    baseTime + 168 * MILLISECONDS_PER_HOUR,
   ];
 
   return (
@@ -101,41 +162,78 @@ export default function PatientProgressGraph(): React.ReactElement {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Clock size={16} className="text-gray-600" />
-          <span className="text-sm font-semibold text-gray-700">Patient Status Timeline</span>
+          <span className="text-sm font-semibold text-gray-700">
+            Patient Status Timeline
+          </span>
         </div>
       </div>
 
       <div className="bg-gray-50 rounded-lg p-3">
         <ResponsiveContainer width="100%" height={350}>
-          <ComposedChart data={data} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-            <ReferenceLine y={3} stroke="#dc2626" strokeDasharray="3 3" strokeOpacity={0.3} />
-            <ReferenceLine y={2} stroke="#3b82f6" strokeDasharray="3 3" strokeOpacity={0.3} />
-            <ReferenceLine y={1} stroke="#fbbf24" strokeDasharray="3 3" strokeOpacity={0.3} />
+          <ComposedChart
+            data={data}
+            margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+          >
+            <ReferenceLine
+              y={3}
+              stroke="#dc2626"
+              strokeDasharray="3 3"
+              strokeOpacity={0.3}
+            />
+            <ReferenceLine
+              y={2}
+              stroke="#3b82f6"
+              strokeDasharray="3 3"
+              strokeOpacity={0.3}
+            />
+            <ReferenceLine
+              y={1}
+              stroke="#fbbf24"
+              strokeDasharray="3 3"
+              strokeOpacity={0.3}
+            />
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#e5e7eb"
+              vertical={false}
+            />
 
             <XAxis
               dataKey="time"
               type="number"
-              domain={[baseTime - MILLISECONDS_PER_DAY, baseTime + 8 * MILLISECONDS_PER_DAY]}
+              domain={[
+                baseTime - MILLISECONDS_PER_DAY,
+                baseTime + 8 * MILLISECONDS_PER_DAY,
+              ]}
               ticks={statusChangeTimes}
-              tickFormatter={(ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              tickFormatter={(ts: number) =>
+                new Date(ts).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })
+              }
               stroke="#6b7280"
-              style={{ fontSize: '12px' }}
+              style={{ fontSize: "12px" }}
             />
 
             <YAxis
               domain={[-0.5, 4.2]}
               ticks={[1, 2, 3]}
-              tickFormatter={(v: number) => statusConfig[v as keyof typeof statusConfig]?.label ?? ''}
+              tickFormatter={(v: number) =>
+                statusConfig[v as keyof typeof statusConfig]?.label ?? ""
+              }
               stroke="#6b7280"
-              style={{ fontSize: '11px' }}
+              style={{ fontSize: "11px" }}
               width={140}
             />
 
             {/* Duration line at top */}
             <Line
-              data={[{ time: baseTime, duration: 3.8 }, { time: baseTime + 7 * MILLISECONDS_PER_DAY, duration: 3.8 }]}
+              data={[
+                { time: baseTime, duration: 3.8 },
+                { time: baseTime + 7 * MILLISECONDS_PER_DAY, duration: 3.8 },
+              ]}
               type="monotone"
               dataKey="duration"
               stroke="#6b7280"
@@ -152,7 +250,11 @@ export default function PatientProgressGraph(): React.ReactElement {
                 fill="#6b7280"
                 shape={(props: unknown) => {
                   const { cx, cy } = props as CustomShapeProps;
-                  return cx !== undefined && cy !== undefined ? <circle cx={cx} cy={cy} r={3} fill="#6b7280" /> : null;
+                  if (cx !== undefined && cy !== undefined) {
+                    return <circle cx={cx} cy={cy} r={3} fill="#6b7280" />;
+                  }
+                  // Always return a valid React element (empty group if no coordinates)
+                  return <g />;
                 }}
               />
             ))}
@@ -167,7 +269,12 @@ export default function PatientProgressGraph(): React.ReactElement {
                   x={mid}
                   y={4.0}
                   stroke="transparent"
-                  label={{ value: `${seg.durationDays}d`, fill: seg.color, fontSize: 11, fontWeight: 700 }}
+                  label={{
+                    value: `${seg.durationDays}d`,
+                    fill: seg.color,
+                    fontSize: 11,
+                    fontWeight: 700,
+                  }}
                 />
               );
             })}
@@ -193,11 +300,35 @@ export default function PatientProgressGraph(): React.ReactElement {
               fill={statusConfig.psych.color}
               shape={(props: unknown) => {
                 const shapeProps = props as CustomShapeProps;
-                return (shapeProps.cx !== undefined && shapeProps.cy !== undefined) ? (
+                return shapeProps.cx !== undefined &&
+                  shapeProps.cy !== undefined ? (
                   <g>
-                    <circle cx={shapeProps.cx} cy={shapeProps.cy} r={6} fill={statusConfig.psych.color} stroke="white" strokeWidth={3} />
-                    <circle cx={shapeProps.cx} cy={shapeProps.cy} r={10} fill="none" stroke={statusConfig.psych.color} strokeWidth={1.5} opacity={0.5} />
-                    <text x={shapeProps.cx - 15} y={shapeProps.cy} textAnchor="end" dominantBaseline="middle" fill={statusConfig.psych.color} fontSize="11" fontWeight="600">
+                    <circle
+                      cx={shapeProps.cx}
+                      cy={shapeProps.cy}
+                      r={6}
+                      fill={statusConfig.psych.color}
+                      stroke="white"
+                      strokeWidth={3}
+                    />
+                    <circle
+                      cx={shapeProps.cx}
+                      cy={shapeProps.cy}
+                      r={10}
+                      fill="none"
+                      stroke={statusConfig.psych.color}
+                      strokeWidth={1.5}
+                      opacity={0.5}
+                    />
+                    <text
+                      x={shapeProps.cx - 15}
+                      y={shapeProps.cy}
+                      textAnchor="end"
+                      dominantBaseline="middle"
+                      fill={statusConfig.psych.color}
+                      fontSize="11"
+                      fontWeight="600"
+                    >
                       Psych Eval
                     </text>
                   </g>
@@ -210,17 +341,42 @@ export default function PatientProgressGraph(): React.ReactElement {
               data={data.filter((d: PatientDataPoint) => d.isDischarge)}
               dataKey="statusLevel"
               fill={statusConfig.discharge.color}
-              shape={(props: CustomShapeProps) => (
-                (props.cx !== undefined && props.cy !== undefined) ? (
+              shape={(props: unknown) => {
+                const shapeProps = props as CustomShapeProps;
+                return shapeProps.cx !== undefined &&
+                  shapeProps.cy !== undefined ? (
                   <g>
-                    <circle cx={props.cx} cy={props.cy} r={6} fill={statusConfig.discharge.color} stroke="white" strokeWidth={3} />
-                    <circle cx={props.cx} cy={props.cy} r={10} fill="none" stroke={statusConfig.discharge.color} strokeWidth={1.5} opacity={0.5} />
-                    <text x={props.cx + 15} y={props.cy} textAnchor="start" dominantBaseline="middle" fill={statusConfig.discharge.color} fontSize="11" fontWeight="600">
+                    <circle
+                      cx={shapeProps.cx}
+                      cy={shapeProps.cy}
+                      r={6}
+                      fill={statusConfig.discharge.color}
+                      stroke="white"
+                      strokeWidth={3}
+                    />
+                    <circle
+                      cx={shapeProps.cx}
+                      cy={shapeProps.cy}
+                      r={10}
+                      fill="none"
+                      stroke={statusConfig.discharge.color}
+                      strokeWidth={1.5}
+                      opacity={0.5}
+                    />
+                    <text
+                      x={shapeProps.cx + 15}
+                      y={shapeProps.cy}
+                      textAnchor="start"
+                      dominantBaseline="middle"
+                      fill={statusConfig.discharge.color}
+                      fontSize="11"
+                      fontWeight="600"
+                    >
                       Discharge
                     </text>
                   </g>
-                ) : null
-              )}
+                ) : null;
+              }}
             />
 
             {/* Regular dots on status lines */}
@@ -231,10 +387,27 @@ export default function PatientProgressGraph(): React.ReactElement {
               strokeWidth={0}
               dot={(props: CustomShapeProps) => {
                 const { cx, cy, payload } = props;
-                if (!payload || payload.isPsychEval || payload.isDischarge || cx === undefined || cy === undefined) return null;
-                const config = statusConfig[payload.statusLevel as keyof StatusConfigs];
+                if (
+                  !payload ||
+                  payload.isPsychEval ||
+                  payload.isDischarge ||
+                  cx === undefined ||
+                  cy === undefined
+                )
+                  return null;
+                const config =
+                  statusConfig[payload.statusLevel as keyof StatusConfigs];
                 if (!config) return null;
-                return <circle cx={cx} cy={cy} r={4} fill={config.color} stroke="white" strokeWidth={2} />;
+                return (
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={4}
+                    fill={config.color}
+                    stroke="white"
+                    strokeWidth={2}
+                  />
+                );
               }}
             />
           </ComposedChart>

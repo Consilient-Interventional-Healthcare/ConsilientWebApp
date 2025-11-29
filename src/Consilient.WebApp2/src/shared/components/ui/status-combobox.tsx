@@ -1,14 +1,16 @@
 import * as React from "react";
-import { HOSPITALIZATION_STATUSES } from "@/features/clinical/daily-log/types/dailylog.types";
+import type { HospitalizationStatus } from "@/types/db.types";
+import { dataProvider } from "@/data/DataProvider";
 
 interface StatusComboBoxProps {
-  value: number;
+  value: number | undefined;
   onChange: (value: number) => void;
 }
 
 export function StatusComboBox({ value, onChange }: StatusComboBoxProps) {
   const [open, setOpen] = React.useState(false);
-  const selectedStatus = HOSPITALIZATION_STATUSES.find(s => s.id === value);
+  const statuses = dataProvider.query<HospitalizationStatus>('SELECT * FROM hospitalizationStatuses');
+  const selectedStatus = statuses.find(s => s.id === value);
 
   return (
     <div className="relative w-48">
@@ -27,7 +29,7 @@ export function StatusComboBox({ value, onChange }: StatusComboBoxProps) {
       </button>
       {open && (
         <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
-          {HOSPITALIZATION_STATUSES.map((status) => (
+          {statuses.map((status) => (
             <li
               key={status.id}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium cursor-pointer hover:bg-primary hover:text-white rounded-md"

@@ -1,37 +1,45 @@
-// Authentication type definitions
+import type { User } from "@/types/db.types";
 
-export type UserId = string & { readonly __brand: 'UserId' };
-
-export interface User {
-  id: UserId; // Changed from number to string to support MSAL account IDs
+export interface UserClaims {
+  id: number;
   email: string;
   firstName: string;
   lastName: string;
-  name?: string;
-  role?: string;
+}
+export interface IAuthService {
+  linkExternalAccount(params: LinkExternalLoginRequest): Promise<void>;
+  authenticate(providerKey: string): Promise<string>;
+  login(params: AuthenticateUserRequest): Promise<string>;
+  logout(): void;
 }
 
+export interface IJwtService {
+  store(token: string): void;
+  retrieve(): string | null;
+  remove(): void;
+  decode(): UserClaims | null;
+}
 export interface AuthContextType {
-  user: User | null;
-  login: (credentials?: LoginCredentials) => Promise<void>; // Accepts credentials for username/password login
+  user: UserClaims | null;
+  login: (credentials?: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
 
 export interface LoginCredentials {
-  username: string; // Changed from email to username for consistency with AuthService
+  username: string;
   password: string;
 }
 
-export interface AuthResponse{
+export interface AuthResponse {
   token: string;
-};
+}
 
 export interface LinkExternalLoginResult {
   succeeded: boolean;
   errors?: string[];
-};
+}
 
 export interface LinkExternalLoginRequest {
   email: string;
@@ -50,3 +58,5 @@ export interface AuthenticateUserResult {
   token?: string;
   errors?: string[];
 }
+
+export type { User };

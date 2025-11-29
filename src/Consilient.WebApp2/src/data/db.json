@@ -1,91 +1,288 @@
 {
-    "users": [
+  "hospitalizationStatuses": [
     {
-      "id": "user-1",
+      "id": 1,
+      "code": "DTS",
+      "name": "Acute",
+      "billingCode": "99233",
+      "color": "#64ffda",
+      "order": 1
+    },
+    {
+      "id": 2,
+      "code": "DTO",
+      "name": "Acute",
+      "billingCode": "99233",
+      "color": "#64ffda",
+      "order": 2
+    },
+    {
+      "id": 3,
+      "code": "GD",
+      "name": "Acute",
+      "billingCode": "99233",
+      "color": "#64ffda",
+      "order": 3
+    },
+    {
+      "id": 4,
+      "code": "SND",
+      "name": "Status Next Day",
+      "billingCode": "99232",
+      "color": "#ffd180",
+      "order": 4
+    },
+    {
+      "id": 5,
+      "code": "DC",
+      "name": "Discharge Summary",
+      "billingCode": "99239",
+      "color": "#bbdefb",
+      "order": 5
+    },
+    {
+      "id": 6,
+      "code": "PP",
+      "name": "Pending Placement",
+      "color": "#e0e0e0",
+      "order": 6
+    },
+    {
+      "id": 7,
+      "code": "TCON-PP",
+      "name": "TCON-PP",
+      "color": "#bdbdbd",
+      "order": 7
+    },
+    {
+      "id": 8,
+      "code": "PE",
+      "name": "Psychiatric Evaluation",
+      "billingCode": "90792",
+      "color": "#fff176",
+      "order": 8
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
       "email": "mockuser@example.com",
       "firstName": "Mock",
-      "lastName": "User"
+      "lastName": "User",
+      "role": "physician",
+      "externalProviders": [
+        {
+          "providerName": "Microsoft",
+          "providerKey": "user-1"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "email": "scribe@example.com",
+      "firstName": "Sally",
+      "lastName": "Scribe",
+      "role": "scribe",
+      "externalProviders": [
+        {
+          "providerName": "Microsoft",
+          "providerKey": "user-2"
+        }
+      ]
     }
-    ],
-    "patients": [
-  {
-    "id": "patient-1",
-    "firstName": "John",
-    "lastName": "Doe",
-    "dateOfBirth": "1980-01-01",
-    "gender": "male"
-  },
-  {
-    "id": "patient-2",
-    "firstName": "Jane",
-    "lastName": "Roe",
-    "dateOfBirth": "1975-05-15",
-    "gender": "female"
-  },
-  {
-    "id": "patient-3",
-    "firstName": "Sam",
-    "lastName": "Green",
-    "dateOfBirth": "1990-03-22",
-    "gender": "other"
-  }
-],
-    "hospitalizations": [
-  {
-    "id": "hosp-1",
-    "patientId": "patient-1",
-    "admissionDate": "2025-11-01",
-    "hospitalizationStatusId": 1,
-    "facilityId": "facility-1"
-  },
-  {
-    "id": "hosp-2",
-    "patientId": "patient-2",
-    "admissionDate": "2025-10-20",
-    "hospitalizationStatusId": 4,
-    "facilityId": "facility-1"
-  },
-  {
-    "id": "hosp-3",
-    "patientId": "patient-3",
-    "admissionDate": "2025-11-10",
-    "hospitalizationStatusId": 5,
-    "facilityId": "facility-2"
-  }
-],
-    "visits": [
-  {
-    "id": "visit-1",
-    "patientId": "patient-1",
-    "hospitalizationId": "hosp-1",
-    "date": "2025-11-01"
-  },
-  {
-    "id": "visit-2",
-    "patientId": "patient-2",
-    "hospitalizationId": "hosp-2",
-    "date": "2025-10-20"
-  },
-  {
-    "id": "visit-3",
-    "patientId": "patient-3",
-    "hospitalizationId": "hosp-3",
-    "date": "2025-11-10"
-  }
-],
-    "assignedProfessionals": [
-      { "visitId": "visit-1", "providerId": "provider-1", "role": "Physician" },
-      { "visitId": "visit-1", "providerId": "provider-2", "role": "Nurse" },
-      { "visitId": "visit-2", "providerId": "provider-1", "role": "Physician" },
-      { "visitId": "visit-3", "providerId": "provider-2", "role": "Nurse" }
-    ],
-    "statuses": [
-      { "id": 1, "name": "Acute" },
-      { "id": 4, "name": "Status Next Day" },
-      { "id": 5, "name": "Discharge Summary" }
-    ],
-    "providers" : [
-        { "id": "provider-1", "firstName": "Alice", "lastName": "Smith" },
-        { "id": "provider-2", "firstName": "Bob", "lastName": "Lee" }
-    ]
+  ],
+  "patients": [
+    {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Doe",
+      "dateOfBirth": "1980-01-01",
+      "gender": "male",
+      "mrn": "384920"
+    },
+    {
+      "id": 2,
+      "firstName": "Jane",
+      "lastName": "Roe",
+      "dateOfBirth": "1975-05-15",
+      "gender": "female",
+      "mrn": "295184"
+    },
+    {
+      "id": 3,
+      "firstName": "Sam",
+      "lastName": "Green",
+      "dateOfBirth": "1990-03-22",
+      "gender": "other",
+      "mrn": "671203"
+    }
+  ],
+  "hospitalizations": [
+    {
+      "id": 1,
+      "patientId": 1,
+      "admissionDate": "2025-11-01",
+      "hospitalizationStatusId": 1,
+      "facilityId": 1
+    },
+    {
+      "id": 2,
+      "patientId": 2,
+      "admissionDate": "2025-10-20",
+      "hospitalizationStatusId": 4,
+      "facilityId": 1
+    },
+    {
+      "id": 3,
+      "patientId": 3,
+      "admissionDate": "2025-11-10",
+      "hospitalizationStatusId": 5,
+      "facilityId": 2
+    }
+  ],
+  "visits": [
+    {
+      "id": 1,
+      "patientId": 1,
+      "hospitalizationId": 1,
+      "date": "2025-11-01"
+    },
+    {
+      "id": 2,
+      "patientId": 2,
+      "hospitalizationId": 2,
+      "date": "2025-10-20"
+    },
+    {
+      "id": 3,
+      "patientId": 3,
+      "hospitalizationId": 3,
+      "date": "2025-11-10"
+    }
+  ],
+  "assignedProfessionals": [
+    { "visitId": 1, "providerId": 1 },
+    { "visitId": 1, "providerId": 2 },
+    { "visitId": 2, "providerId": 1 },
+    { "visitId": 3, "providerId": 2 }
+  ],
+  "statuses": [
+    { "id": 1, "name": "Acute" },
+    { "id": 4, "name": "Status Next Day" },
+    { "id": 5, "name": "Discharge Summary" }
+  ],
+  "providers": [
+    { "id": 1, "firstName": "Alice", "lastName": "Smith", "role": "Physician" },
+    { "id": 2, "firstName": "Bob", "lastName": "Lee", "role": "Nurse" }
+  ],
+  "logEntries": [
+    {
+      "id": 1,
+      "timestamp": "2025-11-15T07:30:00Z",
+      "visitId": 1,
+      "providerId": 2,
+      "userId": 2,
+      "message": "Patient rested overnight, no incidents reported.",
+      "type": "interval"
+    },
+    {
+      "id": 2,
+      "timestamp": "2025-11-15T08:15:00Z",
+      "visitId": 1,
+      "providerId": 2,
+      "userId": 2,
+      "message": "Patient requested water at 6am, no other events.",
+      "type": "interval"
+    },
+    {
+      "id": 3,
+      "timestamp": "2025-11-15T14:00:00Z",
+      "visitId": 1,
+      "providerId": 1,
+      "userId": 1,
+      "message": "Interviewed patient, discussed mood and sleep. Patient reports feeling better today.",
+      "type": "interview"
+    },
+    {
+      "id": 4,
+      "timestamp": "2025-11-15T17:30:00Z",
+      "visitId": 1,
+      "providerId": 1,
+      "userId": 1,
+      "message": "Plan: Continue current medication, encourage group therapy participation.",
+      "type": "plan"
+    },
+    {
+      "id": 5,
+      "timestamp": "2025-10-20T07:45:00Z",
+      "visitId": 2,
+      "providerId": 2,
+      "userId": 2,
+      "message": "Patient had difficulty sleeping, nurse checked at 3am.",
+      "type": "interval"
+    },
+    {
+      "id": 6,
+      "timestamp": "2025-10-20T08:30:00Z",
+      "visitId": 2,
+      "providerId": 2,
+      "userId": 2,
+      "message": "No incidents overnight, patient calm in the morning.",
+      "type": "interval"
+    },
+    {
+      "id": 7,
+      "timestamp": "2025-10-20T15:00:00Z",
+      "visitId": 2,
+      "providerId": 1,
+      "userId": 1,
+      "message": "Interview: Patient reports anxiety, discussed coping strategies.",
+      "type": "interview"
+    },
+    {
+      "id": 8,
+      "timestamp": "2025-10-20T18:00:00Z",
+      "visitId": 2,
+      "providerId": 1,
+      "userId": 1,
+      "message": "Plan: Adjust medication dosage, schedule follow-up interview tomorrow.",
+      "type": "plan"
+    },
+    {
+      "id": 9,
+      "timestamp": "2025-11-10T07:20:00Z",
+      "visitId": 3,
+      "providerId": 2,
+      "userId": 2,
+      "message": "Patient woke up early, no issues overnight.",
+      "type": "interval"
+    },
+    {
+      "id": 10,
+      "timestamp": "2025-11-10T08:10:00Z",
+      "visitId": 3,
+      "providerId": 2,
+      "userId": 2,
+      "message": "Patient had breakfast, nurse noted positive mood.",
+      "type": "interval"
+    },
+    {
+      "id": 11,
+      "timestamp": "2025-11-10T13:45:00Z",
+      "visitId": 3,
+      "providerId": 1,
+      "userId": 1,
+      "message": "Interview: Patient discussed family visit, expressed happiness.",
+      "type": "interview"
+    },
+    {
+      "id": 12,
+      "timestamp": "2025-11-10T17:00:00Z",
+      "visitId": 3,
+      "providerId": 1,
+      "userId": 1,
+      "message": "Plan: Maintain current care plan, monitor for changes in mood.",
+      "type": "plan"
+    }
+  ]
 }

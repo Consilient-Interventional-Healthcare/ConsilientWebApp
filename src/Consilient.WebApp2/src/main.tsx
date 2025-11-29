@@ -9,7 +9,8 @@ import ErrorBoundary from '@/shared/components/ErrorBoundary'
 import Loading from '@/shared/components/Loading'
 import { router } from "@/shared/routes/Router"
 import { queryClient } from '@/shared/core/query/QueryClient'
-import './index.css'
+import './index.css';
+import 'rsuite/Timeline/styles/index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Root element not found');

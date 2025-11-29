@@ -27,7 +27,7 @@ function TopNavBar() {
         {/* Logo */}
         <div className="flex items-center gap-2 mr-6">
           <h1 className="text-xl font-bold text-blue-600 flex items-center gap-2">
-            <img src="/thumbnail_small%20logo%20color.png" alt={appSettings.app.name} className="h-8 w-auto" />
+            <img src="/logo.png" alt={appSettings.app.name} className="h-8 w-auto" />
           </h1>
         </div>
         

@@ -1,6 +1,10 @@
 
 import { z } from 'zod';
 
+export interface VisitService {
+  getVisits(date: string, facilityId: string): Promise<Visit[]>;
+}
+
 export const AssignedProfessionalSchema = z.object({
   providerId: z.string(),
   providerFirstName: z.string(),

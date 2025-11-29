@@ -3,8 +3,8 @@ import { AuthContext } from '@/features/auth/contexts/AuthContext';
 import { msalService } from '@/features/auth/services/MsalService';
 import { logger } from '@/shared/core/logging/Logger';
 import appSettings from '@/config';
-import { getAuthService } from '@/features/auth/services/AuthService';
-import { JwtService } from '@/features/auth/services/JwtService';
+import { getAuthService } from '@/features/auth/services/AuthServiceFactory';
+import { jwtService } from '@/features/auth/services/JwtService';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     authService.logout();
   };
 
-  const user = JwtService.decode();
+  const user = jwtService.decode();
 
   return (
     <AuthContext.Provider value={{

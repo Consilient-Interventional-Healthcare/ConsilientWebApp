@@ -20,7 +20,7 @@ window.__ENV = {
   APP_API_BASE_URL: "http://localhost:5000/api",
   APP_ENV: "development",
   APP_ENABLE_DEBUG_MODE: "true",
-  APP_DISABLE_AUTH: "false",
+  APP_DISABLE_AUTH: "true",
   APP_USE_MOCK_SERVICES: "true",
   APP_MSAL_CLIENT_ID: "",
   APP_MSAL_TENANT_ID: "",

@@ -35,7 +35,7 @@ export default function Login() {
       setUsername("");
       setPassword("");
       setError(null);
-    } catch (err) {
+    } catch {
       setError("Login failed. Please try again.");
     } finally {
       setLoading(false);

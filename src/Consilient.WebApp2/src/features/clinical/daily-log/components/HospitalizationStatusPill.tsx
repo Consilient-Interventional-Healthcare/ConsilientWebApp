@@ -1,11 +1,11 @@
-import { HOSPITALIZATION_STATUSES, type HospitalizationStatus } from '../types/dailylog.types';
-
+import type { HospitalizationStatus } from '@/types/db.types';;
+import { dataProvider } from '@/data/DataProvider';
 interface HospitalizationStatusPillProps {
   statusId: HospitalizationStatus['id'];
 }
 
 export function HospitalizationStatusPill({ statusId }: HospitalizationStatusPillProps) {
-  const status = HOSPITALIZATION_STATUSES.find(s => s.id === statusId);
+  const [status = null] = dataProvider.query<HospitalizationStatus>('SELECT * FROM hospitalizationStatuses WHERE id = ?', [statusId]);
 
   if (!status) {
     return null;

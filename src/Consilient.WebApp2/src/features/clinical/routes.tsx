@@ -18,6 +18,10 @@ export const clinicalRoutes: RouteObject[] = [
     },
     children: [
       {
+        index: true,
+        loader: () => redirect("/clinical/visits"),
+      },
+      {
         path: "visits",
         element: <Visits />,
         handle: { 
@@ -36,7 +40,7 @@ export const clinicalRoutes: RouteObject[] = [
         },
         children: [
           {
-            path: ":date?/:providerId?/:patientId?",
+            path: ":date?/:providerId?/:visitId?",
             element: React.createElement(lazy(() => import("@/features/clinical/daily-log/DailyLog"))),
             loader: ({ params }) => {
               if (!params['date']) {

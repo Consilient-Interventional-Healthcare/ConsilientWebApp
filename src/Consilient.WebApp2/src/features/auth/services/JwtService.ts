@@ -1,22 +1,22 @@
-import type { User } from '@/features/auth/auth.types';
+import type { UserClaims, IJwtService } from "../auth.types";
 
 const TOKEN_KEY = 'auth_token';
 
-export class JwtService {
-  static store(token: string) {
+export class JwtService implements IJwtService {
+  store(token: string) {
     localStorage.setItem(TOKEN_KEY, token);
   }
 
-  static retrieve(): string | null {
+  retrieve(): string | null {
     return localStorage.getItem(TOKEN_KEY);
   }
 
-  static remove() {
+  remove() {
     localStorage.removeItem(TOKEN_KEY);
   }
 
-  static decode(): User | null {
-    const token = JwtService.retrieve();
+  decode(): UserClaims | null {
+    const token = this.retrieve();
     if (!token) return null;
     try {
       const payloadPart = token.split('.')[1];
@@ -29,16 +29,15 @@ export class JwtService {
         family_name?: string;
         name?: string;
       };
-      // Map JWT payload to User type as needed
       return {
-        id: payload.sub as User['id'],
+        id: parseInt(payload.sub, 10),
         email: payload.email,
-        firstName: payload.given_name ?? '',
-        lastName: payload.family_name ?? '',
-        name: payload.name ?? payload.email,
+        firstName: payload.given_name ?? "",
+        lastName: payload.family_name ?? "",
       };
     } catch {
       return null;
     }
   }
 }
+export const jwtService = new JwtService();

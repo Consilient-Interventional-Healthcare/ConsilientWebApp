@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
-interface DailyLogEntryInputProps {
+interface DailyLogEntriesInputProps {
   onSubmit: (content: string) => void;
 }
 
-export function DailyLogEntryInput({ onSubmit }: DailyLogEntryInputProps) {
+export function DailyLogEntriesInput({ onSubmit }: DailyLogEntriesInputProps) {
   const [content, setContent] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {

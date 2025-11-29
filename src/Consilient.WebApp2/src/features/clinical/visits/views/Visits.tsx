@@ -7,17 +7,11 @@ import { HospitalizationStatusPill } from "../../daily-log/components/Hospitaliz
 const visitService = new VisitServiceImpl();
 
 export default function Visits() {
-  // const loadingBar = useLoadingBarContext();
-  const [loading, setLoading] = useState(false);
   const [visits, setVisits] = useState<Visit[]>([]);
 
   useEffect(() => {
-    setLoading(true);
-    // loadingBar.show();
     void visitService.getVisits('2025-11-26', 'facility-1').then((data) => {
       setVisits(data);
-      setLoading(false);
-      // loadingBar.hide();
     });
   }, []);
 
