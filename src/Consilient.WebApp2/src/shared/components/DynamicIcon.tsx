@@ -16,6 +16,7 @@ interface DynamicIconProps {
 }
 
 export function DynamicIcon({ iconName, className, style }: DynamicIconProps) {
+  if (!iconName) return null; // Prevent error if iconName is missing
   return (
     <FontAwesomeIcon
       icon={['fas', iconName as IconName]}

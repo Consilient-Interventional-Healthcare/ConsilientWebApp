@@ -1,6 +1,6 @@
-import type { Patient, Provider, Hospitalization, LogEntry } from "@/types/db.types";
+import type { Patient, Provider, Hospitalization, LogEntry, LogEntryType } from "@/types/db.types";
 
-export { Patient, Provider, Hospitalization, LogEntry };
+export { Patient, Provider, Hospitalization, LogEntry, LogEntryType };
 
 export interface DailyLogVisit {
   id: number;
@@ -19,26 +19,28 @@ export interface DailyLogVisit {
   room: string;
 }
 
+export interface StatusChangeEvent {
+  date: string;
+  name: string;
+  code: string;
+  color: string;
+  type: string;
+  iconName: string;
+}
+
+
 export interface IDailyLogService {
   getVisitsByDate(_date: string): Promise<DailyLogVisit[]>;
-  getLogEntriesByVisitId(_visitId: number): Promise<LogEntry[]>;
-  insertLogEntry(_visitId: number, _content: string, _userId: number, _type: string): Promise<LogEntry>
+  getLogEntriesByVisitId(_visitId: number): Promise<DailyLogLogEntry[]>;
+  insertLogEntry(_visitId: number, _content: string, _userId: number, _type: string): Promise<DailyLogLogEntry>;
+  getPatientTimelineData(_hospitalizationId: number): Promise<StatusChangeEvent[]>;
 }
-export interface LogEntryType {
-  label: string;
-  value: string;
-  icon: string;
-  color: string;
-}
+
 export interface ILogEntryTypeProvider {
   getLogEntryType(): string;
 }
 export interface DailyLogLogEntry extends LogEntry {
   userFirstName: string;
   userLastName: string;
+  userRole: string;
 }
-export const logEntryTypes: LogEntryType[] = [
-  { label: 'Interval', value: 'interval', icon: 'fa-bed', color: '#1976d2' },      // Represents overnight events
-  { label: 'Interview', value: 'interview', icon: 'fa-user-md', color: '#43a047' }, // Patient-doctor interaction
-  { label: 'Plan', value: 'plan', icon: 'fa-notes-medical', color: '#fbc02d' },     // Decisions made by doctor
-];

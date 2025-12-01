@@ -1,7 +1,23 @@
-import type { IDailyLogService, LogEntry, DailyLogVisit, DailyLogLogEntry } from '../dailylog.types';
+import type { IDailyLogService, LogEntry, DailyLogVisit, DailyLogLogEntry, StatusChangeEvent } from '../dailylog.types';
 import { dataProvider } from '@/data/DataProvider';
 
 export class DailyLogServiceMock implements IDailyLogService {
+
+  getPatientTimelineData(_hospitalizationId: number): Promise<StatusChangeEvent[]> {
+    const rows = dataProvider.query<StatusChangeEvent>(`
+      SELECT
+        statusChanges.date AS date,
+        hospitalizationStatuses.name AS name,
+        hospitalizationStatuses.code AS code,
+        hospitalizationStatuses.color AS color,
+        hospitalizationStatuses.type AS type,
+        hospitalizationStatuses.iconName AS iconName
+      FROM statusChanges
+      INNER JOIN hospitalizationStatuses ON statusChanges.hospitalizationStatusId = hospitalizationStatuses.id
+      WHERE statusChanges.hospitalizationId = ?
+    `, [_hospitalizationId]);
+    return Promise.resolve(rows);
+  }
 
   getVisitsByDate(date: string): Promise<DailyLogVisit[]> {
     const rows = dataProvider.query<DailyLogVisit>(`
@@ -40,14 +56,15 @@ export class DailyLogServiceMock implements IDailyLogService {
       message,
       type,
       users.firstName AS userFirstName,
-      users.lastName AS userLastName
+      users.lastName AS userLastName,
+      users.role AS userRole
     FROM logEntries
     JOIN users ON logEntries.userId = users.id
     WHERE visitId = ?`, [_visitId]);
     return Promise.resolve(rows);
   }
 
-  insertLogEntry(_visitId: number, _content: string, _userId: number, _type: string): Promise<LogEntry> {
+  insertLogEntry(_visitId: number, _content: string, _userId: number, _type: string): Promise<DailyLogLogEntry> {
     const newEntry: LogEntry = {
       id: Math.floor(Math.random() * 10000),
       timestamp: new Date().toISOString(),
@@ -56,7 +73,7 @@ export class DailyLogServiceMock implements IDailyLogService {
       message: _content,
       type: _type
     };
-    dataProvider.insert('logEntries', newEntry);
-    return Promise.resolve(newEntry);
+    const p = dataProvider.insert('logEntries', newEntry);
+    return Promise.resolve(p);
   }
 }

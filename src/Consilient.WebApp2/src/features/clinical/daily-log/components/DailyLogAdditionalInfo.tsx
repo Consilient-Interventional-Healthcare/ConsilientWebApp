@@ -1,4 +1,7 @@
+import { useState, useEffect } from "react";
 import type { DailyLogVisit } from '../dailylog.types';
+import type { StatusChangeEvent } from '../dailylog.types'; // Ensure StatusChangeEvent is imported
+import { getDailyLogService } from '../services/DailyLogServiceFactory';
 import PatientTimeline from './PatientTimeline';
 import { calculateAge, diffInDays, formatDate } from "@/shared/utils/utils";
   
@@ -6,13 +9,36 @@ interface DailyLogAdditionalInfoProps {
   visit: DailyLogVisit | null;
 }
 
+const dailyLogService = getDailyLogService();
+
 export default function DailyLogAdditionalInfo({ visit }: DailyLogAdditionalInfoProps) {
+  const [timelineData, setTimelineData] = useState<StatusChangeEvent[]>([]);
+
+  useEffect(() => {
+    if (visit) {
+      dailyLogService.getPatientTimelineData(visit.hospitalizationId)
+        .then((d) => { console.log("Fetched timeline data:", d); setTimelineData(d); })
+        .catch((error) => {
+          console.error("Failed to fetch patient timeline data:", error);
+        });
+    }
+  }, [visit]);
+
   if (!visit) return null;
   const age = calculateAge(visit.patientDateOfBirth);
   const daysHospitalized = diffInDays(visit.hospitalizationAdmissionDate);
-    return <>
-    <div className="w-full p-4 min-w-0 min-h-0">
-      <div className="flex flex-col md:flex-row gap-4">
+
+  return <>
+    <div className="w-full min-w-0 min-h-0">
+      <div className="p-4" style={{borderBottom: '1px solid gray'}}>
+              <button
+        className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+        type="button"
+      >
+        Generate
+      </button>
+      </div>
+      <div className="flex flex-col md:flex-row gap-4 p-4">
         <div id='demographic-details' className="md:w-1/2">
           <h2 className="text-base font-semibold text-gray-800">Demographic Details</h2>
           <div>
@@ -55,7 +81,7 @@ export default function DailyLogAdditionalInfo({ visit }: DailyLogAdditionalInfo
     </div>
     <div className="w-full p-4 min-w-0 min-h-0">
       <h2 className="text-base font-semibold text-gray-800">Patient Progress</h2>
-      <PatientTimeline />
+      <PatientTimeline statusChanges={timelineData} />
     </div>
-      </>
+  </>
 }

@@ -6,7 +6,9 @@
       "name": "Acute",
       "billingCode": "99233",
       "color": "#64ffda",
-      "order": 1
+      "order": 1,
+      "type": "state",
+      "iconName": "fa-procedures"
     },
     {
       "id": 2,
@@ -14,7 +16,9 @@
       "name": "Acute",
       "billingCode": "99233",
       "color": "#64ffda",
-      "order": 2
+      "order": 2,
+      "type": "state",
+      "iconName": "fa-procedures"
     },
     {
       "id": 3,
@@ -22,7 +26,9 @@
       "name": "Acute",
       "billingCode": "99233",
       "color": "#64ffda",
-      "order": 3
+      "order": 3,
+      "type": "state",
+      "iconName": "fa-procedures"
     },
     {
       "id": 4,
@@ -30,7 +36,9 @@
       "name": "Status Next Day",
       "billingCode": "99232",
       "color": "#ffd180",
-      "order": 4
+      "order": 4,
+      "type": "state",
+      "iconName": "fa-procedures"
     },
     {
       "id": 5,
@@ -38,21 +46,27 @@
       "name": "Discharge Summary",
       "billingCode": "99239",
       "color": "#bbdefb",
-      "order": 5
+      "order": 5,
+      "type": "event",
+      "iconName": "fa-file-medical"
     },
     {
       "id": 6,
       "code": "PP",
       "name": "Pending Placement",
       "color": "#e0e0e0",
-      "order": 6
+      "order": 6,
+      "type": "state",
+      "iconName": "fa-procedures"
     },
     {
       "id": 7,
       "code": "TCON-PP",
       "name": "TCON-PP",
       "color": "#bdbdbd",
-      "order": 7
+      "order": 7,
+      "type": "state",
+      "iconName": "fa-procedures"
     },
     {
       "id": 8,
@@ -60,7 +74,9 @@
       "name": "Psychiatric Evaluation",
       "billingCode": "90792",
       "color": "#fff176",
-      "order": 8
+      "order": 8,
+      "type": "event",
+      "iconName": "fa-hospital-user"
     }
   ],
   "users": [
@@ -281,6 +297,33 @@
       "userId": 1,
       "message": "Plan: Maintain current care plan, monitor for changes in mood.",
       "type": "plan"
+    }
+  ],
+  "logEntryTypes": [
+    { "label": "Interval", "value": "interval", "icon": "fa-bed", "color": "#1976d2" },
+    { "label": "Interview", "value": "interview", "icon": "fa-user-md", "color": "#43a047" },
+    { "label": "Plan", "value": "plan", "icon": "fa-notes-medical", "color": "#fbc02d" }
+  ],
+  "statusChanges": [
+    {
+      "hospitalizationId": 1,
+      "date": "2025-10-05",
+      "hospitalizationStatusId": 8
+    },
+    {
+      "hospitalizationId": 1,
+      "date": "2025-10-05",
+      "hospitalizationStatusId": 1
+    },
+        {
+      "hospitalizationId": 1,
+      "date": "2025-10-10",
+      "hospitalizationStatusId": 6
+    },
+    {
+      "hospitalizationId": 1,
+      "date": "2025-10-23",
+      "hospitalizationStatusId": 5
     }
   ]
 }

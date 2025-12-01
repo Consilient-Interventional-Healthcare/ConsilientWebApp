@@ -3,10 +3,8 @@ import { useState } from 'react';
 import { SegmentedControl } from '@/shared/components/ui/segmented-control';
 import { StatusComboBox } from '@/shared/components/ui/status-combobox';
 import { dataProvider } from '@/data/DataProvider';
-import type { HospitalizationStatus } from "@/types/db.types";
+import type { HospitalizationStatus, LogEntryType } from "@/types/db.types";
 import type { DailyLogVisit } from "../dailylog.types";
-import { logEntryTypes } from "../dailylog.types";
-
 interface DailyLogEntriesHeaderProps {
   visit: DailyLogVisit | null;
   typeFilter?: string;
@@ -27,9 +25,9 @@ export function DailyLogEntriesHeader({
 
   const options = [
     { label: "All", value: "all" },
-    ...logEntryTypes
+    ...dataProvider.getTable<LogEntryType>('logEntryTypes')
   ];
-
+  
   return (
     <div
       className="flex-shrink-0 bg-white"

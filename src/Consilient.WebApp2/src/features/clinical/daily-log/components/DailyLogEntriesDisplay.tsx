@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Timeline } from 'rsuite';
 import { formatTime1 } from '@/shared/utils/utils';
-import { logEntryTypes, type DailyLogLogEntry, type LogEntryType } from '../dailylog.types';
+import type { DailyLogLogEntry, LogEntryType } from '../dailylog.types';
 import { DynamicIcon } from '@/shared/components/DynamicIcon';
+import { dataProvider } from '@/data/DataProvider';
 
 interface DailyLogEntriesDisplayProps {
   entries: DailyLogLogEntry[];
@@ -25,7 +26,7 @@ export function DailyLogEntriesDisplay({ entries, typeFilter }: DailyLogEntriesD
 
   // Helper to get icon and color for a log entry type
   const getTypeConfig = (type: string) : LogEntryType | undefined =>
-    logEntryTypes.find(t => t.value === type);
+    dataProvider.getTable<LogEntryType>('logEntryTypes').find(t => t.value === type);
 
   const filteredEntries =
     typeFilter === "all"
@@ -48,7 +49,7 @@ export function DailyLogEntriesDisplay({ entries, typeFilter }: DailyLogEntriesD
                 ) : undefined
               }
             >
-              <div>
+              <div className='entry.userRole'>
                 <span className="text-xs text-gray-500 mr-2">{formatTime1(entry.timestamp)}</span>
                 <span className="text-xs text-gray-700 font-medium">
                   {entry.userFirstName} {entry.userLastName} reported

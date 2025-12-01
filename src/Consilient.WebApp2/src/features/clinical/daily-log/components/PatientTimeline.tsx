@@ -1,150 +1,31 @@
 import React, { useMemo } from 'react';
-import type { ReactNode } from 'react';
 import { DynamicIcon } from '@/shared/components/DynamicIcon';
-// No longer using lucide-react icons for timeline
-// --- Types ---
-
-interface EventItem {
-  date: string;
-  name: string;
-  code: string;
-  color: string;
-}
-
-interface PeriodItem {
-  startDate: string;
-  name: string;
-  code: string;
-  color: string;
-}
+import type { StatusChangeEvent } from '../dailylog.types';
 
 interface PatientTimelineProps {
-  events?: EventItem[];
-  periods?: PeriodItem[];
+  statusChanges: StatusChangeEvent[];
 }
 
-interface ProcessedPeriod extends PeriodItem {
+interface ProcessedStatusChangeEvent extends StatusChangeEvent {
   dateObj: Date;
   left: number;
-  width: number;
   duration: number;
-  colorClass: string;
+  width: number;
 }
 
-interface ProcessedEvent extends EventItem {
-  dateObj: Date;
-  left: number;
-  colorClass: string;
-}
-
-// --- Sample Data ---
-
-const SAMPLE_DATA: { events: EventItem[]; periods: PeriodItem[] } = {
-  events: [
-    {
-      date: "2025-10-05",
-      name: "Psych Eval",
-      code: "PE",
-      color: "yellow"
-    },
-    {
-      date: "2025-10-25",
-      name: "Discharge",
-      code: "DC",
-      color: "green"
-    }
-  ],
-  periods: [
-    {
-      startDate: "2025-10-05",
-      name: "Acute",
-      code: "AC1",
-      color: "blue"
-    },
-    {
-      startDate: "2025-10-15",
-      name: "Acute",
-      code: "AC2",
-      color: "black"
-    },
-    {
-      startDate: "2025-10-23",
-      name: "Pending Discharge",
-      code: "PD1",
-      color: "gray"
-    }
-  ]
-};
-
-const PatientTimeline: React.FC<PatientTimelineProps> = ({ 
-  events = SAMPLE_DATA.events, 
-  periods = SAMPLE_DATA.periods 
-}) => {
-
-  // --- Helpers & Logic ---
-
-  // 1. Color Palette Generator
-  const resolveColor = (colorInput: string, name: string, type: 'period' | 'event'): string => {
-    if (colorInput) {
-      const c = colorInput.toLowerCase();
-      const styleMap: Record<string, string> = {
-        yellow: type === 'period' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' : 'text-yellow-700 bg-yellow-100 border-yellow-300',
-        green: type === 'period' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'text-emerald-700 bg-emerald-100 border-emerald-300',
-        blue: type === 'period' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'text-blue-700 bg-blue-100 border-blue-300',
-        black: type === 'period' ? 'bg-gray-800 text-gray-100 border-gray-700' : 'text-gray-900 bg-gray-200 border-gray-400',
-        gray: type === 'period' ? 'bg-gray-200 text-gray-800 border-gray-300' : 'text-gray-600 bg-gray-100 border-gray-300',
-      };
-      if (styleMap[c]) return styleMap[c];
-      return colorInput; 
-    }
-
-    const n = (name || '').toLowerCase();
-    if (type === 'period') {
-      if (n.includes('acute')) return 'bg-red-100 text-red-700 border-red-200';
-      if (n.includes('pending')) return 'bg-amber-100 text-amber-700 border-amber-200';
-      if (n.includes('discharge')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      return 'bg-blue-100 text-blue-700 border-blue-200';
-    } else {
-      if (n.includes('eval')) return 'text-purple-600 bg-purple-100 border-purple-200';
-      if (n.includes('discharge')) return 'text-emerald-600 bg-emerald-100 border-emerald-200';
-      return 'text-gray-600 bg-gray-100 border-gray-200';
-    }
-  };
-
-  const getIcon = (name: string): ReactNode => {
-    const n = (name || '').toLowerCase();
-    let iconName: string;
-    // Map keywords to Font Awesome icons
-    if (n.includes('discharge')) {
-      iconName = 'fa-hospital-user';
-    } else if (n.includes('eval')) {
-      iconName = 'fa-clipboard-list';
-    } else if (n.includes('acute')) {
-      iconName = 'fa-triangle-exclamation';
-    } else {
-      iconName = 'fa-info-circle'; // Default icon
-    }
-    return <DynamicIcon iconName={iconName} size="sm" />;
-  };
+const PatientTimeline: React.FC<PatientTimelineProps> = (props) => {
 
   // 2. Process Data for Timeline
   const processedData = useMemo(() => {
-    // Safety check: Ensure we have arrays
-    const safeEvents = events || [];
-    const safePeriods = periods || [];
-
-    if (!safeEvents.length && !safePeriods.length) {
+    const safeStatusChanges = props.statusChanges ?? [];
+    if (!safeStatusChanges.length) {
         return { periods: [], events: [], minDate: new Date(), maxDate: new Date() };
     }
 
-    const procEvents = safeEvents.map(e => ({ ...e, dateObj: new Date(e.date) }));
-    const procPeriods = safePeriods.map(p => ({ ...p, dateObj: new Date(p.startDate) }));
-
-    procEvents.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
-    procPeriods.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    safeStatusChanges.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     // Calculate Strict Boundaries (No Buffers)
-    const allDates = [...procEvents.map(e => e.dateObj), ...procPeriods.map(p => p.dateObj)];
+    const allDates = [...safeStatusChanges.map(e => new Date(e.date))];
     const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
     const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
     
@@ -160,47 +41,43 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({
       return Math.max(0, Math.min(100, pos));
     };
 
-    const calculatedPeriods: ProcessedPeriod[] = procPeriods.map((p, index) => {
-      const startPos = getPos(p.dateObj);
+    const procStatusChanges : ProcessedStatusChangeEvent[] = safeStatusChanges.map((e, index) => {
+      const dateObj = new Date(e.date);
+      const startPos = getPos(dateObj);
+
       let endPos: number;
       let endDate: Date;
-      
-      if (index < procPeriods.length - 1 && procPeriods[index + 1]?.dateObj) {
-        // Ends exactly where the next one starts
-        endDate = procPeriods[index + 1].dateObj;
+      const nextChange = safeStatusChanges[index + 1];
+
+      if (nextChange) { // Only proceed if nextChange is not undefined
+        endDate = new Date(nextChange.date);
         endPos = getPos(endDate);
       } else {
-        // Last period extends to the exact end of the timeline (100%)
         endDate = maxDate;
         endPos = 100;
       }
 
-      // Calculate duration in days
-      const diffTime = Math.abs(endDate.getTime() - p.dateObj.getTime());
+      const diffTime = Math.abs(endDate.getTime() - dateObj.getTime());
       const days = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
 
       return {
-        ...p,
+        ...e,
+        dateObj,
         left: startPos,
         width: Math.max(endPos - startPos, 0),
-        duration: days,
-        colorClass: resolveColor(p.color, p.name, 'period')
+        duration: days
       };
     });
 
-    const calculatedEvents: ProcessedEvent[] = procEvents.map(e => ({
-      ...e,
-      left: getPos(e.dateObj),
-      colorClass: resolveColor(e.color, e.name, 'event')
-    }));
+    procStatusChanges.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
 
     return { 
-      periods: calculatedPeriods, 
-      events: calculatedEvents, 
+      states: procStatusChanges.filter(e => e.type === 'state'), 
+      events: procStatusChanges.filter(e => e.type === 'event'),
       minDate, 
       maxDate 
     };
-  }, [events, periods]);
+  }, [props]);
 
   const formatDate = (dateObj: Date): string => {
     return dateObj.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
@@ -215,20 +92,21 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({
         
         {/* 1. The Base Track (Periods) */}
         <div className="absolute top-1/2 left-0 w-full h-8 bg-gray-100 -translate-y-1/2 overflow-hidden shadow-inner">
-          {processedData.periods.map((period, idx) => (
+          {processedData.states?.map((state, idx) => (
             <div
-              key={`period-${idx}`}
-              className={`absolute top-0 bottom-0 border-r border-white/20 last:border-0 transition-all hover:opacity-90 cursor-pointer flex flex-col items-center justify-center overflow-hidden ${period.colorClass}`}
+              key={`state-${idx}`}
+              className={`absolute top-0 bottom-0 border-r border-white/20 last:border-0 transition-all hover:opacity-90 cursor-pointer flex flex-col items-center justify-center overflow-hidden`}
               style={{ 
-                left: `${period.left}%`, 
-                width: `${period.width}%` 
+                left: `${state.left}%`, 
+                width: `${state.width}%`,
+                background: state.color ? state.color : undefined // Use color only for background
               }}
-              title={`${period.name}: ${period.duration} days`}
+              title={`${state.name}: ${state.duration} days`}
             >
-              {period.width > 5 && (
+              {state.width > 5 && (
                 <div className="flex flex-col items-center">
                   <span className="text-xs font-bold opacity-70 whitespace-nowrap px-1 select-none">
-                    {period.duration}d
+                    {state.duration}d
                   </span>
                 </div>
               )}
@@ -237,44 +115,44 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({
         </div>
 
         {/* 1b. Period Names Under Track (centered, full width, same style as date, with ellipsis) */}
-        {processedData.periods.map((period, idx) => (
+        {processedData.states?.map((state, idx) => (
           <div
             key={`period-name-${idx}`}
             className="absolute flex items-center justify-center text-[10px] text-gray-400 font-mono whitespace-nowrap px-2"
             style={{
-              left: `${period.left}%`,
-              width: `${period.width}%`,
+              left: `${state.left}%`,
+              width: `${state.width}%`,
               top: '90%', // closer to track
               pointerEvents: 'none',
             }}
-            title={period.name}
+            title={state.name}
           >
-            <span className="w-full text-center overflow-hidden text-ellipsis max-w-full">{period.code}</span>
+            <span className="w-full text-center overflow-hidden text-ellipsis max-w-full">{state.code}</span>
           </div>
         ))}
 
         {/* 1c. Period Start Date (absolutely at start, closer to track) */}
-        {processedData.periods.map((period, idx) => (
+        {processedData.states?.map((state, idx) => (
           <div
             key={`period-date-${idx}`}
             className="absolute text-[10px] text-gray-400 font-mono"
             style={{
-              left: `${period.left}%`,
+              left: `${state.left}%`,
               top: '90%', // closer to track
               transform: 'translateX(-50%)',
               pointerEvents: 'none',
             }}
           >
-            {formatDate(period.dateObj)}
+            {formatDate(state.dateObj)}
           </div>
         ))}
 
         {/* 2. Period Start Markers (Status Changes) */}
-        {processedData.periods.map((period, idx) => (
+        {processedData.states?.map((state, idx) => (
           <div
             key={`marker-${idx}`}
             className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none"
-            style={{ left: `${period.left}%` }}
+            style={{ left: `${state.left}%` }}
           >
             {/* Tick Mark */}
             <div className="h-10 w-px bg-white/60 absolute top-1/2 -translate-y-1/2 mix-blend-overlay"></div>
@@ -289,10 +167,12 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({
             style={{ left: `${event.left}%` }}
           >
             {/* The Icon Bubble */}
-            <div className={`relative w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-md hover:scale-110 transition-transform ${event.colorClass}`}>
-              {getIcon(event.name)}
+            <div className="relative w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-md hover:scale-110 transition-transform bg-white">
+              {/* Use color for icon only */}
+              <span style={{ backgroundColor: event.color ? event.color : undefined }}>
+                 <DynamicIcon iconName={event.iconName} />
+              </span>
             </div>
-
             {/* The Event Name Label */}
             <div className="absolute top-full mt-1 w-32 text-center pointer-events-none opacity-0 group-hover/marker:opacity-100 transition-opacity z-30">
               <div className="inline-block">

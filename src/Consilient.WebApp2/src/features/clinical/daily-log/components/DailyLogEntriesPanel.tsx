@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { DailyLogEntriesHeader } from "./DailyLogEntriesHeader";
 import { DailyLogEntriesDisplay } from "./DailyLogEntriesDisplay";
 import { DailyLogEntriesInput } from "./DailyLogEntriesInput";
-import type { DailyLogVisit, LogEntry } from "../dailylog.types";
+import type { DailyLogLogEntry, DailyLogVisit } from "../dailylog.types";
 import { getDailyLogService } from "../services/DailyLogServiceFactory";
 import { logEntryTypeProvider } from "../services/LogEntryTypeProvider";
 import { useAuth } from "@/shared/hooks/useAuth";
@@ -17,7 +17,7 @@ export const DailyLogEntriesPanel: React.FC<DailyLogEntriesPanelProps> = ({
   visit,
 }) => {
   const { user } = useAuth();
-  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+  const [logEntries, setLogEntries] = useState<DailyLogLogEntry[]>([]);
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {

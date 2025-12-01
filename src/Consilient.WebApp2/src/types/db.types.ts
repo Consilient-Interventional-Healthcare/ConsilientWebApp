@@ -7,6 +7,13 @@ export interface HospitalizationStatus {
   order: number;
 }
 
+export interface LogEntryType {
+  label: string;
+  value: string;
+  icon: string;
+  color: string;
+  icon: string;
+}
 
 export interface ExternalProvider {
   providerName: string;
@@ -77,4 +84,5 @@ export interface DbSchema {
   providers: Provider[];
   logEntries: LogEntry[];
   hospitalizationStatuses: HospitalizationStatus[];
+  logEntryTypes: LogEntryType[];
 }
