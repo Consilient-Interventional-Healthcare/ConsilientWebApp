@@ -254,15 +254,6 @@
       "type": "interview"
     },
     {
-      "id": 8,
-      "timestamp": "2025-10-20T18:00:00Z",
-      "visitId": 2,
-      "providerId": 1,
-      "userId": 1,
-      "message": "Plan: Adjust medication dosage, schedule follow-up interview tomorrow.",
-      "type": "plan"
-    },
-    {
       "id": 9,
       "timestamp": "2025-11-10T07:20:00Z",
       "visitId": 3,
@@ -288,15 +279,6 @@
       "userId": 1,
       "message": "Interview: Patient discussed family visit, expressed happiness.",
       "type": "interview"
-    },
-    {
-      "id": 12,
-      "timestamp": "2025-11-10T17:00:00Z",
-      "visitId": 3,
-      "providerId": 1,
-      "userId": 1,
-      "message": "Plan: Maintain current care plan, monitor for changes in mood.",
-      "type": "plan"
     }
   ],
   "logEntryTypes": [

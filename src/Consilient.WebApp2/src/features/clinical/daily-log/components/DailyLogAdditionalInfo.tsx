@@ -31,10 +31,10 @@ export default function DailyLogAdditionalInfo({ visit }: DailyLogAdditionalInfo
   return <>
     <div className="w-full min-w-0 min-h-0">
       <div className="p-4" style={{borderBottom: '1px solid gray'}}>
-              <button
-        className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        type="button"
-      >
+        <button
+          className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          type="button"
+        >
         Generate
       </button>
       </div>

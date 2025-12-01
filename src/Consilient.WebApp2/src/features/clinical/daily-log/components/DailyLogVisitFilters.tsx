@@ -6,6 +6,7 @@ import {
 } from "./DailyLogVisitFiltersDateProvider";
 import type { DailyLogVisit } from "@/features/clinical/daily-log/dailylog.types";
 import { HospitalizationStatusPill } from "./HospitalizationStatusPill";
+import { DynamicIcon } from "@/shared/components/DynamicIcon";
 
 interface DailyLogVisitFiltersProps {
   date: string;
@@ -187,22 +188,35 @@ export function DailyLogVisitFilters(props: DailyLogVisitFiltersProps) {
                   >
                     {visit.patientLastName}, {visit.patientFirstName}
                   </p>
-                  {visit.room && (
-                    <span
-                      className="ml-4 text-xs text-gray-500 tabular-nums whitespace-nowrap"
-                      style={{ flexShrink: 0 }}
-                    >
-                      {visit.room}
-                    </span>
-                  )}
                 </div>
-                {visit.hospitalizationStatusId && (
-                  <div className="ml-2">
+                {/* Icons float right, to the left of the status */}
+                <div className="flex items-center">
+                  <div className="flex items-center mr-2">
+                    {visit.markers.map((marker) => (
+                      <span
+                        key={marker.iconName}
+                        className="inline-flex items-center justify-center rounded-full mx-1"
+                        style={{
+                          width: 21,
+                          height: 21,
+                          padding: 4,
+                          margin: 0,
+                          backgroundColor: marker.hasData ? marker.color : "#bdbdbd"
+                        }}
+                      >
+                        <DynamicIcon
+                          iconName={marker.iconName}
+                          style={{ color: "white", fontSize: 12 }}
+                        />
+                      </span>
+                    ))}
+                  </div>
+                  {visit.hospitalizationStatusId && (
                     <HospitalizationStatusPill
                       statusId={visit.hospitalizationStatusId}
                     />
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </button>
           ))

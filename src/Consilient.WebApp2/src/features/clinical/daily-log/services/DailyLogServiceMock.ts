@@ -1,4 +1,4 @@
-import type { IDailyLogService, LogEntry, DailyLogVisit, DailyLogLogEntry, StatusChangeEvent } from '../dailylog.types';
+import type { IDailyLogService, LogEntry, DailyLogVisit, DailyLogLogEntry, StatusChangeEvent, DailyLogVisitPhaseMarker } from '../dailylog.types';
 import { dataProvider } from '@/data/DataProvider';
 
 export class DailyLogServiceMock implements IDailyLogService {
@@ -43,6 +43,32 @@ export class DailyLogServiceMock implements IDailyLogService {
         JOIN providers ON assignedProfessionals.providerId = providers.id
       WHERE providers.role = 'Physician'
     `, [date]);
+
+    // Now add the markers for each visit
+    rows.forEach(visit => {
+      // Get log entries for this visit
+        const logEntriesForVisit = dataProvider.query<DailyLogVisitPhaseMarker>(
+          `SELECT
+            lt.icon as iconName,
+            lt.color,
+            CASE WHEN le.c > 0 THEN true ELSE false END as hasData
+            FROM logEntryTypes as lt
+            LEFT JOIN (
+              SELECT 
+                type, 
+                visitId, 
+                count(*) as c
+              FROM logEntries
+              GROUP BY type, visitId
+            ) AS le ON lt.value = le.type AND le.visitId = ?
+          `,[visit.id]);
+        visit.markers = logEntriesForVisit.map(entry => ({
+          iconName: entry.iconName,
+          color: entry.color,
+          hasData: entry.hasData
+        }));
+      });
+      console.log("Visits with markers:", rows);
     return Promise.resolve(rows);
   }
 

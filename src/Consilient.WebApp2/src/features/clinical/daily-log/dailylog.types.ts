@@ -17,6 +17,13 @@ export interface DailyLogVisit {
   providerFirstName: string;
   providerLastName: string;
   room: string;
+  markers: DailyLogVisitPhaseMarker[];
+}
+
+export interface DailyLogVisitPhaseMarker {
+  iconName: string;
+  color: string;
+  hasData: boolean
 }
 
 export interface StatusChangeEvent {
