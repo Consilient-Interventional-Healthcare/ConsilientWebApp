@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { Timeline } from 'rsuite';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+
 import { formatTime1 } from '@/shared/utils/utils';
 import { logEntryTypes, type DailyLogLogEntry, type LogEntryType } from '../dailylog.types';
 import * as solidIcons from '@fortawesome/free-solid-svg-icons';
+import { DynamicIcon } from '@/shared/components/DynamicIcon';
 
 interface DailyLogEntriesDisplayProps {
   entries: DailyLogLogEntry[];
@@ -42,8 +43,8 @@ export function DailyLogEntriesDisplay({ entries, typeFilter }: DailyLogEntriesD
             <Timeline.Item
               key={entry.id}
               dot={
-                typeConfig && solidIcons[typeConfig.icon as keyof typeof solidIcons] ? (
-                    <FontAwesomeIcon icon={solidIcons[typeConfig.icon as keyof typeof solidIcons]} className='rs-icon' style={{
+                typeConfig?.icon ? (
+                    <DynamicIcon iconName={typeConfig.icon} className='rs-icon' style={{
                       background: typeConfig.color ?? '#e0e0e0',
                       color: '#fff' }} />
                 ) : undefined
