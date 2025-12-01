@@ -24,7 +24,7 @@ export function StatusComboBox({ value, onChange }: StatusComboBoxProps) {
           className="inline-block w-3 h-3 rounded-full mr-2"
           style={{ backgroundColor: selectedStatus?.color ?? "#ccc" }}
         />
-        {selectedStatus?.name ?? "Select status"}
+        {selectedStatus ? (<span>{selectedStatus.name} ({selectedStatus.code})</span>) : "Select status"}
         <span className="ml-auto">▼</span>
       </button>
       {open && (
@@ -39,7 +39,7 @@ export function StatusComboBox({ value, onChange }: StatusComboBoxProps) {
                 className="inline-block w-3 h-3 rounded-full"
                 style={{ backgroundColor: status.color }}
               />
-              <span>{status.name}</span>
+              <span>{status.name} ({status.code})</span>
             </li>
           ))}
         </ul>

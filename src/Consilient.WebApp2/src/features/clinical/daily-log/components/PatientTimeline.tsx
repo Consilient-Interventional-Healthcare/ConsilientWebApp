@@ -1,18 +1,20 @@
 import React, { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { Activity, CheckCircle, AlertCircle, Info } from 'lucide-react';
-
+import { DynamicIcon } from '@/shared/components/DynamicIcon';
+// No longer using lucide-react icons for timeline
 // --- Types ---
 
 interface EventItem {
   date: string;
   name: string;
+  code: string;
   color: string;
 }
 
 interface PeriodItem {
   startDate: string;
   name: string;
+  code: string;
   color: string;
 }
 
@@ -42,11 +44,13 @@ const SAMPLE_DATA: { events: EventItem[]; periods: PeriodItem[] } = {
     {
       date: "2025-10-05",
       name: "Psych Eval",
+      code: "PE",
       color: "yellow"
     },
     {
       date: "2025-10-25",
       name: "Discharge",
+      code: "DC",
       color: "green"
     }
   ],
@@ -54,16 +58,19 @@ const SAMPLE_DATA: { events: EventItem[]; periods: PeriodItem[] } = {
     {
       startDate: "2025-10-05",
       name: "Acute",
+      code: "AC1",
       color: "blue"
     },
     {
       startDate: "2025-10-15",
       name: "Acute",
+      code: "AC2",
       color: "black"
     },
     {
       startDate: "2025-10-23",
       name: "Pending Discharge",
+      code: "PD1",
       color: "gray"
     }
   ]
@@ -106,10 +113,18 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({
 
   const getIcon = (name: string): ReactNode => {
     const n = (name || '').toLowerCase();
-    if (n.includes('discharge')) return <CheckCircle size={16} />;
-    if (n.includes('eval')) return <Activity size={16} />;
-    if (n.includes('acute')) return <AlertCircle size={16} />;
-    return <Info size={16} />;
+    let iconName: string;
+    // Map keywords to Font Awesome icons
+    if (n.includes('discharge')) {
+      iconName = 'fa-hospital-user';
+    } else if (n.includes('eval')) {
+      iconName = 'fa-clipboard-list';
+    } else if (n.includes('acute')) {
+      iconName = 'fa-triangle-exclamation';
+    } else {
+      iconName = 'fa-info-circle'; // Default icon
+    }
+    return <DynamicIcon iconName={iconName} size="sm" />;
   };
 
   // 2. Process Data for Timeline
@@ -203,7 +218,7 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({
           {processedData.periods.map((period, idx) => (
             <div
               key={`period-${idx}`}
-              className={`absolute top-0 bottom-0 border-r border-white/20 last:border-0 transition-all hover:opacity-90 cursor-pointer flex items-center justify-center overflow-hidden ${period.colorClass}`}
+              className={`absolute top-0 bottom-0 border-r border-white/20 last:border-0 transition-all hover:opacity-90 cursor-pointer flex flex-col items-center justify-center overflow-hidden ${period.colorClass}`}
               style={{ 
                 left: `${period.left}%`, 
                 width: `${period.width}%` 
@@ -211,13 +226,48 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({
               title={`${period.name}: ${period.duration} days`}
             >
               {period.width > 5 && (
-                 <span className="text-xs font-bold opacity-70 whitespace-nowrap px-1 select-none">
-                   {period.duration}d
-                 </span>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs font-bold opacity-70 whitespace-nowrap px-1 select-none">
+                    {period.duration}d
+                  </span>
+                </div>
               )}
             </div>
           ))}
         </div>
+
+        {/* 1b. Period Names Under Track (centered, full width, same style as date, with ellipsis) */}
+        {processedData.periods.map((period, idx) => (
+          <div
+            key={`period-name-${idx}`}
+            className="absolute flex items-center justify-center text-[10px] text-gray-400 font-mono whitespace-nowrap px-2"
+            style={{
+              left: `${period.left}%`,
+              width: `${period.width}%`,
+              top: '90%', // closer to track
+              pointerEvents: 'none',
+            }}
+            title={period.name}
+          >
+            <span className="w-full text-center overflow-hidden text-ellipsis max-w-full">{period.code}</span>
+          </div>
+        ))}
+
+        {/* 1c. Period Start Date (absolutely at start, closer to track) */}
+        {processedData.periods.map((period, idx) => (
+          <div
+            key={`period-date-${idx}`}
+            className="absolute text-[10px] text-gray-400 font-mono"
+            style={{
+              left: `${period.left}%`,
+              top: '90%', // closer to track
+              transform: 'translateX(-50%)',
+              pointerEvents: 'none',
+            }}
+          >
+            {formatDate(period.dateObj)}
+          </div>
+        ))}
 
         {/* 2. Period Start Markers (Status Changes) */}
         {processedData.periods.map((period, idx) => (
@@ -228,16 +278,6 @@ const PatientTimeline: React.FC<PatientTimelineProps> = ({
           >
             {/* Tick Mark */}
             <div className="h-10 w-px bg-white/60 absolute top-1/2 -translate-y-1/2 mix-blend-overlay"></div>
-            
-            {/* Status Date Label */}
-            <div className="absolute top-5 mt-1 flex flex-col items-center">
-              <span className="text-[10px] text-gray-400 font-mono">
-                {formatDate(period.dateObj)}
-              </span>
-              <span className="text-[10px] font-semibold text-gray-600 whitespace-nowrap max-w-[100px] overflow-hidden text-ellipsis">
-                {period.name}
-              </span>
-            </div>
           </div>
         ))}
 

@@ -45,6 +45,10 @@ export default function DailyLogAdditionalInfo({ visit }: DailyLogAdditionalInfo
                 <span className="ml-1">{daysHospitalized} {daysHospitalized === 1 ? 'day' : 'days'}</span>
               </div>
             )}
+            <div>
+              <span className="font-semibold text-gray-900">Room:</span>
+              <span className="ml-1 text-blue-700">{visit.room}</span>
+            </div>
           </div>
         </div>
       </div>

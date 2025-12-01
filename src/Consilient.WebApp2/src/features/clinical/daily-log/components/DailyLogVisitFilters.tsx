@@ -176,7 +176,7 @@ export function DailyLogVisitFilters(props: DailyLogVisitFiltersProps) {
               )}
             >
               <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-center">
                   <p
                     className={cn(
                       "text-sm font-medium truncate",
@@ -187,6 +187,14 @@ export function DailyLogVisitFilters(props: DailyLogVisitFiltersProps) {
                   >
                     {visit.patientLastName}, {visit.patientFirstName}
                   </p>
+                  {visit.room && (
+                    <span
+                      className="ml-4 text-xs text-gray-500 tabular-nums whitespace-nowrap"
+                      style={{ flexShrink: 0 }}
+                    >
+                      {visit.room}
+                    </span>
+                  )}
                 </div>
                 {visit.hospitalizationStatusId && (
                   <div className="ml-2">

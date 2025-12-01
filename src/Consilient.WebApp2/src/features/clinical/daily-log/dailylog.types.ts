@@ -16,6 +16,7 @@ export interface DailyLogVisit {
   providerId: number;
   providerFirstName: string;
   providerLastName: string;
+  room: string;
 }
 
 export interface IDailyLogService {

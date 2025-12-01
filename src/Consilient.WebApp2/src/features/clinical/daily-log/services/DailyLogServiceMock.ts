@@ -7,6 +7,7 @@ export class DailyLogServiceMock implements IDailyLogService {
     const rows = dataProvider.query<DailyLogVisit>(`
       SELECT 
         visits.id AS id,
+        visits.room AS room,
         patients.id AS patientId,
         patients.lastName AS patientLastName,
         patients.firstName AS patientFirstName,

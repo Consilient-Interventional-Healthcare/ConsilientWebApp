@@ -44,16 +44,12 @@ export interface Visit {
   patientId: number;
   hospitalizationId: number;
   date: string;
+  room: string;
 }
 
 export interface AssignedProfessional {
   visitId: number;
   providerId: number;
-}
-
-export interface Status {
-  id: number;
-  name: string;
 }
 
 export interface Provider {
@@ -78,7 +74,7 @@ export interface DbSchema {
   hospitalizations: Hospitalization[];
   visits: Visit[];
   assignedProfessionals: AssignedProfessional[];
-  statuses: Status[];
   providers: Provider[];
   logEntries: LogEntry[];
+  hospitalizationStatuses: HospitalizationStatus[];
 }

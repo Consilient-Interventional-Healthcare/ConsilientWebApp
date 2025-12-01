@@ -145,19 +145,22 @@
       "id": 1,
       "patientId": 1,
       "hospitalizationId": 1,
-      "date": "2025-11-01"
+      "date": "2025-11-01",
+      "room": "401A"
     },
     {
       "id": 2,
       "patientId": 2,
       "hospitalizationId": 2,
-      "date": "2025-10-20"
+      "date": "2025-10-20",
+      "room": "205B"
     },
     {
       "id": 3,
       "patientId": 3,
       "hospitalizationId": 3,
-      "date": "2025-11-10"
+      "date": "2025-11-10",
+      "room": "703A"
     }
   ],
   "assignedProfessionals": [
@@ -165,11 +168,6 @@
     { "visitId": 1, "providerId": 2 },
     { "visitId": 2, "providerId": 1 },
     { "visitId": 3, "providerId": 2 }
-  ],
-  "statuses": [
-    { "id": 1, "name": "Acute" },
-    { "id": 4, "name": "Status Next Day" },
-    { "id": 5, "name": "Discharge Summary" }
   ],
   "providers": [
     { "id": 1, "firstName": "Alice", "lastName": "Smith", "role": "Physician" },
