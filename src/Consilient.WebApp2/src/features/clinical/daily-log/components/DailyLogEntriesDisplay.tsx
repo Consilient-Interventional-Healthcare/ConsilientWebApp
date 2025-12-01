@@ -1,9 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Timeline } from 'rsuite';
-
 import { formatTime1 } from '@/shared/utils/utils';
 import { logEntryTypes, type DailyLogLogEntry, type LogEntryType } from '../dailylog.types';
-import * as solidIcons from '@fortawesome/free-solid-svg-icons';
 import { DynamicIcon } from '@/shared/components/DynamicIcon';
 
 interface DailyLogEntriesDisplayProps {
