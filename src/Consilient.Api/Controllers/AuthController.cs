@@ -1,4 +1,6 @@
-﻿using Consilient.Users.Contracts;
+﻿using Consilient.Api.Configuration;
+using Consilient.Api.Infra;
+using Consilient.Users.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -9,10 +11,8 @@ namespace Consilient.Api.Controllers
 
     [Route("[controller]")]
     [ApiController]
-    public class AuthController(IUserService _userService) : ControllerBase
+    public class AuthController(IUserService _userService, ApplicationSettings applicationSettings) : ControllerBase
     {
-        const string AUTH_TOKEN = "auth_token";
-
         [HttpPost("authenticate")]
         [EnableRateLimiting("AuthenticatePolicy")]
         [AllowAnonymous]
@@ -26,18 +26,8 @@ namespace Consilient.Api.Controllers
             var result = await _userService.AuthenticateUserAsync(request);
             if (result.Succeeded)
             {
-                // Set the JWT token in an HttpOnly cookie
-                Response.Cookies.Append(AUTH_TOKEN, result.Token!, new CookieOptions
-                {
-                    HttpOnly = true,           // Prevents JavaScript access
-                    Secure = true,             // Only sent over HTTPS
-                    SameSite = SameSiteMode.Strict,  // CSRF protection
-                    MaxAge = TimeSpan.FromHours(1),  // Match your JWT expiration
-                    Path = "/"                 // Available site-wide
-                });
-
-                // Return the user's claims in the response body. Token is stored in cookie.
-                return Ok(new AuthenticateUserResult (true, null, result.Claims));
+                Response.AppendAuthTokenCookie(result.Token!, applicationSettings.Authentication.Jwt.ExpiryMinutes);
+                return Ok(new AuthenticateUserResult(true, null, result.Claims));
             }
 
             return Unauthorized(new AuthenticateUserResult(false, result.Errors, null));
@@ -74,7 +64,7 @@ namespace Consilient.Api.Controllers
         [Authorize]
         public IActionResult Logout()
         {
-            Response.Cookies.Delete(AUTH_TOKEN);
+            Response.DeleteAuthTokenCookie();
             return Ok();
         }
     }

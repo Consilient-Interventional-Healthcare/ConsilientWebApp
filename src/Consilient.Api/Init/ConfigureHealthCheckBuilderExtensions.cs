@@ -2,9 +2,9 @@
 
 namespace Consilient.Api.Init
 {
-    internal static class HealthChecksBuilderExtensions
+    internal static class ConfigureHealthCheckBuilderExtensions
     {
-        public static void RegisterHealthChecks(this IHealthChecksBuilder healthChecksBuilder)
+        public static void ConfigureHealthChecks(this IHealthChecksBuilder healthChecksBuilder)
         {
             healthChecksBuilder.AddDbContextCheck<ConsilientDbContext>();
         }

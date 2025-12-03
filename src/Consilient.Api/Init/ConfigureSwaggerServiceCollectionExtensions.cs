@@ -2,7 +2,7 @@
 
 namespace Consilient.Api.Init
 {
-    internal static class SwaggerBuilderExtensions
+    internal static class ConfigureSwaggerServiceCollectionExtensions
     {
         public static void AddSwaggerGen(this IServiceCollection services, string appId, string apiVersion)
         {

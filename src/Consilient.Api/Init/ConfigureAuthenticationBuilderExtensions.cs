@@ -1,3 +1,4 @@
+using Consilient.Api.Infra;
 using Consilient.Users.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -18,12 +19,11 @@ namespace Consilient.Api.Init
             })
             .AddJwtBearer(options =>
             {
-                // Read token from HttpOnly cookie named "auth_token"
                 options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
                     {
-                        if (context.Request.Cookies.TryGetValue("auth_token", out var token) && !string.IsNullOrEmpty(token))
+                        if (context.Request.Cookies.TryGetValue(AuthCookieExtensions.AuthCookieName, out var token) && !string.IsNullOrEmpty(token))
                         {
                             context.Token = token;
                         }
@@ -40,7 +40,7 @@ namespace Consilient.Api.Init
                     ValidateAudience = !string.IsNullOrEmpty(tokenGeneratorConfiguration.Audience),
                     ValidAudience = tokenGeneratorConfiguration.Audience,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.FromMinutes(1)
+                    ClockSkew = TimeSpan.FromMinutes(5)
                 };
             });
         }

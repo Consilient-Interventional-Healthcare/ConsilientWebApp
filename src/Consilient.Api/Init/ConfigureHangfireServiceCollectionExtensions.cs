@@ -3,9 +3,9 @@ using Hangfire;
 
 namespace Consilient.Api.Init
 {
-    internal static class HangfireServiceCollectionExtensions
+    internal static class ConfigureHangfireServiceCollectionExtensions
     {
-        public static void RegisterHangfire(this IServiceCollection services, string hangfireConnectionString)
+        public static void ConfigureHangfire(this IServiceCollection services, string hangfireConnectionString)
         {
             services.AddHangfire((provider, config )=>
             {

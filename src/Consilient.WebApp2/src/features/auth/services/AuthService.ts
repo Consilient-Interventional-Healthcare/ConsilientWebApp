@@ -25,7 +25,6 @@ export class AuthService implements IAuthService {
   }
 
   async login(params: AuthenticateUserRequest): Promise<LoginResults> {
-    debugger;
     const response = await apiClient.post<AuthenticateUserResult>('/auth/authenticate', params, {
       withCredentials: true
     });
@@ -46,7 +45,6 @@ async logout(): Promise<void> {
     await apiClient.post('/auth/logout', {}, {
         withCredentials: true
     });
-    // jwtService.remove();}
   }
 
   async getCurrentUserClaims(): Promise<UserClaim[] | null> {

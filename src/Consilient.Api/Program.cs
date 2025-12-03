@@ -62,15 +62,13 @@ namespace Consilient.Api
                 builder.Services.RegisterUserServices(new UserServiceConfiguration { AutoProvisionUser = applicationSettings.Authentication.AutoProvisionUser }, applicationSettings.Authentication.Jwt);
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterLogging(logger);
-                builder.Services.RegisterHangfire(hangfireConnectionString);
-
-                // Load allowed origins from configuration (expect explicit origins). Default to secure localhost for development.
+                builder.Services.ConfigureHangfire(hangfireConnectionString);
+              
                 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
-                builder.Services.RegisterCors(true, allowedOrigins);
-                builder.Services.RegisterRateLimiting();
+                builder.Services.ConfigureCors(allowedOrigins!);
+                builder.Services.ConfigureRateLimiting();
 
-                // Ensure cookies set by the app are marked secure, HttpOnly and have a sane SameSite.
-                builder.Services.RegisterCookiePolicy();
+                builder.Services.ConfigureCookiePolicy();
 
                 builder.Services.AddControllers(options =>
                 {
@@ -86,7 +84,7 @@ namespace Consilient.Api
                     options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
                 }).AddNewtonsoftJson();
 
-                builder.Services.AddHealthChecks().RegisterHealthChecks();
+                builder.Services.AddHealthChecks().ConfigureHealthChecks();
 
                 builder.Services.AddDataProtection()
                     .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration
@@ -116,7 +114,7 @@ namespace Consilient.Api
 
                 // IMPORTANT: run CORS before any middleware that may issue redirects (HTTPS redirection or auth).
                 // This prevents preflight (OPTIONS) being redirected which browsers disallow.
-                app.UseCors(Init.CorsServiceCollectionExtensions.DefaultCorsPolicyName); // Must be before UseAuthentication/UseAuthorization and before HTTPS redirect
+                app.UseCors(Init.ConfigureCorsServiceCollectionExtensions.DefaultCorsPolicyName); // Must be before UseAuthentication/UseAuthorization and before HTTPS redirect
 
                 if (app.Environment.IsProduction())
                 {

@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace Consilient.Api.Init
 {
-    internal static class RateLimitingServiceCollectionExtensions
+    internal static class ConfigureRateLimitingServiceCollectionExtensions
     {
-        public static void RegisterRateLimiting(this IServiceCollection services)
+        public static void ConfigureRateLimiting(this IServiceCollection services)
         {
             services.AddRateLimiter(options =>
             {
