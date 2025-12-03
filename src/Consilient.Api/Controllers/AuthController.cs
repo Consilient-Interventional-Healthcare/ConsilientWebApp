@@ -33,6 +33,25 @@ namespace Consilient.Api.Controllers
             return Unauthorized(new AuthenticateUserResult(false, result.Errors, null));
         }
 
+        [HttpPost("external")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ExternalAuthenticate([FromBody] ExternalAuthenticateRequest request)
+        {
+            if (request is null)
+            {
+                return BadRequest("Request body is required.");
+            }
+
+            var result = await _userService.AuthenticateExternalAsync(request);
+            if (result.Succeeded)
+            {
+                Response.AppendAuthTokenCookie(result.Token!, applicationSettings.Authentication.Jwt.ExpiryMinutes);
+                return Ok(new AuthenticateUserResult(true, null, result.Claims));
+            }
+
+            return Unauthorized(new AuthenticateUserResult(false, result.Errors, null));
+        }
+
         [HttpGet("claims")]
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()

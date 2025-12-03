@@ -1,14 +1,188 @@
-﻿using Consilient.Data.Entities.Identity;
+﻿using Azure.Core;
+using Consilient.Data.Entities.Identity;
 using Consilient.Users.Contracts;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Identity.Client;
 using System.Security.Claims;
 
 namespace Consilient.Users.Services
 {
-    public class UserService(UserServiceConfiguration configuration, UserManager<User> userManager, TokenGeneratorConfiguration tokenGeneratorConfiguration, Data.UsersDbContext dbContext) : IUserService
+    public class UserService(
+        UserServiceConfiguration configuration,
+        UserManager<User> userManager,
+        TokenGeneratorConfiguration tokenGeneratorConfiguration,
+        Data.UsersDbContext dbContext
+    ) : IUserService
     {
         private readonly Data.UsersDbContext _dbContext = dbContext;
         private readonly TokenGenerator _tokenGenerator = new(tokenGeneratorConfiguration);
+
+        public async Task<AuthenticateUserResult> AuthenticateExternalAsync(ExternalAuthenticateRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            if (string.IsNullOrWhiteSpace(request.Provider) || !string.Equals(request.Provider, "Microsoft", StringComparison.OrdinalIgnoreCase))
+            {
+                return new AuthenticateUserResult(false, null, null, ["Unsupported external provider."]);
+            }
+
+            if (string.IsNullOrWhiteSpace(request.IdToken))
+            {
+                return new AuthenticateUserResult(false, null, null, ["id_token is required."]);
+            }
+
+            var (idToken, accessToken, account, userEmail, userName) = await ValidateCode(request.IdToken);
+
+
+
+
+            //// Build OpenID Connect metadata address and fetch configuration
+            //var metadataAddress = $"https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration";
+
+            //OpenIdConnectConfiguration openIdConfig;
+            //try
+            //{
+            //    var httpDocumentRetriever = new HttpDocumentRetriever { RequireHttps = true };
+            //    var cfgManager = new ConfigurationManager<OpenIdConnectConfiguration>(metadataAddress, new OpenIdConnectConfigurationRetriever(), httpDocumentRetriever);
+            //    openIdConfig = await cfgManager.GetConfigurationAsync(CancellationToken.None).ConfigureAwait(false);
+            //}
+            //catch (Exception)
+            //{
+            //    return new AuthenticateUserResult(false, null, null, ["Failed to retrieve OpenID configuration."]);
+            //}
+
+            //// Prepare token validation parameters
+            //var validationParameters = new TokenValidationParameters
+            //{
+            //    ValidIssuer = openIdConfig.Issuer,
+            //    ValidAudiences = new[] { clientId },
+            //    IssuerSigningKeys = openIdConfig.SigningKeys,
+            //    ValidateIssuer = true,
+            //    ValidateAudience = true,
+            //    ValidateLifetime = true,
+            //    ValidateIssuerSigningKey = true,
+            //};
+
+            //ClaimsPrincipal principal;
+            //SecurityToken validatedToken;
+            //var tokenHandler = new JwtSecurityTokenHandler();
+            //try
+            //{
+            //    // Clear inbound map to preserve original claim types like "sub", "email", "preferred_username"
+            //    tokenHandler.InboundClaimTypeMap.Clear();
+            //    principal = tokenHandler.ValidateToken(request.IdToken, validationParameters, out validatedToken);
+            //}
+            //catch (SecurityTokenExpiredException)
+            //{
+            //    return new AuthenticateUserResult(false, null, null, ["Token expired."]);
+            //}
+            //catch (SecurityTokenException)
+            //{
+            //    return new AuthenticateUserResult(false, null, null, ["Invalid token."]);
+            //}
+            //catch (Exception)
+            //{
+            //    return new AuthenticateUserResult(false, null, null, ["Failed to validate token."]);
+            //}
+
+            // Extract claims
+            //var sub = principal.FindFirst("sub")?.Value;
+            //var email = principal.FindFirst("email")?.Value ?? principal.FindFirst("preferred_username")?.Value;
+            //var preferredUsername = principal.FindFirst("preferred_username")?.Value;
+
+            if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(userEmail))
+            {
+                return new AuthenticateUserResult(false, null, null, ["Required claims not present in token."]);
+            }
+
+            // enforce allowed email domains
+            if (!IsEmailDomainAllowed(userEmail))
+            {
+                return new AuthenticateUserResult(false, null, null, [ErrorMessages.EmailDomainNotAllowed]);
+            }
+
+            // Try find existing user by external login (provider + key)
+            var provider = "Microsoft";
+            var existingLoginUser = await userManager.FindByLoginAsync(provider, idToken).ConfigureAwait(false);
+            if (existingLoginUser != null)
+            {
+                var token = _tokenGenerator.GenerateToken(existingLoginUser);
+                var claimDtos = await GetClaimsAsync(existingLoginUser).ConfigureAwait(false);
+                return new AuthenticateUserResult(true, token, claimDtos);
+            }
+
+            // Find local user by email
+            var user = await userManager.FindByEmailAsync(userEmail).ConfigureAwait(false);
+
+            // If user exists, attach external login (if allowed) and sign in
+            if (user != null)
+            {
+                // If linking fails, return errors to caller
+                var (succeeded, errors) = await AddExternalLoginAsync(user, new UserLoginInfo(provider, idToken, provider)).ConfigureAwait(false);
+                if (!succeeded)
+                {
+                    return new AuthenticateUserResult(false, null, null, errors);
+                }
+
+                // Persist the new login
+                await _dbContext.SaveChangesAsync().ConfigureAwait(false);
+
+                var token = _tokenGenerator.GenerateToken(user);
+                var claimDtos = await GetClaimsAsync(user).ConfigureAwait(false);
+                return new AuthenticateUserResult(true, token, claimDtos);
+            }
+
+            // User does not exist locally
+            if (configuration.AutoProvisionUser)
+            {
+                // Create user, add external login and sign in (transactional)
+                var linkRequest = new LinkExternalLoginRequest(userEmail, provider, account.HomeAccountId.Identifier, provider);
+                var result = await CreateAndLinkExternalLoginAsync(null, linkRequest).ConfigureAwait(false);
+                if (!result.Succeeded)
+                {
+                    return new AuthenticateUserResult(false, null, null, result.Errors);
+                }
+
+                // retrieve created user (by email) and issue token
+                var createdUser = await userManager.FindByEmailAsync(userEmail).ConfigureAwait(false);
+                if (createdUser == null)
+                {
+                    return new AuthenticateUserResult(false, null, null, [ErrorMessages.UnexpectedError]);
+                }
+
+                var token = _tokenGenerator.GenerateToken(createdUser);
+                var claimDtos = await GetClaimsAsync(createdUser).ConfigureAwait(false);
+                return new AuthenticateUserResult(true, token, claimDtos);
+            }
+
+            // Not auto-provisioning: return informative error so frontend can show registration flow
+            return new AuthenticateUserResult(false, null, null, [ErrorMessages.UserNotFound]);
+        }
+
+        private async Task<(string idToken, string accessToken, IAccount account, string userEmail, string userName)> ValidateCode(string code)
+        {
+            var conf = configuration.MicrosoftProviderSettings!;
+            var app = ConfidentialClientApplicationBuilder
+              .Create(conf.ClientId)
+              .WithClientSecret(conf.ClientSecret)
+              .WithAuthority($"https://login.microsoftonline.com/{conf.TenantId}")
+              .WithRedirectUri(redirectUri)
+              .Build();
+
+            // Exchange authorization code for tokens
+            var result = await app.AcquireTokenByAuthorizationCode(conf.Scopes, code).ExecuteAsync();
+
+            // Token is now validated! Extract user information
+            var idToken = result.IdToken;
+            var accessToken = result.AccessToken;
+            var account = result.Account;
+
+            // Get user claims from the ID token
+            var userEmail = account.Username;
+            var userName = account.HomeAccountId.ObjectId;
+            return (idToken, accessToken, account, userEmail, userName);
+        }
+
         public async Task<AuthenticateUserResult> AuthenticateUserAsync(AuthenticateUserRequest request)
         {
             static AuthenticateUserResult InvalidCredentials() => new(false, null, null, [ErrorMessages.InvalidCredentials]);
@@ -38,6 +212,35 @@ namespace Consilient.Users.Services
             return new AuthenticateUserResult(true, tokenString, claimDtos);
         }
 
+        //public async Task<AuthenticateUserResult> AuthenticateUserAsync(AuthenticateUserRequest request)
+        //{
+        //    static AuthenticateUserResult InvalidCredentials() => new(false, null, null, [ErrorMessages.InvalidCredentials]);
+
+        //    // Validate credentials without creating a sign-in session
+        //    var user = await userManager.FindByNameAsync(request.UserName).ConfigureAwait(false);
+        //    if (user == null)
+        //    {
+        //        return InvalidCredentials();
+        //    }
+
+        //    // enforce allowed email domains
+        //    if (!IsEmailDomainAllowed(user.Email))
+        //    {
+        //        // Avoid leaking whether account exists — treat as invalid credentials
+        //        return InvalidCredentials();
+        //    }
+
+        //    var passwordValid = await userManager.CheckPasswordAsync(user, request.Password).ConfigureAwait(false);
+        //    if (!passwordValid)
+        //    {
+        //        return InvalidCredentials();
+        //    }
+        //    // generate JWT using token generator
+        //    var tokenString = _tokenGenerator.GenerateToken(user);
+        //    var claimDtos = await GetClaimsAsync(user).ConfigureAwait(false);
+        //    return new AuthenticateUserResult(true, tokenString, claimDtos);
+        //}
+
         public async Task<IEnumerable<ClaimDto>> GetClaimsAsync(string userName)
         {
             var user = await userManager.FindByNameAsync(userName).ConfigureAwait(false) ?? throw new ArgumentException(ErrorMessages.UserNotFound, nameof(userName));
@@ -46,7 +249,6 @@ namespace Consilient.Users.Services
                 new (ClaimTypes.Name, user.UserName ?? string.Empty),
                 new (ClaimTypes.Email, user.Email ?? string.Empty)
             ];
-            //return await GetClaimsAsync(user).ConfigureAwait(false);
         }
 
         public async Task<LinkExternalLoginResult> LinkExternalLoginAsync(LinkExternalLoginRequest request)
@@ -170,6 +372,7 @@ namespace Consilient.Users.Services
             var claimDtos = claims.Select(c => new ClaimDto(c.Type, c.Value)).ToArray();
             return claimDtos;
         }
+
         private bool IsEmailDomainAllowed(string? email)
         {
             if (string.IsNullOrWhiteSpace(email))
