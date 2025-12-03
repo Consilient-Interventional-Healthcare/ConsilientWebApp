@@ -7,14 +7,12 @@ namespace Consilient.Api.Init
     {
         public static void RegisterHangfire(this IServiceCollection services, string hangfireConnectionString)
         {
-            services.AddHangfire(config =>
+            services.AddHangfire((provider, config )=>
             {
                 config
                     .UseSqlServerStorage(hangfireConnectionString)
-                    .UseActivator(new WorkerJobActivator(services.BuildServiceProvider()));
+                    .UseActivator(new WorkerJobActivator(provider));
             });
         }
-
-
     }
 }

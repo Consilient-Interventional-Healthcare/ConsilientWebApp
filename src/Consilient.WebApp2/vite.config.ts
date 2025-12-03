@@ -14,8 +14,6 @@ export default defineConfig({
           // Separate React and React-related libraries
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           
-          // Separate MSAL (Azure Auth) libraries
-          'msal-vendor': ['@azure/msal-browser', '@azure/msal-react'],
           
           // Separate TanStack Query
           'query-vendor': ['@tanstack/react-query', '@tanstack/react-query-devtools'],

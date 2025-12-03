@@ -1,40 +1,67 @@
-import type { LinkExternalLoginRequest, LinkExternalLoginResult, AuthenticateUserRequest, AuthenticateUserResult, IAuthService } from '@/features/auth/auth.types';
-import api from '@/shared/core/api/ApiClient';
-import { jwtService } from '@/features/auth/services/JwtService';
+import type { LoginResults, LinkExternalLoginRequest, LinkExternalLoginResult, AuthenticateUserRequest, AuthenticateUserResult, IAuthService, UserClaim } from '@/features/auth/auth.types';
+import apiClient from '@/shared/core/api/ApiClient';
+import { logger } from "@/shared/core/logging/Logger";
 
 
 export class AuthService implements IAuthService {
 
   async linkExternalAccount(params: LinkExternalLoginRequest): Promise<void> {
-    const response: LinkExternalLoginResult = await api.post('/auth/link-external', params);
-    if (!response.succeeded) {
-      throw new Error(response.errors?.join(', ') ?? 'Failed to link external account');
+    const response = await apiClient.post<LinkExternalLoginResult>('/auth/link-external', params);
+    if (!response.data.succeeded) {
+      throw new Error(response.data.errors?.join(', ') ?? 'Failed to link external account');
     }
     // Only proceed to authenticate if succeeded
     await this.authenticate(params.providerKey);
   }
 
-  async authenticate(providerKey: string): Promise<string> {
-    const request: { providerKey: string } = { providerKey };
-    const response: AuthenticateUserResult = await api.post('/auth/authenticate', request);
-    if (!response.token) {
-      throw new Error(response.errors?.join(', ') ?? 'Authentication failed');
-    }
-    jwtService.store(response.token);
-    return response.token;
+  authenticate(_providerKey: string): Promise<string> {
+    throw new Error("Not implemented");
+    // const request: { providerKey: string } = { providerKey };
+    // const response = await apiClient.post<AuthenticateUserResult>('/auth/authenticate', request);
+    // if (!response.data) {
+    //   throw new Error(response.data.errors?.join(', ') ?? 'Authentication failed');
+    // }
+    // return response.token;
   }
 
-  async login(params: AuthenticateUserRequest): Promise<string> {
-    const response: AuthenticateUserResult = await api.post('/auth/login', params);
-    if (!response.token) {
-      throw new Error(response.errors?.join(', ') ?? 'Login failed');
+  async login(params: AuthenticateUserRequest): Promise<LoginResults> {
+    debugger;
+    const response = await apiClient.post<AuthenticateUserResult>('/auth/authenticate', params, {
+      withCredentials: true
+    });
+    if (response.status !== 200) {
+      return {
+        success: false,
+        errors: response.data?.errors ?? ['Login failed']
+      };
     }
-    jwtService.store(response.token);
-    return response.token;
+    return {
+      success: true,
+      errors: [],
+      userClaims: response.data.userClaims,
+    };
   }
 
-  logout(): void {
-    jwtService.remove();
+async logout(): Promise<void> {
+    await apiClient.post('/auth/logout', {}, {
+        withCredentials: true
+    });
+    // jwtService.remove();}
+  }
+
+  async getCurrentUserClaims(): Promise<UserClaim[] | null> {
+    try {
+      const response = await apiClient.get<UserClaim[]>('/auth/claims', {
+        withCredentials: true
+      });
+      if (response.status === 200 && response.data) {
+        return response.data;
+      }
+      return null;
+    } catch (error) {
+      logger.error("Failed to fetch user claims", error as Error, { component: "AuthService" });
+      return null;
+    }
   }
 }
 

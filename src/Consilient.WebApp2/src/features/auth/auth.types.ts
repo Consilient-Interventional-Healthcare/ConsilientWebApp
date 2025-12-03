@@ -1,27 +1,26 @@
 import type { User } from "@/types/db.types";
+import type { CurrentUser } from "./currentUser.types";
 
-export interface UserClaims {
-  id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
+export interface UserClaim {
+  type: string;
+  value: string;
+}
+export interface LoginResults {
+  success: boolean;
+  errors: string[];
+  userClaims?: UserClaim[] | undefined;
 }
 export interface IAuthService {
   linkExternalAccount(params: LinkExternalLoginRequest): Promise<void>;
   authenticate(providerKey: string): Promise<string>;
-  login(params: AuthenticateUserRequest): Promise<string>;
-  logout(): void;
+  login(params: AuthenticateUserRequest): Promise<LoginResults>;
+  logout(): Promise<void>;
+  getCurrentUserClaims(): Promise<UserClaim[] | null>;
 }
 
-export interface IJwtService {
-  store(token: string): void;
-  retrieve(): string | null;
-  remove(): void;
-  decode(): UserClaims | null;
-}
 export interface AuthContextType {
-  user: UserClaims | null;
-  login: (credentials?: LoginCredentials) => Promise<void>;
+  user: CurrentUser | null;
+  login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -49,14 +48,14 @@ export interface LinkExternalLoginRequest {
 }
 
 export interface AuthenticateUserRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface AuthenticateUserResult {
   succeeded: boolean;
-  token?: string;
   errors?: string[];
+  userClaims?: UserClaim[];
 }
 
 export type { User };

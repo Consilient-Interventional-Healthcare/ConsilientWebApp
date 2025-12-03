@@ -12,6 +12,7 @@ using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
+using Consilient.Users.Services;
 using Consilient.Visits.Services;
 using GraphQL.Server.Ui.GraphiQL;
 using Microsoft.AspNetCore.Authorization;
@@ -58,13 +59,15 @@ namespace Consilient.Api
                 builder.Services.RegisterInsuranceServices();
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
+                builder.Services.RegisterUserServices(new UserServiceConfiguration { AutoProvisionUser = applicationSettings.Authentication.AutoProvisionUser }, applicationSettings.Authentication.Jwt);
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterLogging(logger);
                 builder.Services.RegisterHangfire(hangfireConnectionString);
 
                 // Load allowed origins from configuration (expect explicit origins). Default to secure localhost for development.
                 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
-                builder.Services.RegisterCors(allowedOrigins);
+                builder.Services.RegisterCors(true, allowedOrigins);
+                builder.Services.RegisterRateLimiting();
 
                 // Ensure cookies set by the app are marked secure, HttpOnly and have a sane SameSite.
                 builder.Services.RegisterCookiePolicy();
@@ -93,7 +96,7 @@ namespace Consilient.Api
                     });
                 builder.Services.AddSwaggerGen(builder.Environment.ApplicationName, version);
                 builder.Services.AddSignalR();
-
+                builder.ConfigureAuthentication(applicationSettings.Authentication.Jwt);
 
                 var app = builder.Build();
 
@@ -108,6 +111,13 @@ namespace Consilient.Api
                     });
                 }
 
+                // Apply cookie policy before authentication so cookies are always marked secure/httpOnly.
+                app.UseCookiePolicy();
+
+                // IMPORTANT: run CORS before any middleware that may issue redirects (HTTPS redirection or auth).
+                // This prevents preflight (OPTIONS) being redirected which browsers disallow.
+                app.UseCors(Init.CorsServiceCollectionExtensions.DefaultCorsPolicyName); // Must be before UseAuthentication/UseAuthorization and before HTTPS redirect
+
                 if (app.Environment.IsProduction())
                 {
                     app.UseHttpsRedirection();
@@ -118,12 +128,6 @@ namespace Consilient.Api
                     // In non-production, still prefer HTTPS for cookie security during local testing
                     app.UseHttpsRedirection();
                 }
-
-                // Apply cookie policy before authentication so cookies are always marked secure/httpOnly.
-                app.UseCookiePolicy();
-
-                // Use the named CORS policy
-                app.UseCors(Init.CorsServiceCollectionExtensions.DefaultCorsPolicyName); // Must be before UseAuthentication/UseAuthorization
 
                 // Rate limiting middleware (applies GlobalLimiter by default)
                 app.UseRateLimiter();

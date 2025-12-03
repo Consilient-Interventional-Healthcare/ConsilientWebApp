@@ -33,13 +33,6 @@ export interface AppSettings {
     isProduction: boolean;
     isDebugMode: boolean;
   };
-  msal?: {
-    clientId: string;
-    tenantId: string;
-    authority: string;
-    redirectUri: string;
-    scopes: string[];
-  };
   logging: {
     enabled: boolean;
     logsEndpoint: string;
@@ -56,11 +49,6 @@ declare global {
       APP_ENABLE_DEBUG_MODE?: string;
       APP_DISABLE_AUTH?: string;
       APP_USE_MOCK_SERVICES?: string;
-      APP_MSAL_CLIENT_ID?: string;
-      APP_MSAL_TENANT_ID?: string;
-      APP_MSAL_AUTHORITY?: string;
-      APP_MSAL_REDIRECT_URI?: string;
-      APP_MSAL_SCOPES?: string;
       APP_ENABLE_REMOTE_LOGGING?: string;
     };
   }
@@ -96,12 +84,6 @@ function createAppSettings(): AppSettings {
   const isDebugMode = enableDebugMode || isDevelopment;
   const enableRemoteLogging = isProduction || getEnv('APP_ENABLE_REMOTE_LOGGING') === 'true';
 
-  // Build MSAL configuration if available
-  const clientId = getEnv('APP_MSAL_CLIENT_ID');
-  const tenantId = getEnv('APP_MSAL_TENANT_ID');
-  const authority = getEnv('APP_MSAL_AUTHORITY');
-  const redirectUri = getEnv('APP_MSAL_REDIRECT_URI');
-  const scopes = getEnv('APP_MSAL_SCOPES');
 
   const appSettings: AppSettings = {
     api: {
@@ -129,16 +111,6 @@ function createAppSettings(): AppSettings {
     },
   };
 
-  if (clientId && tenantId && authority && redirectUri) {
-    appSettings.msal = {
-      clientId,
-      tenantId,
-      authority,
-      redirectUri,
-      scopes: scopes ? scopes.split(',').map(s => s.trim()) : ['User.Read'],
-    };
-  }
-
   // Log in development
   if (isDevelopment) {
     console.log('🔧 App Settings:', {
@@ -147,8 +119,7 @@ function createAppSettings(): AppSettings {
       isDevelopment,
       isProduction,
       isDebugMode,
-      features: appSettings.features,
-      hasMsal: !!appSettings.msal,
+      features: appSettings.features
     });
   }
 

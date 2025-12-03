@@ -3,31 +3,28 @@ SET IDENTITY_INSERT [Identity].[Roles] ON;
 INSERT INTO [Identity].[Roles] ([Id], [Name], [NormalizedName], [ConcurrencyStamp])
 VALUES
 (1, N'Administrator', N'ADMINISTRATOR', N'2d60affb-ee2e-4c83-827f-7dfe4b09d7d8'),
-(2, N'Nurse', N'NURSE', N'0a117038-87bd-4155-97e9-1e80b6c3c387', '2025-11-24T00:00:00.0000000Z', '2025-11-24T00:00:00.0000000Z'),
-(3, N'Provider', N'PROVIDER', N'8a56674e-8bb2-47fb-8d9a-e020060bd234', '2025-11-24T00:00:00.0000000Z', '2025-11-24T00:00:00.0000000Z')
+(2, N'Nurse', N'NURSE', N'0a117038-87bd-4155-97e9-1e80b6c3c387'),
+(3, N'Provider', N'PROVIDER', N'8a56674e-8bb2-47fb-8d9a-e020060bd234')
 
 SET IDENTITY_INSERT [Identity].[Roles] OFF;
 GO
 
 SET IDENTITY_INSERT [Identity].[Users] ON;
 
-INSERT INTO [Identity].[Users] ([Id], [UserName], [NormalizedUserName], [Email], [NormalizedEmail], [EmailConfirmed], [PasswordHash], [SecurityStamp], [ConcurrencyStamp])
+INSERT INTO [Identity].[Users] ([Id], [UserName], [NormalizedUserName], [Email], [NormalizedEmail], [EmailConfirmed], [PasswordHash], [SecurityStamp], [ConcurrencyStamp], [AccessFailedCount], [PhoneNumberConfirmed], [TwoFactorEnabled], [LockoutEnabled])
 VALUES
-(100, N'administrator@local', N'ADMINISTRATOR@LOCAL', N'administrator@local', N'ADMINISTRATOR@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEEVonWu/1RVWSDCzUBZQEi59RYkR9JHgl48AIMnq7B/vj7694rqUlH8Kj0H+HD3U1w==', N'9d61551f-345f-4e22-b0c3-4a0b8f66a17b', N'9b3ad633-1a69-4496-aa46-c14a2e6d673d'),
-(101, N'nurse@local', N'NURSE@LOCAL', N'nurse@local', N'NURSE@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEAQDAp+CRqp95qwrVJSE/9D/zp28vGRF2msMuzv47JEwtx6yAqLg0mrMooEeqgA8wQ==', N'6f785a07-c956-43e1-85f9-c1d150bf3cfb', N'e1e670fd-ecfa-4b5c-a75d-588d63a65c28'),
-(102, N'provider@local', N'PROVIDER@LOCAL', N'provider@local', N'PROVIDER@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEHQ+HMgotyBZSsNsCG3wug9vImtL5gZDMi2wiTyVd3A0hTZF8AM+g9mYrOvdoK9J+g==', N'04c3e172-298d-4007-8aa5-6c8e9118ffbd', N'1cc6803b-097b-4167-b10f-801b0f86493f')
+(100, N'administrator@local', N'ADMINISTRATOR@LOCAL', N'administrator@local', N'ADMINISTRATOR@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEEVonWu/1RVWSDCzUBZQEi59RYkR9JHgl48AIMnq7B/vj7694rqUlH8Kj0H+HD3U1w==', N'9d61551f-345f-4e22-b0c3-4a0b8f66a17b', N'9b3ad633-1a69-4496-aa46-c14a2e6d673d', 0, 0, 0, 0),
+(101, N'nurse@local', N'NURSE@LOCAL', N'nurse@local', N'NURSE@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEAQDAp+CRqp95qwrVJSE/9D/zp28vGRF2msMuzv47JEwtx6yAqLg0mrMooEeqgA8wQ==', N'6f785a07-c956-43e1-85f9-c1d150bf3cfb', N'e1e670fd-ecfa-4b5c-a75d-588d63a65c28', 0, 0, 0, 0),
+(102, N'provider@local', N'PROVIDER@LOCAL', N'provider@local', N'PROVIDER@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEHQ+HMgotyBZSsNsCG3wug9vImtL5gZDMi2wiTyVd3A0hTZF8AM+g9mYrOvdoK9J+g==', N'04c3e172-298d-4007-8aa5-6c8e9118ffbd', N'1cc6803b-097b-4167-b10f-801b0f86493f', 0, 0, 0, 0)
 
 SET IDENTITY_INSERT [Identity].[Users] OFF;
 GO
-
-SET IDENTITY_INSERT [Identity].[UserRoles] ON;
 
 INSERT INTO [Identity].[UserRoles] ([UserId], [RoleId])
 VALUES
 (100, 1),
 (101, 2),
 (102, 3)
-SET IDENTITY_INSERT [Identity].[UserRoles] OFF;
 
 SET IDENTITY_INSERT [Clinical].[Facilities] ON;
 GO

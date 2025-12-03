@@ -9,24 +9,14 @@
 //   APP_ENABLE_DEBUG_MODE: "false",
 //   APP_DISABLE_AUTH: "false",
 //   APP_USE_MOCK_SERVICES: "false",
-//   APP_MSAL_CLIENT_ID: "",
-//   APP_MSAL_TENANT_ID: "",
-//   APP_MSAL_AUTHORITY: "",
-//   APP_MSAL_REDIRECT_URI: "",
-//   APP_MSAL_SCOPES: "User.Read"
 // };
 
 window.__ENV = {
-  APP_API_BASE_URL: "http://localhost:5000/api",
+  APP_API_BASE_URL: "https://localhost:8091",
   APP_ENV: "development",
   APP_ENABLE_DEBUG_MODE: "true",
-  APP_DISABLE_AUTH: "true",
-  APP_USE_MOCK_SERVICES: "true",
-  APP_MSAL_CLIENT_ID: "",
-  APP_MSAL_TENANT_ID: "",
-  APP_MSAL_AUTHORITY: "",
-  APP_MSAL_REDIRECT_URI: "",
-  APP_MSAL_SCOPES: "User.Read"
+  APP_DISABLE_AUTH: "false",
+  APP_USE_MOCK_SERVICES: "false",
 };
 
 console.log('window.__ENV loaded:', window.__ENV);

@@ -98,8 +98,8 @@ BEGIN
 
     CREATE TABLE [Identity].[UserTokens] (
         [UserId] int NOT NULL,
-        [LoginProvider] nvarchar(450) NOT NULL,
-        [Name] nvarchar(450) NOT NULL,
+        [LoginProvider] nvarchar(128) NOT NULL,
+        [Name] nvarchar(128) NOT NULL,
         [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,

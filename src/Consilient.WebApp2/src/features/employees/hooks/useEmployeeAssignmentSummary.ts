@@ -14,6 +14,7 @@ export interface GroupedEmployee {
  */
 export function useEmployeeAssignmentSummary(employees: EmployeeWithVisitCount[]): GroupedEmployee[] {
   return useMemo(() => {
+    if (!Array.isArray(employees)) return [];
     const grouped = employees.reduce<Record<EmployeeId, GroupedEmployee>>((acc, visit: EmployeeWithVisitCount) => {
       const key = visit.employeeId;
       acc[key] ??= {

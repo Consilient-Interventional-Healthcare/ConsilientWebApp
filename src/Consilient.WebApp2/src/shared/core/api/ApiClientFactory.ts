@@ -1,6 +1,5 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import appSettings from '@/config/index';
-import { addAuthToken } from './interceptors/request/addAuthToken';
 import { handleRequestError } from './interceptors/request/handleRequestError';
 import { logSuccessfulRequest } from './interceptors/response/logSuccessfulRequest';
 import { handleResponseError } from './interceptors/response/handleResponseError';
@@ -51,13 +50,16 @@ export class ApiClientFactory {
   private static configureInterceptors(axiosInstance: AxiosInstance): void {
     // Request interceptor - add authentication and performance tracking
     axiosInstance.interceptors.request.use(
-      async (config) => addAuthToken(config),
+      (config) => config,
       (error: AxiosError) => handleRequestError(error)
     );
 
     // Response interceptor - handle success and errors with retry logic
     axiosInstance.interceptors.response.use(
-      (response) => logSuccessfulRequest(response),
+      (response) => {
+        logSuccessfulRequest(response);
+        return response;
+      },
       async (error: AxiosError<{ message?: string }>) => handleResponseError(error, axiosInstance)
     );
   }

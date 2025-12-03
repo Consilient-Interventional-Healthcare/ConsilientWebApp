@@ -1,7 +1,6 @@
 import axios, { type AxiosError, type AxiosInstance } from 'axios';
 import { HTTP_STATUS } from '@/constants';
 import { ApiError, type RetryableRequestConfig } from '../../api.types';
-import { handleUnauthorizedError } from './handleUnauthorizedError';
 import { shouldRetryRequest } from './shouldRetryRequest';
 import { retryRequest } from './retryRequest';
 import { logFailedRequest } from './logFailedRequest';
@@ -25,7 +24,7 @@ export async function handleResponseError(
   
   // Try to refresh token on 401 Unauthorized
   if (status === HTTP_STATUS.UNAUTHORIZED && !originalRequest._tokenRetry) {
-    return handleUnauthorizedError(originalRequest, message, status, error, axiosInstance);
+    return Promise.reject(new ApiError(message, status, error.code, error.response?.data));
   }
 
   // Retry logic for network errors and 5xx server errors

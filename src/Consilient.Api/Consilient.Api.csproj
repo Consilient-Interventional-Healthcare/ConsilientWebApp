@@ -36,4 +36,6 @@
     <ProjectReference Include="..\Consilient.Visits.Service\Consilient.Visits.Services.csproj" />
   </ItemGroup>
 
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="https://www.schemastore.org/appsscript.json" /></VisualStudio></ProjectExtensions>
+
 </Project>

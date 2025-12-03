@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+using Consilient.Data.Entities.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -8,7 +8,7 @@ namespace Consilient.Users.Services
 {
     internal class TokenGenerator(TokenGeneratorConfiguration _config)
     {
-        public string GenerateToken(IdentityUser user)
+        public string GenerateToken(User user)
         {
             var jwtSecret = _config.Secret;
             if (string.IsNullOrEmpty(jwtSecret))
@@ -21,7 +21,7 @@ namespace Consilient.Users.Services
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
                 new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
             };

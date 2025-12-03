@@ -14,8 +14,6 @@
     "docker:run": "docker run -p 8080:80 consilient-webapp"
   },
   "dependencies": {
-    "@azure/msal-browser": "^4.26.1",
-    "@azure/msal-react": "^3.0.21",
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.1",

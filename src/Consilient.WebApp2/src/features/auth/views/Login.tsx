@@ -1,24 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { logger } from "@/shared/core/logging/Logger";
-import { msalService } from "@/features/auth/services/MsalService";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleMicrosoftLogin = async () => {
-    logger.info("Microsoft login initiated", { component: "Login", action: "oauth_init" });
-    try {
-      await login();
-    } catch (error) {
-      logger.error("Microsoft login failed", error as Error, { component: "Login" });
-      // Error is already logged, MSAL will handle redirect
+  useEffect(() => {
+    logger.debug('Login component - useEffect triggered, isAuthenticated:', { component: 'Login', isAuthenticated, currentPath: window.location.pathname });
+    if (isAuthenticated) {
+      logger.info('Login component - User is authenticated, redirecting to dashboard', { component: 'Login' });
+      void navigate("/");
+    } else {
+      logger.debug('Login component - User not authenticated, staying on login page', { component: 'Login' });
     }
+  }, [isAuthenticated, navigate]);
+
+  const handleMicrosoftLogin = async () => {
+    setError(null);
+    return Promise.resolve();
   };
 
   const handleRegularLogin = async (e: React.FormEvent) => {
@@ -32,17 +38,18 @@ export default function Login() {
         return;
       }
       await login({ username, password });
+      logger.info('Login component - Regular login successful', { component: 'Login', username });
       setUsername("");
       setPassword("");
       setError(null);
-    } catch {
-      setError("Login failed. Please try again.");
+    } catch (error) {
+      logger.error("Login failed", error as Error, { component: "Login" });
+      setError((error as Error).message || "Login failed. Please try again.");
     } finally {
+      logger.debug('Login component - Regular login attempt finished', { component: 'Login' });
       setLoading(false);
     }
   };
-
-  const isMsalConfigured = msalService.isConfigured();
 
   return (
     <div>
@@ -72,7 +79,6 @@ export default function Login() {
       </form>
 
       <div className="space-y-3">
-        {isMsalConfigured && (
           <Button
             onClick={handleMicrosoftLogin}
             variant="outline"
@@ -86,7 +92,6 @@ export default function Login() {
             </svg>
             Continue with Microsoft
           </Button>
-        )}
       </div>
     </div>
   );

@@ -3,59 +3,70 @@ import type {
   LinkExternalLoginRequest,
   AuthenticateUserRequest,
   User,
+  LoginResults,
+  UserClaim,
 } from "@/features/auth/auth.types";
-import { jwtService } from "@/features/auth/services/JwtService";
 import { dataProvider } from "@/data/DataProvider";
 
-function createMockJwt(payload: object): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const encode = (obj: object) => btoa(JSON.stringify(obj));
-  // No signature for mock
-  return `${encode(header)}.${encode(payload)}.`;
-}
-
 export class AuthServiceMock implements IAuthService {
-  async linkExternalAccount(params: LinkExternalLoginRequest): Promise<void> {
+  linkExternalAccount(params: LinkExternalLoginRequest): Promise<void> {
     if (params.providerKey === "fail") {
-      return Promise.reject(new Error("Failed to link external account"));
+      throw new Error("Failed to link external account");
     }
+    // No-op for mock
     return Promise.resolve();
   }
 
-  async authenticate(providerKey: string): Promise<string> {
+  authenticate(providerKey: string): Promise<string> {
     if (providerKey === "fail") {
-      return Promise.reject(new Error("Authentication failed"));
+      throw new Error("Authentication failed");
     }
     const users = dataProvider.getTable<User>("users");
-    const user =
-      users.find((u) =>
-        u.externalProviders?.some((ep) => ep.providerKey === providerKey)
-      ) ?? null;
+    const user = users.find((u) =>
+      u.externalProviders?.some((ep) => ep.providerKey === providerKey)
+    ) ?? null;
     if (!user) {
-      return Promise.reject(new Error("User not found"));
+      throw new Error("User not found");
     }
-    const token = createMockJwt(user);
-    jwtService.store(token);
-    return Promise.resolve(token);
+    // Return a mock token string
+    return Promise.resolve("mock-token");
   }
 
-  async login(params: AuthenticateUserRequest): Promise<string> {
-    if (params.email === "fail@example.com") {
-      return Promise.reject(new Error("Login failed"));
+  login(params: AuthenticateUserRequest): Promise<LoginResults> {
+    if (params.username === "fail@example.com") {
+      throw new Error("Login failed");
     }
     const [user = null] = dataProvider.query<User>(
       "SELECT * FROM users WHERE email = ?",
-      [params.email]
+      [params.username]
     );
     if (!user) {
-      return Promise.reject(new Error("User not found"));
+      throw new Error("User not found");
     }
-    const token = createMockJwt(user);
-    jwtService.store(token);
-    return Promise.resolve(token);
+    // Return mock claims
+    const claims: UserClaim[] = [
+      { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", value: user.id.toString() },
+      { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", value: user.firstName + " " + user.lastName },
+      { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", value: user.email }
+    ];
+    return Promise.resolve({
+      success: true,
+      errors: [],
+      userClaims: claims
+    });
   }
 
-  logout(): void {
-    jwtService.remove();
+  async logout(): Promise<void> {
+    // No-op for mock
+  }
+
+    getCurrentUserClaims(): Promise<UserClaim[] | null> {
+    // Return a fixed mock user claims for demonstration
+    const claims: UserClaim[] = [
+      { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", value: "1" },
+      { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", value: "Mock User" },
+      { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", value: "mockuser@example.com" }
+    ];
+    return Promise.resolve(claims);
   }
 }
