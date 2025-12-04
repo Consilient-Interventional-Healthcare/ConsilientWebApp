@@ -1,11 +1,15 @@
 import type { LoginResults, LinkExternalLoginRequest, LinkExternalLoginResult, AuthenticateUserRequest, AuthenticateUserResult, IAuthService, UserClaim } from '@/features/auth/auth.types';
 import apiClient from '@/shared/core/api/ApiClient';
 import { logger } from "@/shared/core/logging/Logger";
-
+import { AppSettingsServiceFactory } from '@/shared/core/appSettings/AppSettingsServiceFactory';
+const settings = await AppSettingsServiceFactory.create().getAppSettings()
 
 export class AuthService implements IAuthService {
 
   async linkExternalAccount(params: LinkExternalLoginRequest): Promise<void> {
+    if (!settings.ExternalLoginEnabled) {
+      throw new Error("External login is not enabled.");
+    }
     const response = await apiClient.post<LinkExternalLoginResult>('/auth/link-external', params);
     if (!response.data.succeeded) {
       throw new Error(response.data.errors?.join(', ') ?? 'Failed to link external account');
@@ -15,6 +19,9 @@ export class AuthService implements IAuthService {
   }
 
   authenticate(_providerKey: string): Promise<string> {
+    if (!settings.ExternalLoginEnabled) {
+      throw new Error("External login is not enabled.");
+    }
     throw new Error("Not implemented");
     // const request: { providerKey: string } = { providerKey };
     // const response = await apiClient.post<AuthenticateUserResult>('/auth/authenticate', request);

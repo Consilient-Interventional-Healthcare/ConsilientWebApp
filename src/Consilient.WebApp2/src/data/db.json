@@ -81,30 +81,31 @@
   ],
   "users": [
     {
-      "id": 1,
-      "email": "mockuser@example.com",
-      "firstName": "Mock",
-      "lastName": "User",
-      "role": "physician",
-      "externalProviders": [
-        {
-          "providerName": "Microsoft",
-          "providerKey": "user-1"
-        }
-      ]
+      "id": 100,
+      "email": "administrator@local",
+      "firstName": "Administrator",
+      "lastName": "Local",
+      "role": "administrator",
+      "emailConfirmed": true,
+      "password": "Hernan"
     },
     {
-      "id": 2,
-      "email": "scribe@example.com",
-      "firstName": "Sally",
-      "lastName": "Scribe",
-      "role": "scribe",
-      "externalProviders": [
-        {
-          "providerName": "Microsoft",
-          "providerKey": "user-2"
-        }
-      ]
+      "id": 101,
+      "email": "nurse@local",
+      "firstName": "Nurse",
+      "lastName": "Local",
+      "role": "nurse",
+      "emailConfirmed": true,
+      "password": "Hernan"
+    },
+    {
+      "id": 102,
+      "email": "provider@local",
+      "firstName": "Provider",
+      "lastName": "Local",
+      "role": "provider",
+      "emailConfirmed": true,
+      "password": "Hernan"
     }
   ],
   "patients": [

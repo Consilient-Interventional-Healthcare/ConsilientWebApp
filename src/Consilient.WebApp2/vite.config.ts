@@ -8,12 +8,12 @@ import fs from 'fs'
 let httpsConfig: undefined | { key: Buffer; cert: Buffer } = undefined;
 if (
   process.env.NODE_ENV === 'development' &&
-  fs.existsSync('localhost-key.pem') &&
-  fs.existsSync('localhost.pem')
+  fs.existsSync('.local/localhost-key.pem') &&
+  fs.existsSync('.local/localhost.pem')
 ) {
   httpsConfig = {
-    key: fs.readFileSync('localhost-key.pem'),
-    cert: fs.readFileSync('localhost.pem'),
+    key: fs.readFileSync('.local/localhost-key.pem'),
+    cert: fs.readFileSync('.local/localhost.pem'),
   };
 }
 

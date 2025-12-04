@@ -1,5 +1,4 @@
-﻿using Azure.Core;
-using Consilient.Data.Entities.Identity;
+﻿using Consilient.Data.Entities.Identity;
 using Consilient.Users.Contracts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Identity.Client;
@@ -20,8 +19,9 @@ namespace Consilient.Users.Services
         public async Task<AuthenticateUserResult> AuthenticateExternalAsync(ExternalAuthenticateRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
+            var provider = "Microsoft";
 
-            if (string.IsNullOrWhiteSpace(request.Provider) || !string.Equals(request.Provider, "Microsoft", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(request.Provider) || !string.Equals(request.Provider, provider, StringComparison.OrdinalIgnoreCase))
             {
                 return new AuthenticateUserResult(false, null, null, ["Unsupported external provider."]);
             }
@@ -31,47 +31,8 @@ namespace Consilient.Users.Services
                 return new AuthenticateUserResult(false, null, null, ["id_token is required."]);
             }
 
-            var (idToken, accessToken, account, userEmail, userName) = await ValidateCode(request.IdToken);
+            var (idToken, _, account, userEmail, userName) = await ValidateCode(request.IdToken);
 
-
-
-
-            //// Build OpenID Connect metadata address and fetch configuration
-            //var metadataAddress = $"https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration";
-
-            //OpenIdConnectConfiguration openIdConfig;
-            //try
-            //{
-            //    var httpDocumentRetriever = new HttpDocumentRetriever { RequireHttps = true };
-            //    var cfgManager = new ConfigurationManager<OpenIdConnectConfiguration>(metadataAddress, new OpenIdConnectConfigurationRetriever(), httpDocumentRetriever);
-            //    openIdConfig = await cfgManager.GetConfigurationAsync(CancellationToken.None).ConfigureAwait(false);
-            //}
-            //catch (Exception)
-            //{
-            //    return new AuthenticateUserResult(false, null, null, ["Failed to retrieve OpenID configuration."]);
-            //}
-
-            //// Prepare token validation parameters
-            //var validationParameters = new TokenValidationParameters
-            //{
-            //    ValidIssuer = openIdConfig.Issuer,
-            //    ValidAudiences = new[] { clientId },
-            //    IssuerSigningKeys = openIdConfig.SigningKeys,
-            //    ValidateIssuer = true,
-            //    ValidateAudience = true,
-            //    ValidateLifetime = true,
-            //    ValidateIssuerSigningKey = true,
-            //};
-
-            //ClaimsPrincipal principal;
-            //SecurityToken validatedToken;
-            //var tokenHandler = new JwtSecurityTokenHandler();
-            //try
-            //{
-            //    // Clear inbound map to preserve original claim types like "sub", "email", "preferred_username"
-            //    tokenHandler.InboundClaimTypeMap.Clear();
-            //    principal = tokenHandler.ValidateToken(request.IdToken, validationParameters, out validatedToken);
-            //}
             //catch (SecurityTokenExpiredException)
             //{
             //    return new AuthenticateUserResult(false, null, null, ["Token expired."]);
@@ -85,24 +46,18 @@ namespace Consilient.Users.Services
             //    return new AuthenticateUserResult(false, null, null, ["Failed to validate token."]);
             //}
 
-            // Extract claims
-            //var sub = principal.FindFirst("sub")?.Value;
-            //var email = principal.FindFirst("email")?.Value ?? principal.FindFirst("preferred_username")?.Value;
-            //var preferredUsername = principal.FindFirst("preferred_username")?.Value;
-
             if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(userEmail))
             {
                 return new AuthenticateUserResult(false, null, null, ["Required claims not present in token."]);
             }
 
             // enforce allowed email domains
-            if (!IsEmailDomainAllowed(userEmail))
+            if (!EmailDomainHelper.IsEmailDomainAllowed(userEmail, configuration.AllowedEmailDomains))
             {
                 return new AuthenticateUserResult(false, null, null, [ErrorMessages.EmailDomainNotAllowed]);
             }
 
             // Try find existing user by external login (provider + key)
-            var provider = "Microsoft";
             var existingLoginUser = await userManager.FindByLoginAsync(provider, idToken).ConfigureAwait(false);
             if (existingLoginUser != null)
             {
@@ -166,7 +121,7 @@ namespace Consilient.Users.Services
               .Create(conf.ClientId)
               .WithClientSecret(conf.ClientSecret)
               .WithAuthority($"https://login.microsoftonline.com/{conf.TenantId}")
-              .WithRedirectUri(redirectUri)
+              //.WithRedirectUri(redirectUri)
               .Build();
 
             // Exchange authorization code for tokens
@@ -194,13 +149,6 @@ namespace Consilient.Users.Services
                 return InvalidCredentials();
             }
 
-            // enforce allowed email domains
-            if (!IsEmailDomainAllowed(user.Email))
-            {
-                // Avoid leaking whether account exists — treat as invalid credentials
-                return InvalidCredentials();
-            }
-
             var passwordValid = await userManager.CheckPasswordAsync(user, request.Password).ConfigureAwait(false);
             if (!passwordValid)
             {
@@ -211,35 +159,6 @@ namespace Consilient.Users.Services
             var claimDtos = await GetClaimsAsync(user).ConfigureAwait(false);
             return new AuthenticateUserResult(true, tokenString, claimDtos);
         }
-
-        //public async Task<AuthenticateUserResult> AuthenticateUserAsync(AuthenticateUserRequest request)
-        //{
-        //    static AuthenticateUserResult InvalidCredentials() => new(false, null, null, [ErrorMessages.InvalidCredentials]);
-
-        //    // Validate credentials without creating a sign-in session
-        //    var user = await userManager.FindByNameAsync(request.UserName).ConfigureAwait(false);
-        //    if (user == null)
-        //    {
-        //        return InvalidCredentials();
-        //    }
-
-        //    // enforce allowed email domains
-        //    if (!IsEmailDomainAllowed(user.Email))
-        //    {
-        //        // Avoid leaking whether account exists — treat as invalid credentials
-        //        return InvalidCredentials();
-        //    }
-
-        //    var passwordValid = await userManager.CheckPasswordAsync(user, request.Password).ConfigureAwait(false);
-        //    if (!passwordValid)
-        //    {
-        //        return InvalidCredentials();
-        //    }
-        //    // generate JWT using token generator
-        //    var tokenString = _tokenGenerator.GenerateToken(user);
-        //    var claimDtos = await GetClaimsAsync(user).ConfigureAwait(false);
-        //    return new AuthenticateUserResult(true, tokenString, claimDtos);
-        //}
 
         public async Task<IEnumerable<ClaimDto>> GetClaimsAsync(string userName)
         {
@@ -254,7 +173,7 @@ namespace Consilient.Users.Services
         public async Task<LinkExternalLoginResult> LinkExternalLoginAsync(LinkExternalLoginRequest request)
         {
             // enforce allowed email domains for the request email
-            if (!IsEmailDomainAllowed(request.Email))
+            if (!EmailDomainHelper.IsEmailDomainAllowed(request.Email, configuration.AllowedEmailDomains))
             {
                 return new LinkExternalLoginResult(false, [ErrorMessages.EmailDomainNotAllowed]);
             }
@@ -321,7 +240,7 @@ namespace Consilient.Users.Services
                     return new LinkExternalLoginResult(false, [ErrorMessages.UserNotFound]);
                 }
 
-                if (!IsEmailDomainAllowed(user.Email))
+                if (!EmailDomainHelper.IsEmailDomainAllowed(user.Email, configuration.AllowedEmailDomains))
                 {
                     await transaction.RollbackAsync().ConfigureAwait(false);
                     return new LinkExternalLoginResult(false, [ErrorMessages.EmailDomainNotAllowed]);
@@ -371,29 +290,6 @@ namespace Consilient.Users.Services
             var claims = await userManager.GetClaimsAsync(user).ConfigureAwait(false);
             var claimDtos = claims.Select(c => new ClaimDto(c.Type, c.Value)).ToArray();
             return claimDtos;
-        }
-
-        private bool IsEmailDomainAllowed(string? email)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                return false;
-            }
-
-            var at = email.LastIndexOf('@');
-            if (at < 0 || at == email.Length - 1)
-            {
-                return false;
-            }
-
-            var domain = email[(at + 1)..].Trim().ToLowerInvariant();
-            var allowed = configuration.AllowedEmailDomains;
-            if (allowed == null || allowed.Length == 0)
-            {
-                return true; // no restriction configured
-            }
-
-            return allowed.Any(d => string.Equals(d?.Trim(), domain, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

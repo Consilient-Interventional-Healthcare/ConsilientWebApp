@@ -15,12 +15,5 @@ namespace Consilient.Api.Configuration
         public MicrosoftProviderSettings Microsoft { get; init; } = new MicrosoftProviderSettings();
     }
 
-    public sealed class MicrosoftProviderSettings
-    {
-        public bool Enabled { get; init; } = false;
-        public string? ClientId { get; init; }
-        public string? ClientSecret { get; init; } // keep in user secrets or KeyVault in production
-        public string? TenantId { get; init; } = "common";
-        public string? RedirectUri { get; init; }
-    }
+
 }

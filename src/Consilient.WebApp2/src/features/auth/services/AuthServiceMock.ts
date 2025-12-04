@@ -43,6 +43,9 @@ export class AuthServiceMock implements IAuthService {
     if (!user) {
       throw new Error("User not found");
     }
+    if (user.password !== params.password) {
+      throw new Error("Invalid password");
+    }
     // Return mock claims
     const claims: UserClaim[] = [
       { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", value: user.id.toString() },

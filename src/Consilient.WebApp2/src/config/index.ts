@@ -1,4 +1,3 @@
-
 // --- Types & Enums ---
 export enum Environment {
   Development = 'development',
@@ -21,9 +20,9 @@ export interface AppSettings {
     retryAttempts: number;
   };
   features: {
-    disableAuth: boolean;
     useMockServices: boolean;
     enableRemoteLogging: boolean;
+    enableExternalLoginMock: boolean;
   };
   app: {
     name: string;
@@ -47,7 +46,6 @@ declare global {
       APP_API_BASE_URL?: string;
       APP_ENV?: string;
       APP_ENABLE_DEBUG_MODE?: string;
-      APP_DISABLE_AUTH?: string;
       APP_USE_MOCK_SERVICES?: string;
       APP_ENABLE_REMOTE_LOGGING?: string;
     };
@@ -76,8 +74,8 @@ function createAppSettings(): AppSettings {
   const apiBaseUrl = getEnv('APP_API_BASE_URL') ?? '/api';
   const appEnv = validateAppEnv(getEnv('APP_ENV'));
   const enableDebugMode = getEnv('APP_ENABLE_DEBUG_MODE') === 'true';
-  const disableAuth = getEnv('APP_DISABLE_AUTH') === 'true';
   const useMockServices = getEnv('APP_USE_MOCK_SERVICES') === 'true';
+  const enableExternalLoginMock = getEnv('APP_ENABLE_EXTERNAL_LOGIN_MOCK') === 'true';
 
   const isProduction = appEnv === Environment.Production;
   const isDevelopment = appEnv === Environment.Development;
@@ -92,9 +90,9 @@ function createAppSettings(): AppSettings {
       retryAttempts: 3,
     },
     features: {
-      disableAuth,
       useMockServices,
       enableRemoteLogging,
+      enableExternalLoginMock,
     },
     app: {
       name: 'Consilient',

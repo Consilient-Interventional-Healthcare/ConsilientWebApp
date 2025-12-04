@@ -10,7 +10,6 @@ export interface HospitalizationStatus {
 export interface LogEntryType {
   label: string;
   value: string;
-  icon: string;
   color: string;
   icon: string;
 }
@@ -25,6 +24,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  password: string;
   role: string;
   externalProviders: ExternalProvider[];
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { AuthContext } from '@/features/auth/contexts/AuthContext';
 import { logger } from '@/shared/core/logging/Logger';
-import appSettings from '@/config';
 import { getAuthService } from '@/features/auth/services/AuthServiceFactory';
 
 import type { CurrentUser } from '@/features/auth/currentUser.types';
@@ -32,7 +31,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
+    const isAuthenticated = !!user;
     const initAuth = async () => {
+      if (!isAuthenticated) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       const claims = await authService.getCurrentUserClaims();
       if (claims) {
         const mappedUser = mapClaimsToCurrentUser(claims);
@@ -72,7 +77,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       login,
       logout,
       isLoading,
-      isAuthenticated: appSettings.features.disableAuth ? true : !!user
+      isAuthenticated: !!user
     }}>
       {children}
     </AuthContext.Provider>
