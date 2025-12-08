@@ -132,11 +132,11 @@ jobs:
           java -jar schemaspy/schemaspy.jar \
             -t mssql17 \
             -dp schemaspy/mssql-jdbc.jar \
-            -host localhost \
-            -port 1433 \
+            -host localhost:1433 \
             -db consilient_main \
             -u SA \
             -p "${{ env.SQL_PASSWORD }}" \
+            -connprops "trustServerCertificate\\=true" \
             -o docs/clinical \
             -s Clinical \
             -desc "Clinical Schema - Patient management and clinical operations" \
@@ -155,11 +155,11 @@ jobs:
           java -jar schemaspy/schemaspy.jar \
             -t mssql17 \
             -dp schemaspy/mssql-jdbc.jar \
-            -host localhost \
-            -port 1433 \
+            -host localhost:1433 \
             -db consilient_main \
             -u SA \
             -p "${{ env.SQL_PASSWORD }}" \
+            -connprops "trustServerCertificate\\=true" \
             -o docs/compensation \
             -s Compensation \
             -desc "Compensation Schema - Employee and provider data" \
@@ -178,11 +178,11 @@ jobs:
           java -jar schemaspy/schemaspy.jar \
             -t mssql17 \
             -dp schemaspy/mssql-jdbc.jar \
-            -host localhost \
-            -port 1433 \
+            -host localhost:1433 \
             -db consilient_main \
             -u SA \
             -p "${{ env.SQL_PASSWORD }}" \
+            -connprops "trustServerCertificate\\=true" \
             -o docs/all \
             -desc "Complete Database Documentation - All Schemas" \
             -norows \
