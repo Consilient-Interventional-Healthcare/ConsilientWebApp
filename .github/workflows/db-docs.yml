@@ -124,11 +124,11 @@ jobs:
             -O schemaspy/mssql-jdbc.jar
           echo "✅ SchemaSpy downloaded"
 
-      - name: Generate documentation
+      - name: Generate Clinical schema documentation
         run: |
-          mkdir -p docs
+          mkdir -p docs/clinical
           
-          echo "Generating schema documentation..."
+          echo "📋 Generating Clinical schema documentation..."
           java -jar schemaspy/schemaspy.jar \
             -t mssql17 \
             -dp schemaspy/mssql-jdbc.jar \
@@ -137,22 +137,61 @@ jobs:
             -db consilient_main \
             -u SA \
             -p "${{ env.SQL_PASSWORD }}" \
-            -o docs \
+            -o docs/clinical \
             -s Clinical \
-            -s Compensation \
-            -desc "Consilient Database Documentation - Auto-generated from schema" \
+            -desc "Clinical Schema - Patient management and clinical operations" \
             -norows \
             -vizjs \
             -imageformat svg \
-            -noimplied 2>&1 | tee schemaspy.log
+            -noimplied
           
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            echo "❌ SchemaSpy failed"
-            cat schemaspy.log
-            exit 1
-          fi
+          echo "✅ Clinical schema documentation generated"
+
+      - name: Generate Compensation schema documentation
+        run: |
+          mkdir -p docs/compensation
           
-          echo "✅ Documentation generated successfully"
+          echo "👥 Generating Compensation schema documentation..."
+          java -jar schemaspy/schemaspy.jar \
+            -t mssql17 \
+            -dp schemaspy/mssql-jdbc.jar \
+            -host localhost \
+            -port 1433 \
+            -db consilient_main \
+            -u SA \
+            -p "${{ env.SQL_PASSWORD }}" \
+            -o docs/compensation \
+            -s Compensation \
+            -desc "Compensation Schema - Employee and provider data" \
+            -norows \
+            -vizjs \
+            -imageformat svg \
+            -noimplied
+          
+          echo "✅ Compensation schema documentation generated"
+
+      - name: Generate combined schema documentation
+        run: |
+          mkdir -p docs/all
+          
+          echo "📊 Generating combined schema documentation..."
+          java -jar schemaspy/schemaspy.jar \
+            -t mssql17 \
+            -dp schemaspy/mssql-jdbc.jar \
+            -host localhost \
+            -port 1433 \
+            -db consilient_main \
+            -u SA \
+            -p "${{ env.SQL_PASSWORD }}" \
+            -o docs/all \
+            -desc "Complete Database Documentation - All Schemas" \
+            -norows \
+            -vizjs \
+            -imageformat svg \
+            -noimplied \
+            -all
+          
+          echo "✅ Combined documentation generated"
 
       - name: Get commit info
         id: commit
@@ -167,7 +206,7 @@ jobs:
           COMMIT_MSG: ${{ steps.commit.outputs.commit_msg }}
           COMMIT_AUTHOR: ${{ steps.commit.outputs.author }}
         run: |
-          cat > docs/home.html << 'EOF'
+          cat > docs/index.html << 'EOF'
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -323,16 +362,6 @@ jobs:
                       background: var(--primary-dark);
                   }
                   
-                  .badge {
-                      display: inline-block;
-                      padding: 0.25rem 0.75rem;
-                      background: #e8f4f8;
-                      border-radius: 12px;
-                      font-size: 0.85rem;
-                      color: var(--primary-color);
-                      font-weight: 500;
-                  }
-                  
                   @media (max-width: 768px) {
                       .container {
                           padding: 1rem;
@@ -385,7 +414,7 @@ jobs:
                               <li>Insurances</li>
                               <li>Service Types</li>
                           </ul>
-                          <a href="./schema-index.html?schema=Clinical" class="btn">View Clinical Schema →</a>
+                          <a href="./clinical/index.html" class="btn">View Clinical Schema →</a>
                       </div>
                       
                       <div class="schema-card">
@@ -396,29 +425,25 @@ jobs:
                               <li>Provider Management</li>
                               <li>Role Assignments</li>
                           </ul>
-                          <a href="./schema-index.html?schema=Compensation" class="btn">View Compensation Schema →</a>
+                          <a href="./compensation/index.html" class="btn">View Compensation Schema →</a>
                       </div>
                       
                       <div class="schema-card">
                           <h2>🔗 Entity Relationships</h2>
-                          <p>Interactive entity-relationship diagrams showing table connections and foreign keys.</p>
-                          <a href="./relationships.html" class="btn">View ER Diagram →</a>
+                          <p>Interactive entity-relationship diagrams showing table connections and foreign keys across all schemas.</p>
+                          <a href="./all/relationships.html" class="btn">View ER Diagram →</a>
                       </div>
                       
                       <div class="schema-card">
-                          <h2>📊 Database Overview</h2>
-                          <p>Complete database structure, statistics, and comprehensive schema documentation.</p>
-                          <a href="./schema-index.html" class="btn">View Full Documentation →</a>
+                          <h2>📊 Complete Database</h2>
+                          <p>View all schemas, tables, and relationships in a unified documentation.</p>
+                          <a href="./all/index.html" class="btn">View All Schemas →</a>
                       </div>
                   </div>
               </div>
           </body>
           </html>
           EOF
-          
-          # Use the enhanced page as the main index
-          mv docs/index.html docs/schema-index.html
-          mv docs/home.html docs/index.html
 
       - name: Generate summary
         run: |
@@ -429,6 +454,7 @@ jobs:
           echo "### Schemas Documented" >> $GITHUB_STEP_SUMMARY
           echo "- 📋 **Clinical** - Patient management and clinical operations" >> $GITHUB_STEP_SUMMARY
           echo "- 👥 **Compensation** - Employee and provider data" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 **Combined** - All schemas with cross-schema relationships" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Commit Info" >> $GITHUB_STEP_SUMMARY
           echo "- **SHA**: ${{ steps.commit.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
