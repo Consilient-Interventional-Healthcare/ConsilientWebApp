@@ -6,8 +6,8 @@ on:
       - main
       - login
     paths:
-      - 'src/.docker/Db/**/*.sql'
-      - '.github/workflows/db-docs.yml'
+      - "src/.docker/Db/**/*.sql"
+      - ".github/workflows/db-docs.yml"
   workflow_dispatch:
   # schedule:
   #   # Run weekly on Sundays at 2 AM UTC to catch any schema drift
@@ -25,23 +25,35 @@ concurrency:
 env:
   # Security: Fail workflow if SQL password secret is not configured
   SQL_PASSWORD: ${{ secrets.SQL_SA_PASSWORD }}
-  SQL_SERVER_VERSION: '2022-latest'
-  SCHEMASPY_VERSION: '6.2.4'
-  JDBC_VERSION: '12.4.2.jre11'
+  SQL_SERVER_VERSION: "2022-latest"
+  SCHEMASPY_VERSION: "6.2.4"
+  JDBC_VERSION: "12.4.2.jre11"
   # Migration version automatically detected from SQL files
-  DB_NAME: 'consilient_main'
+  DB_NAME: "consilient_main"
   WORKFLOW_TIMEOUT: 15
 
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ env.SQL_PASSWORD }}" ]; then
+            echo "❌ ERROR: SQL_SA_PASSWORD secret is not configured"
+            echo "Please configure the SQL_SA_PASSWORD secret in repository settings:"
+            echo "Settings → Secrets and variables → Actions → New repository secret"
+            echo "Name: SQL_SA_PASSWORD"
+            echo "Value: Your SQL Server SA password (e.g., YourStrong@Passw0rd)"
+            exit 1
+          fi
+          echo "✅ Required secrets are configured"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1  # Only need latest commit for metadata
+          fetch-depth: 1 # Only need latest commit for metadata
 
       - name: Verify SQL files exist
         run: |
@@ -67,8 +79,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Cache SchemaSpy dependencies
         id: cache-schemaspy
@@ -486,8 +498,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './docs'
-          retention-days: 30  # Keep artifacts for 30 days
+          path: "./docs"
+          retention-days: 30 # Keep artifacts for 30 days
 
       - name: Deploy to GitHub Pages
         id: deployment
