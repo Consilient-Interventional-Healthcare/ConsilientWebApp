@@ -23,10 +23,14 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SQL_PASSWORD: ${{ secrets.SQL_SA_PASSWORD || 'YourStrong@Passw0rd' }}
+  # Security: Fail workflow if SQL password secret is not configured
+  SQL_PASSWORD: ${{ secrets.SQL_SA_PASSWORD }}
   SQL_SERVER_VERSION: '2022-latest'
   SCHEMASPY_VERSION: '6.2.4'
   JDBC_VERSION: '12.4.2.jre11'
+  # Migration version automatically detected from SQL files
+  DB_NAME: 'consilient_main'
+  WORKFLOW_TIMEOUT: 15
 
 jobs:
   generate-docs:
@@ -37,20 +41,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Get full history for better commit info
+          fetch-depth: 1  # Only need latest commit for metadata
 
       - name: Verify SQL files exist
         run: |
+          set -e
           echo "🔍 Checking for SQL migration files..."
-          if [ -d "src/.docker/Db" ]; then
-            echo "✅ Found .docker/Db directory"
-            find src/.docker/Db -name "*.sql" -type f
-          else
+          if [ ! -d "src/.docker/Db" ]; then
             echo "❌ Directory src/.docker/Db not found"
             echo "📂 Repository structure:"
             ls -la
             exit 1
           fi
+
+          echo "✅ Found .docker/Db directory"
+          SQL_FILES=$(find src/.docker/Db -name "*.sql" -type f)
+          if [ -z "$SQL_FILES" ]; then
+            echo "❌ No SQL files found in src/.docker/Db"
+            exit 1
+          fi
+
+          echo "Found SQL files:"
+          echo "$SQL_FILES"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -64,53 +76,61 @@ jobs:
         with:
           path: schemaspy
           key: schemaspy-${{ env.SCHEMASPY_VERSION }}-jdbc-${{ env.JDBC_VERSION }}
+          restore-keys: |
+            schemaspy-${{ env.SCHEMASPY_VERSION }}-
+            schemaspy-
 
       - name: Setup SQL Server
         run: |
+          set -e
+
+          # Start SQL Server with optimized health check settings
           docker run -e "ACCEPT_EULA=Y" \
             -e "SA_PASSWORD=${{ env.SQL_PASSWORD }}" \
             -e "MSSQL_PID=Developer" \
             -p 1433:1433 \
             --name sql-server \
-            --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P ${{ env.SQL_PASSWORD }} -C -Q 'SELECT 1' -b -o /dev/null" \
-            --health-interval=10s \
-            --health-timeout=5s \
-            --health-retries=10 \
+            --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P '${{ env.SQL_PASSWORD }}' -C -Q 'SELECT 1' -b -o /dev/null" \
+            --health-interval=5s \
+            --health-timeout=3s \
+            --health-retries=12 \
+            --health-start-period=10s \
             -d mcr.microsoft.com/mssql/server:${{ env.SQL_SERVER_VERSION }}
-          
-          echo "Waiting for SQL Server to be healthy..."
-          timeout 90s bash -c 'until docker inspect --format="{{.State.Health.Status}}" sql-server | grep -q healthy; do sleep 2; done'
-          echo "✅ SQL Server is ready"
 
-      - name: Verify SQL Server connection
-        run: |
-          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -Q "SELECT @@VERSION" -b
+          echo "⏳ Waiting for SQL Server to be healthy (max 60s)..."
+          timeout 60s bash -c 'until docker inspect --format="{{.State.Health.Status}}" sql-server | grep -q healthy; do sleep 2; done'
+          echo "✅ SQL Server is ready"
 
       - name: Create database and run migrations
         run: |
-          echo "Creating database..."
+          set -e
+
+          echo "📦 Creating database ${{ env.DB_NAME }}..."
           docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
             -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -Q "CREATE DATABASE consilient_main" -b
-          
-          echo "Copying migration files..."
-          docker cp src/.docker/Db/consilient_main/01_init.sql sql-server:/tmp/
-          
-          echo "Running migrations..."
+            -C -Q "CREATE DATABASE ${{ env.DB_NAME }}" -b
+
+          echo "📋 Copying migration files..."
+          docker cp src/.docker/Db/${{ env.DB_NAME }}/01_init.sql sql-server:/tmp/
+
+          echo "⚙️ Running migrations..."
           docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
             -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -d consilient_main -i /tmp/01_init.sql -b
-          
+            -C -d ${{ env.DB_NAME }} -i /tmp/01_init.sql -b
+
           echo "✅ Database initialized successfully"
 
       - name: Verify schema creation
         run: |
+          set -e
+
+          echo "🔍 Verifying schemas were created..."
           docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
             -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -d consilient_main \
+            -C -d ${{ env.DB_NAME }} \
             -Q "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME IN ('Clinical', 'Compensation')" -b
+
+          echo "✅ Schemas verified"
 
       - name: Install SchemaSpy
         if: steps.cache-schemaspy.outputs.cache-hit != 'true'
@@ -124,87 +144,86 @@ jobs:
             -O schemaspy/mssql-jdbc.jar
           echo "✅ SchemaSpy downloaded"
 
-      - name: Generate Clinical schema documentation
+      - name: Generate schema documentation (parallel)
         run: |
-          mkdir -p docs/clinical
-          
-          echo "📋 Generating Clinical schema documentation..."
-          java -jar schemaspy/schemaspy.jar \
-            -t mssql17 \
+          set -e
+
+          # Common SchemaSpy parameters to reduce duplication
+          # -t: Database type (MSSQL 2017+)
+          # -norows: Skip row count (faster)
+          # -vizjs: Use viz.js for diagrams (no Graphviz needed)
+          # -imageformat svg: Use SVG for better quality
+          # -noimplied: Don't show implied relationships
+          SCHEMASPY_COMMON="-t mssql17 \
             -dp schemaspy/mssql-jdbc.jar \
             -host localhost:1433 \
-            -db consilient_main \
+            -db ${{ env.DB_NAME }} \
             -u SA \
-            -p "${{ env.SQL_PASSWORD }}" \
-            -connprops "trustServerCertificate\\=true" \
+            -p \"${{ env.SQL_PASSWORD }}\" \
+            -connprops \"trustServerCertificate\\=true\" \
+            -norows \
+            -vizjs \
+            -imageformat svg \
+            -noimplied"
+
+          # Create output directories
+          mkdir -p docs/{clinical,compensation,all}
+
+          echo "🚀 Starting parallel schema documentation generation..."
+
+          # Run all three schema generations in parallel for better performance
+          java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
             -o docs/clinical \
             -s Clinical \
-            -desc "Clinical Schema - Patient management and clinical operations" \
-            -norows \
-            -vizjs \
-            -imageformat svg \
-            -noimplied
-          
-          echo "✅ Clinical schema documentation generated"
+            -desc "Clinical Schema - Patient management and clinical operations" &
+          PID_CLINICAL=$!
 
-      - name: Generate Compensation schema documentation
-        run: |
-          mkdir -p docs/compensation
-          
-          echo "👥 Generating Compensation schema documentation..."
-          java -jar schemaspy/schemaspy.jar \
-            -t mssql17 \
-            -dp schemaspy/mssql-jdbc.jar \
-            -host localhost:1433 \
-            -db consilient_main \
-            -u SA \
-            -p "${{ env.SQL_PASSWORD }}" \
-            -connprops "trustServerCertificate\\=true" \
+          java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
             -o docs/compensation \
             -s Compensation \
-            -desc "Compensation Schema - Employee and provider data" \
-            -norows \
-            -vizjs \
-            -imageformat svg \
-            -noimplied
-          
-          echo "✅ Compensation schema documentation generated"
+            -desc "Compensation Schema - Employee and provider data" &
+          PID_COMPENSATION=$!
 
-      - name: Generate combined schema documentation
-        run: |
-          mkdir -p docs/all
-          
-          echo "📊 Generating combined schema documentation..."
-          java -jar schemaspy/schemaspy.jar \
-            -t mssql17 \
-            -dp schemaspy/mssql-jdbc.jar \
-            -host localhost:1433 \
-            -db consilient_main \
-            -u SA \
-            -p "${{ env.SQL_PASSWORD }}" \
-            -connprops "trustServerCertificate\\=true" \
+          java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
             -o docs/all \
             -desc "Complete Database Documentation - All Schemas" \
-            -norows \
-            -vizjs \
-            -imageformat svg \
-            -noimplied \
-            -all
-          
-          echo "✅ Combined documentation generated"
+            -all &
+          PID_ALL=$!
+
+          # Wait for all processes and check exit codes
+          echo "⏳ Waiting for Clinical schema generation..."
+          wait $PID_CLINICAL && echo "✅ Clinical schema complete" || { echo "❌ Clinical schema failed"; exit 1; }
+
+          echo "⏳ Waiting for Compensation schema generation..."
+          wait $PID_COMPENSATION && echo "✅ Compensation schema complete" || { echo "❌ Compensation schema failed"; exit 1; }
+
+          echo "⏳ Waiting for combined schema generation..."
+          wait $PID_ALL && echo "✅ Combined schema complete" || { echo "❌ Combined schema failed"; exit 1; }
+
+          echo "🎉 All schema documentation generated successfully"
 
       - name: Get commit info
         id: commit
         run: |
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "commit_msg=$(git log -1 --pretty=%B | head -1)" >> $GITHUB_OUTPUT
-          echo "author=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
+          # Properly escape commit message for use in HTML
+          SHA_SHORT=$(git rev-parse --short HEAD)
+          COMMIT_MSG=$(git log -1 --pretty=%B | head -1 | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+          AUTHOR=$(git log -1 --pretty=format:'%an' | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+
+          echo "sha_short=${SHA_SHORT}" >> $GITHUB_OUTPUT
+          echo "commit_msg=${COMMIT_MSG}" >> $GITHUB_OUTPUT
+          echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
+
+          # Get migration version from SQL file (extract from filename or content)
+          MIGRATION_VERSION=$(find src/.docker/Db -name "*.sql" -type f | head -1 | xargs basename | sed 's/_.*//' || echo "01_init")
+          echo "migration_version=${MIGRATION_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Create enhanced index page
         env:
           COMMIT_SHA: ${{ steps.commit.outputs.sha_short }}
           COMMIT_MSG: ${{ steps.commit.outputs.commit_msg }}
           COMMIT_AUTHOR: ${{ steps.commit.outputs.author }}
+          MIGRATION_VERSION: ${{ steps.commit.outputs.migration_version }}
         run: |
           cat > docs/index.html << 'EOF'
           <!DOCTYPE html>
@@ -389,11 +408,11 @@ jobs:
                           </div>
                           <div class="info-item">
                               <span class="info-label">Database</span>
-                              <span class="info-value">consilient_main</span>
+                              <span class="info-value">${DB_NAME}</span>
                           </div>
                           <div class="info-item">
                               <span class="info-label">Migration</span>
-                              <span class="info-value">20251124205308_Initial</span>
+                              <span class="info-value">${MIGRATION_VERSION}</span>
                           </div>
                           <div class="info-item">
                               <span class="info-label">Last Commit</span>
@@ -468,6 +487,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
+          retention-days: 30  # Keep artifacts for 30 days
 
       - name: Deploy to GitHub Pages
         id: deployment
@@ -484,6 +504,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker stop sql-server || true
-          docker rm sql-server || true
+          echo "🧹 Cleaning up Docker containers..."
+          docker stop sql-server 2>/dev/null || true
+          docker rm sql-server 2>/dev/null || true
           echo "✅ Cleanup completed"
