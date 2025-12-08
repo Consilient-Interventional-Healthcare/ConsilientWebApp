@@ -2,7 +2,6 @@ import { useEmployeesWithVisitCount } from '@/features/employees/services/Employ
 import EmployeeVisitTable from '@/features/dashboard/components/EmployeeVisitTable';
 import { useTodayDate } from '@/shared/hooks/useTodayDate';
 import { useEmployeeAssignmentSummary } from '@/features/employees/hooks/useEmployeeAssignmentSummary';
-import Loading from '@/shared/components/Loading';
 import { Button } from '@/shared/components/ui/button';
 
 export default function Dashboard() {
@@ -11,10 +10,6 @@ export default function Dashboard() {
   const { data: employees = [], isLoading, isError, error } = useEmployeesWithVisitCount(today);
 
   const groupedEmployees = useEmployeeAssignmentSummary(employees);
-
-  if (isLoading) {
-    return <Loading message="Loading dashboard data..." />;
-  }
 
   if (isError) {
     return (

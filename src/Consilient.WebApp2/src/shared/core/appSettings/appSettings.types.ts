@@ -1,5 +1,5 @@
 export interface AppSettings {
-  ExternalLoginEnabled: boolean
+  externalLoginEnabled: boolean
   // Add other shared app settings properties here
   // Example:
   // ApiTimeout: number

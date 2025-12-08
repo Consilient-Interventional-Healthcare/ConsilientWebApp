@@ -1,4 +1,5 @@
 ﻿using Consilient.Api.Configuration;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consilient.Api.Controllers
@@ -10,11 +11,12 @@ namespace Consilient.Api.Controllers
         private readonly ApplicationSettings _applicationSettings = applicationSettings;
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult GetSettings()
         {
             var settings = new
             {
-                ExternalLoginEnabled = _applicationSettings.Authentication.External?.Microsoft?.Enabled ?? false
+                ExternalLoginEnabled = _applicationSettings.Authentication?.UserService?.OAuth?.Enabled ?? false
             };
             return Ok(settings);
         }

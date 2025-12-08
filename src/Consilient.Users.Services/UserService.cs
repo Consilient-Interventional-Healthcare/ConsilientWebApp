@@ -1,271 +1,281 @@
 ﻿using Consilient.Data.Entities.Identity;
 using Consilient.Users.Contracts;
+using Consilient.Users.Contracts.OAuth;
+using Consilient.Users.Services.Helpers;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Identity.Client;
-using System.Security.Claims;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Consilient.Users.Services
 {
     public class UserService(
-        UserServiceConfiguration configuration,
+        IOptions<UserServiceConfiguration> configuration,
         UserManager<User> userManager,
-        TokenGeneratorConfiguration tokenGeneratorConfiguration,
-        Data.UsersDbContext dbContext
-    ) : IUserService
+        IOAuthProviderRegistry oauthProviderRegistry,
+        ITokenGenerator tokenGenerator,
+        ILogger<UserService> logger) : IUserService
     {
-        private readonly Data.UsersDbContext _dbContext = dbContext;
-        private readonly TokenGenerator _tokenGenerator = new(tokenGeneratorConfiguration);
+        private readonly UserServiceConfiguration _configuration = configuration?.Value ?? throw new ArgumentNullException(nameof(configuration));
+        private readonly ILogger<UserService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly IOAuthProviderRegistry _oauthProviderRegistry = oauthProviderRegistry ?? throw new ArgumentNullException(nameof(oauthProviderRegistry));
+        private readonly ITokenGenerator _tokenGenerator = tokenGenerator ?? throw new ArgumentNullException(nameof(tokenGenerator));
+        private readonly UserManager<User> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
 
-        public async Task<AuthenticateUserResult> AuthenticateExternalAsync(ExternalAuthenticateRequest request)
+        public async Task<AuthenticateUserResult> AuthenticateExternalAsync(
+            ExternalAuthenticateRequest request,
+            CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(request);
-            var provider = "Microsoft";
 
-            if (string.IsNullOrWhiteSpace(request.Provider) || !string.Equals(request.Provider, provider, StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(request.Provider))
             {
-                return new AuthenticateUserResult(false, null, null, ["Unsupported external provider."]);
+                _logger.LogWarning("Provider missing in external authentication request");
+                return IdentityHelper.CreateFailureResult(["Provider is required."]);
             }
 
-            if (string.IsNullOrWhiteSpace(request.IdToken))
+            if (!_oauthProviderRegistry.TryGetProvider(request.Provider, out var oauthService))
             {
-                return new AuthenticateUserResult(false, null, null, ["id_token is required."]);
+                _logger.LogWarning("Unsupported external provider requested: {Provider}", request.Provider);
+                return IdentityHelper.CreateFailureResult(["Unsupported external provider."]);
             }
 
-            var (idToken, _, account, userEmail, userName) = await ValidateCode(request.IdToken);
-
-            //catch (SecurityTokenExpiredException)
-            //{
-            //    return new AuthenticateUserResult(false, null, null, ["Token expired."]);
-            //}
-            //catch (SecurityTokenException)
-            //{
-            //    return new AuthenticateUserResult(false, null, null, ["Invalid token."]);
-            //}
-            //catch (Exception)
-            //{
-            //    return new AuthenticateUserResult(false, null, null, ["Failed to validate token."]);
-            //}
-
-            if (string.IsNullOrWhiteSpace(userName) || string.IsNullOrWhiteSpace(userEmail))
+            if (string.IsNullOrWhiteSpace(request.Code))
             {
-                return new AuthenticateUserResult(false, null, null, ["Required claims not present in token."]);
+                _logger.LogWarning("Authorization code missing in external authentication request");
+                return IdentityHelper.CreateFailureResult(["Authorization code is required."]);
             }
 
-            // enforce allowed email domains
-            if (!EmailDomainHelper.IsEmailDomainAllowed(userEmail, configuration.AllowedEmailDomains))
+            var result = await oauthService!
+                .ValidateAuthorizationCodeAsync(request.Code, request.CodeVerifier, request.RedirectUri, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!result.Success)
             {
-                return new AuthenticateUserResult(false, null, null, [ErrorMessages.EmailDomainNotAllowed]);
+                return IdentityHelper.CreateFailureResult([result.Error!]);
             }
 
-            // Try find existing user by external login (provider + key)
-            var existingLoginUser = await userManager.FindByLoginAsync(provider, idToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (string.IsNullOrWhiteSpace(result.UserName) || string.IsNullOrWhiteSpace(result.UserEmail))
+            {
+                _logger.LogWarning("Required claims not present in token. Email: {Email}, UserId: {UserId}", 
+                    result.UserEmail, result.UserName);
+                return IdentityHelper.CreateFailureResult(["Required claims not present in token."]);
+            }
+
+            if (!EmailDomainHelper.IsEmailDomainAllowed(result.UserEmail, _configuration.AllowedEmailDomains))
+            {
+                _logger.LogWarning("External authentication blocked: email domain not allowed. Email: {Email}", 
+                    result.UserEmail);
+                return IdentityHelper.CreateFailureResult([ErrorMessages.EmailDomainNotAllowed]);
+            }
+
+            var existingLoginUser = await _userManager
+                .FindByLoginAsync(result.ProviderName, result.ProviderKey)
+                .ConfigureAwait(false);
+            
+            cancellationToken.ThrowIfCancellationRequested();
+            
             if (existingLoginUser != null)
             {
-                var token = _tokenGenerator.GenerateToken(existingLoginUser);
-                var claimDtos = await GetClaimsAsync(existingLoginUser).ConfigureAwait(false);
-                return new AuthenticateUserResult(true, token, claimDtos);
+                _logger.LogInformation("Existing external login found. UserId: {UserId}, Email: {Email}", 
+                    existingLoginUser.Id, existingLoginUser.Email);
+                return await CreateSuccessResultAsync(existingLoginUser);
             }
 
-            // Find local user by email
-            var user = await userManager.FindByEmailAsync(userEmail).ConfigureAwait(false);
-
-            // If user exists, attach external login (if allowed) and sign in
-            if (user != null)
-            {
-                // If linking fails, return errors to caller
-                var (succeeded, errors) = await AddExternalLoginAsync(user, new UserLoginInfo(provider, idToken, provider)).ConfigureAwait(false);
-                if (!succeeded)
-                {
-                    return new AuthenticateUserResult(false, null, null, errors);
-                }
-
-                // Persist the new login
-                await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-
-                var token = _tokenGenerator.GenerateToken(user);
-                var claimDtos = await GetClaimsAsync(user).ConfigureAwait(false);
-                return new AuthenticateUserResult(true, token, claimDtos);
-            }
-
-            // User does not exist locally
-            if (configuration.AutoProvisionUser)
-            {
-                // Create user, add external login and sign in (transactional)
-                var linkRequest = new LinkExternalLoginRequest(userEmail, provider, account.HomeAccountId.Identifier, provider);
-                var result = await CreateAndLinkExternalLoginAsync(null, linkRequest).ConfigureAwait(false);
-                if (!result.Succeeded)
-                {
-                    return new AuthenticateUserResult(false, null, null, result.Errors);
-                }
-
-                // retrieve created user (by email) and issue token
-                var createdUser = await userManager.FindByEmailAsync(userEmail).ConfigureAwait(false);
-                if (createdUser == null)
-                {
-                    return new AuthenticateUserResult(false, null, null, [ErrorMessages.UnexpectedError]);
-                }
-
-                var token = _tokenGenerator.GenerateToken(createdUser);
-                var claimDtos = await GetClaimsAsync(createdUser).ConfigureAwait(false);
-                return new AuthenticateUserResult(true, token, claimDtos);
-            }
-
-            // Not auto-provisioning: return informative error so frontend can show registration flow
-            return new AuthenticateUserResult(false, null, null, [ErrorMessages.UserNotFound]);
+            return await CreateOrLinkUserWithExternalLoginAsync(
+                result.UserEmail, 
+                result.ProviderName, 
+                result.ProviderKey);
         }
 
-        private async Task<(string idToken, string accessToken, IAccount account, string userEmail, string userName)> ValidateCode(string code)
+        public async Task<string> BuildAuthorizationUrlAsync(
+            string provider, 
+            string state, 
+            string codeChallenge, 
+            string redirectUri, 
+            CancellationToken cancellationToken = default)
         {
-            var conf = configuration.MicrosoftProviderSettings!;
-            var app = ConfidentialClientApplicationBuilder
-              .Create(conf.ClientId)
-              .WithClientSecret(conf.ClientSecret)
-              .WithAuthority($"https://login.microsoftonline.com/{conf.TenantId}")
-              //.WithRedirectUri(redirectUri)
-              .Build();
-
-            // Exchange authorization code for tokens
-            var result = await app.AcquireTokenByAuthorizationCode(conf.Scopes, code).ExecuteAsync();
-
-            // Token is now validated! Extract user information
-            var idToken = result.IdToken;
-            var accessToken = result.AccessToken;
-            var account = result.Account;
-
-            // Get user claims from the ID token
-            var userEmail = account.Username;
-            var userName = account.HomeAccountId.ObjectId;
-            return (idToken, accessToken, account, userEmail, userName);
+            var oauthService = _oauthProviderRegistry.GetProvider(provider);
+            return await oauthService.BuildAuthorizationUrlAsync(
+                state, 
+                codeChallenge, 
+                redirectUri, 
+                cancellationToken);
         }
 
-        public async Task<AuthenticateUserResult> AuthenticateUserAsync(AuthenticateUserRequest request)
+        public async Task<AuthenticateUserResult> AuthenticateUserAsync(
+            AuthenticateUserRequest request, 
+            CancellationToken cancellationToken = default)
         {
-            static AuthenticateUserResult InvalidCredentials() => new(false, null, null, [ErrorMessages.InvalidCredentials]);
+            _logger.LogDebug("Attempting username/password authentication. Username: {Username}", request.UserName);
 
-            // Validate credentials without creating a sign-in session
-            var user = await userManager.FindByNameAsync(request.UserName).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var user = await _userManager.FindByNameAsync(request.UserName).ConfigureAwait(false);
+            
+            cancellationToken.ThrowIfCancellationRequested();
+            
             if (user == null)
             {
-                return InvalidCredentials();
+                _logger.LogWarning("Authentication failed: user not found. Username: {Username}", request.UserName);
+                return IdentityHelper.CreateInvalidCredentialsResult();
             }
 
-            var passwordValid = await userManager.CheckPasswordAsync(user, request.Password).ConfigureAwait(false);
+            var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password).ConfigureAwait(false);
             if (!passwordValid)
             {
-                return InvalidCredentials();
+                _logger.LogWarning("Authentication failed: invalid password. UserId: {UserId}", user.Id);
+                return IdentityHelper.CreateInvalidCredentialsResult();
             }
-            // generate JWT using token generator
-            var tokenString = _tokenGenerator.GenerateToken(user);
-            var claimDtos = await GetClaimsAsync(user).ConfigureAwait(false);
-            return new AuthenticateUserResult(true, tokenString, claimDtos);
+
+            _logger.LogInformation("User authenticated successfully. UserId: {UserId}, Username: {Username}", 
+                user.Id, user.UserName);
+            return await CreateSuccessResultAsync(user);
         }
 
-        public async Task<IEnumerable<ClaimDto>> GetClaimsAsync(string userName)
+        public async Task<IEnumerable<ClaimDto>> GetClaimsAsync(
+            string userName, 
+            CancellationToken cancellationToken = default)
         {
-            var user = await userManager.FindByNameAsync(userName).ConfigureAwait(false) ?? throw new ArgumentException(ErrorMessages.UserNotFound, nameof(userName));
-            return [
-                new (ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new (ClaimTypes.Name, user.UserName ?? string.Empty),
-                new (ClaimTypes.Email, user.Email ?? string.Empty)
-            ];
+            var user = await _userManager.FindByNameAsync(userName).ConfigureAwait(false)
+                ?? throw new InvalidOperationException($"User not found: {userName}");
+
+            var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
+            return ClaimHelper.MapToDto(ClaimHelper.MergeClaims(user, claims));
         }
 
-        public async Task<LinkExternalLoginResult> LinkExternalLoginAsync(LinkExternalLoginRequest request)
+        public async Task<LinkExternalLoginResult> LinkExternalLoginAsync(
+            LinkExternalLoginRequest request, 
+            CancellationToken cancellationToken = default)
         {
-            // enforce allowed email domains for the request email
-            if (!EmailDomainHelper.IsEmailDomainAllowed(request.Email, configuration.AllowedEmailDomains))
+            if (!EmailDomainHelper.IsEmailDomainAllowed(request.Email, _configuration.AllowedEmailDomains))
             {
+                _logger.LogWarning("Link external login blocked: email domain not allowed. Email: {Email}", 
+                    request.Email);
                 return new LinkExternalLoginResult(false, [ErrorMessages.EmailDomainNotAllowed]);
             }
 
-            // Check if the external login (provider + key) is already linked to any user
-            var existingLoginUser = await userManager.FindByLoginAsync(request.Provider, request.ProviderKey).ConfigureAwait(false);
-
-            // Find local user by email (may be null)
-            var user = await userManager.FindByEmailAsync(request.Email).ConfigureAwait(false);
+            var existingLoginUser = await _userManager
+                .FindByLoginAsync(request.Provider, request.ProviderKey)
+                .ConfigureAwait(false);
+            var user = await _userManager.FindByEmailAsync(request.Email).ConfigureAwait(false);
 
             if (existingLoginUser != null)
             {
-                // If the login is linked to a different account, reject
                 if (user == null || existingLoginUser.Id != user.Id)
                 {
+                    _logger.LogWarning(
+                        "External login already linked to different account. Email: {Email}, Provider: {Provider}", 
+                        request.Email, request.Provider);
                     return new LinkExternalLoginResult(false, [ErrorMessages.ExternalLoginAlreadyLinked]);
                 }
 
-                // Already linked to the same account: nothing to do
+                _logger.LogInformation("External login already linked to same account. UserId: {UserId}", user.Id);
                 return new LinkExternalLoginResult(true);
             }
 
-            // Delegate transactional create+link to a helper for readability
             return await CreateAndLinkExternalLoginAsync(user, request).ConfigureAwait(false);
         }
 
-        private static string[] MapIdentityErrors(IdentityResult result)
-                    => result.Errors?.Select(e => e.Description).Where(d => !string.IsNullOrWhiteSpace(d)).ToArray()
-                       ?? [ErrorMessages.UnexpectedError];
-
-        // Helper: add external login and return (succeeded, errors)
-        private async Task<(bool succeeded, string[]? errors)> AddExternalLoginAsync(User user, UserLoginInfo login)
+        private async Task<LinkExternalLoginResult> CreateAndLinkExternalLoginAsync(
+            User? user, 
+            LinkExternalLoginRequest request)
         {
-            var result = await userManager.AddLoginAsync(user, login).ConfigureAwait(false);
-            if (result.Succeeded)
+            if (user == null && !_configuration.AutoProvisionUser)
             {
-                return (true, null);
+                _logger.LogWarning(
+                    "External login link failed: user not found and auto-provisioning disabled. Email: {Email}", 
+                    request.Email);
+                return new LinkExternalLoginResult(false, [ErrorMessages.UserNotFound]);
             }
 
-            return (false, MapIdentityErrors(result).ToArray());
+            if (user == null)
+            {
+                var (createdUser, createErrors) = await CreateUserAsync(request.Email).ConfigureAwait(false);
+                if (createErrors != null && createErrors.Length != 0)
+                {
+                    return new LinkExternalLoginResult(false, createErrors);
+                }
+                user = createdUser;
+            }
+
+            var loginInfo = new UserLoginInfo(request.Provider, request.ProviderKey, request.ProviderDisplayName);
+            var linkResult = await _userManager.AddLoginAsync(user, loginInfo).ConfigureAwait(false);
+
+            if (!linkResult.Succeeded)
+            {
+                _logger.LogWarning("Failed to link external login. UserId: {UserId}, Errors: {Errors}",
+                    user.Id,
+                    string.Join(", ", linkResult.Errors?.Select(e => e.Description) ?? []));
+                return new LinkExternalLoginResult(false, IdentityHelper.MapIdentityErrors(linkResult));
+            }
+
+            _logger.LogInformation("Successfully linked external login. Email: {Email}, Provider: {Provider}", 
+                request.Email, request.Provider);
+            return new LinkExternalLoginResult(true);
         }
 
-        // Helper: encapsulate transactional create + add-login flow
-        private async Task<LinkExternalLoginResult> CreateAndLinkExternalLoginAsync(User? user, LinkExternalLoginRequest request)
+        private async Task<AuthenticateUserResult> CreateOrLinkUserWithExternalLoginAsync(
+            string email, 
+            string providerName, 
+            string providerKey)
         {
-            await using var transaction = await _dbContext.Database.BeginTransactionAsync().ConfigureAwait(false);
-            try
+            var existingUser = await _userManager.FindByEmailAsync(email).ConfigureAwait(false);
+            User user;
+
+            if (existingUser != null)
             {
-                if (user == null && configuration.AutoProvisionUser)
-                {
-                    var (createdUser, createErrors) = await CreateUserAsync(request.Email).ConfigureAwait(false);
-                    if (createErrors != null && createErrors.Length != 0)
-                    {
-                        await transaction.RollbackAsync().ConfigureAwait(false);
-                        return new LinkExternalLoginResult(false, createErrors);
-                    }
-
-                    user = createdUser;
-                }
-
-                if (user == null)
-                {
-                    await transaction.RollbackAsync().ConfigureAwait(false);
-                    return new LinkExternalLoginResult(false, [ErrorMessages.UserNotFound]);
-                }
-
-                if (!EmailDomainHelper.IsEmailDomainAllowed(user.Email, configuration.AllowedEmailDomains))
-                {
-                    await transaction.RollbackAsync().ConfigureAwait(false);
-                    return new LinkExternalLoginResult(false, [ErrorMessages.EmailDomainNotAllowed]);
-                }
-
-                var (succeeded, addErrors) = await AddExternalLoginAsync(user, new UserLoginInfo(request.Provider, request.ProviderKey, request.ProviderDisplayName)).ConfigureAwait(false);
-                if (!succeeded)
-                {
-                    await transaction.RollbackAsync().ConfigureAwait(false);
-                    return new LinkExternalLoginResult(false, addErrors);
-                }
-
-                await _dbContext.SaveChangesAsync().ConfigureAwait(false);
-                await transaction.CommitAsync().ConfigureAwait(false);
-
-                return new LinkExternalLoginResult(true);
+                user = existingUser;
+                _logger.LogInformation("Found existing user by email. UserId: {UserId}, Email: {Email}", 
+                    user.Id, email);
             }
-            catch (Exception)
+            else
             {
-                try { await transaction.RollbackAsync().ConfigureAwait(false); } catch { }
-                return new LinkExternalLoginResult(false, [ErrorMessages.ExternalLoginFailed]);
+                if (!_configuration.AutoProvisionUser)
+                {
+                    _logger.LogWarning(
+                        "External authentication failed: user not found and auto-provisioning disabled. Email: {Email}", 
+                        email);
+                    return IdentityHelper.CreateFailureResult([ErrorMessages.UserNotFound]);
+                }
+
+                var (createdUser, createErrors) = await CreateUserAsync(email).ConfigureAwait(false);
+                if (createErrors != null && createErrors.Length != 0)
+                {
+                    return IdentityHelper.CreateFailureResult(createErrors);
+                }
+                user = createdUser!;
             }
+
+            var loginInfo = new UserLoginInfo(providerName, providerKey, user.Email);
+            var linkResult = await _userManager.AddLoginAsync(user, loginInfo).ConfigureAwait(false);
+
+            if (!linkResult.Succeeded)
+            {
+                _logger.LogWarning("Failed to link external login. UserId: {UserId}, Errors: {Errors}",
+                    user.Id,
+                    string.Join(", ", linkResult.Errors?.Select(e => e.Description) ?? []));
+                return IdentityHelper.CreateFailureResult(IdentityHelper.MapIdentityErrors(linkResult));
+            }
+
+            _logger.LogInformation(
+                "Successfully linked external login. UserId: {UserId}, Email: {Email}, Provider: {Provider}",
+                user.Id, email, providerName);
+
+            return await CreateSuccessResultAsync(user);
         }
 
-        // Helper: create a user and return (user, errors)
+        private async Task<AuthenticateUserResult> CreateSuccessResultAsync(User user)
+        {
+            ArgumentNullException.ThrowIfNull(user);
+            var claimsDb = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
+            var claims = ClaimHelper.MergeClaims(user, claimsDb);
+            var token = _tokenGenerator.GenerateToken(claims);
+            var claimDtos = ClaimHelper.MapToDto(claims);
+            return new AuthenticateUserResult(true, token, claimDtos);
+        }
+
         private async Task<(User? user, string[]? errors)> CreateUserAsync(string email)
         {
             var user = new User
@@ -275,21 +285,19 @@ namespace Consilient.Users.Services
                 EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(user).ConfigureAwait(false);
+            var result = await _userManager.CreateAsync(user).ConfigureAwait(false);
             if (result.Succeeded)
             {
+                _logger.LogInformation("User created successfully. Email: {Email}, UserId: {UserId}", 
+                    email, user.Id);
                 return (user, null);
             }
 
-            return (null, MapIdentityErrors(result).ToArray());
-        }
+            _logger.LogWarning("Failed to create user. Email: {Email}, Errors: {Errors}",
+                email,
+                string.Join(", ", result.Errors?.Select(e => e.Description) ?? []));
 
-        private async Task<IEnumerable<ClaimDto>> GetClaimsAsync(User user)
-        {
-            // build claims to return to caller
-            var claims = await userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            var claimDtos = claims.Select(c => new ClaimDto(c.Type, c.Value)).ToArray();
-            return claimDtos;
+            return (null, IdentityHelper.MapIdentityErrors(result));
         }
     }
 }

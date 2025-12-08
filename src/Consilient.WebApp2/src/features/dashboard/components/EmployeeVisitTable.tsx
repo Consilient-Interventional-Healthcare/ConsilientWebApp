@@ -15,21 +15,9 @@ interface EmployeeVisitTableProps {
 }
 
 export default function EmployeeVisitTable({ 
-  employees, 
-  isLoading = false, 
+  employees,
   error = null 
 }: EmployeeVisitTableProps) {
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow p-8">
-        <div className="flex flex-col items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600 text-sm">Loading employees...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Error state
   if (error) {

@@ -1,13 +1,20 @@
 import type { LoginResults, LinkExternalLoginRequest, LinkExternalLoginResult, AuthenticateUserRequest, AuthenticateUserResult, IAuthService, UserClaim } from '@/features/auth/auth.types';
+import type { AppSettings } from '@/shared/core/appSettings/appSettings.types';
 import apiClient from '@/shared/core/api/ApiClient';
 import { logger } from "@/shared/core/logging/Logger";
 import { AppSettingsServiceFactory } from '@/shared/core/appSettings/AppSettingsServiceFactory';
-const settings = await AppSettingsServiceFactory.create().getAppSettings()
 
 export class AuthService implements IAuthService {
+  private settingsPromise: Promise<AppSettings> | null = null;
+
+  private async getSettings(): Promise<AppSettings> {
+    this.settingsPromise ??= AppSettingsServiceFactory.create().getAppSettings();
+    return this.settingsPromise;
+  }
 
   async linkExternalAccount(params: LinkExternalLoginRequest): Promise<void> {
-    if (!settings.ExternalLoginEnabled) {
+    const settings = await this.getSettings();
+    if (!settings.externalLoginEnabled) {
       throw new Error("External login is not enabled.");
     }
     const response = await apiClient.post<LinkExternalLoginResult>('/auth/link-external', params);
@@ -18,8 +25,9 @@ export class AuthService implements IAuthService {
     await this.authenticate(params.providerKey);
   }
 
-  authenticate(_providerKey: string): Promise<string> {
-    if (!settings.ExternalLoginEnabled) {
+  async authenticate(_providerKey: string): Promise<string> {
+    const settings = await this.getSettings();
+    if (!settings.externalLoginEnabled) {
       throw new Error("External login is not enabled.");
     }
     throw new Error("Not implemented");
@@ -67,6 +75,38 @@ async logout(): Promise<void> {
       logger.error("Failed to fetch user claims", error as Error, { component: "AuthService" });
       return null;
     }
+  }
+
+  initiateMicrosoftLogin(returnUrl?: string): void {
+    const settings = AppSettingsServiceFactory.create().getAppSettings();
+    settings.then((config) => {
+      if (!config.externalLoginEnabled) {
+        logger.error("External login is not enabled", undefined, { component: "AuthService" });
+        throw new Error("External login is not enabled.");
+      }
+
+      // Build the backend URL that will redirect to Microsoft
+      const baseUrl = apiClient.getBaseUrl();
+      const apiUrl = new URL('/auth/microsoft/login', baseUrl);
+
+      // Construct full frontend URL with the returnUrl path
+      if (returnUrl) {
+        const frontendBaseUrl = `${window.location.protocol}//${window.location.host}`;
+        const fullReturnUrl = `${frontendBaseUrl}${returnUrl.startsWith('/') ? returnUrl : '/' + returnUrl}`;
+        apiUrl.searchParams.set('returnUrl', fullReturnUrl);
+      }
+
+      logger.debug("Initiating Microsoft login redirect", {
+        component: "AuthService",
+        redirectUrl: apiUrl.toString()
+      });
+
+      // Redirect the entire page to the backend endpoint
+      window.location.href = apiUrl.toString();
+    }).catch((error) => {
+      logger.error("Failed to initiate Microsoft login", error as Error, { component: "AuthService" });
+      throw error;
+    });
   }
 }
 

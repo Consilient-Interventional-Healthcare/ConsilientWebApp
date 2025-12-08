@@ -16,6 +16,7 @@ export interface IAuthService {
   login(params: AuthenticateUserRequest): Promise<LoginResults>;
   logout(): Promise<void>;
   getCurrentUserClaims(): Promise<UserClaim[] | null>;
+  initiateMicrosoftLogin(returnUrl?: string): void;
 }
 
 export interface AuthContextType {

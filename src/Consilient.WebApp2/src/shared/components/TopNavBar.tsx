@@ -4,21 +4,15 @@ import { Link, useLocation } from "react-router-dom"
 import { navItems } from "@/shared/routes/Router"
 import { useAuth } from "@/shared/hooks/useAuth"
 import { useActiveNavItem } from "@/shared/hooks/useActiveNavItem"
-import { useNavigate } from "react-router-dom"
 import { LogOut } from "lucide-react"
 import { Icon } from "@/shared/components/ui/icon";
 import { appSettings } from '@/config/index';
+import { ROUTES } from "@/constants";
 
 function TopNavBar() {
   const location = useLocation();
   const { subNavItems } = useActiveNavItem();
-  const { logout, user } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    void navigate('/auth/login');
-  };
+  const { user } = useAuth(); // No need for logout or navigate here, as we will use a LinkWW
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
@@ -68,12 +62,14 @@ function TopNavBar() {
         <div className="flex items-center gap-2">
           {user && (
             <span className="text-sm text-gray-700 hidden md:inline">
-              {user.firstName} {user.lastName}
+              {user.userName}
             </span>
           )}
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <Link to={ROUTES.LOGOUT}>
+            <Button variant="ghost" size="icon">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </Link>
         </div>
       </div>
 

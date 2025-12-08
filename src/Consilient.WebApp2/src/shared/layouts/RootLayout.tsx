@@ -5,6 +5,7 @@ import LoadingBarContext from "./LoadingBarContext";
 import type { LoadingBarApi } from "./LoadingBarContext";
 import type { LoadingBarRef } from "react-top-loading-bar";
 import { appSettings } from '@/config/index';
+import { AuthProvider } from '@/features/auth/services/AuthProvider';
 
 // Context moved to LoadingBarContext.ts
 
@@ -38,18 +39,20 @@ const RootLayout: FC = () => {
   };
 
   return (
-    <LoadingBarContext.Provider value={loadingBarApi}>
-      <LoadingBar color="#2563eb" ref={loadingBarRef} height={3} shadow={true} />
-      <div className="h-screen bg-gray-50 overflow-hidden">
-        <Suspense fallback={
-          <div className="flex items-center justify-center h-screen">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-          </div>
-        }>
-          <Outlet />
-        </Suspense>
-      </div>
-    </LoadingBarContext.Provider>
+    <AuthProvider>
+      <LoadingBarContext.Provider value={loadingBarApi}>
+        <LoadingBar color="#2563eb" ref={loadingBarRef} height={3} shadow={true} />
+        <div className="h-screen bg-gray-50 overflow-hidden">
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-screen">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+            </div>
+          }>
+            <Outlet />
+          </Suspense>
+        </div>
+      </LoadingBarContext.Provider>
+    </AuthProvider>
   );
 };
 

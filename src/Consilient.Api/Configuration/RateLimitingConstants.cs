@@ -15,8 +15,18 @@ namespace Consilient.Api.Configuration
         public const int LinkExternalTokenLimit = 10;
         public const int LinkExternalWindowSeconds = 60;
 
+        // OAuth login endpoint (fixed window)
+        public const int OAuthLoginPermitLimit = 10;
+        public const int OAuthLoginWindowMinutes = 1;
+
+        // OAuth callback endpoint (fixed window)
+        public const int OAuthCallbackPermitLimit = 10;
+        public const int OAuthCallbackWindowMinutes = 1;
+
         // Policy names
         public const string AuthenticatePolicy = "AuthenticatePolicy";
         public const string LinkExternalPolicy = "LinkExternalPolicy";
+        public const string OAuthLoginPolicy = "OAuthLoginPolicy";
+        public const string OAuthCallbackPolicy = "OAuthCallbackPolicy";
     }
 }

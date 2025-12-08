@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import appSettings from '@/config/index';
 import { handleRequestError } from './interceptors/request/handleRequestError';
+import { queueDuringAuthInit } from './interceptors/request/queueDuringAuthInit';
 import { logSuccessfulRequest } from './interceptors/response/logSuccessfulRequest';
 import { handleResponseError } from './interceptors/response/handleResponseError';
 import { ApiClient } from './ApiClient';
@@ -48,9 +49,9 @@ export class ApiClientFactory {
    * Configure request and response interceptors on an Axios instance
    */
   private static configureInterceptors(axiosInstance: AxiosInstance): void {
-    // Request interceptor - add authentication and performance tracking
+    // Request interceptor - queue requests during auth init and handle errors
     axiosInstance.interceptors.request.use(
-      (config) => config,
+      async (config) => queueDuringAuthInit(config),
       (error: AxiosError) => handleRequestError(error)
     );
 

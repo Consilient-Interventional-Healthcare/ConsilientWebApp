@@ -8,21 +8,9 @@ namespace Consilient.Api.Init
         {
             services.Configure<CookiePolicyOptions>(options =>
             {
-                options.MinimumSameSitePolicy = SameSiteMode.None;
+                options.MinimumSameSitePolicy = SameSiteMode.Lax; // Changed from None
                 options.HttpOnly = HttpOnlyPolicy.Always;
-                options.Secure = CookieSecurePolicy.SameAsRequest;
-
-                options.OnAppendCookie = cookieContext =>
-                {
-                    cookieContext.CookieOptions.Secure = cookieContext.Context.Request.IsHttps;
-                    cookieContext.CookieOptions.HttpOnly = true;
-                };
-
-                options.OnDeleteCookie = cookieContext =>
-                {
-                    cookieContext.CookieOptions.Secure = cookieContext.Context.Request.IsHttps;
-                    cookieContext.CookieOptions.HttpOnly = true;
-                };
+                options.Secure = CookieSecurePolicy.Always; // Changed from SameAsRequest
             });
 
             return services;

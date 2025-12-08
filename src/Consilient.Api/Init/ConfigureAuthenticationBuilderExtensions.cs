@@ -1,4 +1,4 @@
-using Consilient.Api.Infra;
+using Consilient.Api.Infra.Authentication;
 using Consilient.Users.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +12,8 @@ namespace Consilient.Api.Init
 
         public static void ConfigureAuthentication(this WebApplicationBuilder builder, TokenGeneratorConfiguration tokenGeneratorConfiguration)
         {
+            builder.Services.AddScoped<ICsrfTokenCookieService, CsrfTokenCookieService>();
+            builder.Services.AddScoped<IJwtTokenCookieService, JwtTokenCookieService>();
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -23,7 +25,7 @@ namespace Consilient.Api.Init
                 {
                     OnMessageReceived = context =>
                     {
-                        if (context.Request.Cookies.TryGetValue(AuthCookieExtensions.AuthCookieName, out var token) && !string.IsNullOrEmpty(token))
+                        if (context.Request.Cookies.TryGetValue(AuthenticationCookieNames.AuthToken, out var token) && !string.IsNullOrEmpty(token))
                         {
                             context.Token = token;
                         }

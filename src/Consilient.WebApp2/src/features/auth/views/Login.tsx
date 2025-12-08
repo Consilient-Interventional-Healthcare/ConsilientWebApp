@@ -1,59 +1,108 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { logger } from "@/shared/core/logging/Logger";
+import { ROUTES } from "@/constants";
+import { getAuthService } from "@/features/auth/services/AuthServiceFactory";
+import { AppSettingsServiceFactory } from "@/shared/core/appSettings/AppSettingsServiceFactory";
+
+const authService = getAuthService();
 
 export default function Login() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [externalLoginEnabled, setExternalLoginEnabled] = useState(false);
 
+  // Get the redirect path from:
+  // 1. URL query parameter (from 401 error handler)
+  // 2. Location state (from ProtectedRoute)
+  // 3. Default to dashboard
+  const redirectParam = searchParams.get('redirect');
+  const stateFrom = (location.state as { from?: string })?.from;
+  const from = redirectParam ?? stateFrom ?? ROUTES.DASHBOARD;
+
+  // Check if user was redirected due to session expiration or OAuth error
   useEffect(() => {
-    logger.debug('Login component - useEffect triggered, isAuthenticated:', { component: 'Login', isAuthenticated, currentPath: window.location.pathname });
-    if (isAuthenticated) {
-      logger.info('Login component - User is authenticated, redirecting to dashboard', { component: 'Login' });
-      void navigate("/");
-    } else {
-      logger.debug('Login component - User not authenticated, staying on login page', { component: 'Login' });
+    // Check for OAuth error from callback
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam));
+      logger.error('OAuth authentication error', new Error(errorParam), { component: 'Login' });
+      return; // Don't process other logic if there's an error
     }
-  }, [isAuthenticated, navigate]);
 
-  const handleMicrosoftLogin = async () => {
+    if (redirectParam) {
+      setSessionExpired(true);
+      logger.info('User redirected to login due to session expiration', { component: 'Login' });
+    }
+  }, [redirectParam, searchParams]);
+
+  // Fetch app settings to check if external login is enabled
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await AppSettingsServiceFactory.create().getAppSettings();
+        setExternalLoginEnabled(settings.externalLoginEnabled);
+      } catch (error) {
+        logger.error("Failed to load app settings", error as Error, { component: "Login" });
+      }
+    };
+    void loadSettings();
+  }, []);
+
+
+  const handleMicrosoftLogin = () => {
     setError(null);
-    return Promise.resolve();
+    try {
+      logger.debug('Initiating Microsoft login', { component: 'Login', destination: from });
+      // Pass login URL as returnUrl so errors come back to login page
+      // Include the intended destination in the URL so we can navigate there on success
+      const frontendBaseUrl = `${window.location.protocol}//${window.location.host}`;
+      const returnUrl = `${frontendBaseUrl}/auth/login${from !== ROUTES.DASHBOARD ? `?redirect=${encodeURIComponent(from)}` : ''}`;
+      authService.initiateMicrosoftLogin(returnUrl);
+      // The page will redirect, no need to return anything
+    } catch (err) {
+      logger.error("Microsoft login initiation failed", err as Error, { component: "Login" });
+      setError((err as Error).message || "Failed to initiate Microsoft login");
+    }
   };
 
   const handleRegularLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
     try {
       if (!username || !password) {
         setError("Please enter both username and password.");
-        setLoading(false);
         return;
       }
       await login({ username, password });
-      logger.info('Login component - Regular login successful', { component: 'Login', username });
-      setUsername("");
-      setPassword("");
-      setError(null);
+      // Navigate to the intended destination after successful login
+      logger.debug('Login component - Navigating after login', { component: 'Login', destination: from });
+      navigate(from, { replace: true });
     } catch (error) {
       logger.error("Login failed", error as Error, { component: "Login" });
       setError((error as Error).message || "Login failed. Please try again.");
     } finally {
       logger.debug('Login component - Regular login attempt finished', { component: 'Login' });
-      setLoading(false);
     }
   };
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Sign In</h2>
+
+      {sessionExpired && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
+          Your session has expired. Please sign in again to continue.
+        </div>
+      )}
 
       <form className="space-y-4 mb-6" onSubmit={handleRegularLogin}>
         <input
@@ -73,12 +122,13 @@ export default function Login() {
           autoComplete="current-password"
         />
         {error && <div className="text-red-600 text-sm">{error}</div>}
-        <Button type="submit" className="w-full h-11" disabled={loading}>
-          {loading ? "Signing in..." : "Sign in"}
+        <Button type="submit" className="w-full h-11" disabled={isLoading}>
+          {isLoading ? "Signing in..." : "Sign in"}
         </Button>
       </form>
 
-      <div className="space-y-3">
+      {externalLoginEnabled && (
+        <div className="space-y-3">
           <Button
             onClick={handleMicrosoftLogin}
             variant="outline"
@@ -92,7 +142,8 @@ export default function Login() {
             </svg>
             Continue with Microsoft
           </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

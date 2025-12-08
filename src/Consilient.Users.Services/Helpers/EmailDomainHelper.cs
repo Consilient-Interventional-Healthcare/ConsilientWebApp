@@ -1,8 +1,4 @@
-using System;
-using System.Linq;
-using System.Collections.Generic;
-
-namespace Consilient.Users.Services
+namespace Consilient.Users.Services.Helpers
 {
     internal static class EmailDomainHelper
     {

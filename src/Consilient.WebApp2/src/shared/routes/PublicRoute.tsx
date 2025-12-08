@@ -1,7 +1,6 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from "@/shared/hooks/useAuth";
 import { logger } from "@/shared/core/logging/Logger";
-import Loading from "@/shared/components/Loading";
 import { ROUTES } from "@/constants";
 import type { ReactNode } from 'react';
 
@@ -11,15 +10,20 @@ interface PublicRouteProps {
 
 export default function PublicRoute({ children }: PublicRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect');
+
   logger.debug('PublicRoute component - checking isAuthenticated for redirect', { component: 'PublicRoute', isAuthenticated, isLoading, currentPath: window.location.pathname });
 
   if (isLoading) {
-    return <Loading message="Loading..." />;
+    // Optionally show a spinner here
+    return null;
   }
 
   if (isAuthenticated) {
-    logger.info('PublicRoute component - User is authenticated, redirecting to dashboard', { component: 'PublicRoute' });
-    return <Navigate to={ROUTES.DASHBOARD} replace />;
+    const destination = redirect || ROUTES.DASHBOARD;
+    logger.info('PublicRoute component - User is authenticated, redirecting', { component: 'PublicRoute', destination });
+    return <Navigate to={destination} replace />;
   } else {
     logger.debug('PublicRoute component - User not authenticated, rendering children', { component: 'PublicRoute' });
   }

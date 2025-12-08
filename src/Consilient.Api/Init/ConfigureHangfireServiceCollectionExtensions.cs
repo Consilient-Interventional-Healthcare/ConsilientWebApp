@@ -7,7 +7,7 @@ namespace Consilient.Api.Init
     {
         public static void ConfigureHangfire(this IServiceCollection services, string hangfireConnectionString)
         {
-            services.AddHangfire((provider, config )=>
+            services.AddHangfire((provider, config) =>
             {
                 config
                     .UseSqlServerStorage(hangfireConnectionString)

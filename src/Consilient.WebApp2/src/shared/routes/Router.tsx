@@ -9,9 +9,11 @@ import { dashboardRoutes } from "@/features/dashboard/routes";
 import { clinicalRoutes } from "@/features/clinical/routes";
 import { devRoutes } from "@/features/dev/routes";
 import { type RouteHandle, type NavItem, type SubNavItem, isRouteHandle } from "./router.types";
+import { ROUTES } from "@/constants";
 
 // Lazy load views
 const Login = lazy(() => import("@/features/auth/views/Login"));
+const Logout = lazy(() => import("@/features/auth/views/Logout"));
 const NotFound = lazy(() => import("@/shared/components/NotFound"));
 
 export const router = createBrowserRouter([
@@ -39,6 +41,11 @@ export const router = createBrowserRouter([
                 protected: true,
               },
           },
+          {
+            path: ROUTES.LOGOUT,
+            element: <Logout />,
+            handle: { title: "Logout", protected: true },
+          }
         ],
       },
       // Public routes (redirect to dashboard if authenticated)
@@ -52,8 +59,12 @@ export const router = createBrowserRouter([
         children: [
           {
             path: "login",
-            element: <Login />,
-              handle: { title: "Sign In", protected: false },
+            element: (
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            ),
+            handle: { title: "Sign In", protected: false },
           }
         ],
       },

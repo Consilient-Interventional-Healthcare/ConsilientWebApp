@@ -1,5 +1,6 @@
 using Consilient.Api.Configuration;
 using Consilient.Api.Hubs;
+using Consilient.Api.Infra;
 using Consilient.Api.Infra.ModelBinders;
 using Consilient.Api.Init;
 using Consilient.Constants;
@@ -12,8 +13,10 @@ using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
+using Consilient.Users.Contracts.OAuth;
 using Consilient.Users.Services;
 using Consilient.Visits.Services;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using GraphQL.Server.Ui.GraphiQL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -21,6 +24,7 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
+using System.Configuration;
 
 namespace Consilient.Api
 {
@@ -52,6 +56,13 @@ namespace Consilient.Api
                 }
                 var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
 
+                // Add explicit Options registration
+                builder.Services.Configure<ApplicationSettings>(
+                    builder.Configuration.GetSection("ApplicationSettings"));
+
+                builder.Services.Configure<UserServiceConfiguration>(
+                    builder.Configuration.GetSection("ApplicationSettings:Authentication:UserService"));
+
                 builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterUserDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterGraphQlServices();
@@ -59,13 +70,22 @@ namespace Consilient.Api
                 builder.Services.RegisterInsuranceServices();
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
-                builder.Services.RegisterUserServices(new UserServiceConfiguration { AutoProvisionUser = applicationSettings.Authentication.AutoProvisionUser }, applicationSettings.Authentication.Jwt);
+                builder.Services.RegisterUserServices(
+                    applicationSettings.Authentication.PasswordPolicy,
+                    useDistributedCache: builder.Environment.IsProduction());
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterLogging(logger);
                 builder.Services.ConfigureHangfire(hangfireConnectionString);
-              
+
                 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
                 builder.Services.ConfigureCors(allowedOrigins!);
+                
+                // Register redirect validation options (uses same origins as CORS for consistency)
+                builder.Services.Configure<RedirectValidationOptions>(options =>
+                {
+                    options.AllowedOrigins = allowedOrigins ?? [];
+                });
+                
                 builder.Services.ConfigureRateLimiting();
 
                 builder.Services.ConfigureCookiePolicy();
@@ -94,7 +114,7 @@ namespace Consilient.Api
                     });
                 builder.Services.AddSwaggerGen(builder.Environment.ApplicationName, version);
                 builder.Services.AddSignalR();
-                builder.ConfigureAuthentication(applicationSettings.Authentication.Jwt);
+                builder.ConfigureAuthentication(applicationSettings.Authentication.UserService.Jwt);
 
                 var app = builder.Build();
 

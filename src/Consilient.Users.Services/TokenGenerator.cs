@@ -1,4 +1,5 @@
-using Consilient.Data.Entities.Identity;
+using Consilient.Users.Contracts;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -6,34 +7,23 @@ using System.Text;
 
 namespace Consilient.Users.Services
 {
-    internal class TokenGenerator(TokenGeneratorConfiguration _config)
+    public class TokenGenerator(IOptions<UserServiceConfiguration> userConfig) : ITokenGenerator
     {
-        public string GenerateToken(User user)
+        private readonly TokenGeneratorConfiguration _configuration = userConfig.Value?.Jwt 
+            ?? throw new InvalidOperationException(
+                "JWT configuration is missing. Please ensure the JWT section is properly configured in application settings.");
+
+        public string GenerateToken(IEnumerable<Claim> claims)
         {
-            var jwtSecret = _config.Secret;
-            if (string.IsNullOrEmpty(jwtSecret))
-            {
-                throw new InvalidOperationException("JWT secret is not configured (TokenGeneratorConfiguration.Secret).");
-            }
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
-            };
-
-            var expires = DateTime.UtcNow.AddMinutes(_config.ExpiryMinutes > 0 ? _config.ExpiryMinutes : 60);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.Secret));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _config.Issuer,
-                audience: _config.Audience,
+                issuer: _configuration.Issuer,
+                audience: _configuration.Audience,
                 claims: claims,
-                expires: expires,
-                signingCredentials: creds
+                expires: DateTime.UtcNow.AddMinutes(_configuration.ExpiryMinutes),
+                signingCredentials: credentials
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);

@@ -1,39 +1,53 @@
 using Consilient.Data;
 using Consilient.Data.Entities.Identity;
 using Consilient.Users.Contracts;
+using Consilient.Users.Contracts.OAuth;
+using Consilient.Users.Services.OAuth;
+using Consilient.Users.Services.OAuth.StateManagers;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.Users.Services
 {
     public static class UserRegistrationExtension
     {
-        public static IServiceCollection RegisterUserServices(this IServiceCollection services, UserServiceConfiguration userServiceConfiguration, TokenGeneratorConfiguration configuration)
+        public static IServiceCollection RegisterUserServices(
+            this IServiceCollection services, 
+            PasswordPolicyOptions passwordPolicy,
+            bool useDistributedCache = true)
         {
             services.AddIdentity<User, Role>(options =>
             {
                 options.User.RequireUniqueEmail = true;
-                options.Password.RequireDigit = true;
-                options.Password.RequiredLength = 8;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = true;
-                options.Password.RequireLowercase = true;
-                options.Password.RequiredUniqueChars = 1;
+                options.Password.RequireDigit = passwordPolicy.RequireDigit;
+                options.Password.RequiredLength = passwordPolicy.RequiredLength;
+                options.Password.RequireNonAlphanumeric = passwordPolicy.RequireNonAlphanumeric;
+                options.Password.RequireUppercase = passwordPolicy.RequireUppercase;
+                options.Password.RequireLowercase = passwordPolicy.RequireLowercase;
+                options.Password.RequiredUniqueChars = passwordPolicy.RequiredUniqueChars;
             })
             .AddEntityFrameworkStores<UsersDbContext>()
             .AddDefaultTokenProviders();
 
-            // Register configuration instances so DI can inject them into services
-            services.AddSingleton(userServiceConfiguration);
-            services.AddSingleton(configuration);
+            // Register OAuth provider services
+            services.AddScoped<IOAuthProviderService, MicrosoftOAuthProviderService>();
 
-            // Register TokenGenerator instance (preserve existing behavior)
-            services.AddSingleton(new TokenGenerator(configuration));
-
-            // Let the DI container construct UserService and resolve its dependencies
+            // Register OAuth provider registry
+            services.AddScoped<IOAuthProviderRegistry, OAuthProviderRegistry>();
+            
+            // Register appropriate state manager based on configuration
+            if (useDistributedCache)
+            {
+                services.AddScoped<IOAuthStateManager, DistributedOAuthStateManager>();
+            }
+            else
+            {
+                // Fallback to in-memory for development/testing
+                services.AddSingleton<IOAuthStateManager, InMemoryOAuthStateManager>();
+            }
+            
+            services.AddScoped<ITokenGenerator, TokenGenerator>();
             services.AddScoped<IUserService, UserService>();
-
             return services;
         }
     }
