@@ -44,7 +44,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'maven'
 
       - name: Cache SchemaSpy dependencies
         id: cache-schemaspy
@@ -373,7 +372,7 @@ jobs:
                               <li>Insurances</li>
                               <li>Service Types</li>
                           </ul>
-                          <a href="./index.html?schema=Clinical" class="btn">View Clinical Schema →</a>
+                          <a href="./schema-index.html?schema=Clinical" class="btn">View Clinical Schema →</a>
                       </div>
                       
                       <div class="schema-card">
@@ -384,7 +383,7 @@ jobs:
                               <li>Provider Management</li>
                               <li>Role Assignments</li>
                           </ul>
-                          <a href="./index.html?schema=Compensation" class="btn">View Compensation Schema →</a>
+                          <a href="./schema-index.html?schema=Compensation" class="btn">View Compensation Schema →</a>
                       </div>
                       
                       <div class="schema-card">
@@ -396,7 +395,7 @@ jobs:
                       <div class="schema-card">
                           <h2>📊 Database Overview</h2>
                           <p>Complete database structure, statistics, and comprehensive schema documentation.</p>
-                          <a href="./index.html" class="btn">View Full Documentation →</a>
+                          <a href="./schema-index.html" class="btn">View Full Documentation →</a>
                       </div>
                   </div>
               </div>
