@@ -122,27 +122,101 @@ jobs:
             -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
             -C -Q "CREATE DATABASE ${{ env.DB_NAME }}" -b
 
-          echo "📋 Copying migration files..."
-          docker cp src/.docker/Db/${{ env.DB_NAME }}/01_init.sql sql-server:/tmp/
+          # Find and run all SQL migration files in order
+          echo "📋 Discovering migration files..."
+          SQL_FILES=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | sort)
+          FILE_COUNT=$(echo "$SQL_FILES" | wc -l)
+          echo "Found $FILE_COUNT migration file(s)"
 
+          # Copy all SQL files to container
+          echo "📋 Copying migration files to container..."
+          for sql_file in $SQL_FILES; do
+            echo "  - $(basename "$sql_file")"
+            docker cp "$sql_file" sql-server:/tmp/
+          done
+
+          # Run migrations in order
           echo "⚙️ Running migrations..."
-          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -d ${{ env.DB_NAME }} -i /tmp/01_init.sql -b
+          MIGRATION_NUM=1
+          for sql_file in $SQL_FILES; do
+            FILENAME=$(basename "$sql_file")
+            echo "[$MIGRATION_NUM/$FILE_COUNT] Executing: $FILENAME"
 
-          echo "✅ Database initialized successfully"
+            docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+              -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
+              -C -d ${{ env.DB_NAME }} -i "/tmp/$FILENAME" -b \
+              || { echo "❌ Migration failed: $FILENAME"; exit 1; }
+
+            echo "  ✅ $FILENAME completed"
+            MIGRATION_NUM=$((MIGRATION_NUM + 1))
+          done
+
+          echo "✅ All $FILE_COUNT migration(s) completed successfully"
 
       - name: Verify schema creation
         run: |
           set -e
 
           echo "🔍 Verifying schemas were created..."
+          SCHEMAS=$(docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
+            -C -d ${{ env.DB_NAME }} \
+            -Q "SET NOCOUNT ON; SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME IN ('Clinical', 'Compensation')" -h -1 -W)
+
+          echo "Found schemas: $SCHEMAS"
+
+          # Check if both required schemas exist
+          if ! echo "$SCHEMAS" | grep -q "Clinical"; then
+            echo "❌ Clinical schema not found"
+            exit 1
+          fi
+
+          if ! echo "$SCHEMAS" | grep -q "Compensation"; then
+            echo "❌ Compensation schema not found"
+            exit 1
+          fi
+
+          echo "✅ All required schemas verified"
+
+      - name: Validate schema integrity
+        run: |
+          set -e
+
+          echo "🔍 Validating database integrity..."
+
+          # Check for any database corruption
+          echo "Running DBCC CHECKDB..."
           docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
             -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
             -C -d ${{ env.DB_NAME }} \
-            -Q "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME IN ('Clinical', 'Compensation')" -b
+            -Q "DBCC CHECKDB (${{ env.DB_NAME }}) WITH NO_INFOMSGS" -b
 
-          echo "✅ Schemas verified"
+          # Get table counts per schema
+          echo ""
+          echo "📊 Schema statistics:"
+          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
+            -C -d ${{ env.DB_NAME }} \
+            -Q "SET NOCOUNT ON; SELECT s.name AS [Schema], COUNT(t.name) AS [Tables] FROM sys.schemas s LEFT JOIN sys.tables t ON s.schema_id = t.schema_id WHERE s.name IN ('Clinical', 'Compensation') GROUP BY s.name ORDER BY s.name" -h -1
+
+          # Verify foreign key constraints
+          echo ""
+          echo "🔗 Checking foreign key constraints..."
+          FK_COUNT=$(docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
+            -C -d ${{ env.DB_NAME }} \
+            -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.foreign_keys WHERE is_disabled = 0" -h -1 -W | tr -d '[:space:]')
+
+          echo "Active foreign keys: $FK_COUNT"
+
+          if [ "$FK_COUNT" -eq 0 ]; then
+            echo "⚠️  Warning: No foreign key constraints found - this may be expected for initial schema"
+          else
+            echo "✅ Foreign key constraints validated"
+          fi
+
+          echo ""
+          echo "✅ Schema integrity check passed"
 
       - name: Install SchemaSpy
         if: steps.cache-schemaspy.outputs.cache-hit != 'true'
@@ -226,8 +300,18 @@ jobs:
           echo "commit_msg=${COMMIT_MSG}" >> $GITHUB_OUTPUT
           echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
 
-          # Get migration version from SQL file (extract from filename or content)
-          MIGRATION_VERSION=$(find src/.docker/Db -name "*.sql" -type f | head -1 | xargs basename | sed 's/_.*//' || echo "01_init")
+          # Get migration version from SQL files (show latest or count)
+          SQL_FILE_COUNT=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | wc -l)
+          LATEST_FILE=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | sort | tail -1 | xargs basename 2>/dev/null || echo "01_init.sql")
+
+          if [ "$SQL_FILE_COUNT" -eq 1 ]; then
+            MIGRATION_VERSION=$(echo "$LATEST_FILE" | sed 's/_.*//' || echo "01_init")
+          else
+            # Show count and latest migration for multiple files
+            LATEST_NUM=$(echo "$LATEST_FILE" | sed 's/_.*//' || echo "01")
+            MIGRATION_VERSION="$SQL_FILE_COUNT migrations (latest: $LATEST_NUM)"
+          fi
+
           echo "migration_version=${MIGRATION_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Create enhanced index page
