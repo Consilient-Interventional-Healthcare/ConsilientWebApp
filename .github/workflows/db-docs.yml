@@ -9,6 +9,9 @@ on:
       - '.docker/Db/**/*.sql'
       - '.github/workflows/db-docs.yml'
   workflow_dispatch:
+  # schedule:
+  #   # Run weekly on Sundays at 2 AM UTC to catch any schema drift
+  #   - cron: '0 2 * * 0'
 
 permissions:
   contents: read
@@ -19,43 +22,101 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+env:
+  SQL_PASSWORD: ${{ secrets.SQL_SA_PASSWORD || 'YourStrong@Passw0rd' }}
+  SQL_SERVER_VERSION: '2022-latest'
+  SCHEMASPY_VERSION: '6.2.4'
+  JDBC_VERSION: '12.4.2.jre11'
+
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get full history for better commit info
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Cache SchemaSpy dependencies
+        id: cache-schemaspy
+        uses: actions/cache@v4
+        with:
+          path: schemaspy
+          key: schemaspy-${{ env.SCHEMASPY_VERSION }}-jdbc-${{ env.JDBC_VERSION }}
 
       - name: Setup SQL Server
         run: |
-          docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong@Passw0rd" \
-            -p 1433:1433 --name sql-server -d mcr.microsoft.com/mssql/server:2022-latest
+          docker run -e "ACCEPT_EULA=Y" \
+            -e "SA_PASSWORD=${{ env.SQL_PASSWORD }}" \
+            -e "MSSQL_PID=Developer" \
+            -p 1433:1433 \
+            --name sql-server \
+            --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P ${{ env.SQL_PASSWORD }} -C -Q 'SELECT 1' -b -o /dev/null" \
+            --health-interval=10s \
+            --health-timeout=5s \
+            --health-retries=10 \
+            -d mcr.microsoft.com/mssql/server:${{ env.SQL_SERVER_VERSION }}
           
-          # Wait for SQL Server to start
-          sleep 30
+          echo "Waiting for SQL Server to be healthy..."
+          timeout 90s bash -c 'until docker inspect --format="{{.State.Health.Status}}" sql-server | grep -q healthy; do sleep 2; done'
+          echo "✅ SQL Server is ready"
+
+      - name: Verify SQL Server connection
+        run: |
+          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
+            -C -Q "SELECT @@VERSION" -b
 
       - name: Create database and run migrations
         run: |
-          docker exec sql-server /opt/mssql-tools/bin/sqlcmd \
-            -S localhost -U SA -P "YourStrong@Passw0rd" \
-            -Q "CREATE DATABASE consilient_main"
+          echo "Creating database..."
+          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
+            -C -Q "CREATE DATABASE consilient_main" -b
           
+          echo "Copying migration files..."
           docker cp .docker/Db/consilient_main/01_init.sql sql-server:/tmp/
           
-          docker exec sql-server /opt/mssql-tools/bin/sqlcmd \
-            -S localhost -U SA -P "YourStrong@Passw0rd" \
-            -d consilient_main -i /tmp/01_init.sql
+          echo "Running migrations..."
+          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
+            -C -d consilient_main -i /tmp/01_init.sql -b
+          
+          echo "✅ Database initialized successfully"
+
+      - name: Verify schema creation
+        run: |
+          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
+            -C -d consilient_main \
+            -Q "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME IN ('Clinical', 'Compensation')" -b
 
       - name: Install SchemaSpy
+        if: steps.cache-schemaspy.outputs.cache-hit != 'true'
         run: |
           mkdir -p schemaspy
-          wget https://github.com/schemaspy/schemaspy/releases/download/v6.2.4/schemaspy-6.2.4.jar -O schemaspy/schemaspy.jar
-          wget https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.4.2.jre11/mssql-jdbc-12.4.2.jre11.jar -O schemaspy/mssql-jdbc.jar
+          wget -q --show-progress \
+            https://github.com/schemaspy/schemaspy/releases/download/v${{ env.SCHEMASPY_VERSION }}/schemaspy-${{ env.SCHEMASPY_VERSION }}.jar \
+            -O schemaspy/schemaspy.jar
+          wget -q --show-progress \
+            https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/${{ env.JDBC_VERSION }}/mssql-jdbc-${{ env.JDBC_VERSION }}.jar \
+            -O schemaspy/mssql-jdbc.jar
+          echo "✅ SchemaSpy downloaded"
 
       - name: Generate documentation
         run: |
           mkdir -p docs
+          
+          echo "Generating schema documentation..."
           java -jar schemaspy/schemaspy.jar \
             -t mssql17 \
             -dp schemaspy/mssql-jdbc.jar \
@@ -63,130 +124,304 @@ jobs:
             -port 1433 \
             -db consilient_main \
             -u SA \
-            -p "YourStrong@Passw0rd" \
+            -p "${{ env.SQL_PASSWORD }}" \
             -o docs \
             -s Clinical \
             -s Compensation \
-            -desc "Consilient Database Documentation" \
-            -norows
+            -desc "Consilient Database Documentation - Auto-generated from schema" \
+            -norows \
+            -vizjs \
+            -imageformat svg \
+            -noimplied 2>&1 | tee schemaspy.log
+          
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "❌ SchemaSpy failed"
+            cat schemaspy.log
+            exit 1
+          fi
+          
+          echo "✅ Documentation generated successfully"
 
-      - name: Create index page
+      - name: Get commit info
+        id: commit
         run: |
-          cat > docs/index.html << 'EOF'
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "commit_msg=$(git log -1 --pretty=%B | head -1)" >> $GITHUB_OUTPUT
+          echo "author=$(git log -1 --pretty=format:'%an')" >> $GITHUB_OUTPUT
+
+      - name: Create enhanced index page
+        env:
+          COMMIT_SHA: ${{ steps.commit.outputs.sha_short }}
+          COMMIT_MSG: ${{ steps.commit.outputs.commit_msg }}
+          COMMIT_AUTHOR: ${{ steps.commit.outputs.author }}
+        run: |
+          cat > docs/home.html << 'EOF'
           <!DOCTYPE html>
           <html lang="en">
           <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>Consilient Database Documentation</title>
+              <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
               <style>
+                  :root {
+                      --primary-color: #3498db;
+                      --primary-dark: #2980b9;
+                      --background: #f5f5f5;
+                      --card-background: #ffffff;
+                      --text-primary: #2c3e50;
+                      --text-secondary: #7f8c8d;
+                      --border-radius: 8px;
+                      --shadow: 0 2px 4px rgba(0,0,0,0.1);
+                      --shadow-hover: 0 4px 8px rgba(0,0,0,0.15);
+                  }
+                  
+                  * {
+                      margin: 0;
+                      padding: 0;
+                      box-sizing: border-box;
+                  }
+                  
                   body {
-                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                      line-height: 1.6;
+                      color: var(--text-primary);
+                      background: var(--background);
+                  }
+                  
+                  .container {
                       max-width: 1200px;
                       margin: 0 auto;
                       padding: 2rem;
-                      background: #f5f5f5;
                   }
+                  
                   .header {
-                      background: white;
+                      background: var(--card-background);
                       padding: 2rem;
-                      border-radius: 8px;
-                      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                      border-radius: var(--border-radius);
+                      box-shadow: var(--shadow);
                       margin-bottom: 2rem;
                   }
-                  h1 { color: #2c3e50; margin: 0 0 1rem 0; }
+                  
+                  h1 {
+                      color: var(--text-primary);
+                      margin-bottom: 0.5rem;
+                      font-size: 2.5rem;
+                  }
+                  
+                  .subtitle {
+                      color: var(--text-secondary);
+                      font-size: 1.1rem;
+                      margin-bottom: 1.5rem;
+                  }
+                  
+                  .info-grid {
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                      gap: 1rem;
+                      background: #e8f4f8;
+                      padding: 1.5rem;
+                      border-radius: var(--border-radius);
+                  }
+                  
+                  .info-item {
+                      display: flex;
+                      flex-direction: column;
+                  }
+                  
+                  .info-label {
+                      font-weight: 600;
+                      color: var(--text-secondary);
+                      font-size: 0.85rem;
+                      text-transform: uppercase;
+                      letter-spacing: 0.5px;
+                      margin-bottom: 0.25rem;
+                  }
+                  
+                  .info-value {
+                      color: var(--text-primary);
+                      font-size: 1rem;
+                      word-break: break-word;
+                  }
+                  
                   .schema-grid {
                       display: grid;
                       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
                       gap: 1.5rem;
+                      margin-top: 2rem;
                   }
+                  
                   .schema-card {
-                      background: white;
+                      background: var(--card-background);
                       padding: 1.5rem;
-                      border-radius: 8px;
-                      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                      transition: transform 0.2s;
+                      border-radius: var(--border-radius);
+                      box-shadow: var(--shadow);
+                      transition: all 0.3s ease;
+                      border-left: 4px solid var(--primary-color);
                   }
+                  
                   .schema-card:hover {
-                      transform: translateY(-2px);
-                      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+                      transform: translateY(-4px);
+                      box-shadow: var(--shadow-hover);
                   }
+                  
                   .schema-card h2 {
-                      margin-top: 0;
-                      color: #3498db;
+                      color: var(--primary-color);
+                      margin-bottom: 0.75rem;
+                      font-size: 1.5rem;
                   }
-                  .schema-card a {
+                  
+                  .schema-card p {
+                      color: var(--text-secondary);
+                      margin-bottom: 1rem;
+                  }
+                  
+                  .schema-card ul {
+                      list-style: none;
+                      margin-bottom: 1rem;
+                  }
+                  
+                  .schema-card li {
+                      padding: 0.25rem 0;
+                      color: var(--text-secondary);
+                  }
+                  
+                  .schema-card li:before {
+                      content: "▪";
+                      color: var(--primary-color);
+                      font-weight: bold;
+                      display: inline-block;
+                      width: 1em;
+                      margin-left: 0.5em;
+                  }
+                  
+                  .btn {
                       display: inline-block;
                       margin-top: 1rem;
-                      padding: 0.5rem 1rem;
-                      background: #3498db;
+                      padding: 0.75rem 1.5rem;
+                      background: var(--primary-color);
                       color: white;
                       text-decoration: none;
-                      border-radius: 4px;
+                      border-radius: var(--border-radius);
+                      font-weight: 500;
+                      transition: background 0.3s ease;
                   }
-                  .schema-card a:hover {
-                      background: #2980b9;
+                  
+                  .btn:hover {
+                      background: var(--primary-dark);
                   }
-                  .info {
+                  
+                  .badge {
+                      display: inline-block;
+                      padding: 0.25rem 0.75rem;
                       background: #e8f4f8;
-                      padding: 1rem;
-                      border-radius: 4px;
-                      margin-top: 1rem;
+                      border-radius: 12px;
+                      font-size: 0.85rem;
+                      color: var(--primary-color);
+                      font-weight: 500;
+                  }
+                  
+                  @media (max-width: 768px) {
+                      .container {
+                          padding: 1rem;
+                      }
+                      
+                      h1 {
+                          font-size: 2rem;
+                      }
+                      
+                      .schema-grid {
+                          grid-template-columns: 1fr;
+                      }
                   }
               </style>
           </head>
           <body>
-              <div class="header">
-                  <h1>🏥 Consilient Database Documentation</h1>
-                  <p>Auto-generated database schema documentation for the Consilient Healthcare System</p>
-                  <div class="info">
-                      <strong>Last Updated:</strong> $(date -u '+%Y-%m-%d %H:%M:%S UTC')<br>
-                      <strong>Database:</strong> consilient_main<br>
-                      <strong>Version:</strong> Migration 20251124205308_Initial
-                  </div>
-              </div>
-              
-              <div class="schema-grid">
-                  <div class="schema-card">
-                      <h2>📋 Clinical Schema</h2>
-                      <p>Patient management, hospitalizations, visits, facilities, and clinical data.</p>
-                      <ul>
-                          <li>Patients</li>
-                          <li>Hospitalizations</li>
-                          <li>Visits & VisitsStaging</li>
-                          <li>Facilities</li>
-                          <li>Insurances</li>
-                          <li>Service Types</li>
-                      </ul>
-                      <a href="./index.html?schema=Clinical">View Clinical Schema →</a>
-                  </div>
-                  
-                  <div class="schema-card">
-                      <h2>👥 Compensation Schema</h2>
-                      <p>Employee management, roles, and provider information.</p>
-                      <ul>
-                          <li>Employees</li>
-                          <li>Provider Management</li>
-                          <li>Role Assignments</li>
-                      </ul>
-                      <a href="./index.html?schema=Compensation">View Compensation Schema →</a>
+              <div class="container">
+                  <div class="header">
+                      <h1>🏥 Consilient Database Documentation</h1>
+                      <p class="subtitle">Auto-generated database schema documentation for the Consilient Healthcare System</p>
+                      <div class="info-grid">
+                          <div class="info-item">
+                              <span class="info-label">Last Updated</span>
+                              <span class="info-value">$(date -u '+%Y-%m-%d %H:%M:%S UTC')</span>
+                          </div>
+                          <div class="info-item">
+                              <span class="info-label">Database</span>
+                              <span class="info-value">consilient_main</span>
+                          </div>
+                          <div class="info-item">
+                              <span class="info-label">Migration</span>
+                              <span class="info-value">20251124205308_Initial</span>
+                          </div>
+                          <div class="info-item">
+                              <span class="info-label">Last Commit</span>
+                              <span class="info-value" title="${COMMIT_MSG}">${COMMIT_SHA}</span>
+                          </div>
+                      </div>
                   </div>
                   
-                  <div class="schema-card">
-                      <h2>🔗 Relationships</h2>
-                      <p>View entity relationships and database diagram.</p>
-                      <a href="./relationships.html">View ER Diagram →</a>
-                  </div>
-                  
-                  <div class="schema-card">
-                      <h2>📊 Database Overview</h2>
-                      <p>Complete database structure and statistics.</p>
-                      <a href="./index.html">View Full Documentation →</a>
+                  <div class="schema-grid">
+                      <div class="schema-card">
+                          <h2>📋 Clinical Schema</h2>
+                          <p>Patient management, hospitalizations, visits, facilities, and clinical data.</p>
+                          <ul>
+                              <li>Patients</li>
+                              <li>Hospitalizations</li>
+                              <li>Visits & VisitsStaging</li>
+                              <li>Facilities</li>
+                              <li>Insurances</li>
+                              <li>Service Types</li>
+                          </ul>
+                          <a href="./index.html?schema=Clinical" class="btn">View Clinical Schema →</a>
+                      </div>
+                      
+                      <div class="schema-card">
+                          <h2>👥 Compensation Schema</h2>
+                          <p>Employee management, roles, and provider information.</p>
+                          <ul>
+                              <li>Employees</li>
+                              <li>Provider Management</li>
+                              <li>Role Assignments</li>
+                          </ul>
+                          <a href="./index.html?schema=Compensation" class="btn">View Compensation Schema →</a>
+                      </div>
+                      
+                      <div class="schema-card">
+                          <h2>🔗 Entity Relationships</h2>
+                          <p>Interactive entity-relationship diagrams showing table connections and foreign keys.</p>
+                          <a href="./relationships.html" class="btn">View ER Diagram →</a>
+                      </div>
+                      
+                      <div class="schema-card">
+                          <h2>📊 Database Overview</h2>
+                          <p>Complete database structure, statistics, and comprehensive schema documentation.</p>
+                          <a href="./index.html" class="btn">View Full Documentation →</a>
+                      </div>
                   </div>
               </div>
           </body>
           </html>
           EOF
+          
+          # Use the enhanced page as the main index
+          mv docs/index.html docs/schema-index.html
+          mv docs/home.html docs/index.html
+
+      - name: Generate summary
+        run: |
+          echo "## 📚 Database Documentation Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Documentation successfully generated and will be deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Schemas Documented" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 **Clinical** - Patient management and clinical operations" >> $GITHUB_STEP_SUMMARY
+          echo "- 👥 **Compensation** - Employee and provider data" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Commit Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA**: ${{ steps.commit.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Message**: ${{ steps.commit.outputs.commit_msg }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Author**: ${{ steps.commit.outputs.author }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -200,6 +435,17 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+      - name: Comment deployment URL
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.deployment.outputs.page_url }}';
+            console.log(`Documentation deployed to: ${url}`);
+
       - name: Cleanup
         if: always()
-        run: docker stop sql-server && docker rm sql-server
+        run: |
+          docker stop sql-server || true
+          docker rm sql-server || true
+          echo "✅ Cleanup completed"
