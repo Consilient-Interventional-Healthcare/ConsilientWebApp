@@ -6,7 +6,7 @@ on:
       - main
       - login
     paths:
-      - '.docker/Db/**/*.sql'
+      - 'src/.docker/Db/**/*.sql'
       - '.github/workflows/db-docs.yml'
   workflow_dispatch:
   # schedule:
@@ -38,6 +38,19 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Get full history for better commit info
+
+      - name: Verify SQL files exist
+        run: |
+          echo "🔍 Checking for SQL migration files..."
+          if [ -d "src/.docker/Db" ]; then
+            echo "✅ Found .docker/Db directory"
+            find src/.docker/Db -name "*.sql" -type f
+          else
+            echo "❌ Directory src/.docker/Db not found"
+            echo "📂 Repository structure:"
+            ls -la
+            exit 1
+          fi
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -83,7 +96,7 @@ jobs:
             -C -Q "CREATE DATABASE consilient_main" -b
           
           echo "Copying migration files..."
-          docker cp .docker/Db/consilient_main/01_init.sql sql-server:/tmp/
+          docker cp src/.docker/Db/consilient_main/01_init.sql sql-server:/tmp/
           
           echo "Running migrations..."
           docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
