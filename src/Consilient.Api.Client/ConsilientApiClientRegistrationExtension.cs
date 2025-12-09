@@ -33,7 +33,6 @@ namespace Consilient.Api.Client
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Patients);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().Visits);
             services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().ServiceTypes);
-            services.AddScoped(sp => sp.GetRequiredService<IConsilientApiClient>().VisitsStaging);
         }
     }
 }

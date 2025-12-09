@@ -1,6 +1,7 @@
 import alasql from 'alasql';
 import db from './db.json';
-import type { DbSchema, Visit } from '../types/db.types';
+import type { DbSchema } from '../types/db.types';
+import type { Visits } from '../types/api.generated';
 
 const typedDb: DbSchema = db;
 type TableName = keyof DbSchema;
@@ -21,7 +22,7 @@ export class DataProvider {
       if (alasql.tables[table]) {
         // If loading visits, replace their date with today
         if (table === "visits" && Array.isArray(typedDb[table])) {
-          alasql.tables[table].data = ((typedDb[table] as unknown) as Visit[]).map(v => ({
+          alasql.tables[table].data = ((typedDb[table] as unknown) as Visits.VisitDto[]).map(v => ({
             ...v,
             date: getTodayDateString()
           }));

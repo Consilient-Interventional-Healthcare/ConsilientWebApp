@@ -82,10 +82,10 @@ export default function Login() {
         setError("Please enter both username and password.");
         return;
       }
-      await login({ username, password });
+      await login({ userName: username, password });
       // Navigate to the intended destination after successful login
       logger.debug('Login component - Navigating after login', { component: 'Login', destination: from });
-      navigate(from, { replace: true });
+      void navigate(from, { replace: true });
     } catch (error) {
       logger.error("Login failed", error as Error, { component: "Login" });
       setError((error as Error).message || "Login failed. Please try again.");

@@ -1,8 +1,8 @@
 ﻿using Consilient.Data;
 using Consilient.Data.Entities;
 using Consilient.Visits.Contracts;
-using Consilient.Visits.Contracts.Dtos;
-using Consilient.Visits.Contracts.Requests;
+using Consilient.Visits.Contracts.Models;
+using Consilient.Visits.Contracts.Models.Requests;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +10,57 @@ namespace Consilient.Visits.Services
 {
     internal class VisitService(ConsilientDbContext dataContext) : IVisitService
     {
+        public async Task<bool> AddAttendant(int visitId, int attendantId)
+        {
+            if (visitId <= 0 || attendantId <= 0)
+            {
+                return false;
+            }
+
+            // Avoid duplicates
+            var alreadyAttached = await dataContext.Set<VisitAttendant>()
+                .AsNoTracking()
+                .AnyAsync(va => va.VisitId == visitId && va.EmployeeId == attendantId);
+            if (alreadyAttached)
+            {
+                return false;
+            }
+
+            // Ensure referenced Visit and Employee exist
+            var visitExists = await dataContext.Visits
+                .AsNoTracking()
+                .AnyAsync(v => v.Id == visitId);
+            if (!visitExists)
+            {
+                return false;
+            }
+
+            var employeeExists = await dataContext.Employees
+                .AsNoTracking()
+                .AnyAsync(e => e.Id == attendantId);
+            if (!employeeExists)
+            {
+                return false;
+            }
+
+            var entity = new VisitAttendant
+            {
+                VisitId = visitId,
+                EmployeeId = attendantId
+            };
+
+            try
+            {
+                dataContext.Set<VisitAttendant>().Add(entity);
+                await dataContext.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new InvalidOperationException("Failed to add visit attendant. Related data or database constraints may prevent insertion.", ex);
+            }
+        }
+
         public async Task<VisitDto?> CreateAsync(CreateVisitRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);

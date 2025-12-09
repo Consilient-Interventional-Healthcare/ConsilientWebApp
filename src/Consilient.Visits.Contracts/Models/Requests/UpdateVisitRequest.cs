@@ -1,4 +1,4 @@
-﻿namespace Consilient.Visits.Contracts.Requests
+﻿namespace Consilient.Visits.Contracts.Models.Requests
 {
     public class UpdateVisitRequest
     {

@@ -21,7 +21,7 @@ export default function PublicRoute({ children }: PublicRouteProps) {
   }
 
   if (isAuthenticated) {
-    const destination = redirect || ROUTES.DASHBOARD;
+    const destination = redirect ?? ROUTES.DASHBOARD;
     logger.info('PublicRoute component - User is authenticated, redirecting', { component: 'PublicRoute', destination });
     return <Navigate to={destination} replace />;
   } else {

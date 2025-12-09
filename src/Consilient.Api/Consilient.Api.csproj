@@ -36,6 +36,8 @@
     <ProjectReference Include="..\Consilient.Data.GraphQL\Consilient.Data.GraphQL.csproj" />
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
     <ProjectReference Include="..\Consilient.Employees.Services\Consilient.Employees.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Hospitalizations.Contracts\Consilient.Hospitalizations.Contracts.csproj" />
+    <ProjectReference Include="..\Consilient.Hospitalizations.Services\Consilient.Hospitalizations.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj" />
     <ProjectReference Include="..\Consilient.Insurances.Services\Consilient.Insurances.Services.csproj" />

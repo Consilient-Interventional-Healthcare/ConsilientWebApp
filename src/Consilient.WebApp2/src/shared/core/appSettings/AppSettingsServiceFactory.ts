@@ -4,7 +4,8 @@ import appSettings from '@/config';
 
 export class AppSettingsServiceFactory {
   static create() {
-    return new AppSettingsService
-    //return appSettings.features.useMockServices ? new AppSettingsServiceMock() : new AppSettingsService()
+    return appSettings.features.mockServices.appSettings
+      ? new AppSettingsServiceMock()
+      : new AppSettingsService();
   }
 }

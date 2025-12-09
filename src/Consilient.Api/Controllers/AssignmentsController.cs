@@ -18,6 +18,8 @@ namespace Consilient.Api.Controllers
 
 
         [HttpPost("upload")]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> UploadFile(
             IFormFile file,
             [FromForm] DateOnly serviceDate,
@@ -42,7 +44,7 @@ namespace Consilient.Api.Controllers
             var result = new
             {
                 JobId = jobId,
-                FileName = file.FileName,
+                file.FileName,
                 ServiceDate = serviceDate,
                 FacilityId = facilityId,
                 Message = "File uploaded successfully and queued for processing."

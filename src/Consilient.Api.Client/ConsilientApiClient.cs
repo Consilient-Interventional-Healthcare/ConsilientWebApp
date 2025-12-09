@@ -18,7 +18,6 @@ namespace Consilient.Api.Client
             Patients = new PatientsApi(_httpClient);
             Visits = new VisitsApi(_httpClient);
             ServiceTypes = new ServiceTypesApi(_httpClient);
-            VisitsStaging = new VisitsStagingApi(_httpClient);
         }
 
         ~ConsilientApiClient()
@@ -33,7 +32,6 @@ namespace Consilient.Api.Client
         public IPatientsApi Patients { get; }
         public IServiceTypesApi ServiceTypes { get; }
         public IVisitsApi Visits { get; }
-        public IVisitsStagingApi VisitsStaging { get; }
 
         public void Dispose()
         {

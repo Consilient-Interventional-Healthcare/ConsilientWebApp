@@ -5,10 +5,9 @@ import { logger } from "@/shared/core/logging/Logger";
 import { getAuthService } from "@/features/auth/services/AuthServiceFactory";
 import { authStateManager } from "@/features/auth/services/AuthStateManager";
 import { ROUTES, CLAIM_TYPES } from "@/constants";
-
-import type { CurrentUser } from "@/features/auth/currentUser.types";
-import type { UserClaim } from "../auth.types";
 import type { SessionExpiredDetail } from "../auth.events";
+import type { Auth } from "@/types/api.generated";
+import type { CurrentUser } from "./../auth.types"; ;
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -20,7 +19,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const navigate = useNavigate();
 
   // Helper to map claims array to CurrentUser
-  const mapClaimsToCurrentUser = (claims: UserClaim[]): CurrentUser => {
+  const mapClaimsToCurrentUser = (claims: Auth.ClaimDto[]): CurrentUser => {
     const getClaimValue = (type: string) => {
       const found = Array.isArray(claims)
         ? claims.find((c) => c.type === type)
@@ -60,17 +59,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     void initAuth();
   }, []); // Run once on mount
 
-  const login = async (params: {
-    username: string;
-    password: string;
-  }): Promise<void> => {
+  const login = async (
+    credentials: Auth.AuthenticateUserRequest
+  ): Promise<Auth.AuthenticateUserApiResponse> => {
     setIsLoading(true); // Set loading true on login attempt
     try {
-      const result = await authService.login({
-        username: params.username,
-        password: params.password,
-      });
-      if (result.success && result.userClaims) {
+      const result = await authService.login(credentials);
+      if (result.succeeded && result.userClaims) {
         const mappedUser = mapClaimsToCurrentUser(result.userClaims);
         setUser(mappedUser);
         logger.debug(
@@ -81,11 +76,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             isAuthenticated: !!result.userClaims,
           }
         );
+        return result;
       } else {
         throw new Error(
-          result.errors.length ? result.errors.join(", ") : "Login failed"
+          result.errors?.length ? result.errors.join(", ") : "Login failed"
         );
       }
+    } catch (error) {
+      logger.error("AuthProvider - Login failed", error as Error, { component: "AuthProvider" });
+      return {
+        succeeded: false,
+        errors: [error instanceof Error ? error.message : String(error)],
+        userClaims: null,
+      };
     } finally {
       setIsLoading(false); // Ensure loading is set to false after login attempt
     }
@@ -125,7 +128,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null);
 
       // Navigate to login page with redirect parameter
-      navigate(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(event.detail.redirectPath)}`);
+      void navigate(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(event.detail.redirectPath)}`);
     };
 
     window.addEventListener('auth:sessionExpired', handleSessionExpired);

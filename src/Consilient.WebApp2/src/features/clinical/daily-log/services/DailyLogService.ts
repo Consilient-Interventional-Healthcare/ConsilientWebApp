@@ -14,7 +14,7 @@ export class DailyLogService implements IDailyLogService {
     throw new Error('Not implemented yet');
   }
 
-  insertLogEntry(_visitId: number, _content: string, _userId: number, _type: string): Promise<DailyLogLogEntry> {
+  insertLogEntry(_visitId: number, _content: string, _userId: number, _eventTypeId: number): Promise<DailyLogLogEntry> {
     throw new Error('Not implemented yet');
   }
 }

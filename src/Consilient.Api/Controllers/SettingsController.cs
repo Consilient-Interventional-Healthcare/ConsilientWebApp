@@ -12,6 +12,7 @@ namespace Consilient.Api.Controllers
 
         [HttpGet]
         [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetSettings()
         {
             var settings = new

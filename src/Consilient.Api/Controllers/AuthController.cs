@@ -32,8 +32,8 @@ namespace Consilient.Api.Controllers
         IOptions<RedirectValidationOptions> _redirectValidationOptions,
         ILogger<AuthController> _logger) : ControllerBase
     {
-        private readonly string[] _allowedOrigins = 
-    _redirectValidationOptions?.Value?.AllowedOrigins 
+        private readonly string[] _allowedOrigins =
+    _redirectValidationOptions?.Value?.AllowedOrigins
     ?? throw new InvalidOperationException(
         "RedirectValidationOptions.AllowedOrigins must be configured in application settings.");
 
@@ -42,6 +42,7 @@ namespace Consilient.Api.Controllers
         /// </summary>
         [HttpGet("oauth/providers")]
         [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult GetOAuthProviders()
         {
             var providers = _providerRegistry.GetSupportedProviders()
@@ -61,6 +62,9 @@ namespace Consilient.Api.Controllers
         [HttpPost("authenticate")]
         [EnableRateLimiting(RateLimitingConstants.AuthenticatePolicy)]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(AuthenticateUserApiResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AuthenticateUserApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Authenticate(
             [FromBody] AuthenticateUserRequest request,
             CancellationToken cancellationToken)
@@ -79,6 +83,9 @@ namespace Consilient.Api.Controllers
         /// </summary>
         [HttpPost("external")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(AuthenticateUserApiResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AuthenticateUserApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ExternalAuthenticate(
             [FromBody] ExternalAuthenticateRequest request,
             CancellationToken cancellationToken)
@@ -97,6 +104,8 @@ namespace Consilient.Api.Controllers
         /// </summary>
         [HttpGet("claims")]
         [Authorize]
+        [ProducesResponseType(typeof(IEnumerable<ClaimDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetCurrentUser(
             CancellationToken cancellationToken)
         {
@@ -114,6 +123,8 @@ namespace Consilient.Api.Controllers
         /// </summary>
         [HttpPost("link-external")]
         [EnableRateLimiting(RateLimitingConstants.LinkExternalPolicy)]
+        [ProducesResponseType(typeof(LinkExternalLoginResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> LinkExternal(
             [FromBody] LinkExternalLoginRequest request,
             CancellationToken cancellationToken)
@@ -124,12 +135,11 @@ namespace Consilient.Api.Controllers
             }
 
             var result = await _userService.LinkExternalLoginAsync(request, cancellationToken);
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                return Ok();
+                return BadRequest(result);
             }
-
-            return BadRequest(new { errors = result.Errors });
+            return Ok(result);
         }
 
         /// <summary>
@@ -137,6 +147,7 @@ namespace Consilient.Api.Controllers
         /// </summary>
         [HttpPost("logout")]
         [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult Logout()
         {
             _jwtTokenCookieService.ClearAuthenticationCookie(Response);
@@ -150,6 +161,8 @@ namespace Consilient.Api.Controllers
         [HttpGet("{provider}/callback")]
         [AllowAnonymous]
         [EnableRateLimiting(RateLimitingConstants.OAuthCallbackPolicy)]
+        [ProducesResponseType(StatusCodes.Status302Found)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> OAuthCallback(
             string provider,
             [FromQuery] string? code,
@@ -216,7 +229,7 @@ namespace Consilient.Api.Controllers
             // Construct dynamic redirect URI from current request (matching the one used in login flow)
             var redirectUri = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/auth/{provider.ToLowerInvariant()}/callback";
 
-                // Authenticate with OAuth provider
+            // Authenticate with OAuth provider
             var authResult = await _userService.AuthenticateExternalAsync(
                 new ExternalAuthenticateRequest(provider, code, validationResult.CodeVerifier, redirectUri),
                 cancellationToken);
@@ -231,7 +244,7 @@ namespace Consilient.Api.Controllers
 
                 // Build absolute URL for cross-origin redirect to frontend
                 var redirectUrl = BuildAbsoluteReturnUrl(validationResult.ReturnUrl);
-                
+
                 if (!string.IsNullOrWhiteSpace(redirectUrl))
                 {
                     _logger.LogInformation("Redirecting to frontend: {RedirectUrl}", redirectUrl);
@@ -255,6 +268,9 @@ namespace Consilient.Api.Controllers
         [HttpGet("{provider}/login")]
         [AllowAnonymous]
         [EnableRateLimiting(RateLimitingConstants.OAuthLoginPolicy)]
+        [ProducesResponseType(StatusCodes.Status302Found)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> OAuthLogin(
             string provider,
             [FromQuery] string? returnUrl,
@@ -352,7 +368,7 @@ namespace Consilient.Api.Controllers
 
             var encodedError = Uri.EscapeDataString(errorDescription ?? error);
             var redirectUrl = BuildAbsoluteReturnUrl(returnUrl);
-            
+
             if (!string.IsNullOrWhiteSpace(redirectUrl))
             {
                 var separator = redirectUrl.Contains('?') ? "&" : "?";
@@ -436,7 +452,7 @@ namespace Consilient.Api.Controllers
                     {
                         relativePath += uri.Fragment;
                     }
-                    
+
                     _logger.LogDebug("Normalized absolute URL to relative: {Original} -> {Normalized}", returnUrl, relativePath);
                     return relativePath;
                 }
@@ -468,7 +484,7 @@ namespace Consilient.Api.Controllers
                 {
                     return returnUrl;
                 }
-                
+
                 _logger.LogWarning("Absolute URL from disallowed origin: {Origin}", urlOrigin);
                 return null;
             }

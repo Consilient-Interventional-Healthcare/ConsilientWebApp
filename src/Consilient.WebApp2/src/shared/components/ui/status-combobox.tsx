@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { HospitalizationStatus } from "@/types/db.types";
+import type { Hospitalizations } from "@/types/api.generated";
 import { dataProvider } from "@/data/DataProvider";
 
 interface StatusComboBoxProps {
@@ -9,7 +9,7 @@ interface StatusComboBoxProps {
 
 export function StatusComboBox({ value, onChange }: StatusComboBoxProps) {
   const [open, setOpen] = React.useState(false);
-  const statuses = dataProvider.query<HospitalizationStatus>('SELECT * FROM hospitalizationStatuses');
+  const statuses = dataProvider.query<Hospitalizations.HospitalizationStatusDto>('SELECT * FROM hospitalizationStatuses');
   const selectedStatus = statuses.find(s => s.id === value);
 
   return (

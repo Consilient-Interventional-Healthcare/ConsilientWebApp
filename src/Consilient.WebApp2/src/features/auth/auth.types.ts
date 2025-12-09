@@ -1,62 +1,20 @@
-import type { User } from "@/types/db.types";
-import type { CurrentUser } from "./currentUser.types";
-
-export interface UserClaim {
-  type: string;
-  value: string;
-}
-export interface LoginResults {
-  success: boolean;
-  errors: string[];
-  userClaims?: UserClaim[] | undefined;
-}
+import type { Auth } from "@/types/api.generated";
+import type { CurrentUser, MockUser } from "@/types/db.types";
 export interface IAuthService {
-  linkExternalAccount(params: LinkExternalLoginRequest): Promise<void>;
+  linkExternalAccount(params: Auth.LinkExternalLoginRequest): Promise<void>;
   authenticate(providerKey: string): Promise<string>;
-  login(params: AuthenticateUserRequest): Promise<LoginResults>;
+  login(params: Auth.AuthenticateUserRequest): Promise<Auth.AuthenticateUserApiResponse>;
   logout(): Promise<void>;
-  getCurrentUserClaims(): Promise<UserClaim[] | null>;
+  getCurrentUserClaims(): Promise<Auth.ClaimDto[] | null>;
   initiateMicrosoftLogin(returnUrl?: string): void;
 }
 
 export interface AuthContextType {
   user: CurrentUser | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: Auth.AuthenticateUserRequest) => Promise<Auth.AuthenticateUserApiResponse>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
 }
 
-export interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  token: string;
-}
-
-export interface LinkExternalLoginResult {
-  succeeded: boolean;
-  errors?: string[];
-}
-
-export interface LinkExternalLoginRequest {
-  email: string;
-  provider: string;
-  providerKey: string;
-  providerDisplayName?: string;
-}
-
-export interface AuthenticateUserRequest {
-  username: string;
-  password: string;
-}
-
-export interface AuthenticateUserResult {
-  succeeded: boolean;
-  errors?: string[];
-  userClaims?: UserClaim[];
-}
-
-export type { User };
+export { MockUser, CurrentUser }

@@ -1,4 +1,5 @@
-﻿using Consilient.Data.Interceptors;
+﻿using Consilient.Common.Services;
+using Consilient.Data.Interceptors;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.Data
@@ -7,10 +8,11 @@ namespace Consilient.Data
     {
         public static void RegisterCosilientDbContext(this IServiceCollection services, string connectionString, bool isProduction)
         {
-            services.AddDbContext<ConsilientDbContext>(options =>
+            services.AddDbContext<ConsilientDbContext>((sp, options) =>
             {
                 options.ConfigureDataContext(connectionString, isProduction);
-                options.AddInterceptors(new AuditableEntityInterceptor());          
+                options.AddInterceptors(new AuditableEntityInterceptor());
+                options.AddInterceptors(new HospitalizationStatusChangeInterceptor(sp.GetRequiredService<ICurrentUserService>()));
                 options.ConfigureDataContext(connectionString, isProduction, "__EFMigrationsHistory_Consilient", "dbo");
             });
         }

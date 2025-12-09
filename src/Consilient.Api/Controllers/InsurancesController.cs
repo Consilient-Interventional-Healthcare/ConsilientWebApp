@@ -1,4 +1,5 @@
 using Consilient.Insurances.Contracts;
+using Consilient.Insurances.Contracts.Dtos;
 using Consilient.Insurances.Contracts.Requests;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,6 +10,7 @@ namespace Consilient.Api.Controllers
     public class InsurancesController(IInsuranceService insuranceService) : ControllerBase
     {
         [HttpPost]
+        [ProducesResponseType(typeof(InsuranceDto), StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody] CreateInsuranceRequest request)
         {
             var created = await insuranceService.CreateAsync(request).ConfigureAwait(false);
@@ -16,6 +18,8 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [ProducesResponseType(typeof(InsuranceDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
             var insurance = await insuranceService.GetByIdAsync(id).ConfigureAwait(false);
@@ -23,6 +27,7 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<InsuranceDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll()
         {
             var items = await insuranceService.GetAllAsync().ConfigureAwait(false);
@@ -30,6 +35,8 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [ProducesResponseType(typeof(InsuranceDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateInsuranceRequest request)
         {
             var updated = await insuranceService.UpdateAsync(id, request).ConfigureAwait(false);

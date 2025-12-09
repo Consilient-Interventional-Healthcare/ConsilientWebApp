@@ -87,7 +87,8 @@
       "lastName": "Local",
       "role": "administrator",
       "emailConfirmed": true,
-      "password": "Hernan"
+      "password": "Hernan",
+      "externalProviders" : []
     },
     {
       "id": 101,
@@ -96,7 +97,8 @@
       "lastName": "Local",
       "role": "nurse",
       "emailConfirmed": true,
-      "password": "Hernan"
+      "password": "Hernan",
+      "externalProviders" : []
     },
     {
       "id": 102,
@@ -105,7 +107,8 @@
       "lastName": "Local",
       "role": "provider",
       "emailConfirmed": true,
-      "password": "Hernan"
+      "password": "Hernan",
+      "externalProviders" : []
     }
   ],
   "patients": [
@@ -140,21 +143,30 @@
       "patientId": 1,
       "admissionDate": "2025-11-01",
       "hospitalizationStatusId": 1,
-      "facilityId": 1
+      "facilityId": 1,
+      "caseId": 3847,
+      "psychEvaluation": false,
+      "dischargeDate": null
     },
     {
       "id": 2,
       "patientId": 2,
       "admissionDate": "2025-10-20",
       "hospitalizationStatusId": 4,
-      "facilityId": 1
+      "facilityId": 1,
+      "caseId": 7219,
+      "psychEvaluation": false,
+      "dischargeDate": null
     },
     {
       "id": 3,
       "patientId": 3,
       "admissionDate": "2025-11-10",
       "hospitalizationStatusId": 5,
-      "facilityId": 2
+      "facilityId": 2,
+      "caseId": 5632,
+      "psychEvaluation": false,
+      "dischargeDate": null
     }
   ],
   "visits": [
@@ -190,102 +202,102 @@
     { "id": 1, "firstName": "Alice", "lastName": "Smith", "role": "Physician" },
     { "id": 2, "firstName": "Bob", "lastName": "Lee", "role": "Nurse" }
   ],
-  "logEntries": [
+  "visitEvents": [
     {
       "id": 1,
-      "timestamp": "2025-11-15T07:30:00Z",
+      "eventOccurredAt": "2025-11-15T07:30:00Z",
       "visitId": 1,
       "providerId": 2,
-      "userId": 2,
-      "message": "Patient rested overnight, no incidents reported.",
-      "type": "interval"
+      "enteredByUserId": 2,
+      "description": "Patient rested overnight, no incidents reported.",
+      "eventTypeId": 1
     },
     {
       "id": 2,
-      "timestamp": "2025-11-15T08:15:00Z",
+      "eventOccurredAt": "2025-11-15T08:15:00Z",
       "visitId": 1,
       "providerId": 2,
-      "userId": 2,
-      "message": "Patient requested water at 6am, no other events.",
-      "type": "interval"
+      "enteredByUserId": 2,
+      "description": "Patient requested water at 6am, no other events.",
+      "eventTypeId": 1
     },
     {
       "id": 3,
-      "timestamp": "2025-11-15T14:00:00Z",
+      "eventOccurredAt": "2025-11-15T14:00:00Z",
       "visitId": 1,
       "providerId": 1,
-      "userId": 1,
-      "message": "Interviewed patient, discussed mood and sleep. Patient reports feeling better today.",
-      "type": "interview"
+      "enteredByUserId": 1,
+      "description": "Interviewed patient, discussed mood and sleep. Patient reports feeling better today.",
+      "eventTypeId": 2
     },
     {
       "id": 4,
-      "timestamp": "2025-11-15T17:30:00Z",
+      "eventOccurredAt": "2025-11-15T17:30:00Z",
       "visitId": 1,
       "providerId": 1,
-      "userId": 1,
-      "message": "Plan: Continue current medication, encourage group therapy participation.",
-      "type": "plan"
+      "enteredByUserId": 1,
+      "description": "Plan: Continue current medication, encourage group therapy participation.",
+      "eventTypeId": 3
     },
     {
       "id": 5,
-      "timestamp": "2025-10-20T07:45:00Z",
+      "eventOccurredAt": "2025-10-20T07:45:00Z",
       "visitId": 2,
       "providerId": 2,
-      "userId": 2,
-      "message": "Patient had difficulty sleeping, nurse checked at 3am.",
-      "type": "interval"
+      "enteredByUserId": 2,
+      "description": "Patient had difficulty sleeping, nurse checked at 3am.",
+      "eventTypeId": 1
     },
     {
       "id": 6,
-      "timestamp": "2025-10-20T08:30:00Z",
+      "eventOccurredAt": "2025-10-20T08:30:00Z",
       "visitId": 2,
       "providerId": 2,
-      "userId": 2,
-      "message": "No incidents overnight, patient calm in the morning.",
-      "type": "interval"
+      "enteredByUserId": 2,
+      "description": "No incidents overnight, patient calm in the morning.",
+      "eventTypeId": 1
     },
     {
       "id": 7,
-      "timestamp": "2025-10-20T15:00:00Z",
+      "eventOccurredAt": "2025-10-20T15:00:00Z",
       "visitId": 2,
       "providerId": 1,
-      "userId": 1,
-      "message": "Interview: Patient reports anxiety, discussed coping strategies.",
-      "type": "interview"
+      "enteredByUserId": 1,
+      "description": "Interview: Patient reports anxiety, discussed coping strategies.",
+      "eventTypeId": 2
     },
     {
       "id": 9,
-      "timestamp": "2025-11-10T07:20:00Z",
+      "eventOccurredAt": "2025-11-10T07:20:00Z",
       "visitId": 3,
       "providerId": 2,
-      "userId": 2,
-      "message": "Patient woke up early, no issues overnight.",
-      "type": "interval"
+      "enteredByUserId": 2,
+      "description": "Patient woke up early, no issues overnight.",
+      "eventTypeId": 1
     },
     {
       "id": 10,
-      "timestamp": "2025-11-10T08:10:00Z",
+      "eventOccurredAt": "2025-11-10T08:10:00Z",
       "visitId": 3,
       "providerId": 2,
-      "userId": 2,
-      "message": "Patient had breakfast, nurse noted positive mood.",
-      "type": "interval"
+      "enteredByUserId": 2,
+      "description": "Patient had breakfast, nurse noted positive mood.",
+      "eventTypeId": 1
     },
     {
       "id": 11,
-      "timestamp": "2025-11-10T13:45:00Z",
+      "eventOccurredAt": "2025-11-10T13:45:00Z",
       "visitId": 3,
       "providerId": 1,
-      "userId": 1,
-      "message": "Interview: Patient discussed family visit, expressed happiness.",
-      "type": "interview"
+      "enteredByUserId": 1,
+      "description": "Interview: Patient discussed family visit, expressed happiness.",
+      "eventTypeId": 2
     }
   ],
-  "logEntryTypes": [
-    { "label": "Interval", "value": "interval", "icon": "fa-bed", "color": "#1976d2" },
-    { "label": "Interview", "value": "interview", "icon": "fa-user-md", "color": "#43a047" },
-    { "label": "Plan", "value": "plan", "icon": "fa-notes-medical", "color": "#fbc02d" }
+  "visitEventTypes": [
+    { "id": 1, "label": "Interval", "value": "interval", "icon": "fa-bed", "color": "#1976d2" },
+    { "id": 2, "label": "Interview", "value": "interview", "icon": "fa-user-md", "color": "#43a047" },
+    { "id": 3, "label": "Plan", "value": "plan", "icon": "fa-notes-medical", "color": "#fbc02d" }
   ],
   "statusChanges": [
     {

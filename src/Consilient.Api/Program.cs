@@ -1,22 +1,22 @@
 using Consilient.Api.Configuration;
 using Consilient.Api.Hubs;
-using Consilient.Api.Infra;
+using Consilient.Api.Infra.Authentication;
 using Consilient.Api.Infra.ModelBinders;
 using Consilient.Api.Init;
+using Consilient.Common.Services;
 using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Data.GraphQL;
 using Consilient.Employees.Services;
+using Consilient.Hospitalizations.Services;
 using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
-using Consilient.Users.Contracts.OAuth;
 using Consilient.Users.Services;
 using Consilient.Visits.Services;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using GraphQL.Server.Ui.GraphiQL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -24,7 +24,6 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
-using System.Configuration;
 
 namespace Consilient.Api
 {
@@ -74,8 +73,10 @@ namespace Consilient.Api
                     applicationSettings.Authentication.PasswordPolicy,
                     useDistributedCache: builder.Environment.IsProduction());
                 builder.Services.RegisterVisitServices();
+                builder.Services.RegisterHospitalizationServices();
                 builder.Services.RegisterLogging(logger);
                 builder.Services.ConfigureHangfire(hangfireConnectionString);
+                builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
                 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
                 builder.Services.ConfigureCors(allowedOrigins!);

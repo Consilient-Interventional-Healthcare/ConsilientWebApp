@@ -8,16 +8,8 @@ namespace Consilient.Data.Entities
 
         public DateTime EventOccurredAt { get; set; }
 
-        public DateTime EventRecordedAt { get; set; }
-
         public string Description { get; set; } = string.Empty;
 
-        public int EnteredByEmployeeId { get; set; }
-
-        public virtual Visit Visit { get; set; } = null!;
-
-        public virtual VisitEventType EventType { get; set; } = null!;
-
-        public virtual Employee EnteredByEmployee { get; set; } = null!;
+        public int EnteredByUserId { get; set; }
     }
 }

@@ -285,6 +285,50 @@ function Organize-TypeScriptInterfaces {
         }
     }
     
+    # --- New: expand mapping for referenced types so enums/deps move with their users ---
+    # Collect all type names present in the generated content
+    $allTypeNames = $types | ForEach-Object { $_.Name }
+    # For each type, scan its code for capitalized symbol references and map referenced types to same namespace if mapping exists
+    foreach ($type in $types) {
+        # find candidate referenced type names (simple heuristic: capitalized identifiers)
+        $refMatches = [regex]::Matches($type.Code, '\b([A-Z][A-Za-z0-9_]+)\b') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique
+        foreach ($ref in $refMatches) {
+            if ($allTypeNames -contains $ref) {
+                # if ref already has explicit mapping, keep it; otherwise assign it to the current type's namespace
+                if (-not $InterfaceMapping.ContainsKey($ref) -or $InterfaceMapping[$ref] -eq $DefaultNamespace) {
+                    if ($InterfaceMapping.ContainsKey($type.Name)) {
+                        $InterfaceMapping[$ref] = $InterfaceMapping[$type.Name]
+                    } else {
+                        $InterfaceMapping[$ref] = $DefaultNamespace
+                    }
+                }
+            }
+        }
+    }
+    # --- End new mapping expansion ---
+    
+    # --- New: expand mapping for referenced types so enums/deps move with their users ---
+    # Collect all type names present in the generated content
+    $allTypeNames = $types | ForEach-Object { $_.Name }
+    # For each type, scan its code for capitalized symbol references and map referenced types to same namespace if mapping exists
+    foreach ($type in $types) {
+        # find candidate referenced type names (simple heuristic: capitalized identifiers)
+        $refMatches = [regex]::Matches($type.Code, '\b([A-Z][A-Za-z0-9_]+)\b') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique
+        foreach ($ref in $refMatches) {
+            if ($allTypeNames -contains $ref) {
+                # if ref already has explicit mapping, keep it; otherwise assign it to the current type's namespace
+                if (-not $InterfaceMapping.ContainsKey($ref) -or $InterfaceMapping[$ref] -eq $DefaultNamespace) {
+                    if ($InterfaceMapping.ContainsKey($type.Name)) {
+                        $InterfaceMapping[$ref] = $InterfaceMapping[$type.Name]
+                    } else {
+                        $InterfaceMapping[$ref] = $DefaultNamespace
+                    }
+                }
+            }
+        }
+    }
+    # --- End new mapping expansion ---
+    
     # Group by namespace
     $namespaceGroups = @{
     }

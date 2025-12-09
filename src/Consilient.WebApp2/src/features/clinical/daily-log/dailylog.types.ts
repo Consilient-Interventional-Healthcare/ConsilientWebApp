@@ -1,6 +1,4 @@
-import type { Patient, Provider, Hospitalization, LogEntry, LogEntryType } from "@/types/db.types";
-
-export { Patient, Provider, Hospitalization, LogEntry, LogEntryType };
+import type { VisitEvents } from "@/types/api.generated";
 
 export interface DailyLogVisit {
   id: number;
@@ -39,14 +37,14 @@ export interface StatusChangeEvent {
 export interface IDailyLogService {
   getVisitsByDate(_date: string): Promise<DailyLogVisit[]>;
   getLogEntriesByVisitId(_visitId: number): Promise<DailyLogLogEntry[]>;
-  insertLogEntry(_visitId: number, _content: string, _userId: number, _type: string): Promise<DailyLogLogEntry>;
+  insertLogEntry(_visitId: number, _content: string, _userId: number, _eventTypeId: number): Promise<DailyLogLogEntry>;
   getPatientTimelineData(_hospitalizationId: number): Promise<StatusChangeEvent[]>;
 }
 
 export interface ILogEntryTypeProvider {
   getLogEntryType(): string;
 }
-export interface DailyLogLogEntry extends LogEntry {
+export interface DailyLogLogEntry extends VisitEvents.VisitEventDto {
   userFirstName: string;
   userLastName: string;
   userRole: string;

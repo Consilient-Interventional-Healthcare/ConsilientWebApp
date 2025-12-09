@@ -9,6 +9,9 @@ namespace Consilient.Api.Controllers
     public class LokiController(LoggingConfiguration loggingConfiguration, ILogger<LokiController> _logger) : ControllerBase
     {
         [HttpPost("logs")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> ForwardToLoki()
         {
             var lokiUrl = loggingConfiguration.GrafanaLoki.Url;

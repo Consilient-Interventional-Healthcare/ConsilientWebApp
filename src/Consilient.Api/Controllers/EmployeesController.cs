@@ -10,6 +10,7 @@ namespace Consilient.Api.Controllers
     public class EmployeesController(IEmployeeService _employeeService) : ControllerBase
     {
         [HttpPost]
+        [ProducesResponseType(typeof(EmployeeDto), StatusCodes.Status201Created)]
         public async Task<IActionResult> Create([FromBody] CreateEmployeeRequest request)
         {
             var created = await _employeeService.CreateAsync(request).ConfigureAwait(false);
@@ -17,6 +18,8 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
             var deleted = await _employeeService.DeleteAsync(id).ConfigureAwait(false);
@@ -24,6 +27,7 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<EmployeeDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAll()
         {
             var employees = await _employeeService.GetAllAsync().ConfigureAwait(false);
@@ -31,6 +35,8 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpGet("email/{email}")]
+        [ProducesResponseType(typeof(EmployeeDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByEmail(string email)
         {
             var employee = await _employeeService.GetByEmailAsync(email).ConfigureAwait(false);
@@ -38,6 +44,8 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpGet("{id:int}", Name = "GetEmployeeById")]
+        [ProducesResponseType(typeof(EmployeeDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
             var employee = await _employeeService.GetByIdAsync(id).ConfigureAwait(false);
@@ -45,6 +53,7 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpGet("visit-counts")]
+        [ProducesResponseType(typeof(List<EmployeeVisitCountDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<EmployeeVisitCountDto>>> GetEmployeesWithVisitCount([FromQuery] DateOnly date)
         {
             var result = await _employeeService.GetEmployeesWithVisitCountPerDayAsync(date);
@@ -52,6 +61,8 @@ namespace Consilient.Api.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [ProducesResponseType(typeof(EmployeeDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateEmployeeRequest request)
         {
             var updated = await _employeeService.UpdateAsync(id, request).ConfigureAwait(false);

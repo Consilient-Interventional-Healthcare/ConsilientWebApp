@@ -97,7 +97,7 @@ namespace Consilient.Users.Services.OAuth
 
                 return new AuthorizationCodeValidationResult
                 {
-                    Success = true,
+                    Succeeded = true,
                     ProviderName = _configuration.ProviderName,
                     ProviderKey = providerKey,
                     UserName = userEmail,
@@ -109,7 +109,7 @@ namespace Consilient.Users.Services.OAuth
                 _logger.LogInformation("Token validation cancelled by client");
                 return new AuthorizationCodeValidationResult
                 {
-                    Success = false,
+                    Succeeded = false,
                     Error = "Request was cancelled"
                 };
             }
@@ -118,7 +118,7 @@ namespace Consilient.Users.Services.OAuth
                 _logger.LogWarning(ex, "Invalid or expired authorization code. ErrorCode: {ErrorCode}", ex.ErrorCode);
                 return new AuthorizationCodeValidationResult
                 {
-                    Success = false,
+                    Succeeded = false,
                     Error = "Invalid or expired authorization code"
                 };
             }
@@ -127,7 +127,7 @@ namespace Consilient.Users.Services.OAuth
                 _logger.LogError(ex, "Microsoft authentication failed. ErrorCode: {ErrorCode}", ex.ErrorCode);
                 return new AuthorizationCodeValidationResult
                 {
-                    Success = false,
+                    Succeeded = false,
                     Error = "Microsoft authentication failed"
                 };
             }
@@ -136,7 +136,7 @@ namespace Consilient.Users.Services.OAuth
                 _logger.LogError(ex, "Unexpected error during Microsoft authentication: {ErrorMessage}", ex.Message);
                 return new AuthorizationCodeValidationResult
                 {
-                    Success = false,
+                    Succeeded = false,
                     Error = "Unexpected error during Microsoft authentication"
                 };
             }

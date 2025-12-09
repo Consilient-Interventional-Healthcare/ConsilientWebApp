@@ -1,7 +1,7 @@
 ﻿using Consilient.Api.Client.Contracts;
 using Consilient.Api.Client.Models;
-using Consilient.Visits.Contracts.Dtos;
-using Consilient.Visits.Contracts.Requests;
+using Consilient.Visits.Contracts.Models;
+using Consilient.Visits.Contracts.Models.Requests;
 
 namespace Consilient.Api.Client.Modules
 {

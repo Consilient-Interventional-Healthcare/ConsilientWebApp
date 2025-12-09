@@ -1,15 +1,12 @@
-import type {
-  IAuthService,
-  LinkExternalLoginRequest,
-  AuthenticateUserRequest,
-  User,
-  LoginResults,
-  UserClaim,
-} from "@/features/auth/auth.types";
+import type { IAuthService, MockUser } from "@/features/auth/auth.types";
+import type { Auth } from "@/types/api.generated";
 import { dataProvider } from "@/data/DataProvider";
 
 export class AuthServiceMock implements IAuthService {
-  linkExternalAccount(params: LinkExternalLoginRequest): Promise<void> {
+  initiateMicrosoftLogin(_returnUrl?: string): void {
+    throw new Error("Method not implemented.");
+  }
+  linkExternalAccount(params: Auth.LinkExternalLoginRequest): Promise<void> {
     if (params.providerKey === "fail") {
       throw new Error("Failed to link external account");
     }
@@ -21,7 +18,7 @@ export class AuthServiceMock implements IAuthService {
     if (providerKey === "fail") {
       throw new Error("Authentication failed");
     }
-    const users = dataProvider.getTable<User>("users");
+    const users = dataProvider.getTable<MockUser>("users");
     const user = users.find((u) =>
       u.externalProviders?.some((ep) => ep.providerKey === providerKey)
     ) ?? null;
@@ -32,13 +29,13 @@ export class AuthServiceMock implements IAuthService {
     return Promise.resolve("mock-token");
   }
 
-  login(params: AuthenticateUserRequest): Promise<LoginResults> {
-    if (params.username === "fail@example.com") {
+  login(params: Auth.AuthenticateUserRequest): Promise<Auth.AuthenticateUserApiResponse> {
+    if (params.userName === "fail@example.com") {
       throw new Error("Login failed");
     }
-    const [user = null] = dataProvider.query<User>(
+    const [user = null] = dataProvider.query<MockUser>(
       "SELECT * FROM users WHERE email = ?",
-      [params.username]
+      [params.userName]
     );
     if (!user) {
       throw new Error("User not found");
@@ -47,13 +44,13 @@ export class AuthServiceMock implements IAuthService {
       throw new Error("Invalid password");
     }
     // Return mock claims
-    const claims: UserClaim[] = [
+    const claims: Auth.ClaimDto[] = [
       { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", value: user.id.toString() },
       { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", value: user.firstName + " " + user.lastName },
       { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", value: user.email }
     ];
     return Promise.resolve({
-      success: true,
+      succeeded: true,
       errors: [],
       userClaims: claims
     });
@@ -63,9 +60,9 @@ export class AuthServiceMock implements IAuthService {
     // No-op for mock
   }
 
-    getCurrentUserClaims(): Promise<UserClaim[] | null> {
+    getCurrentUserClaims(): Promise<Auth.ClaimDto[] | null> {
     // Return a fixed mock user claims for demonstration
-    const claims: UserClaim[] = [
+    const claims: Auth.ClaimDto[] = [
       { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", value: "1" },
       { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", value: "Mock User" },
       { type: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress", value: "mockuser@example.com" }

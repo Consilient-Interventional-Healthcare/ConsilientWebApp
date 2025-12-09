@@ -19,17 +19,18 @@ export default function Logout() {
         // Only navigate if component is still mounted
         if (isMounted) {
           logger.info('Logout component - logout successful, redirecting to login', { component: 'Logout' });
-          navigate(ROUTES.LOGIN, { replace: true });
+          void navigate(ROUTES.LOGIN, { replace: true });
         }
       } catch (error) {
-        logger.error('Logout component - logout failed', {
-          component: 'Logout',
-          error: error instanceof Error ? error.message : String(error)
-        });
+        logger.error(
+          'Logout component - logout failed',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'Logout' }
+        );
 
         // Even on error, redirect to login if still mounted
         if (isMounted) {
-          navigate(ROUTES.LOGIN, { replace: true });
+          void navigate(ROUTES.LOGIN, { replace: true });
         }
       }
     };

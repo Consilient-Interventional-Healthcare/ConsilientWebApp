@@ -13,6 +13,14 @@ export enum LogLevel {
   Error = 'error',
 }
 
+export interface MockServicesConfig {
+  auth: boolean;
+  employees: boolean;
+  dailyLog: boolean;
+  appSettings: boolean;
+  // Add more services as needed
+}
+
 export interface AppSettings {
   api: {
     baseUrl: string;
@@ -20,7 +28,8 @@ export interface AppSettings {
     retryAttempts: number;
   };
   features: {
-    useMockServices: boolean;
+    useMockServices: boolean; // Global override - if true, all services use mocks
+    mockServices: MockServicesConfig; // Granular control per service
     enableRemoteLogging: boolean;
     enableExternalLoginMock: boolean;
   };
@@ -47,6 +56,10 @@ declare global {
       APP_ENV?: string;
       APP_ENABLE_DEBUG_MODE?: string;
       APP_USE_MOCK_SERVICES?: string;
+      APP_MOCK_AUTH_SERVICE?: string;
+      APP_MOCK_EMPLOYEES_SERVICE?: string;
+      APP_MOCK_DAILY_LOG_SERVICE?: string;
+      APP_MOCK_APP_SETTINGS_SERVICE?: string;
       APP_ENABLE_REMOTE_LOGGING?: string;
     };
   }
@@ -82,6 +95,15 @@ function createAppSettings(): AppSettings {
   const isDebugMode = enableDebugMode || isDevelopment;
   const enableRemoteLogging = isProduction || getEnv('APP_ENABLE_REMOTE_LOGGING') === 'true';
 
+  // Granular mock service configuration
+  // If useMockServices is true, all services use mocks unless explicitly set to false
+  // If useMockServices is false, individual services can still be mocked via specific env vars
+  const mockServices = {
+    auth: useMockServices || getEnv('APP_MOCK_AUTH_SERVICE') === 'true',
+    employees: useMockServices || getEnv('APP_MOCK_EMPLOYEES_SERVICE') === 'true',
+    dailyLog: useMockServices || getEnv('APP_MOCK_DAILY_LOG_SERVICE') === 'true',
+    appSettings: useMockServices || getEnv('APP_MOCK_APP_SETTINGS_SERVICE') === 'true',
+  } satisfies MockServicesConfig;
 
   const appSettings: AppSettings = {
     api: {
@@ -91,6 +113,7 @@ function createAppSettings(): AppSettings {
     },
     features: {
       useMockServices,
+      mockServices,
       enableRemoteLogging,
       enableExternalLoginMock,
     },
@@ -117,6 +140,8 @@ function createAppSettings(): AppSettings {
       isDevelopment,
       isProduction,
       isDebugMode,
+      useMockServices,
+      mockServices: appSettings.features.mockServices,
       features: appSettings.features
     });
   }

@@ -4,9 +4,7 @@ import { AuthService } from './AuthService';
 import appSettings from '@/config';
 
 export function getAuthService() {
-  return new AuthService();
-  // debugger;
-  // return appSettings.features.useMockServices
-  //   ? new AuthServiceMock()
-  //   : new AuthService();
+  return appSettings.features.mockServices.auth
+    ? new AuthServiceMock()
+    : new AuthService();
 }

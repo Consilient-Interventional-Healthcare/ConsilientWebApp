@@ -9,6 +9,5 @@
         IPatientsApi Patients { get; }
         IServiceTypesApi ServiceTypes { get; }
         IVisitsApi Visits { get; }
-        IVisitsStagingApi VisitsStaging { get; }
     }
 }

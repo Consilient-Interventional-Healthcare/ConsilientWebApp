@@ -10,8 +10,8 @@ import { mockEmployeeService } from './EmployeeService.mock';
  */
 
 // Export the appropriate service based on the feature flag
-export const service = appSettings.features.useMockServices 
-  ? mockEmployeeService 
+export const service = appSettings.features.mockServices.employees
+  ? mockEmployeeService
   : employeeService;
 
 // Re-export types for convenience

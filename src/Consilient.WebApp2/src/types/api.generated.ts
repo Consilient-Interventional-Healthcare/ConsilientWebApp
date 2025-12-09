@@ -12,25 +12,55 @@
 // ReSharper disable InconsistentNaming
 
 
+export namespace Assignments {
+
+  export interface Microsoft_AspNetCore_Mvc_ProblemDetails {
+      type?: string | null;
+      title?: string | null;
+      status?: number | null;
+      detail?: string | null;
+      instance?: string | null;
+      [key: string]: any;
+  }
+
+}
+
+
 export namespace Auth {
 
   export interface AuthenticateUserRequest {
-      userName?: string | undefined;
-      password?: string | undefined;
+      userName: string;
+      password: string;
+  }
+
+  export interface ClaimDto {
+      type: string;
+      value: string;
+  }
+
+  export interface Consilient_Api_Controllers_AuthenticateUserApiResponse {
+      succeeded: boolean;
+      errors?: string[] | null;
+      userClaims?: ClaimDto[] | null;
   }
 
   export interface ExternalAuthenticateRequest {
-      provider?: string | undefined;
-      code?: string | undefined;
-      codeVerifier?: string | undefined;
-      redirectUri?: string | undefined;
+      provider: string;
+      code: string;
+      codeVerifier: string;
+      redirectUri: string;
   }
 
   export interface LinkExternalLoginRequest {
-      email?: string | undefined;
-      provider?: string | undefined;
-      providerKey?: string | undefined;
-      providerDisplayName?: string | undefined;
+      email: string;
+      provider: string;
+      providerKey: string;
+      providerDisplayName?: string | null;
+  }
+
+  export interface LinkExternalLoginResult {
+      succeeded: boolean;
+      errors?: string[] | null;
   }
 
 }
@@ -49,41 +79,53 @@ export namespace Common {
 export namespace Employees {
 
   export interface CreateEmployeeRequest {
-      firstName?: string | undefined;
-      lastName?: string | undefined;
-      titleExtension?: string | undefined;
-      isProvider?: boolean;
-      role?: string | undefined;
-      isAdministrator?: boolean;
-      email?: string | undefined;
-      canApproveVisits?: boolean;
+      firstName?: string | null;
+      lastName?: string | null;
+      titleExtension?: string | null;
+      isProvider: boolean;
+      role?: string | null;
+      isAdministrator: boolean;
+      email?: string | null;
+      canApproveVisits: boolean;
+  }
+
+  export interface EmployeeDto {
+      id: number;
+      firstName?: string | null;
+      lastName?: string | null;
+      titleExtension?: string | null;
+      isProvider: boolean;
+      role?: string | null;
+      isAdministrator: boolean;
+      email?: string | null;
+      canApproveVisits: boolean;
   }
 
   export interface EmployeeVisitCountDto {
-      employeeId?: number;
-      employeeLastName?: string | undefined;
-      employeeFirstName?: string | undefined;
-      role?: string | undefined;
-      facilityId?: number;
-      facilityAbbreviation?: string | undefined;
-      patientId?: number;
-      patientMRN?: number;
-      patientLastName?: string | undefined;
-      patientFirstName?: string | undefined;
-      visitId?: number;
-      dateServiced?: Date;
-      room?: string | undefined;
-      bed?: string | undefined;
+      employeeId: number;
+      employeeLastName: string;
+      employeeFirstName: string;
+      role: string;
+      facilityId: number;
+      facilityAbbreviation: string;
+      patientId: number;
+      patientMRN: number;
+      patientLastName: string;
+      patientFirstName: string;
+      visitId: number;
+      dateServiced: string;
+      room: string;
+      bed: string;
   }
 
   export interface UpdateEmployeeRequest {
-      firstName?: string | undefined;
-      lastName?: string | undefined;
-      titleExtension?: string | undefined;
-      isProvider?: boolean;
-      role?: string | undefined;
-      isAdministrator?: boolean;
-      canApproveVisits?: boolean;
+      firstName?: string | null;
+      lastName?: string | null;
+      titleExtension?: string | null;
+      isProvider: boolean;
+      role?: string | null;
+      isAdministrator: boolean;
+      canApproveVisits: boolean;
   }
 
 }
@@ -92,13 +134,19 @@ export namespace Employees {
 export namespace Facilities {
 
   export interface CreateFacilityRequest {
-      facilityName?: string | undefined;
-      facilityAbbreviation?: string | undefined;
+      facilityName?: string | null;
+      facilityAbbreviation?: string | null;
+  }
+
+  export interface FacilityDto {
+      id: number;
+      name?: string | null;
+      abbreviation?: string | null;
   }
 
   export interface UpdateFacilityRequest {
-      facilityName?: string | undefined;
-      facilityAbbreviation?: string | undefined;
+      facilityName?: string | null;
+      facilityAbbreviation?: string | null;
   }
 
 }
@@ -106,18 +154,50 @@ export namespace Facilities {
 
 export namespace GraphQl {
 
-  export interface GraphQlError {
-      message?: string | undefined;
+  export interface Consilient_Data_GraphQL_GraphQlError {
+      message: string;
   }
 
-  export interface QueryRequest {
-      query?: string | undefined;
+  export interface Consilient_Data_GraphQL_QueryRequest {
+      query?: string | null;
   }
 
-  export interface QueryResult {
-      errors?: GraphQlError[] | undefined;
-      data?: { [key: string]: any; } | undefined;
-      extensions?: { [key: string]: any; } | undefined;
+  export interface Consilient_Data_GraphQL_QueryResult {
+      errors?: Consilient_Data_GraphQL_GraphQlError[] | null;
+      data?: { [key: string]: any; } | null;
+      extensions?: { [key: string]: any; } | null;
+  }
+
+}
+
+
+export namespace Hospitalizations {
+
+  export interface HospitalizationDto {
+      id: number;
+      patientId: number;
+      caseId: number;
+      facilityId: number;
+      psychEvaluation: boolean;
+      admissionDate: string;
+      dischargeDate?: string | null;
+      hospitalizationStatusId: number;
+  }
+
+  export interface HospitalizationStatusDto {
+      id: number;
+      code: string;
+      name: string;
+      billingCode: string;
+      color: string;
+      displayOrder: number;
+      type: HospitalizationStatusDtoType;
+      iconName?: string | null;
+  }
+
+  export enum HospitalizationStatusDtoType {
+      _0 = 0,
+      _1 = 1,
   }
 
 }
@@ -126,19 +206,28 @@ export namespace GraphQl {
 export namespace Insurances {
 
   export interface CreateInsuranceRequest {
-      insuranceCode?: string | undefined;
-      insuranceDescription?: string | undefined;
-      physicianIncluded?: boolean | undefined;
-      isContracted?: boolean | undefined;
-      codeAndDescription?: string | undefined;
+      insuranceCode?: string | null;
+      insuranceDescription?: string | null;
+      physicianIncluded?: boolean | null;
+      isContracted?: boolean | null;
+      codeAndDescription: string;
+  }
+
+  export interface InsuranceDto {
+      id: number;
+      insuranceCode?: string | null;
+      insuranceDescription?: string | null;
+      physicianIncluded?: boolean | null;
+      isContracted?: boolean | null;
+      codeAndDescription: string;
   }
 
   export interface UpdateInsuranceRequest {
-      insuranceCode?: string | undefined;
-      insuranceDescription?: string | undefined;
-      physicianIncluded?: boolean | undefined;
-      isContracted?: boolean | undefined;
-      codeAndDescription?: string | undefined;
+      insuranceCode?: string | null;
+      insuranceDescription?: string | null;
+      physicianIncluded?: boolean | null;
+      isContracted?: boolean | null;
+      codeAndDescription: string;
   }
 
 }
@@ -147,10 +236,25 @@ export namespace Insurances {
 export namespace Patients {
 
   export interface CreatePatientRequest {
-      patientMrn?: number;
-      patientFirstName?: string | undefined;
-      patientLastName?: string | undefined;
-      patientBirthDate?: Date | undefined;
+      mrn: number;
+      firstName?: string | null;
+      lastName?: string | null;
+      patientBirthDate?: string | null;
+  }
+
+  export interface PatientDto {
+      id: number;
+      mrn: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      dateOfBirth?: string | null;
+      gender?: PatientDtoGender | null;
+  }
+
+  export enum PatientDtoGender {
+      _1 = 1,
+      _2 = 2,
+      _3 = 3,
   }
 
 }
@@ -159,13 +263,48 @@ export namespace Patients {
 export namespace ServiceTypes {
 
   export interface CreateServiceTypeRequest {
-      description?: string | undefined;
-      cptCode?: number | undefined;
+      description?: string | null;
+      cptCode?: number | null;
+  }
+
+  export interface ServiceTypeDto {
+      id: number;
+      description?: string | null;
+      cptCode?: number | null;
   }
 
   export interface UpdateServiceTypeRequest {
-      description?: string | undefined;
-      cptCode?: number | undefined;
+      description?: string | null;
+      cptCode?: number | null;
+  }
+
+}
+
+
+export namespace VisitEvents {
+
+  export interface InsertVisitEventRequest {
+      visitId: number;
+      eventTypeId: number;
+      eventOccurredAt: string;
+      description: string;
+  }
+
+  export interface VisitEventDto {
+      description: string;
+      enteredByUserId: number;
+      eventOccurredAt: string;
+      eventTypeId: number;
+      id: number;
+      visitId: number;
+  }
+
+  export interface VisitEventTypeDto {
+      id: number;
+      code: string;
+      name: string;
+      iconName?: string | null;
+      color?: string | null;
   }
 
 }
@@ -174,58 +313,23 @@ export namespace ServiceTypes {
 export namespace Visits {
 
   export interface CreateVisitRequest {
-      dateServiced?: Date;
-      hospitalizationId?: number;
-      serviceTypeId?: number;
-      isScribeServiceOnly?: boolean;
+      dateServiced: string;
+      hospitalizationId: number;
+      serviceTypeId: number;
+      isScribeServiceOnly: boolean;
   }
 
   export interface UpdateVisitRequest {
-      serviceTypeId?: number;
-      isScribeServiceOnly?: boolean;
-      physicianApproved?: boolean;
-      nursePractitionerApproved?: boolean;
-      physicianApprovedDateTime?: Date;
-      physicianApprovedBy?: string | undefined;
+      serviceTypeId: number;
+      isScribeServiceOnly: boolean;
+      physicianApproved: boolean;
+      nursePractitionerApproved: boolean;
+      physicianApprovedDateTime: string;
+      physicianApprovedBy?: string | null;
   }
 
-}
-
-
-export namespace VisitsStaging {
-
-  export interface CreateVisitStagingRequest {
-      dateServiced?: Date;
-      patientId?: number;
-      facilityId?: number;
-      admissionNumber?: number | undefined;
-      insuranceId?: number | undefined;
-      serviceTypeId?: number | undefined;
-      physicianEmployeeId?: number;
-      nursePractitionerEmployeeId?: number | undefined;
-      scribeEmployeeId?: number | undefined;
-      nursePractitionerApproved?: boolean;
-      physicianApproved?: boolean;
-      physicianApprovedBy?: string | undefined;
-      physicianApprovedDateTime?: Date | undefined;
-      addedToMainTable?: boolean;
-      cosigningPhysicianEmployeeId?: number | undefined;
-      isScribeServiceOnly?: boolean;
-  }
-
-  export interface UpdateVisitStagingRequest {
-      cosigningPhysicianEmployeeId?: number | undefined;
-      facilityId?: number;
-      insuranceId?: number | undefined;
-      isScribeServiceOnly?: boolean;
-      nursePractitionerApproved?: boolean;
-      nursePractitionerEmployeeId?: number | undefined;
-      physicianApproved?: boolean;
-      physicianApprovedBy?: string | undefined;
-      physicianApprovedDateTime?: Date;
-      physicianEmployeeId?: number;
-      scribeEmployeeId?: number | undefined;
-      serviceTypeId?: number;
+  export interface VisitDto {
+      id: number;
   }
 
 }

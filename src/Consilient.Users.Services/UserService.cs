@@ -49,7 +49,7 @@ namespace Consilient.Users.Services
                 .ValidateAuthorizationCodeAsync(request.Code, request.CodeVerifier, request.RedirectUri, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!result.Success)
+            if (!result.Succeeded)
             {
                 return IdentityHelper.CreateFailureResult([result.Error!]);
             }

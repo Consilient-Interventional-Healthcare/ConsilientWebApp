@@ -1,4 +1,4 @@
-﻿namespace Consilient.Visits.Contracts.Results
+﻿namespace Consilient.Visits.Contracts.Models.Results
 {
     public class UploadAssignmentResult(bool succeeded, string? message)
     {

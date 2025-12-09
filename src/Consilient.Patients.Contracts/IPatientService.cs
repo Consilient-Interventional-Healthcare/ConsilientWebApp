@@ -1,5 +1,5 @@
-﻿using Consilient.Patients.Contracts.Dtos;
-using Consilient.Patients.Contracts.Requests;
+﻿using Consilient.Patients.Contracts.Models;
+using Consilient.Patients.Contracts.Models.Requests;
 
 namespace Consilient.Patients.Contracts
 {

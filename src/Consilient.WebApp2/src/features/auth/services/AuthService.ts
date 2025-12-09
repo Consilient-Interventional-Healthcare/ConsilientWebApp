@@ -1,4 +1,5 @@
-import type { LoginResults, LinkExternalLoginRequest, LinkExternalLoginResult, AuthenticateUserRequest, AuthenticateUserResult, IAuthService, UserClaim } from '@/features/auth/auth.types';
+import type { IAuthService } from '@/features/auth/auth.types';
+import type { Auth } from '@/types/api.generated';
 import type { AppSettings } from '@/shared/core/appSettings/appSettings.types';
 import apiClient from '@/shared/core/api/ApiClient';
 import { logger } from "@/shared/core/logging/Logger";
@@ -12,16 +13,19 @@ export class AuthService implements IAuthService {
     return this.settingsPromise;
   }
 
-  async linkExternalAccount(params: LinkExternalLoginRequest): Promise<void> {
+  async linkExternalAccount(params: Auth.LinkExternalLoginRequest): Promise<void> {
     const settings = await this.getSettings();
     if (!settings.externalLoginEnabled) {
       throw new Error("External login is not enabled.");
     }
-    const response = await apiClient.post<LinkExternalLoginResult>('/auth/link-external', params);
+    const response = await apiClient.post<Auth.LinkExternalLoginResult>('/auth/link-external', params);
     if (!response.data.succeeded) {
       throw new Error(response.data.errors?.join(', ') ?? 'Failed to link external account');
     }
     // Only proceed to authenticate if succeeded
+    if (!params.providerKey) {
+      throw new Error("providerKey is required to authenticate.");
+    }
     await this.authenticate(params.providerKey);
   }
 
@@ -39,18 +43,19 @@ export class AuthService implements IAuthService {
     // return response.token;
   }
 
-  async login(params: AuthenticateUserRequest): Promise<LoginResults> {
-    const response = await apiClient.post<AuthenticateUserResult>('/auth/authenticate', params, {
+  async login(params: Auth.AuthenticateUserRequest): Promise<Auth.AuthenticateUserApiResponse> {
+    const response = await apiClient.post<Auth.AuthenticateUserApiResponse>('/auth/authenticate', params, {
       withCredentials: true
     });
     if (response.status !== 200) {
       return {
-        success: false,
-        errors: response.data?.errors ?? ['Login failed']
+        succeeded: false,
+        errors: response.data?.errors ?? ['Login failed'],
+        userClaims: null
       };
     }
     return {
-      success: true,
+      succeeded: true,
       errors: [],
       userClaims: response.data.userClaims,
     };
@@ -62,9 +67,9 @@ async logout(): Promise<void> {
     });
   }
 
-  async getCurrentUserClaims(): Promise<UserClaim[] | null> {
+  async getCurrentUserClaims(): Promise<Auth.ClaimDto[] | null> {
     try {
-      const response = await apiClient.get<UserClaim[]>('/auth/claims', {
+      const response = await apiClient.get<Auth.ClaimDto[]>('/auth/claims', {
         withCredentials: true
       });
       if (response.status === 200 && response.data) {

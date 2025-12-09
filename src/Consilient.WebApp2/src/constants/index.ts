@@ -13,11 +13,9 @@ export const API_CONSTANTS = {
 
 // Route Paths
 export const ROUTES = {
-  HOME: '/',
   LOGIN: '/auth/login',
   DASHBOARD: '/',
-  LOGOUT: '/auth/logout',
-  MICROSOFT_CALLBACK: '/auth/callback/microsoft',
+  LOGOUT: '/auth/logout'
 };
 
 // HTTP Status Codes

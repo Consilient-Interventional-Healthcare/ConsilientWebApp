@@ -254,6 +254,14 @@ function New-OpenApiSpec {
     # Change to project directory so appsettings.json files can be found
     Push-Location $ProjectDir
     try {
+        # Ensure the reflection host doesn't require environment-specific configuration that may be missing.
+        # Set process environment to Development for this generation step (local-only, non-invasive).
+        if (-not $env:ASPNETCORE_ENVIRONMENT) {
+            $env:ASPNETCORE_ENVIRONMENT = 'Development'
+        }
+        $env:DOTNET_ENVIRONMENT = $env:ASPNETCORE_ENVIRONMENT
+        Write-Verbose "Set ASPNETCORE_ENVIRONMENT=$env:ASPNETCORE_ENVIRONMENT for assembly reflection"
+        
         if ($VerbosePreference -eq 'Continue') {
             swagger tofile --output $OutputPath $DllPath v1
         } else {
@@ -322,6 +330,45 @@ function New-TypeScriptTypes {
     }
 }
 
+# New helper: test whether a file is available for exclusive write
+function Test-FileUnlocked {
+    param(
+        [string]$Path
+    )
+    if (-not (Test-Path $Path)) {
+        return $true
+    }
+
+    try {
+        $fileStream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+        $fileStream.Close()
+        return $true
+    } catch [System.IO.IOException] {
+        return $false
+    } catch {
+        # If any other error occurs, treat as locked to be safe
+        return $false
+    }
+}
+
+# New helper: wait for a file to become available with retries
+function Wait-ForFileAvailability {
+    param(
+        [string]$Path,
+        [int]$TimeoutSeconds = 15,
+        [int]$IntervalMs = 1000
+    )
+
+    $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($stopwatch.Elapsed.TotalSeconds -lt $TimeoutSeconds) {
+        if (Test-FileUnlocked -Path $Path) {
+            return $true
+        }
+        Start-Sleep -Milliseconds $IntervalMs
+    }
+    return $false
+}
+
 function Invoke-NamespaceOrganization {
     param(
         [string]$TypeScriptFile,
@@ -344,6 +391,12 @@ function Invoke-NamespaceOrganization {
         Write-Host ""
         return
     }
+
+    # Ensure the TypeScript file is available before invoking the organizer.
+    # This prevents confusing failures when another process holds the file.
+    if (-not (Wait-ForFileAvailability -Path $TypeScriptFile -TimeoutSeconds 20 -IntervalMs 1000)) {
+        throw "Namespace organization aborted: file is locked by another process: $TypeScriptFile.`nClose any editors/watchers that may have the file open, or re-run with -SkipOrganize."
+    }
     
     $organizerParams = @{
         InputFile = $TypeScriptFile
@@ -354,12 +407,25 @@ function Invoke-NamespaceOrganization {
         Write-Verbose "Passing OpenAPI spec to organizer: $SwaggerFile"
     }
     
-    & $organizerScript @organizerParams
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "??  Namespace organization failed, but TypeScript file was generated" -ForegroundColor Yellow
+    # Execute organizer and capture output
+    $output = & $organizerScript @organizerParams 2>&1
+    $exitCode = $LASTEXITCODE
+
+    if ($VerbosePreference -eq 'Continue' -or $exitCode -ne 0) {
+        Write-Host $output
+    }
+
+    if ($exitCode -ne 0) {
+        # Try to detect common lock error text and provide actionable guidance
+        $combinedOutput = ($output -join "`n")
+        if ($combinedOutput -match "being used by another process" -or -not (Test-FileUnlocked -Path $TypeScriptFile)) {
+            throw "Namespace organization failed: file locked by another process: $TypeScriptFile.`nClose editors/watchers or run the script with -SkipOrganize to skip this step."
+        }
+
+        throw "Namespace organization failed with exit code $exitCode.`nOutput: $combinedOutput"
     }
     
+    Write-Host "? Namespace organization completed." -ForegroundColor Green
     Write-Host ""
 }
 

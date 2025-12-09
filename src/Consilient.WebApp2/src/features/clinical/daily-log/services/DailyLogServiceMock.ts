@@ -1,4 +1,5 @@
-import type { IDailyLogService, LogEntry, DailyLogVisit, DailyLogLogEntry, StatusChangeEvent, DailyLogVisitPhaseMarker } from '../dailylog.types';
+import type { IDailyLogService, DailyLogVisit, DailyLogLogEntry, StatusChangeEvent, DailyLogVisitPhaseMarker } from '../dailylog.types';
+import type { VisitEvents } from '@/types/api.generated';
 import { dataProvider } from '@/data/DataProvider';
 
 export class DailyLogServiceMock implements IDailyLogService {
@@ -90,16 +91,31 @@ export class DailyLogServiceMock implements IDailyLogService {
     return Promise.resolve(rows);
   }
 
-  insertLogEntry(_visitId: number, _content: string, _userId: number, _type: string): Promise<DailyLogLogEntry> {
-    const newEntry: LogEntry = {
+  insertLogEntry(visitId: number, content: string, userId: number, eventTypeId: number): Promise<DailyLogLogEntry> {
+    const newEntry: VisitEvents.VisitEventDto = {
       id: Math.floor(Math.random() * 10000),
-      timestamp: new Date().toISOString(),
-      visitId: _visitId,
-      userId: _userId,
-      message: _content,
-      type: _type
+      eventOccurredAt: new Date().toISOString(),
+      visitId: visitId,
+      enteredByUserId: userId,
+      description: content,
+      eventTypeId: eventTypeId
     };
-    const p = dataProvider.insert('logEntries', newEntry);
-    return Promise.resolve(p);
+    dataProvider.insert('visitEvents', newEntry);
+
+    // Fetch user details to construct DailyLogLogEntry
+    const user = dataProvider.query<{ firstName: string; lastName: string; role: string }>(`
+      SELECT firstName, lastName, role
+      FROM users
+      WHERE id = ?
+    `, [userId])[0];
+
+    const visitEvent: DailyLogLogEntry = {
+      ...newEntry,
+      userFirstName: user?.firstName ?? '',
+      userLastName: user?.lastName ?? '',
+      userRole: user?.role ?? ''
+    };
+
+    return Promise.resolve(visitEvent);
   }
 }

@@ -2,7 +2,7 @@
 {
     public class AuthorizationCodeValidationResult
     {
-        public bool Success { get; set; }
+        public bool Succeeded { get; set; }
         public string ProviderName { get; set; } = string.Empty;
         public string ProviderKey { get; set; } = string.Empty;
         public string UserEmail { get; set; } = string.Empty;

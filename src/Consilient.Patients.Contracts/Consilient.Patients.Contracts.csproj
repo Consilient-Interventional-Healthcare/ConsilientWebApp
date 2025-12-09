@@ -8,15 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Dtos\PatientVisitDto.cs" />
-    <Compile Remove="Dtos\PatientVisitDtoBase.cs" />
-    <Compile Remove="Dtos\StagingPatientVisitDto.cs" />
     <Compile Remove="IPatientVisitService.cs" />
     <Compile Remove="IStagingPatientVisitService.cs" />
-    <Compile Remove="Requests\CreatePatientVisitRequest.cs" />
-    <Compile Remove="Requests\CreateStagingPatientVisitRequest.cs" />
-    <Compile Remove="Requests\UpdatePatientVisitRequest.cs" />
-    <Compile Remove="Requests\UpdateStagingPatientVisitRequest.cs" />
+    <Compile Remove="Models\Requests\CreatePatientVisitRequest.cs" />
+    <Compile Remove="Models\Requests\CreateStagingPatientVisitRequest.cs" />
+    <Compile Remove="Models\Requests\UpdatePatientVisitRequest.cs" />
+    <Compile Remove="Models\Requests\UpdateStagingPatientVisitRequest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Consilient.Common\Consilient.Common.csproj" />
   </ItemGroup>
 
 </Project>

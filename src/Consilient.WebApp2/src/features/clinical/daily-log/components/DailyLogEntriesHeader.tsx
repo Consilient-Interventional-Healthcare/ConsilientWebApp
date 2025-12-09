@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { SegmentedControl } from '@/shared/components/ui/segmented-control';
 import { StatusComboBox } from '@/shared/components/ui/status-combobox';
 import { dataProvider } from '@/data/DataProvider';
-import type { HospitalizationStatus, LogEntryType } from "@/types/db.types";
 import type { DailyLogVisit } from "../dailylog.types";
+import type { Hospitalizations, VisitEvents } from '@/types/api.generated';
 interface DailyLogEntriesHeaderProps {
   visit: DailyLogVisit | null;
   typeFilter?: string;
@@ -18,14 +18,14 @@ export function DailyLogEntriesHeader({
 }: DailyLogEntriesHeaderProps) {
   const [statusId, setStatusId] = useState<number | undefined>(visit?.hospitalizationStatusId);
   if (!visit) return null;
-  const [selectedStatus = null] = dataProvider.query<HospitalizationStatus>(
+  const [selectedStatus = null] = dataProvider.query<Hospitalizations.HospitalizationStatusDto>(
     "SELECT * FROM hospitalizationStatuses WHERE id = ?",
     [statusId]
   );
 
   const options = [
     { label: "All", value: "all" },
-    ...dataProvider.getTable<LogEntryType>('logEntryTypes')
+    ...dataProvider.getTable<VisitEvents.VisitEventTypeDto>('visitEventTypes')
   ];
   
   return (

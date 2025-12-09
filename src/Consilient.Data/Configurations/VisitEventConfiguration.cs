@@ -18,9 +18,6 @@ namespace Consilient.Data.Configurations
                 .IsRequired();
 
             entity.Property(e => e.EventOccurredAt)
-                .IsRequired();
-
-            entity.Property(e => e.EventRecordedAt)
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
 
@@ -28,26 +25,22 @@ namespace Consilient.Data.Configurations
                 .IsRequired()
                 .HasColumnType("nvarchar(max)");
 
-            entity.Property(e => e.EnteredByEmployeeId)
-                .IsRequired();
-
-            entity.HasOne(e => e.Visit)
+            entity.HasOne<Visit>()
                 .WithMany(v => v.VisitEvents)
                 .HasForeignKey(e => e.VisitId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_VisitEvents_Visits_VisitId");
 
-            entity.HasOne(e => e.EventType)
+            entity.HasOne<VisitEventType>()
                 .WithMany(et => et.VisitEvents)
                 .HasForeignKey(e => e.EventTypeId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_VisitEvents_VisitEventTypes_EventTypeId");
 
-            entity.HasOne(e => e.EnteredByEmployee)
-                .WithMany(emp => emp.EnteredVisitEvents)
-                .HasForeignKey(e => e.EnteredByEmployeeId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("FK_VisitEvents_Employees_EnteredByEmployeeId");
+            entity.ToTable(tb => tb.HasCheckConstraint(
+                "FK_VisitEvents_Users_EnteredByUserId",
+                "EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [EnteredByUserId])"
+            ));
 
             entity.HasIndex(e => e.VisitId)
                 .HasDatabaseName("IX_VisitEvents_VisitId");
@@ -58,8 +51,8 @@ namespace Consilient.Data.Configurations
             entity.HasIndex(e => e.EventOccurredAt)
                 .HasDatabaseName("IX_VisitEvents_EventOccurredAt");
 
-            entity.HasIndex(e => e.EnteredByEmployeeId)
-                .HasDatabaseName("IX_VisitEvents_EnteredByEmployeeId");
+            entity.HasIndex(e => e.EnteredByUserId)
+                .HasDatabaseName("IX_VisitEvents_EnteredByUserId");
         }
     }
 }

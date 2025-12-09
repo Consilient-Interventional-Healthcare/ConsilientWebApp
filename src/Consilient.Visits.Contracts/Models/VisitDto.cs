@@ -1,4 +1,4 @@
-﻿namespace Consilient.Visits.Contracts.Dtos
+﻿namespace Consilient.Visits.Contracts.Models
 {
     public class VisitDto
     {
