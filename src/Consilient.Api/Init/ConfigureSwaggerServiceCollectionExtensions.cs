@@ -2,12 +2,14 @@
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Linq;
 
 namespace Consilient.Api.Init
 {
-    internal static class ConfigureSwaggerServiceCollectionExtensions
+    internal static partial class ConfigureSwaggerServiceCollectionExtensions
     {
+        [GeneratedRegex(@"[^A-Za-z0-9_]", RegexOptions.None)]
+        private static partial Regex SchemaIdSanitizer();
+
         public static void AddSwaggerGen(this IServiceCollection services, string appId, string apiVersion)
         {
             services.AddEndpointsApiExplorer();
@@ -18,12 +20,12 @@ namespace Consilient.Api.Init
                     Title = appId,
                     Version = apiVersion
                 });
-                
+
                 c.SupportNonNullableReferenceTypes();
-                
+
                 // Add this to preserve enum names
                 c.UseInlineDefinitionsForEnums();
-                                
+
                 // Stable, readable schema ids that avoid collisions:
                 // - Keep simple DTO/contract type names (for readability)
                 // - For other types use a sanitized FullName fallback (namespace + name) with generics expanded
@@ -47,16 +49,16 @@ namespace Consilient.Api.Init
                         var genericArgs = string.Join("_", type.GetGenericArguments().Select(t => (t.IsGenericType ? t.Name.Split('`')[0] : t.Name)));
                         var candidate = $"{genericBase}_{genericArgs}";
                         // sanitize and return
-                        return Regex.Replace(candidate, @"[^A-Za-z0-9_]", "_");
+                        return SchemaIdSanitizer().Replace(candidate, "_");
                     }
 
                     // Fallback: use full name (namespace + name) and sanitize
                     var full = type.FullName ?? $"{type.Namespace}.{type.Name}";
                     var safe = full.Replace("+", "_"); // nested types
-                    safe = Regex.Replace(safe, @"[^A-Za-z0-9_]", "_");
+                    safe = SchemaIdSanitizer().Replace(safe, "_");
                     return safe;
                 });
-                
+
                 // Mark non-nullable properties (including value types) as required
                 c.SchemaFilter<RequireNonNullablePropertiesSchemaFilter>();
             });
@@ -73,7 +75,7 @@ namespace Consilient.Api.Init
             });
         }
     }
-    
+
     /// <summary>
     /// Schema filter to mark non-nullable properties as required in OpenAPI schema.
     /// </summary>
