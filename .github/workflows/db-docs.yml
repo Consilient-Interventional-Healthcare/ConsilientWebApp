@@ -15,8 +15,9 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  # Uncomment these when enabling GitHub Pages deployment
+  # pages: write
+  # id-token: write
 
 concurrency:
   group: "pages"
@@ -564,7 +565,13 @@ jobs:
         run: |
           echo "## 📚 Database Documentation Generated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Documentation successfully generated and will be deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Documentation successfully generated and uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 How to View" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to the **Summary** tab of this workflow run" >> $GITHUB_STEP_SUMMARY
+          echo "2. Download the **database-documentation** artifact" >> $GITHUB_STEP_SUMMARY
+          echo "3. Extract the ZIP file" >> $GITHUB_STEP_SUMMARY
+          echo "4. Open **index.html** in your browser" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Schemas Documented" >> $GITHUB_STEP_SUMMARY
           echo "- 📋 **Clinical** - Patient management and clinical operations" >> $GITHUB_STEP_SUMMARY
@@ -575,27 +582,37 @@ jobs:
           echo "- **SHA**: ${{ steps.commit.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Message**: ${{ steps.commit.outputs.commit_msg }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Author**: ${{ steps.commit.outputs.author }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> 💡 **Tip**: Once GitHub Pages is enabled, uncomment the Pages deployment steps in this workflow" >> $GITHUB_STEP_SUMMARY
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload documentation as artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: "./docs"
-          retention-days: 30 # Keep artifacts for 30 days
+          name: database-documentation
+          path: ./docs
+          retention-days: 30
+          if-no-files-found: error
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Comment deployment URL
-        if: github.event_name == 'push'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const url = '${{ steps.deployment.outputs.page_url }}';
-            console.log(`Documentation deployed to: ${url}`);
+      # Uncomment these steps once GitHub Pages is enabled for the repository
+      # - name: Setup Pages
+      #   uses: actions/configure-pages@v4
+      #
+      # - name: Upload to Pages
+      #   uses: actions/upload-pages-artifact@v3
+      #   with:
+      #     path: "./docs"
+      #
+      # - name: Deploy to GitHub Pages
+      #   id: deployment
+      #   uses: actions/deploy-pages@v4
+      #
+      # - name: Comment deployment URL
+      #   if: github.event_name == 'push'
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       const url = '${{ steps.deployment.outputs.page_url }}';
+      #       console.log(`Documentation deployed to: ${url}`);
 
       - name: Cleanup
         if: always()
