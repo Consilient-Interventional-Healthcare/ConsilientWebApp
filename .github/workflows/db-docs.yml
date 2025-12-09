@@ -124,10 +124,18 @@ jobs:
             -C -Q "CREATE DATABASE ${{ env.DB_NAME }}" -b
 
           # Find and run all SQL migration files in order
+          # Excludes files starting with underscore (_) or containing "seed" in the name
           echo "📋 Discovering migration files..."
-          SQL_FILES=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | sort)
+          SQL_FILES=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | grep -v '/[._]' | grep -v -i 'seed' | sort)
           FILE_COUNT=$(echo "$SQL_FILES" | wc -l)
           echo "Found $FILE_COUNT migration file(s)"
+
+          # Show excluded files (if any)
+          EXCLUDED_FILES=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | grep -E '/[._]|seed' | sort || true)
+          if [ -n "$EXCLUDED_FILES" ]; then
+            echo "ℹ️  Excluded files:"
+            echo "$EXCLUDED_FILES" | while read file; do echo "  - $(basename "$file")"; done
+          fi
 
           # Copy all SQL files to container
           echo "📋 Copying migration files to container..."

@@ -1,3 +1,7 @@
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+
 SET IDENTITY_INSERT [Identity].[Roles] ON;
 
 INSERT INTO [Identity].[Roles] ([Id], [Name], [NormalizedName], [ConcurrencyStamp])
