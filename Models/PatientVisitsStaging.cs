@@ -15,8 +15,6 @@ public partial class PatientVisitsStaging
 
     public int? AdmissionNumber { get; set; }
 
-    public int? InsuranceId { get; set; }
-
     public int? ServiceTypeId { get; set; }
 
     public int PhysicianEmployeeId { get; set; }
@@ -42,8 +40,6 @@ public partial class PatientVisitsStaging
     public virtual Employee? CosigningPhysicianEmployee { get; set; }
 
     public virtual Facility Facility { get; set; } = null!;
-
-    public virtual Insurance? Insurance { get; set; }
 
     public virtual Employee? NursePractitionerEmployee { get; set; }
 

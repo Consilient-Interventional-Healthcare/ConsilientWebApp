@@ -19,8 +19,6 @@ namespace ConsilientWebApp.ViewModels
         [Display(Name ="Case ID")]
         public int? AdmissionNumber { get; set; }
 
-        public int? InsuranceId { get; set; }
-
         public int ServiceTypeId { get; set; }
 
         public int PhysicianEmployeeId { get; set; }
@@ -43,10 +41,6 @@ namespace ConsilientWebApp.ViewModels
         [ValidateNever]
         [Display(Name = "Facility")]
         public virtual FacilityViewModel Facility { get; set; } = new FacilityViewModel();
-
-        [ValidateNever]
-        [Display(Name = "Insurance")]
-        public virtual InsuranceViewModel Insurance { get; set; } = new InsuranceViewModel();
 
         [ValidateNever]
         [Display(Name = "Nurse Practitioner")]
@@ -72,7 +66,6 @@ namespace ConsilientWebApp.ViewModels
         public List<SelectListItem> PhysiciansSelectList { get; set; } = new List<SelectListItem>();
         public List<SelectListItem> NursePractitionersSelectList { get; set; } = new List<SelectListItem>();
         public List<SelectListItem> PatientSelectList { get; set; } = new List<SelectListItem>();
-        public List<SelectListItem> InsurancesSelectList { get; set; } = new List<SelectListItem>();
         public List<SelectListItem> FacilitiesSelectList { get; set; } = new List<SelectListItem>();
         public List<SelectListItem> ServiceTypesSelectList { get; set; } = new List<SelectListItem>();
     }

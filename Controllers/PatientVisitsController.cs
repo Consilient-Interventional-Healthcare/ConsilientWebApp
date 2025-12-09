@@ -36,7 +36,6 @@ namespace ConsilientWebApp.Controllers
                             .Where(v => v.DateServiced == DateOnly.FromDateTime(selectedDate.Value))
                             .Include(v => v.CosigningPhysicianEmployee)
                             .Include(v => v.Facility)
-                            .Include(v => v.Insurance)
                             .Include(v => v.NursePractitionerEmployee)
                             .Include(v => v.Patient)
                             .Include(v => v.PhysicianEmployee)
@@ -100,7 +99,6 @@ namespace ConsilientWebApp.Controllers
             var patientVisit = await _context.PatientVisits
                             .Include(v => v.CosigningPhysicianEmployee)
                             .Include(v => v.Facility)
-                            .Include(v => v.Insurance)
                             .Include(v => v.NursePractitionerEmployee)
                             .Include(v => v.Patient)
                             .Include(v => v.PhysicianEmployee)

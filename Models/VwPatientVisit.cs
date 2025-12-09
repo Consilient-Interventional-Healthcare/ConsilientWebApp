@@ -13,8 +13,6 @@ public partial class VwPatientVisit
 
     public string? FacilityName { get; set; }
 
-    public string? Insurance { get; set; }
-
     public string? ServiceType { get; set; }
 
     public string? Physician { get; set; }

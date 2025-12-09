@@ -24,8 +24,6 @@ public partial class ConsilientContext : DbContext
 
     public virtual DbSet<FacilityPay> FacilityPays { get; set; }
 
-    public virtual DbSet<Insurance> Insurances { get; set; }
-
     public virtual DbSet<Patient> Patients { get; set; }
 
     public virtual DbSet<PatientVisit> PatientVisits { get; set; }
@@ -124,20 +122,6 @@ public partial class ConsilientContext : DbContext
                 .HasConstraintName("FK_FacilityPay_ServiceType");
         });
 
-        modelBuilder.Entity<Insurance>(entity =>
-        {
-            entity.ToTable("Insurances", "Clinical");
-
-            entity.Property(e => e.InsuranceId).HasColumnName("InsuranceID");
-            entity.Property(e => e.CodeAndDescription)
-                .HasMaxLength(113)
-                .HasComputedColumnSql("((isnull([InsuranceCode],'')+' - ')+isnull([InsuranceDescription],''))", false);
-            entity.Property(e => e.InsuranceCode).HasMaxLength(10);
-            entity.Property(e => e.InsuranceDescription).HasMaxLength(100);
-            entity.Property(e => e.IsContracted).HasDefaultValue(false);
-            entity.Property(e => e.PhysicianIncluded).HasDefaultValue(false);
-        });
-
         modelBuilder.Entity<Patient>(entity =>
         {
             entity.ToTable("Patients", "Clinical");
@@ -158,7 +142,6 @@ public partial class ConsilientContext : DbContext
             entity.Property(e => e.PatientVisitId).HasColumnName("PatientVisitID");
             entity.Property(e => e.CosigningPhysicianEmployeeId).HasColumnName("CosigningPhysicianEmployeeID");
             entity.Property(e => e.FacilityId).HasColumnName("FacilityID");
-            entity.Property(e => e.InsuranceId).HasColumnName("InsuranceID");
             entity.Property(e => e.IsSupervising).HasComputedColumnSql("(case when [NursePractitionerEmployeeID] IS NULL then (0) else (1) end)", false);
             entity.Property(e => e.NursePractitionerEmployeeId).HasColumnName("NursePractitionerEmployeeID");
             entity.Property(e => e.PatientId).HasColumnName("PatientID");
@@ -175,9 +158,6 @@ public partial class ConsilientContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PatientVisits_Facility");
 
-            entity.HasOne(d => d.Insurance).WithMany(p => p.PatientVisits)
-                .HasForeignKey(d => d.InsuranceId)
-                .HasConstraintName("FK_PatientVisits_Insurances");
 
             entity.HasOne(d => d.NursePractitionerEmployee).WithMany(p => p.PatientVisitNursePractitionerEmployees)
                 .HasForeignKey(d => d.NursePractitionerEmployeeId)
@@ -212,7 +192,6 @@ public partial class ConsilientContext : DbContext
             entity.Property(e => e.PatientVisitStagingId).HasColumnName("PatientVisit_StagingID");
             entity.Property(e => e.CosigningPhysicianEmployeeId).HasColumnName("CosigningPhysicianEmployeeID");
             entity.Property(e => e.FacilityId).HasColumnName("FacilityID");
-            entity.Property(e => e.InsuranceId).HasColumnName("InsuranceID");
             entity.Property(e => e.NursePractitionerEmployeeId).HasColumnName("NursePractitionerEmployeeID");
             entity.Property(e => e.PatientId).HasColumnName("PatientID");
             entity.Property(e => e.PhysicianApprovedBy).HasMaxLength(100);
@@ -229,10 +208,6 @@ public partial class ConsilientContext : DbContext
                 .HasForeignKey(d => d.FacilityId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_PatientVisits_Staging_Facility");
-
-            entity.HasOne(d => d.Insurance).WithMany(p => p.PatientVisitsStagings)
-                .HasForeignKey(d => d.InsuranceId)
-                .HasConstraintName("FK_PatientVisits_Staging_Insurance");
 
             entity.HasOne(d => d.NursePractitionerEmployee).WithMany(p => p.PatientVisitsStagingNursePractitionerEmployees)
                 .HasForeignKey(d => d.NursePractitionerEmployeeId)
@@ -350,7 +325,6 @@ public partial class ConsilientContext : DbContext
                 .ToView("vw_PatientVisits", "Clinical");
 
             entity.Property(e => e.FacilityName).HasMaxLength(100);
-            entity.Property(e => e.Insurance).HasMaxLength(113);
             entity.Property(e => e.NursePractitioner).HasMaxLength(105);
             entity.Property(e => e.PatientName).HasMaxLength(101);
             entity.Property(e => e.PatientVisitId).HasColumnName("PatientVisitID");
@@ -374,9 +348,6 @@ public partial class ConsilientContext : DbContext
                 .HasColumnName("CosignPhysicianJoinID");
             entity.Property(e => e.Cptcd).HasColumnName("CPTCD");
             entity.Property(e => e.ImportFileNm).HasColumnName("ImportFileNM");
-            entity.Property(e => e.InsuranceNm)
-                .HasMaxLength(100)
-                .HasColumnName("InsuranceNM");
             entity.Property(e => e.ModifiedDts).HasColumnName("ModifiedDTS");
             entity.Property(e => e.Mrn).HasColumnName("MRN");
             entity.Property(e => e.NursePractitionerJoinId)
@@ -399,7 +370,6 @@ public partial class ConsilientContext : DbContext
                 .ToView("vw_PatientVisits_Staging", "Clinical");
 
             entity.Property(e => e.FacilityName).HasMaxLength(100);
-            entity.Property(e => e.Insurance).HasMaxLength(113);
             entity.Property(e => e.NursePractitioner).HasMaxLength(105);
             entity.Property(e => e.PatientName).HasMaxLength(101);
             entity.Property(e => e.PatientVisitStagingId).HasColumnName("PatientVisit_StagingID");

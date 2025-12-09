@@ -123,7 +123,6 @@
                         @{
                           var aEmp = IsActive("Employees");
                           var aSrv = IsActive("ServiceTypes");
-                          var aIns = IsActive("Insurances");
                           var aFac = IsActive("Facilities");
                         }
                         <li>
@@ -142,15 +141,6 @@
                                "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
                             <span class="@C(aSrv, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">S</span>
                             Service Types
-                          </a>
-                        </li>
-                        <li>
-                          <a asp-area="" asp-controller="Insurances" asp-action="Index"
-                             class="@C(aIns,
-                               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
-                               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
-                            <span class="@C(aIns, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">I</span>
-                            Insurances
                           </a>
                         </li>
                         <li>
@@ -284,7 +274,6 @@
             {
               var dEmp = IsActive("Employees");
               var dSrv = IsActive("ServiceTypes");
-              var dIns = IsActive("Insurances");
               var dFac = IsActive("Facilities");
               <li>
                 <div class="text-xs/6 font-semibold text-gray-400">Administration</div>
@@ -305,15 +294,6 @@
                          "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
                       <span class="@C(dSrv, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">S</span>
                       Service Types
-                    </a>
-                  </li>
-                  <li>
-                    <a asp-area="" asp-controller="Insurances" asp-action="Index"
-                       class="@C(dIns,
-                         "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
-                         "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
-                      <span class="@C(dIns, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">I</span>
-                      Insurances
                     </a>
                   </li>
                   <li>

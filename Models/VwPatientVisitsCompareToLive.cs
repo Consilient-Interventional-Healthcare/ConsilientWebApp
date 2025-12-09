@@ -15,8 +15,6 @@ public partial class VwPatientVisitsCompareToLive
 
     public int? Cptcd { get; set; }
 
-    public string? InsuranceNm { get; set; }
-
     public string? AttendingPhysicianJoinId { get; set; }
 
     public string? NursePractitionerJoinId { get; set; }

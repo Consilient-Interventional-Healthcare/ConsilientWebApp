@@ -40,11 +40,6 @@ namespace ConsilientWebApp
                 .ForMember(dest => dest.Facility, opt => opt.Ignore())
                 .ForMember(dest => dest.ServiceType, opt => opt.Ignore());
 
-            CreateMap<Insurance, InsuranceViewModel>();
-            CreateMap<InsuranceViewModel, Insurance>()
-                .ForMember(dest => dest.PatientVisits, opt => opt.Ignore())
-                .ForMember(dest => dest.PatientVisitsStagings, opt => opt.Ignore());
-
             CreateMap<Patient, PatientViewModel>();
             CreateMap<PatientViewModel, Patient>()
                 .ForMember(dest => dest.PatientVisits, opt => opt.Ignore())
@@ -54,7 +49,6 @@ namespace ConsilientWebApp
             CreateMap<PatientVisitViewModel, PatientVisit>()
                 .ForMember(dest => dest.CosigningPhysicianEmployee, opt => opt.Ignore())
                 .ForMember(dest => dest.Facility, opt => opt.Ignore())
-                .ForMember(dest => dest.Insurance, opt => opt.Ignore())
                 .ForMember(dest => dest.NursePractitionerEmployee, opt => opt.Ignore())
                 .ForMember(dest => dest.Patient, opt => opt.Ignore())
                 .ForMember(dest => dest.PhysicianEmployee, opt => opt.Ignore())
@@ -65,7 +59,6 @@ namespace ConsilientWebApp
             CreateMap<PatientVisitsStagingViewModel, PatientVisitsStaging>()
                 .ForMember(dest => dest.CosigningPhysicianEmployee, opt => opt.Ignore())
                 .ForMember(dest => dest.Facility, opt => opt.Ignore())
-                .ForMember(dest => dest.Insurance, opt => opt.Ignore())
                 .ForMember(dest => dest.NursePractitionerEmployee, opt => opt.Ignore())
                 .ForMember(dest => dest.Patient, opt => opt.Ignore())
                 .ForMember(dest => dest.PhysicianEmployee, opt => opt.Ignore())

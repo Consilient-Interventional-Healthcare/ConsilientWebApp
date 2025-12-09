@@ -55,7 +55,6 @@ namespace ConsilientWebApp.Controllers
                                             .Where(m => !m.AddedToMainTable && m.DateServiced == selectedDate.Value)
                                             .Include(m => m.CosigningPhysicianEmployee)
                                             .Include(m => m.Facility)
-                                            .Include(m => m.Insurance)
                                             .Include(m => m.NursePractitionerEmployee)
                                             .Include(m => m.Patient)
                                             .Include(m => m.PhysicianEmployee)
@@ -124,7 +123,6 @@ namespace ConsilientWebApp.Controllers
             var patientVisitStaging = await _context.PatientVisitsStagings
                                         .Include(m => m.CosigningPhysicianEmployee)
                                         .Include(m => m.Facility)
-                                        .Include(m => m.Insurance)
                                         .Include(m => m.NursePractitionerEmployee)
                                         .Include(m => m.Patient)
                                         .Include(m => m.PhysicianEmployee)
@@ -225,7 +223,6 @@ namespace ConsilientWebApp.Controllers
             var patientVisitStaging = await _context.PatientVisitsStagings
                                         .Include(m => m.CosigningPhysicianEmployee)
                                         .Include(m => m.Facility)
-                                        .Include(m => m.Insurance)
                                         .Include(m => m.NursePractitionerEmployee)
                                         .Include(m => m.Patient)
                                         .Include(m => m.PhysicianEmployee)
@@ -305,7 +302,6 @@ namespace ConsilientWebApp.Controllers
             var patientVisitStaging = await _context.PatientVisitsStagings
                                         .Include(m => m.CosigningPhysicianEmployee)
                                         .Include(m => m.Facility)
-                                        .Include(m => m.Insurance)
                                         .Include(m => m.NursePractitionerEmployee)
                                         .Include(m => m.Patient)
                                         .Include(m => m.PhysicianEmployee)
@@ -583,36 +579,6 @@ namespace ConsilientWebApp.Controllers
             }
 
             viewModel.NursePractitionersSelectList = nurseList;
-
-            // INSURANCES
-            var insuranceList = _context.Insurances
-                .Select(p => new SelectListItem
-                {
-                    Value = p.InsuranceId.ToString(),
-                    Text = p.CodeAndDescription,
-                    Selected = (p.InsuranceId == viewModel.InsuranceId)
-                })
-                .ToList();
-
-            if (!insuranceList.Any(p => p.Selected))
-            {
-                insuranceList.Insert(0, new SelectListItem
-                {
-                    Value = "",
-                    Text = "-- Select an insurance -- ",
-                    Selected = true
-                });
-            }
-            else
-            {
-                insuranceList.Insert(0, new SelectListItem
-                {
-                    Value = "",
-                    Text = "-- Select an insurance -- "
-                });
-            }
-
-            viewModel.InsurancesSelectList = insuranceList;
 
             // FACILITIES
             var facilitiesList = _context.Facilities
