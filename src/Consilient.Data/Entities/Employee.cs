@@ -17,5 +17,7 @@
         public string? Email { get; set; }
 
         public bool CanApproveVisits { get; set; }
+
+        public virtual ICollection<VisitEvent> EnteredVisitEvents { get; set; } = null!;
     }
 }

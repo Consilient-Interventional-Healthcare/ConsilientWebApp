@@ -32,6 +32,10 @@ env:
   # Migration version automatically detected from SQL files
   DB_NAME: "consilient_main"
   WORKFLOW_TIMEOUT: 15
+  # Schemas to exclude from documentation (comma-separated). Leave empty to document all schemas.
+  SCHEMAS_TO_EXCLUDE: ""
+  # Set to true to generate combined documentation for all schemas
+  GENERATE_COMBINED_DOCS: "true"
 
 jobs:
   generate-docs:
@@ -188,25 +192,52 @@ jobs:
           set -e
 
           echo "🔍 Verifying schemas were created..."
-          SCHEMAS=$(docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
+
+          # Query for all user-created schemas (excluding system schemas)
+          ALL_SCHEMAS=$(docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
             -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
             -C -d ${{ env.DB_NAME }} \
-            -Q "SET NOCOUNT ON; SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME IN ('Clinical', 'Compensation')" -h -1 -W)
+            -Q "SET NOCOUNT ON; SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME NOT IN ('db_owner', 'db_accessadmin', 'db_securityadmin', 'db_ddladmin', 'db_backupoperator', 'db_datareader', 'db_datawriter', 'db_denydatareader', 'db_denydatawriter', 'guest', 'INFORMATION_SCHEMA', 'sys', 'dbo')" -h -1 -W)
 
-          echo "Found schemas: $SCHEMAS"
+          echo "Found user schemas: $ALL_SCHEMAS"
 
-          # Check if both required schemas exist
-          if ! echo "$SCHEMAS" | grep -q "Clinical"; then
-            echo "❌ Clinical schema not found"
+          # Parse exclusion list
+          IFS=',' read -ra EXCLUDE_ARRAY <<< "${{ env.SCHEMAS_TO_EXCLUDE }}"
+
+          # Build list of schemas to document
+          SCHEMAS_TO_DOC=""
+          SCHEMA_COUNT=0
+          for schema in $ALL_SCHEMAS; do
+            schema=$(echo "$schema" | xargs) # trim whitespace
+            [ -z "$schema" ] && continue
+
+            # Check if schema should be excluded
+            EXCLUDED=false
+            for exclude_schema in "${EXCLUDE_ARRAY[@]}"; do
+              exclude_schema=$(echo "$exclude_schema" | xargs)
+              if [ "$schema" = "$exclude_schema" ]; then
+                echo "  ⊘ $schema (excluded)"
+                EXCLUDED=true
+                break
+              fi
+            done
+
+            if [ "$EXCLUDED" = false ]; then
+              echo "  ✓ $schema schema verified"
+              SCHEMAS_TO_DOC="$SCHEMAS_TO_DOC$schema "
+              SCHEMA_COUNT=$((SCHEMA_COUNT + 1))
+            fi
+          done
+
+          if [ $SCHEMA_COUNT -eq 0 ]; then
+            echo "❌ No schemas found to document"
             exit 1
           fi
 
-          if ! echo "$SCHEMAS" | grep -q "Compensation"; then
-            echo "❌ Compensation schema not found"
-            exit 1
-          fi
+          echo "✅ Found $SCHEMA_COUNT schema(s) to document"
 
-          echo "✅ All required schemas verified"
+          # Export for use in later steps
+          echo "SCHEMAS_TO_DOC=$SCHEMAS_TO_DOC" >> $GITHUB_ENV
 
       - name: Validate schema integrity
         run: |
@@ -221,13 +252,24 @@ jobs:
             -C -d ${{ env.DB_NAME }} \
             -Q "DBCC CHECKDB (${{ env.DB_NAME }}) WITH NO_INFOMSGS" -b
 
+          # Build SQL IN clause dynamically for schema stats from SCHEMAS_TO_DOC
+          SCHEMA_LIST=""
+          for schema in ${SCHEMAS_TO_DOC}; do
+            schema=$(echo "$schema" | xargs)
+            [ -z "$schema" ] && continue
+            if [ -n "$SCHEMA_LIST" ]; then
+              SCHEMA_LIST="$SCHEMA_LIST, "
+            fi
+            SCHEMA_LIST="${SCHEMA_LIST}'${schema}'"
+          done
+
           # Get table counts per schema
           echo ""
           echo "📊 Schema statistics:"
           docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
             -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
             -C -d ${{ env.DB_NAME }} \
-            -Q "SET NOCOUNT ON; SELECT s.name AS [Schema], COUNT(t.name) AS [Tables] FROM sys.schemas s LEFT JOIN sys.tables t ON s.schema_id = t.schema_id WHERE s.name IN ('Clinical', 'Compensation') GROUP BY s.name ORDER BY s.name" -h -1
+            -Q "SET NOCOUNT ON; SELECT s.name AS [Schema], COUNT(t.name) AS [Tables] FROM sys.schemas s LEFT JOIN sys.tables t ON s.schema_id = t.schema_id WHERE s.name IN ($SCHEMA_LIST) GROUP BY s.name ORDER BY s.name" -h -1
 
           # Verify foreign key constraints
           echo ""
@@ -282,40 +324,85 @@ jobs:
             -imageformat svg \
             -noimplied"
 
-          # Create output directories
-          mkdir -p docs/{clinical,compensation,all}
+          # Schema descriptions mapping
+          declare -A SCHEMA_DESCRIPTIONS=(
+            ["Clinical"]="Clinical Schema - Patient management and clinical operations"
+            ["Compensation"]="Compensation Schema - Employee and provider data"
+          )
+
+          # Create output directories dynamically
+          DIRS_TO_CREATE=""
+          for schema in ${SCHEMAS_TO_DOC}; do
+            schema=$(echo "$schema" | xargs) # trim whitespace
+            [ -z "$schema" ] && continue
+            schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
+            DIRS_TO_CREATE="$DIRS_TO_CREATE docs/$schema_lower"
+          done
+
+          # Add 'all' directory if combined docs are enabled
+          if [ "${{ env.GENERATE_COMBINED_DOCS }}" = "true" ]; then
+            DIRS_TO_CREATE="$DIRS_TO_CREATE docs/all"
+          fi
+
+          mkdir -p $DIRS_TO_CREATE
 
           echo "🚀 Starting parallel schema documentation generation..."
+          echo "Schemas to document: ${SCHEMAS_TO_DOC}"
 
-          # Run all three schema generations in parallel for better performance
-          java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
-            -o docs/clinical \
-            -s Clinical \
-            -desc "Clinical Schema - Patient management and clinical operations" &
-          PID_CLINICAL=$!
+          # Track PIDs for parallel execution
+          declare -a PIDS
+          declare -a SCHEMA_NAMES
 
-          java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
-            -o docs/compensation \
-            -s Compensation \
-            -desc "Compensation Schema - Employee and provider data" &
-          PID_COMPENSATION=$!
+          # Generate documentation for each schema in parallel
+          for schema in ${SCHEMAS_TO_DOC}; do
+            schema=$(echo "$schema" | xargs) # trim whitespace
+            [ -z "$schema" ] && continue
+            schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
 
-          java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
-            -o docs/all \
-            -desc "Complete Database Documentation - All Schemas" \
-            -all &
-          PID_ALL=$!
+            # Get description or use default
+            DESCRIPTION="${SCHEMA_DESCRIPTIONS[$schema]:-$schema Schema Documentation}"
+
+            echo "📊 Starting $schema schema generation..."
+            java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
+              -o docs/$schema_lower \
+              -s $schema \
+              -desc "$DESCRIPTION" &
+
+            PIDS+=($!)
+            SCHEMA_NAMES+=("$schema")
+          done
+
+          # Generate combined documentation if enabled
+          if [ "${{ env.GENERATE_COMBINED_DOCS }}" = "true" ]; then
+            echo "📊 Starting combined schema generation..."
+            java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
+              -o docs/all \
+              -desc "Complete Database Documentation - All Schemas" \
+              -all &
+
+            PIDS+=($!)
+            SCHEMA_NAMES+=("Combined")
+          fi
 
           # Wait for all processes and check exit codes
-          echo "⏳ Waiting for Clinical schema generation..."
-          wait $PID_CLINICAL && echo "✅ Clinical schema complete" || { echo "❌ Clinical schema failed"; exit 1; }
+          TOTAL_TASKS=${#PIDS[@]}
+          echo ""
+          echo "⏳ Waiting for $TOTAL_TASKS documentation task(s) to complete..."
 
-          echo "⏳ Waiting for Compensation schema generation..."
-          wait $PID_COMPENSATION && echo "✅ Compensation schema complete" || { echo "❌ Compensation schema failed"; exit 1; }
+          for i in "${!PIDS[@]}"; do
+            pid="${PIDS[$i]}"
+            name="${SCHEMA_NAMES[$i]}"
 
-          echo "⏳ Waiting for combined schema generation..."
-          wait $PID_ALL && echo "✅ Combined schema complete" || { echo "❌ Combined schema failed"; exit 1; }
+            echo "⏳ Waiting for $name schema generation..."
+            if wait $pid; then
+              echo "✅ $name schema complete"
+            else
+              echo "❌ $name schema failed"
+              exit 1
+            fi
+          done
 
+          echo ""
           echo "🎉 All schema documentation generated successfully"
 
       - name: Get commit info
@@ -354,6 +441,74 @@ jobs:
         run: |
           # Use variables directly - no heredoc quoting to allow substitution
           CURRENT_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          # Schema metadata for cards
+          declare -A SCHEMA_ICONS=(
+            ["Clinical"]="📋"
+            ["Compensation"]="👥"
+          )
+          declare -A SCHEMA_TITLES=(
+            ["Clinical"]="Clinical Schema"
+            ["Compensation"]="Compensation Schema"
+          )
+          declare -A SCHEMA_DESCS=(
+            ["Clinical"]="Patient management, hospitalizations, visits, facilities, and clinical data."
+            ["Compensation"]="Employee management, roles, and provider information."
+          )
+          declare -A SCHEMA_ITEMS=(
+            ["Clinical"]="<li>Patients</li><li>Hospitalizations</li><li>Visits & VisitsStaging</li><li>Facilities</li><li>Insurances</li><li>Service Types</li>"
+            ["Compensation"]="<li>Employees</li><li>Provider Management</li><li>Role Assignments</li>"
+          )
+
+          # Generate schema cards HTML from SCHEMAS_TO_DOC
+          SCHEMA_CARDS=""
+          for schema in ${SCHEMAS_TO_DOC}; do
+            schema=$(echo "$schema" | xargs) # trim whitespace
+            [ -z "$schema" ] && continue
+            schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
+
+            # Get metadata or use defaults
+            ICON="${SCHEMA_ICONS[$schema]:-📦}"
+            TITLE="${SCHEMA_TITLES[$schema]:-$schema Schema}"
+            DESC="${SCHEMA_DESCS[$schema]:-Documentation for the $schema schema.}"
+            ITEMS="${SCHEMA_ITEMS[$schema]}"
+
+            # Build card HTML
+            CARD="<div class=\"schema-card\">
+                          <h2>$ICON $TITLE</h2>
+                          <p>$DESC</p>"
+
+            # Add items list if available
+            if [ -n "$ITEMS" ]; then
+              CARD="$CARD
+                          <ul>
+                              $ITEMS
+                          </ul>"
+            fi
+
+            CARD="$CARD
+                          <a href=\"./$schema_lower/index.html\" class=\"btn\">View $schema Schema →</a>
+                      </div>
+                      "
+
+            SCHEMA_CARDS="$SCHEMA_CARDS$CARD"
+          done
+
+          # Add combined documentation cards if enabled
+          if [ "${{ env.GENERATE_COMBINED_DOCS }}" = "true" ]; then
+            SCHEMA_CARDS="$SCHEMA_CARDS
+                      <div class=\"schema-card\">
+                          <h2>🔗 Entity Relationships</h2>
+                          <p>Interactive entity-relationship diagrams showing table connections and foreign keys across all schemas.</p>
+                          <a href=\"./all/index.html\" class=\"btn\">View ER Diagram →</a>
+                      </div>
+
+                      <div class=\"schema-card\">
+                          <h2>📊 Complete Database</h2>
+                          <p>View all schemas, tables, and relationships in a unified documentation.</p>
+                          <a href=\"./all/index.html\" class=\"btn\">View All Schemas →</a>
+                      </div>"
+          fi
 
           cat > docs/index.html << EOF
           <!DOCTYPE html>
@@ -550,44 +705,9 @@ jobs:
                           </div>
                       </div>
                   </div>
-                  
+
                   <div class="schema-grid">
-                      <div class="schema-card">
-                          <h2>📋 Clinical Schema</h2>
-                          <p>Patient management, hospitalizations, visits, facilities, and clinical data.</p>
-                          <ul>
-                              <li>Patients</li>
-                              <li>Hospitalizations</li>
-                              <li>Visits & VisitsStaging</li>
-                              <li>Facilities</li>
-                              <li>Insurances</li>
-                              <li>Service Types</li>
-                          </ul>
-                          <a href="./clinical/index.html" class="btn">View Clinical Schema →</a>
-                      </div>
-                      
-                      <div class="schema-card">
-                          <h2>👥 Compensation Schema</h2>
-                          <p>Employee management, roles, and provider information.</p>
-                          <ul>
-                              <li>Employees</li>
-                              <li>Provider Management</li>
-                              <li>Role Assignments</li>
-                          </ul>
-                          <a href="./compensation/index.html" class="btn">View Compensation Schema →</a>
-                      </div>
-                      
-                      <div class="schema-card">
-                          <h2>🔗 Entity Relationships</h2>
-                          <p>Interactive entity-relationship diagrams showing table connections and foreign keys across all schemas.</p>
-                          <a href="./all/index.html" class="btn">View ER Diagram →</a>
-                      </div>
-                      
-                      <div class="schema-card">
-                          <h2>📊 Complete Database</h2>
-                          <p>View all schemas, tables, and relationships in a unified documentation.</p>
-                          <a href="./all/index.html" class="btn">View All Schemas →</a>
-                      </div>
+                      $SCHEMA_CARDS
                   </div>
               </div>
           </body>
@@ -607,9 +727,30 @@ jobs:
           echo "4. Open **index.html** in your browser" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Schemas Documented" >> $GITHUB_STEP_SUMMARY
-          echo "- 📋 **Clinical** - Patient management and clinical operations" >> $GITHUB_STEP_SUMMARY
-          echo "- 👥 **Compensation** - Employee and provider data" >> $GITHUB_STEP_SUMMARY
-          echo "- 📊 **Combined** - All schemas with cross-schema relationships" >> $GITHUB_STEP_SUMMARY
+
+          # Schema icons mapping
+          declare -A SCHEMA_ICONS=(
+            ["Clinical"]="📋"
+            ["Compensation"]="👥"
+          )
+          declare -A SCHEMA_DESCS=(
+            ["Clinical"]="Patient management and clinical operations"
+            ["Compensation"]="Employee and provider data"
+          )
+
+          for schema in ${SCHEMAS_TO_DOC}; do
+            schema=$(echo "$schema" | xargs) # trim whitespace
+            [ -z "$schema" ] && continue
+            ICON="${SCHEMA_ICONS[$schema]:-📦}"
+            DESC="${SCHEMA_DESCS[$schema]:-Schema documentation}"
+            echo "- $ICON **$schema** - $DESC" >> $GITHUB_STEP_SUMMARY
+          done
+
+          # Add combined docs if enabled
+          if [ "${{ env.GENERATE_COMBINED_DOCS }}" = "true" ]; then
+            echo "- 📊 **Combined** - All schemas with cross-schema relationships" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Commit Info" >> $GITHUB_STEP_SUMMARY
           echo "- **SHA**: ${{ steps.commit.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY

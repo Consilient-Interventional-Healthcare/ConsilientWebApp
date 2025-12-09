@@ -8,7 +8,6 @@ namespace Consilient.Visits.Services
         public static void RegisterVisitServices(this IServiceCollection services)
         {
             services.AddScoped<IVisitService, VisitService>();
-            services.AddScoped<IVisitStagingService, VisitStagingService>();
         }
     }
 }

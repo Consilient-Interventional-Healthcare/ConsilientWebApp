@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="generate-typescript.bat" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Hangfire" Version="1.8.22" />
     <PackageReference Include="Hangfire.Core" Version="1.8.22" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.22" />
@@ -20,6 +24,10 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
     <PackageReference Include="GraphQL.Server.Ui.GraphiQL" Version="8.3.3" />
+    <PackageReference Include="NSwag.MSBuild" Version="14.3.0"> 
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -36,6 +44,12 @@
     <ProjectReference Include="..\Consilient.Users.Services\Consilient.Users.Services.csproj" />
     <ProjectReference Include="..\Consilient.Visits.Service\Consilient.Visits.Services.csproj" />
   </ItemGroup>
+
+  <!-- NSwag TypeScript Generation Target -->
+  <!-- Run this manually with: dotnet msbuild /t:GenerateTypeScript -->
+  <Target Name="GenerateTypeScript">
+    <Exec WorkingDirectory="$(ProjectDir)" EnvironmentVariables="ASPNETCORE_ENVIRONMENT=Development" Command="$(NSwagExe_Net90) run nswag.json /variables:Configuration=$(Configuration)" ContinueOnError="true" />
+  </Target>
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="https://www.schemastore.org/appsscript.json" /></VisualStudio></ProjectExtensions>
 

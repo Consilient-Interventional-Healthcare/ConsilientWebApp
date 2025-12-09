@@ -64,7 +64,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorConfig = .editorConfig
 		..\.github\workflows\deploy-webapp2-azure.yml = ..\.github\workflows\deploy-webapp2-azure.yml
 		..\docs\docfx.json = ..\docs\docfx.json
-		UpdateDatabase.ps1 = UpdateDatabase.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Infrastructure.Logging", "Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj", "{44B1AA69-EE2E-4638-8ED7-E010F9E26603}"
@@ -96,6 +95,13 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Users.Contracts", "Consilient.Users.Contracts\Consilient.Users.Contracts.csproj", "{94EBECAF-7A8D-45F8-94C6-AF7719ED9B71}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Users.Services", "Consilient.Users.Services\Consilient.Users.Services.csproj", "{42B1235B-95E9-4996-A93A-4E75C4D0FC28}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{7D3FD8EC-93CB-449D-9698-A7E2D1CA50B2}"
+	ProjectSection(SolutionItems) = preProject
+		Scripts\generate-types.ps1 = Scripts\generate-types.ps1
+		Scripts\organize-types.ps1 = Scripts\organize-types.ps1
+		Scripts\UpdateDatabase.ps1 = Scripts\UpdateDatabase.ps1
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -267,6 +273,7 @@ Global
 		{1C6EBB5D-72C7-4A34-B212-373F942B79A4} = {22D16A09-C4B9-4BF7-B412-19C2D91A7362}
 		{94EBECAF-7A8D-45F8-94C6-AF7719ED9B71} = {1C6EBB5D-72C7-4A34-B212-373F942B79A4}
 		{42B1235B-95E9-4996-A93A-4E75C4D0FC28} = {1C6EBB5D-72C7-4A34-B212-373F942B79A4}
+		{7D3FD8EC-93CB-449D-9698-A7E2D1CA50B2} = {8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {47B65B2D-42D5-4A24-9284-C134209249B7}

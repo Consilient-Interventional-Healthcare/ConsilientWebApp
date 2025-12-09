@@ -35,6 +35,10 @@ namespace Consilient.Users.Services.OAuth.StateManagers
             }
 
             // Common CSRF token validation
+            if (string.IsNullOrEmpty(retrievalResult.StoredCsrfToken))
+            {
+                return new OAuthStateValidationResult(false, ErrorMessage: "Stored CSRF token is missing.");
+            }
             var csrfValidationError = ValidateCsrfToken(retrievalResult.StoredCsrfToken, csrfToken);
             if (csrfValidationError != null)
             {

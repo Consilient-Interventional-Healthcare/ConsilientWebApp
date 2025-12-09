@@ -200,6 +200,13 @@ namespace Consilient.Users.Services
                 user = createdUser;
             }
 
+            if (user == null)
+            {
+                // Defensive: Should not happen, but ensures non-null for AddLoginAsync
+                _logger.LogWarning("Failed to create or retrieve user for external login linking. Email: {Email}", request.Email);
+                return new LinkExternalLoginResult(false, [ErrorMessages.UserNotFound]);
+            }
+
             var loginInfo = new UserLoginInfo(request.Provider, request.ProviderKey, request.ProviderDisplayName);
             var linkResult = await _userManager.AddLoginAsync(user, loginInfo).ConfigureAwait(false);
 
