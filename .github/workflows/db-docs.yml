@@ -124,17 +124,38 @@ jobs:
             -C -Q "CREATE DATABASE ${{ env.DB_NAME }}" -b
 
           # Find and run all SQL migration files in order
-          # Excludes files starting with underscore (_) or containing "seed" in the name
+          # Excludes: files starting with _ or . (like _backup.sql, .gitkeep)
+          #           files containing "seed" in the name (like seed.sql, test-seed.sql)
           echo "📋 Discovering migration files..."
-          SQL_FILES=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | grep -v '/[._]' | grep -v -i 'seed' | sort)
+          ALL_FILES=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | sort)
+
+          # Filter out excluded files
+          SQL_FILES=""
+          EXCLUDED_FILES=""
+          for file in $ALL_FILES; do
+            filename=$(basename "$file")
+            # Exclude if starts with _ or . OR contains "seed" (case-insensitive)
+            if [[ "$filename" =~ ^[._] ]] || [[ "$filename" =~ [Ss][Ee][Ee][Dd] ]]; then
+              EXCLUDED_FILES="$EXCLUDED_FILES$file"$'\n'
+            else
+              SQL_FILES="$SQL_FILES$file"$'\n'
+            fi
+          done
+
+          # Remove trailing newlines
+          SQL_FILES=$(echo "$SQL_FILES" | sed '/^$/d')
+          EXCLUDED_FILES=$(echo "$EXCLUDED_FILES" | sed '/^$/d')
+
           FILE_COUNT=$(echo "$SQL_FILES" | wc -l)
-          echo "Found $FILE_COUNT migration file(s)"
+          echo "Found $FILE_COUNT migration file(s) to execute"
 
           # Show excluded files (if any)
-          EXCLUDED_FILES=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | grep -E '/[._]|seed' | sort || true)
           if [ -n "$EXCLUDED_FILES" ]; then
-            echo "ℹ️  Excluded files:"
-            echo "$EXCLUDED_FILES" | while read file; do echo "  - $(basename "$file")"; done
+            echo ""
+            echo "ℹ️  Excluded files (not executed):"
+            echo "$EXCLUDED_FILES" | while read file; do
+              [ -n "$file" ] && echo "  - $(basename "$file")"
+            done
           fi
 
           # Copy all SQL files to container
