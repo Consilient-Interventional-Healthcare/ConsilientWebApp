@@ -350,8 +350,12 @@ jobs:
           COMMIT_MSG: ${{ steps.commit.outputs.commit_msg }}
           COMMIT_AUTHOR: ${{ steps.commit.outputs.author }}
           MIGRATION_VERSION: ${{ steps.commit.outputs.migration_version }}
+          DB_NAME: ${{ env.DB_NAME }}
         run: |
-          cat > docs/index.html << 'EOF'
+          # Use variables directly - no heredoc quoting to allow substitution
+          CURRENT_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          cat > docs/index.html << EOF
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -530,7 +534,7 @@ jobs:
                       <div class="info-grid">
                           <div class="info-item">
                               <span class="info-label">Last Updated</span>
-                              <span class="info-value">$(date -u '+%Y-%m-%d %H:%M:%S UTC')</span>
+                              <span class="info-value">${CURRENT_DATE}</span>
                           </div>
                           <div class="info-item">
                               <span class="info-label">Database</span>
@@ -576,7 +580,7 @@ jobs:
                       <div class="schema-card">
                           <h2>🔗 Entity Relationships</h2>
                           <p>Interactive entity-relationship diagrams showing table connections and foreign keys across all schemas.</p>
-                          <a href="./all/relationships.html" class="btn">View ER Diagram →</a>
+                          <a href="./all/index.html" class="btn">View ER Diagram →</a>
                       </div>
                       
                       <div class="schema-card">
