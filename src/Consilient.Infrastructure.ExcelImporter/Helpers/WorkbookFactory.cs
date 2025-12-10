@@ -1,44 +1,46 @@
-using ClosedXML.Excel;
-using ExcelDataReader;
-using System.Data;
-using System.Text;
+using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 
 namespace Consilient.Infrastructure.ExcelImporter.Helpers
 {
     /// <summary>
-    /// A factory for creating <see cref="IXLWorkbook"/> instances from file paths.
-    /// Handles in-memory conversion of legacy .xls files to the .xlsx format.
+    /// A factory for creating <see cref="IWorkbook"/> instances from file paths.
+    /// Uses NPOI to read both .xls and .xlsx files. When requested, converts .xls streams
+    /// into an in-memory .xlsx workbook.
     /// </summary>
     public static class WorkbookFactory
     {
-        /// <summary>
-        /// Initializes the <see cref="WorkbookFactory"/> by registering the necessary encoding provider.
-        /// </summary>
         static WorkbookFactory()
         {
-            // Required for ExcelDataReader to work with .NET Core and later.
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            // No special encoding provider required for NPOI; constructor kept for parity.
         }
 
         /// <summary>
-        /// Creates an <see cref="IXLWorkbook"/> from the specified file.
+        /// Creates an <see cref="IWorkbook"/> from the specified file.
         /// </summary>
-        /// <param name="canConvertFile">Indicates whether the file can be converted</param>
+        /// <param name="canConvertFile">Indicates whether .xls files should be converted into an XSSFWorkbook.</param>
         /// <param name="fileName">The path to the Excel file.</param>
-        /// <returns>An <see cref="IXLWorkbook"/> instance.</returns>
-        /// <remarks>
-        /// If the file is an .xls file, it is converted to .xlsx format in-memory.
-        /// The returned workbook should be disposed by the caller.
-        /// </remarks>
-        public static IXLWorkbook Create(bool canConvertFile, string fileName)
+        /// <returns>An <see cref="IWorkbook"/> instance. Caller is responsible for disposing it.</returns>
+        public static IWorkbook Create(bool canConvertFile, string fileName)
         {
+            if (!File.Exists(fileName))
+            {
+                throw new FileNotFoundException("Excel file not found.", fileName);
+            }
+
+            // Read the file fully into memory first to avoid locked-file/blocking behavior
+            var fileBytes = File.ReadAllBytes(fileName);
+
             if (!CanConvertFile(canConvertFile, fileName))
             {
-                // For .xlsx files, ClosedXML can handle the file path directly.
-                return new XLWorkbook(fileName);
+                // Let NPOI detect and create the appropriate workbook implementation
+                using var ms = new MemoryStream(fileBytes);
+                return NPOI.SS.UserModel.WorkbookFactory.Create(ms);
             }
-            using var stream = File.Open(fileName, FileMode.Open, FileAccess.Read);
-            return ConvertXlsToXlsx(stream);
+
+            using var xlsStream = new MemoryStream(fileBytes);
+            return ConvertXlsToXlsx(xlsStream);
         }
 
         private static bool CanConvertFile(bool canConvertFile, string fileName)
@@ -47,31 +49,71 @@ namespace Consilient.Infrastructure.ExcelImporter.Helpers
         }
 
         /// <summary>
-        /// Converts a stream from an .xls file into an in-memory .xlsx <see cref="XLWorkbook"/>.
+        /// Converts a stream from an .xls file into an in-memory XSSFWorkbook.
+        /// This performs a value-by-value copy of sheets/rows/cells (styles are not preserved).
         /// </summary>
         /// <param name="xlsStream">The stream of the .xls file.</param>
-        /// <returns>A new <see cref="XLWorkbook"/> instance.</returns>
-        private static XLWorkbook ConvertXlsToXlsx(Stream xlsStream)
+        /// <returns>A new <see cref="XSSFWorkbook"/> instance.</returns>
+        private static XSSFWorkbook ConvertXlsToXlsx(Stream xlsStream)
         {
-            using var reader = ExcelReaderFactory.CreateReader(xlsStream);
-            var ds = reader.AsDataSet(new ExcelDataSetConfiguration
-            {
-                ConfigureDataTable = _ => new ExcelDataTableConfiguration
-                {
-                    UseHeaderRow = true // Use first row as header
-                }
-            });
+            // Read the old-format workbook
+            var hssf = new HSSFWorkbook(xlsStream);
+            var xssf = new XSSFWorkbook();
 
-            var workbook = new XLWorkbook();
-            foreach (DataTable table in ds.Tables)
+            for (int s = 0; s < hssf.NumberOfSheets; s++)
             {
-                // Add each DataTable as a new worksheet
-                if (!string.IsNullOrEmpty(table.TableName))
+                var hSheet = hssf.GetSheetAt(s);
+                var sheetName = string.IsNullOrEmpty(hSheet.SheetName) ? $"Sheet{s + 1}" : hSheet.SheetName;
+                var xSheet = xssf.CreateSheet(sheetName);
+
+                // Copy rows and cells (values only)
+                for (int r = hSheet.FirstRowNum; r <= hSheet.LastRowNum; r++)
                 {
-                    workbook.Worksheets.Add(table, table.TableName);
+                    var hRow = hSheet.GetRow(r);
+                    if (hRow == null)
+                    {
+                        continue;
+                    }
+
+                    var xRow = xSheet.CreateRow(hRow.RowNum);
+                    for (int c = hRow.FirstCellNum; c < hRow.LastCellNum; c++)
+                    {
+                        if (c < 0) continue; // safeguard for some HSSF implementations
+                        var hCell = hRow.GetCell(c);
+                        if (hCell == null) continue;
+
+                        var xCell = xRow.CreateCell(hCell.ColumnIndex);
+                        switch (hCell.CellType)
+                        {
+                            case CellType.String:
+                                xCell.SetCellValue(hCell.StringCellValue);
+                                break;
+                            case CellType.Numeric:
+                                xCell.SetCellValue(hCell.NumericCellValue);
+                                break;
+                            case CellType.Boolean:
+                                xCell.SetCellValue(hCell.BooleanCellValue);
+                                break;
+                            case CellType.Formula:
+                                // Preserve formula text; evaluation may be done by caller if needed
+                                xCell.CellFormula = hCell.CellFormula;
+                                break;
+                            case CellType.Blank:
+                                xCell.SetCellValue(string.Empty);
+                                break;
+                            case CellType.Error:
+                                xCell.SetCellErrorValue(hCell.ErrorCellValue);
+                                break;
+                            default:
+                                // Fallback to string representation
+                                xCell.SetCellValue(hCell.ToString());
+                                break;
+                        }
+                    }
                 }
             }
-            return workbook;
+
+            return xssf;
         }
     }
 }

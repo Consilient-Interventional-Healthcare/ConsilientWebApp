@@ -1,5 +1,6 @@
-﻿using ClosedXML.Excel;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using NPOI.SS.UserModel;
+using System.Globalization;
 using static Consilient.Infrastructure.ExcelImporter.AssignmentImporter;
 
 namespace Consilient.Infrastructure.ExcelImporter
@@ -29,54 +30,156 @@ namespace Consilient.Infrastructure.ExcelImporter
             public string? Insurance { get; set; }
         }
 
-        protected override (IXLRow? headerRow, Dictionary<string, int>? columnMap) FindHeader(IXLWorksheet worksheet)
+        static class ExcelHeader
         {
-            foreach (var row in worksheet.RowsUsed())
+            public static readonly string[] ExpectedHeaders =
+            [
+                nameof(AssignmentData.Name),
+                nameof(AssignmentData.Location),
+                nameof(AssignmentData.HospitalNumber),
+                nameof(AssignmentData.Admit),
+                nameof(AssignmentData.LOS),
+                nameof(AssignmentData.PsychEval),
+                nameof(AssignmentData.AttendingMD),
+                nameof(AssignmentData.MedicallyCleared),
+                nameof(AssignmentData.NursePractitioner),
+                nameof(AssignmentData.Insurance)
+            ];
+        }
+
+        protected override (IRow? headerRow, Dictionary<string, int>? columnMap) FindHeader(ISheet worksheet)
+        {
+            for (int r = worksheet.FirstRowNum; r <= worksheet.LastRowNum; r++)
             {
+                var row = worksheet.GetRow(r);
+                if (row == null) continue;
+
                 if (!IsHeaderRow(row, out var foundHeaders))
                 {
                     continue;
                 }
+
                 var columnMap = GetColumnMap(foundHeaders);
-                Logger.LogDebug("Header row found on row {RowNumber} in worksheet '{WorksheetName}'.", row.RowNumber(), worksheet.Name);
+                Logger.LogDebug("Header row found on row {RowNumber} in worksheet '{WorksheetName}'.", row.RowNum, worksheet.SheetName);
                 return (row, columnMap);
             }
+
             return (null, null);
         }
 
-        private bool IsHeaderRow(IXLRow row, out List<string> foundHeaders)
+        private static bool IsHeaderRow(IRow row, out List<string> foundHeaders)
         {
-            var headers = row.CellsUsed().Select(c => c.GetValue<string>().Trim()).ToList();
-            var hasRequiredHeaders = GetHeaders().All(header => headers.Contains(header, StringComparer.OrdinalIgnoreCase));
+            var headers = new List<string>();
+            var firstCell = row.FirstCellNum >= 0 ? row.FirstCellNum : 0;
+            var lastCell = row.LastCellNum >= 0 ? row.LastCellNum - 1 : -1;
+
+            for (int c = firstCell; c <= lastCell; c++)
+            {
+                var cell = row.GetCell(c);
+                var text = GetCellString(cell);
+                headers.Add(text);
+            }
+
+            var hasRequiredHeaders = ExcelHeader.ExpectedHeaders.All(header => headers.Contains(header, StringComparer.OrdinalIgnoreCase));
             foundHeaders = headers;
             return hasRequiredHeaders;
         }
 
         private static Dictionary<string, int> GetColumnMap(List<string> headers)
         {
+            // NPOI uses 0-based column indices
             return headers
-                .Select((header, index) => new { header, index = index + 1 }) // +1 for 1-based cell index
+                .Select((header, index) => new { header, index })
                 .Where(x => !string.IsNullOrWhiteSpace(x.header))
                 .ToDictionary(x => x.header, x => x.index, StringComparer.OrdinalIgnoreCase);
         }
 
-
-        protected override AssignmentData ExtractEntity(IXLRow row, IDictionary<string, int> columnMap)
+        protected override AssignmentData ExtractEntity(IRow row, IDictionary<string, int> columnMap)
         {
+            string GetString(string key) =>
+                columnMap.TryGetValue(key, out var idx) ? GetCellString(row.GetCell(idx)) : string.Empty;
+
+            int? GetIntNullable(string key)
+            {
+                if (!columnMap.TryGetValue(key, out var idx)) return null;
+                var cell = row.GetCell(idx);
+                return GetCellIntNullable(cell);
+            }
+
+            DateTime GetDate(string key)
+            {
+                if (!columnMap.TryGetValue(key, out var idx)) return default;
+                var cell = row.GetCell(idx);
+                return GetCellDateTime(cell);
+            }
+
             var patient = new AssignmentData
             {
-                Admit = row.Cell(columnMap[nameof(AssignmentData.Admit)]).GetValue<DateTime>(),
-                AttendingMD = row.Cell(columnMap[nameof(AssignmentData.AttendingMD)]).GetValue<string?>(),
-                HospitalNumber = row.Cell(columnMap[nameof(AssignmentData.HospitalNumber)]).GetValue<string>(),
-                Insurance = row.Cell(columnMap[nameof(AssignmentData.Insurance)]).GetValue<string?>(),
-                LOS = row.Cell(columnMap[nameof(AssignmentData.LOS)]).GetValue<int?>(),
-                Location = row.Cell(columnMap[nameof(AssignmentData.Location)]).GetValue<string>(),
-                MedicallyCleared = row.Cell(columnMap[nameof(AssignmentData.MedicallyCleared)]).GetValue<string?>(),
-                Name = row.Cell(columnMap[nameof(AssignmentData.Name)]).GetValue<string>(),
-                NursePractitioner = row.Cell(columnMap[nameof(AssignmentData.NursePractitioner)]).GetValue<string?>(),
-                PsychEval = row.Cell(columnMap[nameof(AssignmentData.PsychEval)]).GetValue<string?>()
+                Admit = GetDate(nameof(AssignmentData.Admit)),
+                AttendingMD = GetString(nameof(AssignmentData.AttendingMD)),
+                HospitalNumber = GetString(nameof(AssignmentData.HospitalNumber)),
+                Insurance = GetString(nameof(AssignmentData.Insurance)),
+                LOS = GetIntNullable(nameof(AssignmentData.LOS)),
+                Location = GetString(nameof(AssignmentData.Location)),
+                MedicallyCleared = GetString(nameof(AssignmentData.MedicallyCleared)),
+                Name = GetString(nameof(AssignmentData.Name)),
+                NursePractitioner = GetString(nameof(AssignmentData.NursePractitioner)),
+                PsychEval = GetString(nameof(AssignmentData.PsychEval))
             };
             return patient;
         }
+
+        #region Cell Helpers
+        private static string GetCellString(ICell? cell)
+        {
+            if (cell == null) return string.Empty;
+
+            return cell.CellType switch
+            {
+                CellType.String => cell.StringCellValue?.Trim() ?? string.Empty,
+                CellType.Numeric => DateUtil.IsCellDateFormatted(cell)
+                    ? (cell.DateCellValue?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty)
+                    : cell.NumericCellValue.ToString(CultureInfo.InvariantCulture),
+                CellType.Boolean => cell.BooleanCellValue ? "TRUE" : "FALSE",
+                CellType.Formula => cell.StringCellValue?.Trim() ?? cell.NumericCellValue.ToString(CultureInfo.InvariantCulture),
+                _ => string.Empty
+            };
+        }
+
+        private static int? GetCellIntNullable(ICell? cell)
+        {
+            if (cell == null) return null;
+
+            if (cell.CellType == CellType.Numeric)
+            {
+                return Convert.ToInt32(cell.NumericCellValue);
+            }
+
+            var text = GetCellString(cell);
+            if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+            {
+                return v;
+            }
+
+            return null;
+        }
+
+        private static DateTime GetCellDateTime(ICell? cell)
+        {
+            if (cell == null) return default;
+            if (cell.CellType == CellType.Numeric && DateUtil.IsCellDateFormatted(cell))
+            {
+                return cell.DateCellValue.GetValueOrDefault();
+            }
+
+            var text = GetCellString(cell);
+            if (DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+            {
+                return dt;
+            }
+
+            return default;
+        }
+        #endregion
     }
 }
