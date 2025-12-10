@@ -1,6 +1,7 @@
 using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
 using Microsoft.Extensions.Logging;
-using static Consilient.Infrastructure.ExcelImporter.ExcelImporter;
+using static Consilient.Infrastructure.ExcelImporter.DoctorAssignmentImporter;
+using NPOI.SS.UserModel;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests
 {
@@ -9,66 +10,14 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
     {
         public TestContext TestContext { get; set; } = null!;
 
-        //private readonly IEnumerable<string> _worksheetNames = new[]
-        //{
-        //  "PatientAdmissionReportXLS",
-        //  "Joseph 100",
-        //  "Torrico 300",
-        //  "Jordan 300",
-        //  "Kletz 400",
-        //  "Kristin 400",
-        //  "Kletz 500",
-        //  "Connor 500",
-        //  "Kaula 600",
-        //  "Kletz 700"
-        //};
-
-        //private readonly IEnumerable<string> _regexPatterns = new[]
-        //{
-        //    "^(Joseph|Torrico|Jordan) \\d+$"
-        //};
-
-        //[TestMethod]
-        //public void FilterWorksheets_ShouldReturnFilteredWorksheets()
-        //{
-        //    // Arrange
-        //    var allSheets = new List<ISheet>();
-
-        //    foreach (var name in _worksheetNames)
-        //    {
-        //        var mockSheet = new Mock<ISheet>();
-        //        mockSheet.Setup(s => s.SheetName).Returns(name);
-        //        allSheets.Add(mockSheet.Object);
-        //    }
-
-        //    var expectedFilteredNames = new List<string> {
-        //        "Joseph 100",
-        //        "Torrico 300",
-        //        "Jordan 300"
-        //    };
-
-        //    // Act
-        //    // NOTE: ExcelImporter.FilterWorksheets must be updated to accept IEnumerable<ISheet> (NPOI)
-        //    var filteredSheets = ExcelImporter.FilterWorksheets(allSheets, _regexPatterns);
-        //    var filteredSheetNames = filteredSheets.Select(ws => ws.SheetName).ToList();
-
-        //    // Assert
-        //    Assert.HasCount(expectedFilteredNames.Count, filteredSheetNames);
-        //    CollectionAssert.AreEquivalent(expectedFilteredNames, filteredSheetNames);
-        //}
-
         [TestMethod]
         public void Import_ShouldReturnExpectedData()
         {
             // Arrange
             const string filePath = @"Files\DoctorAssignment_SAMPLE.xlsm";
             var loggerFactory = LoggerFactory.Create(builder => builder.AddDebug());
-            var excelImporter = new ExcelImporter(
-                new ExcelImporterConfiguration
-                {
-                    CanConvertFile = true
-                },
-                loggerFactory.CreateLogger<ExcelImporter>()
+            var excelImporter = new DoctorAssignmentImporter(
+                loggerFactory.CreateLogger<DoctorAssignmentImporter>()
             );
 
             // Act

@@ -7,22 +7,22 @@ using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Globalization;
 using System.Reflection;
-using static Consilient.Infrastructure.ExcelImporter.ExcelImporter;
+using static Consilient.Infrastructure.ExcelImporter.DoctorAssignmentImporter;
 
 namespace Consilient.Background.Workers
 {
-    public class ImportClinicalDataSheetWorker(ExcelImporter excelImporter, string connectionString) : IBackgroundWorker
+    public class ImportClinicalDataSheetWorker(DoctorAssignmentImporter excelImporter, string connectionString) : IBackgroundWorker
     {
         private readonly string _connectionString = connectionString;
-        private readonly ExcelImporter _excelImporter = excelImporter;
+        private readonly DoctorAssignmentImporter _excelImporter = excelImporter;
 
         // Stage constants
-        private const string _stageInitializing = "Initializing";
-        private const string _stageReadingFile = "ReadingFile";
-        private const string _stageProcessingRecords = "ProcessingRecords";
-        private const string _stageSavingData = "SavingData";
-        private const string _stageCompleted = "Completed";
-        private const string _stageFailed = "Failed";
+        private const string StageInitializing = "Initializing";
+        private const string StageReadingFile = "ReadingFile";
+        private const string StageProcessingRecords = "ProcessingRecords";
+        private const string StageSavingData = "SavingData";
+        private const string StageCompleted = "Completed";
+        private const string StageFailed = "Failed";
 
         // Event for progress reporting using the reusable WorkerProgressEventArgs
         public event EventHandler<WorkerProgressEventArgs>? ProgressChanged;
@@ -37,7 +37,7 @@ namespace Consilient.Background.Workers
                 OnProgressChanged(new WorkerProgressEventArgs
                 {
                     JobId = jobId,
-                    Stage = _stageInitializing,
+                    Stage = StageInitializing,
                     CurrentOperation = "Starting import process"
                 });
 
@@ -45,7 +45,7 @@ namespace Consilient.Background.Workers
                 OnProgressChanged(new WorkerProgressEventArgs
                 {
                     JobId = jobId,
-                    Stage = _stageReadingFile,
+                    Stage = StageReadingFile,
                     CurrentOperation = $"Reading file: {Path.GetFileName(filePath)}"
                 });
 
@@ -57,7 +57,7 @@ namespace Consilient.Background.Workers
                 OnProgressChanged(new WorkerProgressEventArgs
                 {
                     JobId = jobId,
-                    Stage = _stageProcessingRecords,
+                    Stage = StageProcessingRecords,
                     TotalItems = totalRecords,
                     ProcessedItems = 0,
                     CurrentOperation = "Processing patient records"
@@ -72,7 +72,7 @@ namespace Consilient.Background.Workers
                 OnProgressChanged(new WorkerProgressEventArgs
                 {
                     JobId = jobId,
-                    Stage = _stageProcessingRecords,
+                    Stage = StageProcessingRecords,
                     TotalItems = totalRecords,
                     ProcessedItems = totalRecords,
                     CurrentOperation = "All records processed"
@@ -82,7 +82,7 @@ namespace Consilient.Background.Workers
                 OnProgressChanged(new WorkerProgressEventArgs
                 {
                     JobId = jobId,
-                    Stage = _stageSavingData,
+                    Stage = StageSavingData,
                     TotalItems = totalRecords,
                     ProcessedItems = totalRecords,
                     CurrentOperation = "Saving data to database"
@@ -94,7 +94,7 @@ namespace Consilient.Background.Workers
                 OnProgressChanged(new WorkerProgressEventArgs
                 {
                     JobId = jobId,
-                    Stage = _stageCompleted,
+                    Stage = StageCompleted,
                     TotalItems = totalRecords,
                     ProcessedItems = totalRecords,
                     CurrentOperation = $"Import completed successfully. {totalRecords} records imported.",
@@ -112,7 +112,7 @@ namespace Consilient.Background.Workers
                 OnProgressChanged(new WorkerProgressEventArgs
                 {
                     JobId = jobId,
-                    Stage = _stageFailed,
+                    Stage = StageFailed,
                     CurrentOperation = $"Import failed: {ex.Message}",
                     AdditionalData = new Dictionary<string, object>
                     {

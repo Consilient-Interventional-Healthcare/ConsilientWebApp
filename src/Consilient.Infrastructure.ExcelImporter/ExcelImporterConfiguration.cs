@@ -2,6 +2,7 @@
 {
     public class ExcelImporterConfiguration
     {
-        public required bool CanConvertFile { get; init; } = true;
+        public int MaxRowsToScan { get; init; } = 10_000;
+        public string[] Headers { get; init; } = [];
     }
 }

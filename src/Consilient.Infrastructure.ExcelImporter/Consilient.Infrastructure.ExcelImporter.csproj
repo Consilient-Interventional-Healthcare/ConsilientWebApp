@@ -8,6 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="AssignmentImporter.cs" />
+    <Compile Remove="NPOI\WorkbookFactory.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Consilient.Infrastructure.ExcelImporter.Tests" />
   </ItemGroup>
   
@@ -16,6 +21,10 @@
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.11" />
     <PackageReference Include="NPOI" Version="2.7.5" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>
