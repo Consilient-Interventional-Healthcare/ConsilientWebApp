@@ -1,29 +1,32 @@
-using Consilient.Infrastructure.ExcelImporter.Core;
+﻿using Consilient.Infrastructure.ExcelImporter.Core;
 using Consilient.Infrastructure.ExcelImporter.Models;
 
-namespace Consilient.Infrastructure.ExcelImporter.Validators;
-
-public class CompositeValidator<TRow> : IRowValidator<TRow> where TRow : class
+namespace Consilient.Infrastructure.ExcelImporter.Validators
 {
-    private readonly IEnumerable<IRowValidator<TRow>> _validators;
 
-    public CompositeValidator(IEnumerable<IRowValidator<TRow>> validators)
+    public class CompositeValidator<TRow> : IRowValidator<TRow> where TRow : class
     {
-        _validators = validators ?? throw new ArgumentNullException(nameof(validators));
-    }
+        private readonly IEnumerable<IRowValidator<TRow>> _validators;
 
-    public ValidationResult Validate(TRow row, int rowNumber)
-    {
-        var allErrors = new List<ValidationError>();
-
-        foreach (var validator in _validators)
+        public CompositeValidator(IEnumerable<IRowValidator<TRow>> validators)
         {
-            var result = validator.Validate(row, rowNumber);
-            allErrors.AddRange(result.Errors);
+            _validators = validators ?? throw new ArgumentNullException(nameof(validators));
         }
 
-        return allErrors.Count > 0
-            ? ValidationResult.Failed(allErrors.ToArray())
-            : ValidationResult.Success();
+        public ValidationResult Validate(TRow row, int rowNumber)
+        {
+            var allErrors = new List<ValidationError>();
+
+            foreach (var validator in _validators)
+            {
+                var result = validator.Validate(row, rowNumber);
+                allErrors.AddRange(result.Errors);
+            }
+
+            return allErrors.Count > 0
+                ? ValidationResult.Failed(allErrors.ToArray())
+                : ValidationResult.Success();
+        }
     }
+
 }

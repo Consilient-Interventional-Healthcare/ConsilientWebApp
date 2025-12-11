@@ -1,27 +1,30 @@
-using Consilient.Infrastructure.ExcelImporter.Core;
+﻿using Consilient.Infrastructure.ExcelImporter.Core;
 
-namespace Consilient.Infrastructure.ExcelImporter.Sinks;
-
-public class InMemorySink<TRow> : IDataSink where TRow : class
+namespace Consilient.Infrastructure.ExcelImporter.Sinks
 {
-    public List<TRow> Rows { get; } = new();
 
-    public Task InitializeAsync(CancellationToken cancellationToken = default)
+    public class InMemorySink<TRow> : IDataSink where TRow : class
     {
-        Rows.Clear();
-        return Task.CompletedTask;
-    }
+        public List<TRow> Rows { get; } = new();
 
-    public Task WriteBatchAsync<T>(IReadOnlyList<T> batch, CancellationToken cancellationToken = default)
-        where T : class
-    {
-        if (batch is IReadOnlyList<TRow> typedBatch)
+        public Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            Rows.AddRange(typedBatch);
+            Rows.Clear();
+            return Task.CompletedTask;
         }
 
-        return Task.CompletedTask;
+        public Task WriteBatchAsync<T>(IReadOnlyList<T> batch, CancellationToken cancellationToken = default)
+            where T : class
+        {
+            if (batch is IReadOnlyList<TRow> typedBatch)
+            {
+                Rows.AddRange(typedBatch);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task FinalizeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
-    public Task FinalizeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

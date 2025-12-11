@@ -1,28 +1,12 @@
 ﻿using Consilient.Background.Workers.Contracts;
 using Consilient.Background.Workers.Models;
-using Consilient.Infrastructure.ExcelImporter.Core;
-using Consilient.Infrastructure.ExcelImporter.Domain;
-using Consilient.Infrastructure.ExcelImporter.Models;
-using Consilient.Infrastructure.ExcelImporter.Sinks;
+using Consilient.Infrastructure.ExcelImporter.Factories;
 using Hangfire.Server;
-using Microsoft.Extensions.Configuration;
 
 namespace Consilient.Background.Workers
 {
-    public class ImportDoctorAssignmentsWorker : IBackgroundWorker
+    public class ImportDoctorAssignmentsWorker(IImporterFactory importerFactory, string connectionString) : IBackgroundWorker
     {
-        private readonly IExcelImporter<DoctorAssignment> _excelImporter;
-        private readonly string _connectionString;
-
-        public ImportDoctorAssignmentsWorker(
-            IExcelImporter<DoctorAssignment> excelImporter,
-            IConfiguration configuration)
-        {
-            _excelImporter = excelImporter;
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found");
-        }
-
         // Event for progress reporting using the reusable WorkerProgressEventArgs
         public event EventHandler<WorkerProgressEventArgs>? ProgressChanged;
 
@@ -30,34 +14,11 @@ namespace Consilient.Background.Workers
         {
             var jobId = context.BackgroundJob.Id;
 
-            // Configure import options
-            var options = new ImportOptions
-            {
-                Sheet = SheetSelector.FirstSheet,
-                ColumnMapping = ColumnMapping.Builder()
-                    .MapRequired("Name↓", nameof(DoctorAssignment.Name))
-                    .MapRequired("Location", nameof(DoctorAssignment.Location))
-                    .MapRequired("Hospital Number", nameof(DoctorAssignment.HospitalNumber))
-                    .MapRequired("Admit", nameof(DoctorAssignment.Admit))
-                    .MapRequired("MRN", nameof(DoctorAssignment.Mrn))
-                    .Map("Age", nameof(DoctorAssignment.Age))
-                    .Map("DOB", nameof(DoctorAssignment.Dob))
-                    .Map("H&P", nameof(DoctorAssignment.H_P))
-                    .Map("Psych Eval", nameof(DoctorAssignment.PsychEval))
-                    .Map("Attending MD", nameof(DoctorAssignment.AttendingMD))
-                    .Map("Cleared", nameof(DoctorAssignment.IsCleared))
-                    .Map("Nurse Practitioner", nameof(DoctorAssignment.NursePractitioner))
-                    .Map("Insurance", nameof(DoctorAssignment.Insurance))
-                    .Build(),
-                BatchSize = 1000,
-                FailOnValidationError = false
-            };
+            // Create importer using factory
+            var importer = importerFactory.Create(connectionString, facilityId, serviceDate);
 
-            // Create destination sink
-            var destination = new SqlServerBulkSink(_connectionString, "DoctorAssignmentsStaging");
-
-            // Progress reporting
-            var progress = new Progress<ImportProgress>(p =>
+            // Wire up progress events
+            importer.ProgressChanged += (sender, p) =>
             {
                 var workerEvent = new WorkerProgressEventArgs
                 {
@@ -70,17 +31,12 @@ namespace Consilient.Background.Workers
                 };
 
                 OnProgressChanged(workerEvent);
-            });
+            };
 
             try
             {
                 // Import using the new pipeline
-                var result = await _excelImporter.ImportAsync(
-                    filePath,
-                    destination,
-                    options,
-                    progress,
-                    CancellationToken.None);
+                var result = await importer.ImportAsync(filePath, CancellationToken.None);
 
                 // Report completion
                 OnProgressChanged(new WorkerProgressEventArgs
@@ -96,6 +52,7 @@ namespace Consilient.Background.Workers
                         ["FileName"] = Path.GetFileName(filePath),
                         ["ServiceDate"] = serviceDate.ToString("yyyy-MM-dd"),
                         ["FacilityId"] = facilityId,
+                        ["BatchId"] = result.BatchId?.ToString() ?? string.Empty,
                         ["TotalRowsRead"] = result.TotalRowsRead,
                         ["TotalRowsWritten"] = result.TotalRowsWritten,
                         ["TotalRowsSkipped"] = result.TotalRowsSkipped,

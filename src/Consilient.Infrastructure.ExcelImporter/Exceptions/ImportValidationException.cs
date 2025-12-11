@@ -1,14 +1,17 @@
-using Consilient.Infrastructure.ExcelImporter.Models;
+﻿using Consilient.Infrastructure.ExcelImporter.Models;
 
-namespace Consilient.Infrastructure.ExcelImporter.Exceptions;
-
-public class ImportValidationException : Exception
+namespace Consilient.Infrastructure.ExcelImporter.Exceptions
 {
-    public List<ValidationError> ValidationErrors { get; }
 
-    public ImportValidationException(List<ValidationError> errors)
-        : base($"Import validation failed with {errors.Count} error(s)")
+    public class ImportValidationException : Exception
     {
-        ValidationErrors = errors;
+        public List<ValidationError> ValidationErrors { get; }
+
+        public ImportValidationException(List<ValidationError> errors)
+            : base($"Import validation failed with {errors.Count} error(s)")
+        {
+            ValidationErrors = errors;
+        }
     }
+
 }

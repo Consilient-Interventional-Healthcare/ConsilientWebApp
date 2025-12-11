@@ -5,19 +5,25 @@ using System.Diagnostics;
 
 namespace Consilient.Infrastructure.ExcelImporter.Core
 {
+
+
     public class ExcelImporter<TRow>(
         IExcelReader reader,
         IRowMapper<TRow> mapper,
         IEnumerable<IRowValidator<TRow>> validators,
         IEnumerable<IRowTransformer<TRow>> transformers,
+        IDataSink destination,
+        ImportOptions options,
         ILogger<ExcelImporter<TRow>> logger) : IExcelImporter<TRow> where TRow : class
     {
-        public async Task<ImportResult> ImportAsync(
-            string sourceFile,
-            IDataSink destination,
-            ImportOptions options,
-            IProgress<ImportProgress>? progress = null,
-            CancellationToken cancellationToken = default)
+        public event EventHandler<ImportProgressEventArgs>? ProgressChanged;
+
+        protected virtual void OnProgressChanged(ImportProgressEventArgs progress)
+        {
+            ProgressChanged?.Invoke(this, progress);
+        }
+
+        public async Task<ImportResult> ImportAsync(string sourceFile, CancellationToken cancellationToken = default)
         {
             var stopwatch = Stopwatch.StartNew();
             var stats = new ImportStats();
@@ -26,10 +32,10 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
             try
             {
                 logger.LogInformation("Starting import from {SourceFile}", sourceFile);
-                progress?.Report(new ImportProgress("Initializing", 0));
+                OnProgressChanged(new ImportProgressEventArgs { Stage = "Initializing" });
                 await destination.InitializeAsync(cancellationToken);
 
-                progress?.Report(new ImportProgress("Reading", 0, CurrentOperation: "Opening file"));
+                OnProgressChanged(new ImportProgressEventArgs { Stage = "Reading", CurrentOperation = "Opening file" });
                 await using var fileStream = File.OpenRead(sourceFile);
 
                 var batch = new List<TRow>(options.BatchSize);
@@ -104,17 +110,19 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
                         stats.TotalRowsWritten += batch.Count;
                         batch.Clear();
 
-                        progress?.Report(new ImportProgress(
-                            "Processing",
-                            stats.TotalRowsWritten,
-                            CurrentOperation: $"Written {stats.TotalRowsWritten} rows"));
+                        OnProgressChanged(new ImportProgressEventArgs
+                        {
+                            Stage = "Processing",
+                            ProcessedRows = stats.TotalRowsWritten,
+                            CurrentOperation = $"Written {stats.TotalRowsWritten} rows"
+                        });
                     }
                 }
 
                 // Always report Processing stage, even if no batches were written yet
                 if (stats.TotalRowsWritten == 0)
                 {
-                    progress?.Report(new ImportProgress("Processing", 0, CurrentOperation: "Processing data"));
+                    OnProgressChanged(new ImportProgressEventArgs { Stage = "Processing", CurrentOperation = "Processing data" });
                 }
 
                 // Write remaining
@@ -123,13 +131,15 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
                     await destination.WriteBatchAsync(batch, cancellationToken);
                     stats.TotalRowsWritten += batch.Count;
 
-                    progress?.Report(new ImportProgress(
-                        "Processing",
-                        stats.TotalRowsWritten,
-                        CurrentOperation: $"Written {stats.TotalRowsWritten} rows"));
+                    OnProgressChanged(new ImportProgressEventArgs
+                    {
+                        Stage = "Processing",
+                        ProcessedRows = stats.TotalRowsWritten,
+                        CurrentOperation = $"Written {stats.TotalRowsWritten} rows"
+                    });
                 }
 
-                progress?.Report(new ImportProgress("Finalizing", stats.TotalRowsWritten));
+                OnProgressChanged(new ImportProgressEventArgs { Stage = "Finalizing", ProcessedRows = stats.TotalRowsWritten });
                 await destination.FinalizeAsync(cancellationToken);
 
                 stopwatch.Stop();

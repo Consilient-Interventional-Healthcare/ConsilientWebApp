@@ -1,8 +1,11 @@
-using Consilient.Infrastructure.ExcelImporter.Models;
+﻿using Consilient.Infrastructure.ExcelImporter.Models;
 
-namespace Consilient.Infrastructure.ExcelImporter.Core;
-
-public interface IRowValidator<TRow> where TRow : class
+namespace Consilient.Infrastructure.ExcelImporter.Core
 {
-    ValidationResult Validate(TRow row, int rowNumber);
+
+    public interface IRowValidator<TRow> where TRow : class
+    {
+        ValidationResult Validate(TRow row, int rowNumber);
+    }
+
 }

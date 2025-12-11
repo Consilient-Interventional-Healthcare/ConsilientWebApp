@@ -1,11 +1,14 @@
-namespace Consilient.Infrastructure.ExcelImporter.Models;
-
-public record ImportOptions
+﻿namespace Consilient.Infrastructure.ExcelImporter.Models
 {
-    public required SheetSelector Sheet { get; init; }
-    public required ColumnMapping ColumnMapping { get; init; }
-    public int BatchSize { get; init; } = 1000;
-    public int MaxRows { get; init; } = int.MaxValue;
-    public bool SkipEmptyRows { get; init; } = true;
-    public bool FailOnValidationError { get; init; } = true;
+
+    public record ImportOptions
+    {
+        public required SheetSelector Sheet { get; init; }
+        public required ColumnMapping ColumnMapping { get; init; }
+        public int BatchSize { get; init; } = 1000;
+        public int MaxRows { get; init; } = int.MaxValue;
+        public bool SkipEmptyRows { get; init; } = true;
+        public bool FailOnValidationError { get; init; } = true;
+    }
+
 }

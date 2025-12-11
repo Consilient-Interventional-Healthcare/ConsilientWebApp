@@ -1,9 +1,11 @@
 ﻿using Consilient.Infrastructure.ExcelImporter.Core;
 using Consilient.Infrastructure.ExcelImporter.Domain;
+using Consilient.Infrastructure.ExcelImporter.Factories;
 using Consilient.Infrastructure.ExcelImporter.Mappers;
 using Consilient.Infrastructure.ExcelImporter.Models;
 using Consilient.Infrastructure.ExcelImporter.Readers;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
+using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
 using Consilient.Infrastructure.ExcelImporter.Transformers;
 using Consilient.Infrastructure.ExcelImporter.Validators;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -49,49 +51,15 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
             var outputFilePath = TestFileHelper.CreateOutputFilePathFromInput(filePath, TestContext, suffix: "output", extension: ".csv");
 
-            var reader = new NpoiExcelReader();
-            var mapper = new ReflectionRowMapper<DoctorAssignment>(NullLogger<ReflectionRowMapper<DoctorAssignment>>.Instance);
-            var validators = new List<IRowValidator<DoctorAssignment>> { new DoctorAssignmentValidator() };
-            var transformers = new List<IRowTransformer<DoctorAssignment>>
-            {
-                new TrimStringsTransformer<DoctorAssignment>()
-            };
-
-            var importer = new ExcelImporter<DoctorAssignment>(
-                reader,
-                mapper,
-                validators,
-                transformers,
-                NullLogger<ExcelImporter<DoctorAssignment>>.Instance);
-
-            var sink = new CsvFileSink(outputFilePath);
-
-            var options = new ImportOptions
-            {
-                Sheet = SheetSelector.FirstSheet,
-                ColumnMapping = ColumnMapping.Builder()
-                    .MapRequired("Name↓", nameof(DoctorAssignment.Name))
-                    .MapRequired("Location", nameof(DoctorAssignment.Location))
-                    .MapRequired("Hospital Number", nameof(DoctorAssignment.HospitalNumber))
-                    .MapRequired("Admit", nameof(DoctorAssignment.Admit))
-                    .MapRequired("MRN", nameof(DoctorAssignment.Mrn))
-                    .Map("Age", nameof(DoctorAssignment.Age))
-                    .Map("DOB", nameof(DoctorAssignment.Dob))
-                    .Map("H&P", nameof(DoctorAssignment.H_P))
-                    .Map("Psych Eval", nameof(DoctorAssignment.PsychEval))
-                    .Map("Attending MD", nameof(DoctorAssignment.AttendingMD))
-                    .Map("Cleared", nameof(DoctorAssignment.IsCleared))
-                    .Map("Nurse Practitioner", nameof(DoctorAssignment.NursePractitioner))
-                    .Map("Insurance", nameof(DoctorAssignment.Insurance))
-                    .Build(),
-                BatchSize = 1000,
-                FailOnValidationError = false
-            };
+            var facilityId = 123; // Example facility ID
+            var serviceDate = DateOnly.FromDateTime(DateTime.Now);
+            var csvSink = new CsvFileSink(outputFilePath);
+            var importer = ImporterFactoryHelper.CreateImporterWithInMemorySink(facilityId, serviceDate, csvSink);
 
             try
             {
                 // Act
-                var result = await importer.ImportAsync(filePath, sink, options, null, CancellationToken.None);
+                var result = await importer.ImportAsync(filePath, CancellationToken.None);
 
                 // Assert
                 Assert.IsNotNull(result);
@@ -172,5 +140,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
                     File.Delete(outputFilePath);
             }
         }
+
+
     }
 }

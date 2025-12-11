@@ -1,12 +1,10 @@
 using Consilient.Infrastructure.ExcelImporter.Domain;
-using Consilient.Infrastructure.ExcelImporter.Models;
 using Consilient.Infrastructure.ExcelImporter.Validators;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 {
     [TestClass]
-    public class PatientDataValidatorTests
+    public class DoctorAssignmentValidatorTests
     {
         private DoctorAssignmentValidator _validator = null!;
 

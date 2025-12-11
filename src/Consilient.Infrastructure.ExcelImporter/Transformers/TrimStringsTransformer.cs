@@ -1,24 +1,27 @@
-using Consilient.Infrastructure.ExcelImporter.Core;
+﻿using Consilient.Infrastructure.ExcelImporter.Core;
 using System.Reflection;
 
-namespace Consilient.Infrastructure.ExcelImporter.Transformers;
-
-public class TrimStringsTransformer<TRow> : IRowTransformer<TRow> where TRow : class
+namespace Consilient.Infrastructure.ExcelImporter.Transformers
 {
-    public TRow Transform(TRow row)
+
+    public class TrimStringsTransformer<TRow> : IRowTransformer<TRow> where TRow : class
     {
-        var properties = typeof(TRow)
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.PropertyType == typeof(string) && p.CanRead && p.CanWrite);
-
-        foreach (var prop in properties)
+        public TRow Transform(TRow row)
         {
-            if (prop.GetValue(row) is string value && !string.IsNullOrEmpty(value))
-            {
-                prop.SetValue(row, value.Trim());
-            }
-        }
+            var properties = typeof(TRow)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.PropertyType == typeof(string) && p.CanRead && p.CanWrite);
 
-        return row;
+            foreach (var prop in properties)
+            {
+                if (prop.GetValue(row) is string value && !string.IsNullOrEmpty(value))
+                {
+                    prop.SetValue(row, value.Trim());
+                }
+            }
+
+            return row;
+        }
     }
+
 }

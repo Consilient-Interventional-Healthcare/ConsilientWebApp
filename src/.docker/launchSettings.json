@@ -1,5 +1,17 @@
 {
   "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "consilient.backgroundhost": "StartDebugging",
+        "consilient.api": "StartDebugging",
+        "consilient.webapp2": "StartDebugging",
+        "loki": "StartWithoutDebugging",
+        "promtail": "StartWithoutDebugging",
+        "grafana": "StartWithoutDebugging"
+      }
+    },
     "Docker Compose - No LLM": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
