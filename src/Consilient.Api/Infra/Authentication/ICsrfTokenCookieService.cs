@@ -10,14 +10,14 @@ namespace Consilient.Api.Infra.Authentication
         /// </summary>
         /// <param name="response">The HTTP response.</param>
         void ClearCookie(HttpResponse response);
-        
+
         /// <summary>
         /// Generates a cryptographically secure CSRF token and sets it as an HTTP-only cookie.
         /// </summary>
         /// <param name="response">The HTTP response to append the cookie to.</param>
         /// <returns>The generated CSRF token value.</returns>
         string GenerateAndSetCookie(HttpResponse response);
-        
+
         /// <summary>
         /// Retrieves and validates the CSRF token from the request cookies.
         /// </summary>

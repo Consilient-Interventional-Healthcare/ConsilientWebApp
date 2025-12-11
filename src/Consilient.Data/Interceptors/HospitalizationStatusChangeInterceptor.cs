@@ -26,7 +26,10 @@ namespace Consilient.Data.Interceptors
 
         private void TrackStatusChanges(DbContext? context)
         {
-            if (context == null) return;
+            if (context == null)
+            {
+                return;
+            }
 
             var changedHospitalizations = context.ChangeTracker.Entries<Hospitalization>()
                 .Where(e => e.State == EntityState.Modified)
@@ -37,7 +40,7 @@ namespace Consilient.Data.Interceptors
             foreach (var entry in changedHospitalizations)
             {
                 var statusProperty = entry.Property(h => h.HospitalizationStatusId);
-                
+
                 if (statusProperty.IsModified)
                 {
                     var oldStatusId = (int)statusProperty.OriginalValue!;

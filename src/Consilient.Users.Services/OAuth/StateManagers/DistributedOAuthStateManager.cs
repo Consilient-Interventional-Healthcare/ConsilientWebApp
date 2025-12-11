@@ -1,4 +1,3 @@
-using Consilient.Users.Contracts.OAuth;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 

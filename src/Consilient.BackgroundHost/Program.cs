@@ -5,6 +5,7 @@ using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Employees.Services;
 using Consilient.Infrastructure.EmailMonitor;
+using Consilient.Infrastructure.ExcelImporter.DependencyInjection;
 using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
@@ -49,6 +50,7 @@ namespace Consilient.BackgroundHost
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
                 builder.Services.RegisterVisitServices();
+                builder.Services.AddExcelImporter();
 
                 builder.Services.RegisterLogging(logger);
 

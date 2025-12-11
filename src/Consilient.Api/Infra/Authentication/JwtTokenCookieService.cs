@@ -29,7 +29,7 @@ namespace Consilient.Api.Infra.Authentication
                 maxAge);
 
             response.Cookies.Append(AuthenticationCookieNames.AuthToken, token, options);
-            
+
             _logger.LogDebug(
                 "Authentication cookie set successfully. Expiry: {ExpiryMinutes} minutes, Secure: {IsSecure}",
                 expiryMinutes,
@@ -43,7 +43,7 @@ namespace Consilient.Api.Infra.Authentication
             var baseOptions = CookieOptionsFactory.CreateAuthTokenOptions(
                 response.HttpContext,
                 _environment.IsProduction());
-            
+
             var options = CookieOptionsFactory.CreateDeletionOptions(baseOptions);
 
             response.Cookies.Delete(AuthenticationCookieNames.AuthToken, options);

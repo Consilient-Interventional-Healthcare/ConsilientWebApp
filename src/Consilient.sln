@@ -98,6 +98,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Consilient.Users.Services",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{7D3FD8EC-93CB-449D-9698-A7E2D1CA50B2}"
 	ProjectSection(SolutionItems) = preProject
+		Scripts\convert-to-block-namespaces.ps1 = Scripts\convert-to-block-namespaces.ps1
 		Scripts\generate-types.ps1 = Scripts\generate-types.ps1
 		Scripts\organize-types.ps1 = Scripts\organize-types.ps1
 		Scripts\UpdateDatabase.ps1 = Scripts\UpdateDatabase.ps1

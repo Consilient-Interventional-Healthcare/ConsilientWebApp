@@ -1,5 +1,4 @@
-﻿using Consilient.Background.Workers;
-using Consilient.Background.Workers.Contracts;
+﻿using Consilient.Background.Workers.Contracts;
 using Hangfire;
 using Hangfire.Storage;
 using System.Linq.Expressions;
@@ -26,14 +25,12 @@ namespace Consilient.BackgroundHost
 
         private void RegisterRecurringJobs()
         {
-            using (var connection = jobStorage.GetConnection())
+            using var connection = jobStorage.GetConnection();
+            foreach (var recurringJob in connection.GetRecurringJobs())
             {
-                foreach (var recurringJob in connection.GetRecurringJobs())
-                {
-                    recurringJobManager.RemoveIfExists(recurringJob.Id);
-                }
+                recurringJobManager.RemoveIfExists(recurringJob.Id);
             }
-            RegisterRecurringJob<EmailMonitorWorker>(m => m.Run(CancellationToken.None), "*/5 * * * *", GetEasternTimeZoneInfo());
+            //RegisterRecurringJob<EmailMonitorWorker>(m => m.Run(CancellationToken.None), "*/5 * * * *", GetEasternTimeZoneInfo());
         }
 
         private static TimeZoneInfo GetEasternTimeZoneInfo()

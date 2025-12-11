@@ -12,7 +12,7 @@ namespace Consilient.Users.Services
     public static class UserRegistrationExtension
     {
         public static IServiceCollection RegisterUserServices(
-            this IServiceCollection services, 
+            this IServiceCollection services,
             PasswordPolicyOptions passwordPolicy,
             bool useDistributedCache = true)
         {
@@ -34,7 +34,7 @@ namespace Consilient.Users.Services
 
             // Register OAuth provider registry
             services.AddScoped<IOAuthProviderRegistry, OAuthProviderRegistry>();
-            
+
             // Register appropriate state manager based on configuration
             if (useDistributedCache)
             {
@@ -45,7 +45,7 @@ namespace Consilient.Users.Services
                 // Fallback to in-memory for development/testing
                 services.AddSingleton<IOAuthStateManager, InMemoryOAuthStateManager>();
             }
-            
+
             services.AddScoped<ITokenGenerator, TokenGenerator>();
             services.AddScoped<IUserService, UserService>();
             return services;

@@ -1,12 +1,11 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace Consilient.Data.Migrations.Consilient
 {
     /// <inheritdoc />
-    public partial class Initial 
+    public partial class Initial
     {
         /// <inheritdoc />
         private static void SeedData(MigrationBuilder migrationBuilder)

@@ -12,7 +12,7 @@ namespace Consilient.Api.Infra.SignalR
 
         public void SubscribeToWorker(IBackgroundWorker worker)
         {
-            if (worker is ImportClinicalDataSheetWorker importWorker)
+            if (worker is ImportDoctorAssignmentsWorker importWorker)
             {
                 importWorker.ProgressChanged += OnProgressChanged;
             }

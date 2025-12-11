@@ -14,8 +14,8 @@
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The generated state token.</returns>
         Task<string> GenerateStateAsync(
-            string returnUrl, 
-            string codeVerifier, 
+            string returnUrl,
+            string codeVerifier,
             string csrfToken,
             CancellationToken cancellationToken = default);
 
@@ -27,7 +27,7 @@
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Validation result containing return URL and code verifier if successful.</returns>
         Task<OAuthStateValidationResult> ValidateAndConsumeAsync(
-            string state, 
+            string state,
             string csrfToken,
             CancellationToken cancellationToken = default);
     }

@@ -1,4 +1,3 @@
-using Consilient.Users.Contracts.OAuth;
 using System.Collections.Concurrent;
 
 namespace Consilient.Users.Services.OAuth.StateManagers

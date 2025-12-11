@@ -38,7 +38,7 @@ namespace Consilient.Api.Controllers
             var filePath = await fileUploaderHelper.SaveFileAsync(file, cancellationToken).ConfigureAwait(false);
 
             //Queue the background job
-            var jobId = _backgroundJobClient.Enqueue<ImportClinicalDataSheetWorker>(
+            var jobId = _backgroundJobClient.Enqueue<ImportDoctorAssignmentsWorker>(
                 worker => worker.Import(filePath, serviceDate, facilityId, null!));
 
             var result = new

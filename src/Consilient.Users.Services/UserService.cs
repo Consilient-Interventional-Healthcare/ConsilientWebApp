@@ -58,14 +58,14 @@ namespace Consilient.Users.Services
 
             if (string.IsNullOrWhiteSpace(result.UserName) || string.IsNullOrWhiteSpace(result.UserEmail))
             {
-                _logger.LogWarning("Required claims not present in token. Email: {Email}, UserId: {UserId}", 
+                _logger.LogWarning("Required claims not present in token. Email: {Email}, UserId: {UserId}",
                     result.UserEmail, result.UserName);
                 return IdentityHelper.CreateFailureResult(["Required claims not present in token."]);
             }
 
             if (!EmailDomainHelper.IsEmailDomainAllowed(result.UserEmail, _configuration.AllowedEmailDomains))
             {
-                _logger.LogWarning("External authentication blocked: email domain not allowed. Email: {Email}", 
+                _logger.LogWarning("External authentication blocked: email domain not allowed. Email: {Email}",
                     result.UserEmail);
                 return IdentityHelper.CreateFailureResult([ErrorMessages.EmailDomainNotAllowed]);
             }
@@ -73,39 +73,39 @@ namespace Consilient.Users.Services
             var existingLoginUser = await _userManager
                 .FindByLoginAsync(result.ProviderName, result.ProviderKey)
                 .ConfigureAwait(false);
-            
+
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             if (existingLoginUser != null)
             {
-                _logger.LogInformation("Existing external login found. UserId: {UserId}, Email: {Email}", 
+                _logger.LogInformation("Existing external login found. UserId: {UserId}, Email: {Email}",
                     existingLoginUser.Id, existingLoginUser.Email);
                 return await CreateSuccessResultAsync(existingLoginUser);
             }
 
             return await CreateOrLinkUserWithExternalLoginAsync(
-                result.UserEmail, 
-                result.ProviderName, 
+                result.UserEmail,
+                result.ProviderName,
                 result.ProviderKey);
         }
 
         public async Task<string> BuildAuthorizationUrlAsync(
-            string provider, 
-            string state, 
-            string codeChallenge, 
-            string redirectUri, 
+            string provider,
+            string state,
+            string codeChallenge,
+            string redirectUri,
             CancellationToken cancellationToken = default)
         {
             var oauthService = _oauthProviderRegistry.GetProvider(provider);
             return await oauthService.BuildAuthorizationUrlAsync(
-                state, 
-                codeChallenge, 
-                redirectUri, 
+                state,
+                codeChallenge,
+                redirectUri,
                 cancellationToken);
         }
 
         public async Task<AuthenticateUserResult> AuthenticateUserAsync(
-            AuthenticateUserRequest request, 
+            AuthenticateUserRequest request,
             CancellationToken cancellationToken = default)
         {
             _logger.LogDebug("Attempting username/password authentication. Username: {Username}", request.UserName);
@@ -113,9 +113,9 @@ namespace Consilient.Users.Services
             cancellationToken.ThrowIfCancellationRequested();
 
             var user = await _userManager.FindByNameAsync(request.UserName).ConfigureAwait(false);
-            
+
             cancellationToken.ThrowIfCancellationRequested();
-            
+
             if (user == null)
             {
                 _logger.LogWarning("Authentication failed: user not found. Username: {Username}", request.UserName);
@@ -129,13 +129,13 @@ namespace Consilient.Users.Services
                 return IdentityHelper.CreateInvalidCredentialsResult();
             }
 
-            _logger.LogInformation("User authenticated successfully. UserId: {UserId}, Username: {Username}", 
+            _logger.LogInformation("User authenticated successfully. UserId: {UserId}, Username: {Username}",
                 user.Id, user.UserName);
             return await CreateSuccessResultAsync(user);
         }
 
         public async Task<IEnumerable<ClaimDto>> GetClaimsAsync(
-            string userName, 
+            string userName,
             CancellationToken cancellationToken = default)
         {
             var user = await _userManager.FindByNameAsync(userName).ConfigureAwait(false)
@@ -146,12 +146,12 @@ namespace Consilient.Users.Services
         }
 
         public async Task<LinkExternalLoginResult> LinkExternalLoginAsync(
-            LinkExternalLoginRequest request, 
+            LinkExternalLoginRequest request,
             CancellationToken cancellationToken = default)
         {
             if (!EmailDomainHelper.IsEmailDomainAllowed(request.Email, _configuration.AllowedEmailDomains))
             {
-                _logger.LogWarning("Link external login blocked: email domain not allowed. Email: {Email}", 
+                _logger.LogWarning("Link external login blocked: email domain not allowed. Email: {Email}",
                     request.Email);
                 return new LinkExternalLoginResult(false, [ErrorMessages.EmailDomainNotAllowed]);
             }
@@ -166,7 +166,7 @@ namespace Consilient.Users.Services
                 if (user == null || existingLoginUser.Id != user.Id)
                 {
                     _logger.LogWarning(
-                        "External login already linked to different account. Email: {Email}, Provider: {Provider}", 
+                        "External login already linked to different account. Email: {Email}, Provider: {Provider}",
                         request.Email, request.Provider);
                     return new LinkExternalLoginResult(false, [ErrorMessages.ExternalLoginAlreadyLinked]);
                 }
@@ -179,13 +179,13 @@ namespace Consilient.Users.Services
         }
 
         private async Task<LinkExternalLoginResult> CreateAndLinkExternalLoginAsync(
-            User? user, 
+            User? user,
             LinkExternalLoginRequest request)
         {
             if (user == null && !_configuration.AutoProvisionUser)
             {
                 _logger.LogWarning(
-                    "External login link failed: user not found and auto-provisioning disabled. Email: {Email}", 
+                    "External login link failed: user not found and auto-provisioning disabled. Email: {Email}",
                     request.Email);
                 return new LinkExternalLoginResult(false, [ErrorMessages.UserNotFound]);
             }
@@ -218,14 +218,14 @@ namespace Consilient.Users.Services
                 return new LinkExternalLoginResult(false, IdentityHelper.MapIdentityErrors(linkResult));
             }
 
-            _logger.LogInformation("Successfully linked external login. Email: {Email}, Provider: {Provider}", 
+            _logger.LogInformation("Successfully linked external login. Email: {Email}, Provider: {Provider}",
                 request.Email, request.Provider);
             return new LinkExternalLoginResult(true);
         }
 
         private async Task<AuthenticateUserResult> CreateOrLinkUserWithExternalLoginAsync(
-            string email, 
-            string providerName, 
+            string email,
+            string providerName,
             string providerKey)
         {
             var existingUser = await _userManager.FindByEmailAsync(email).ConfigureAwait(false);
@@ -234,7 +234,7 @@ namespace Consilient.Users.Services
             if (existingUser != null)
             {
                 user = existingUser;
-                _logger.LogInformation("Found existing user by email. UserId: {UserId}, Email: {Email}", 
+                _logger.LogInformation("Found existing user by email. UserId: {UserId}, Email: {Email}",
                     user.Id, email);
             }
             else
@@ -242,7 +242,7 @@ namespace Consilient.Users.Services
                 if (!_configuration.AutoProvisionUser)
                 {
                     _logger.LogWarning(
-                        "External authentication failed: user not found and auto-provisioning disabled. Email: {Email}", 
+                        "External authentication failed: user not found and auto-provisioning disabled. Email: {Email}",
                         email);
                     return IdentityHelper.CreateFailureResult([ErrorMessages.UserNotFound]);
                 }
@@ -295,7 +295,7 @@ namespace Consilient.Users.Services
             var result = await _userManager.CreateAsync(user).ConfigureAwait(false);
             if (result.Succeeded)
             {
-                _logger.LogInformation("User created successfully. Email: {Email}, UserId: {UserId}", 
+                _logger.LogInformation("User created successfully. Email: {Email}, UserId: {UserId}",
                     email, user.Id);
                 return (user, null);
             }

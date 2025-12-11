@@ -19,7 +19,7 @@ namespace Consilient.Users.Services.OAuth
             ILogger<MicrosoftOAuthProviderService> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _configuration = userConfig?.Value?.OAuth 
+            _configuration = userConfig?.Value?.OAuth
                 ?? throw new InvalidOperationException(
                     "OAuth configuration is missing. Please ensure the OAuth section is properly configured in application settings.");
 
@@ -179,7 +179,7 @@ namespace Consilient.Users.Services.OAuth
         {
             var authority = _configuration.Authority!.TrimEnd('/');
             var authorityUri = $"{authority}/{_configuration.TenantId}";
-            
+
             return ConfidentialClientApplicationBuilder
                 .Create(_configuration.ClientId)
                 .WithClientSecret(_configuration.ClientSecret)

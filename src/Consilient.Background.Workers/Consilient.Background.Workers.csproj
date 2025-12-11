@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="EmailMonitorWorker.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Hangfire.Core" Version="1.8.22" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4">
       <TreatAsUsed>true</TreatAsUsed>

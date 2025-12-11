@@ -31,20 +31,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Files\DoctorAssignments.xls">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="Files\DoctorAssignment_SAMPLE.xlsm">
+    <None Include="Files\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <EditorConfigFiles Remove="D:\Work\Consilient\src\Consilient.Infrastructure.ExcelImporter.Tests\.editorconfig" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="D:\Work\Consilient\src\Consilient.Infrastructure.ExcelImporter.Tests\.editorconfig" />
-  </ItemGroup>
 
 </Project>

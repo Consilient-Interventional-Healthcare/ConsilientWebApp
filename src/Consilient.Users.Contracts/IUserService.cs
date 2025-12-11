@@ -3,21 +3,21 @@
     public interface IUserService
     {
         Task<AuthenticateUserResult> AuthenticateUserAsync(
-            AuthenticateUserRequest request, 
+            AuthenticateUserRequest request,
             CancellationToken cancellationToken = default);
 
         Task<IEnumerable<ClaimDto>> GetClaimsAsync(
-            string userName, 
+            string userName,
             CancellationToken cancellationToken = default);
 
         Task<LinkExternalLoginResult> LinkExternalLoginAsync(
-            LinkExternalLoginRequest request, 
+            LinkExternalLoginRequest request,
             CancellationToken cancellationToken = default);
 
         Task<AuthenticateUserResult> AuthenticateExternalAsync(
-            ExternalAuthenticateRequest request, 
+            ExternalAuthenticateRequest request,
             CancellationToken cancellationToken = default);
-            
+
         Task<string> BuildAuthorizationUrlAsync(
             string provider,
             string state,

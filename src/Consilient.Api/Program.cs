@@ -80,13 +80,13 @@ namespace Consilient.Api
 
                 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
                 builder.Services.ConfigureCors(allowedOrigins!);
-                
+
                 // Register redirect validation options (uses same origins as CORS for consistency)
                 builder.Services.Configure<RedirectValidationOptions>(options =>
                 {
                     options.AllowedOrigins = allowedOrigins ?? [];
                 });
-                
+
                 builder.Services.ConfigureRateLimiting();
 
                 builder.Services.ConfigureCookiePolicy();

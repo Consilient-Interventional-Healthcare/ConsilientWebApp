@@ -1,6 +1,5 @@
 using Consilient.Users.Contracts.OAuth;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Consilient.Users.Services.OAuth
 {
@@ -23,14 +22,14 @@ namespace Consilient.Users.Services.OAuth
 
             // Build provider dictionary with case-insensitive keys
             _providers = new Dictionary<string, IOAuthProviderService>(StringComparer.OrdinalIgnoreCase);
-            
+
             foreach (var provider in providers)
             {
                 var providerName = provider.GetProviderName();
                 if (_providers.ContainsKey(providerName))
                 {
                     _logger.LogWarning(
-                        "Duplicate OAuth provider registration detected: {ProviderName}. Using first registration.", 
+                        "Duplicate OAuth provider registration detected: {ProviderName}. Using first registration.",
                         providerName);
                     continue;
                 }

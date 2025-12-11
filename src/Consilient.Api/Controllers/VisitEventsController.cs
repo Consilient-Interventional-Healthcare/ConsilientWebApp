@@ -23,8 +23,8 @@ namespace Consilient.Api.Controllers
         [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> InsertVisitEvent(
-            int visitId, 
-            [FromBody] InsertVisitEventRequest request, 
+            int visitId,
+            [FromBody] InsertVisitEventRequest request,
             CancellationToken cancellationToken = default)
         {
             if (request is null)
@@ -75,8 +75,8 @@ namespace Consilient.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> DeleteVisitEvent(
-            int visitId, 
-            int visitEventId, 
+            int visitId,
+            int visitEventId,
             CancellationToken cancellationToken = default)
         {
             if (visitId <= 0)

@@ -9,7 +9,7 @@ namespace Consilient.Users.Services
 {
     public class TokenGenerator(IOptions<UserServiceConfiguration> userConfig) : ITokenGenerator
     {
-        private readonly TokenGeneratorConfiguration _configuration = userConfig.Value?.Jwt 
+        private readonly TokenGeneratorConfiguration _configuration = userConfig.Value?.Jwt
             ?? throw new InvalidOperationException(
                 "JWT configuration is missing. Please ensure the JWT section is properly configured in application settings.");
 
