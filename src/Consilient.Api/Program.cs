@@ -3,6 +3,7 @@ using Consilient.Api.Hubs;
 using Consilient.Api.Infra.Authentication;
 using Consilient.Api.Infra.ModelBinders;
 using Consilient.Api.Init;
+using Consilient.Background.Workers;
 using Consilient.Common.Services;
 using Consilient.Constants;
 using Consilient.Data;
@@ -76,6 +77,7 @@ namespace Consilient.Api
                 builder.Services.RegisterHospitalizationServices();
                 builder.Services.RegisterLogging(logger);
                 builder.Services.ConfigureHangfire(hangfireConnectionString);
+                builder.Services.AddWorkers();
                 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
                 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
@@ -179,7 +181,7 @@ namespace Consilient.Api
         {
             if (loggingConfiguration == null)
             {
-                // Section exists but couldn't bind — still fallback rather than throw.
+                // Section exists but couldn't bind ï¿½ still fallback rather than throw.
                 return CreateTrivialLogger(builder);
             }
 

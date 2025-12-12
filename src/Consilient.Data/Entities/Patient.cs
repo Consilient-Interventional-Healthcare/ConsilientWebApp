@@ -8,6 +8,7 @@ namespace Consilient.Data.Entities
         public string FirstName { get; set; } = string.Empty;
         public Gender? Gender { get; set; }
         public string LastName { get; set; } = string.Empty;
-        public int Mrn { get; set; }
+
+        public virtual ICollection<PatientFacility> PatientFacilities { get; set; } = [];
     }
 }

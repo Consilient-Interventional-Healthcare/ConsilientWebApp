@@ -1,12 +1,7 @@
-using Consilient.Infrastructure.ExcelImporter.Core;
-using Consilient.Infrastructure.ExcelImporter.Domain;
-using Consilient.Infrastructure.ExcelImporter.Factories;
-using Consilient.Infrastructure.ExcelImporter.Mappers;
-using Consilient.Infrastructure.ExcelImporter.Readers;
+using Consilient.DoctorAssignments.Contracts;
+using Consilient.DoctorAssignments.Services;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
 using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
-using Consilient.Infrastructure.ExcelImporter.Validators;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 {
@@ -22,10 +17,10 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             // Arrange
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
 
-            var sink = new InMemorySink<DoctorAssignment>();
+            var sink = new InMemorySink<ExternalDoctorAssignment>();
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
-            var importer = ImporterFactoryHelper.CreateImporterWithInMemorySink(facilityId, serviceDate, sink);
+            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(sink), facilityId, serviceDate);
 
 
             // Act
@@ -56,7 +51,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
             var csvSink = new CsvFileSink(outputPath);
-            var importer = ImporterFactoryHelper.CreateImporterWithInMemorySink(facilityId, serviceDate, csvSink);
+            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(csvSink), facilityId, serviceDate);
 
 
             try
@@ -89,7 +84,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
-            var importer = ImporterFactoryHelper.CreateImporterWithInMemorySink(facilityId, serviceDate);
+            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(null!), facilityId, serviceDate);
 
             // Act
             var result = await importer.ImportAsync(filePath, CancellationToken.None);
@@ -111,7 +106,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
-            var importer = ImporterFactoryHelper.CreateImporterWithInMemorySink(facilityId, serviceDate);
+            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(null!), facilityId, serviceDate);
 
             // Act
             var result = await importer.ImportAsync(filePath, CancellationToken.None);
@@ -128,10 +123,10 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             // Arrange
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
 
-            var sink = new InMemorySink<DoctorAssignment>();
+            var sink = new InMemorySink<ExternalDoctorAssignment>();
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
-            var importer = ImporterFactoryHelper.CreateImporterWithInMemorySink(facilityId, serviceDate, sink);
+            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(sink), facilityId, serviceDate);
 
 
             // Act

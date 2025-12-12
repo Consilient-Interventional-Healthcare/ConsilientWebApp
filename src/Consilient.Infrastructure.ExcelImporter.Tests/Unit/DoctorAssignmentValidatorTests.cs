@@ -1,5 +1,6 @@
-using Consilient.Infrastructure.ExcelImporter.Domain;
-using Consilient.Infrastructure.ExcelImporter.Validators;
+using Consilient.DoctorAssignments.Contracts;
+using Consilient.DoctorAssignments.Services;
+using Consilient.DoctorAssignments.Services.Importer;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 {
@@ -18,7 +19,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithValidData_ReturnsSuccess()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "Wymer, Mias",
                 HospitalNumber = "2504322",
@@ -40,7 +41,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithMissingName_ReturnsError()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "",
                 HospitalNumber = "2504322",
@@ -54,7 +55,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(DoctorAssignment.Name)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalDoctorAssignment.Name)));
             Assert.IsTrue(result.Errors.Any(e => e.Message.Contains("required")));
         }
 
@@ -62,7 +63,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithInvalidAge_ReturnsError()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -76,7 +77,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(DoctorAssignment.Age)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalDoctorAssignment.Age)));
             Assert.IsTrue(result.Errors.Any(e => e.Message.Contains("0 and 150")));
         }
 
@@ -84,7 +85,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithNegativeAge_ReturnsError()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -98,14 +99,14 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(DoctorAssignment.Age)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalDoctorAssignment.Age)));
         }
 
         [TestMethod]
         public void Validate_WithMissingHospitalNumber_ReturnsError()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "Test Patient",
                 HospitalNumber = "",
@@ -119,14 +120,14 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(DoctorAssignment.HospitalNumber)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalDoctorAssignment.HospitalNumber)));
         }
 
         [TestMethod]
         public void Validate_WithFutureAdmitDate_ReturnsError()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -140,7 +141,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(DoctorAssignment.Admit)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalDoctorAssignment.Admit)));
             Assert.IsTrue(result.Errors.Any(e => e.Message.Contains("future")));
         }
 
@@ -148,7 +149,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithFutureDob_ReturnsError()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -163,7 +164,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(DoctorAssignment.Dob)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalDoctorAssignment.Dob)));
             Assert.IsTrue(result.Errors.Any(e => e.Message.Contains("future")));
         }
 
@@ -171,7 +172,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithMissingMrn_ReturnsError()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -185,14 +186,14 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(DoctorAssignment.Mrn)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalDoctorAssignment.Mrn)));
         }
 
         [TestMethod]
         public void Validate_WithMultipleErrors_ReturnsAllErrors()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "",
                 HospitalNumber = "",
@@ -213,7 +214,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithValidNullDob_ReturnsSuccess()
         {
             // Arrange
-            var patientData = new DoctorAssignment
+            var patientData = new ExternalDoctorAssignment
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",

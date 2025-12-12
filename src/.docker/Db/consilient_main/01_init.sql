@@ -82,15 +82,14 @@ BEGIN
 
     CREATE TABLE [Clinical].[Patients] (
         [Id] int NOT NULL IDENTITY,
-        [MRN] int NOT NULL,
-        [FirstName] nvarchar(50) NOT NULL,
-        [LastName] nvarchar(50) NOT NULL,
         [BirthDate] date NULL,
+        [FirstName] nvarchar(50) NOT NULL,
+        [Gender] int NULL,
+        [LastName] nvarchar(50) NOT NULL,
         [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_Patients] PRIMARY KEY ([Id]),
-        CONSTRAINT [AK_Patients_MRN] UNIQUE ([MRN])
+        CONSTRAINT [PK_Patients] PRIMARY KEY ([Id])
     );
 
     CREATE TABLE [Clinical].[ServiceTypes] (
@@ -103,6 +102,15 @@ BEGIN
         CONSTRAINT [PK_ServiceTypes] PRIMARY KEY ([Id])
     );
 
+    CREATE TABLE [Clinical].[VisitEventTypes] (
+        [Id] int NOT NULL IDENTITY,
+        [Code] nvarchar(50) NOT NULL,
+        [Name] nvarchar(100) NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_VisitEventType] PRIMARY KEY ([Id])
+    );
     CREATE TABLE [Clinical].[Hospitalizations] (
         [Id] int NOT NULL IDENTITY,
         [PatientId] int NOT NULL,
@@ -122,6 +130,18 @@ BEGIN
         CONSTRAINT [FK_Hospitalizations_HospitalizationStatuses_HospitalizationStatusId] FOREIGN KEY ([HospitalizationStatusId]) REFERENCES [Clinical].[HospitalizationStatuses] ([Id]) ON DELETE NO ACTION,
         CONSTRAINT [FK_Hospitalizations_Patients_PatientId] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([Id]) ON DELETE NO ACTION
     );
+    CREATE TABLE [Clinical].[PatientFacilities] (
+        [Id] int NOT NULL IDENTITY,
+        [PatientId] int NOT NULL,
+        [FacilityId] int NOT NULL,
+        [MRN] int NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_PatientFacility] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_PatientFacilities_Facilities] FOREIGN KEY ([FacilityId]) REFERENCES [Clinical].[Facilities] ([Id]),
+        CONSTRAINT [FK_PatientFacilities_Patients] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([Id])
+    );
 
     CREATE TABLE [Clinical].[HospitalizationInsurances] (
         [Id] int NOT NULL IDENTITY,
@@ -136,6 +156,20 @@ BEGIN
         CONSTRAINT [FK_HospitalizationInsurances_Insurances] FOREIGN KEY ([InsuranceId]) REFERENCES [Clinical].[Insurances] ([Id])
     );
     
+    CREATE TABLE [Clinical].[HospitalizationStatusHistories] (
+        [Id] int NOT NULL IDENTITY,
+        [HospitalizationId] int NOT NULL,
+        [NewStatusId] int NOT NULL,
+        [ChangedAt] datetime2 NOT NULL DEFAULT (GETUTCDATE()),
+        [ChangedByUserId] int NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_HospitalizationStatusHistory] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_HospitalizationStatusHistories_Users_ChangedByUserId] CHECK (([ChangedByUserId] IS NULL) OR EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [ChangedByUserId])),
+        CONSTRAINT [FK_HospitalizationStatusHistories_HospitalizationStatuses_NewStatusId] FOREIGN KEY ([NewStatusId]) REFERENCES [Clinical].[HospitalizationStatuses] ([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_HospitalizationStatusHistories_Hospitalizations_HospitalizationId] FOREIGN KEY ([HospitalizationId]) REFERENCES [Clinical].[Hospitalizations] ([Id]) ON DELETE NO ACTION
+    );
     CREATE TABLE [Clinical].[Visits] (
         [Id] int NOT NULL IDENTITY,
         [DateServiced] date NOT NULL,
@@ -165,18 +199,46 @@ BEGIN
         CONSTRAINT [FK_VisitAttendants_Visits_VisitId] FOREIGN KEY ([VisitId]) REFERENCES [Clinical].[Visits] ([Id]) ON DELETE NO ACTION
     );
 
+    CREATE TABLE [Clinical].[VisitEvents] (
+        [Id] int NOT NULL IDENTITY,
+        [VisitId] int NOT NULL,
+        [EventTypeId] int NOT NULL,
+        [EventOccurredAt] datetime2 NOT NULL DEFAULT (GETUTCDATE()),
+        [Description] nvarchar(max) NOT NULL,
+        [EnteredByUserId] int NOT NULL,
+        [EmployeeId] int NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_VisitEvent] PRIMARY KEY ([Id]),
+        CONSTRAINT [FK_VisitEvents_Users_EnteredByUserId] CHECK (EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [EnteredByUserId])),
+        CONSTRAINT [FK_VisitEvents_Employees_EmployeeId] FOREIGN KEY ([EmployeeId]) REFERENCES [Compensation].[Employees] ([Id]),
+        CONSTRAINT [FK_VisitEvents_VisitEventTypes_EventTypeId] FOREIGN KEY ([EventTypeId]) REFERENCES [Clinical].[VisitEventTypes] ([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_VisitEvents_Visits_VisitId] FOREIGN KEY ([VisitId]) REFERENCES [Clinical].[Visits] ([Id]) ON DELETE NO ACTION
+    );
     CREATE INDEX [IX_HospitalizationInsurances_HospitalizationId] ON [Clinical].[HospitalizationInsurances] ([HospitalizationId]);
-	
     CREATE INDEX [IX_HospitalizationInsurances_InsuranceId] ON [Clinical].[HospitalizationInsurances] ([InsuranceId]);
 
     CREATE INDEX [IX_Hospitalizations_FacilityId] ON [Clinical].[Hospitalizations] ([FacilityId]);
 
     CREATE INDEX [IX_Hospitalizations_PatientId] ON [Clinical].[Hospitalizations] ([PatientId]);
+    CREATE INDEX [IX_HospitalizationStatusHistories_ChangedAt] ON [Clinical].[HospitalizationStatusHistories] ([ChangedAt]);
+    CREATE INDEX [IX_HospitalizationStatusHistories_ChangedByUserId] ON [Clinical].[HospitalizationStatusHistories] ([ChangedByUserId]);
 
+    CREATE INDEX [IX_HospitalizationStatusHistories_HospitalizationId] ON [Clinical].[HospitalizationStatusHistories] ([HospitalizationId]);
+    CREATE INDEX [IX_HospitalizationStatusHistories_NewStatusId] ON [Clinical].[HospitalizationStatusHistories] ([NewStatusId]);
+    CREATE UNIQUE INDEX [IX_PatientFacilities_FacilityId_MRN] ON [Clinical].[PatientFacilities] ([FacilityId], [MRN]);
+    CREATE INDEX [IX_PatientFacilities_PatientId] ON [Clinical].[PatientFacilities] ([PatientId]);
     CREATE INDEX [IX_VisitAttendants_EmployeeId] ON [Clinical].[VisitAttendants] ([EmployeeId]);
 
     CREATE INDEX [IX_VisitAttendants_VisitId] ON [Clinical].[VisitAttendants] ([VisitId]);
+    CREATE INDEX [IX_VisitEvents_EmployeeId] ON [Clinical].[VisitEvents] ([EmployeeId]);
+    CREATE INDEX [IX_VisitEvents_EnteredByUserId] ON [Clinical].[VisitEvents] ([EnteredByUserId]);
+    CREATE INDEX [IX_VisitEvents_EventOccurredAt] ON [Clinical].[VisitEvents] ([EventOccurredAt]);
+    CREATE INDEX [IX_VisitEvents_EventTypeId] ON [Clinical].[VisitEvents] ([EventTypeId]);
+    CREATE INDEX [IX_VisitEvents_VisitId] ON [Clinical].[VisitEvents] ([VisitId]);
 
+    CREATE UNIQUE INDEX [IX_VisitEventTypes_Code] ON [Clinical].[VisitEventTypes] ([Code]);
     CREATE INDEX [IX_Visits_DateServiced] ON [Clinical].[Visits] ([DateServiced]);
 
     CREATE INDEX [IX_Visits_HospitalizationId] ON [Clinical].[Visits] ([HospitalizationId]);
@@ -189,5 +251,4 @@ END;
 
 COMMIT;
 GO
-
 

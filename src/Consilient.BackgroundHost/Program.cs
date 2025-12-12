@@ -1,4 +1,5 @@
-﻿using Consilient.BackgroundHost.Configuration;
+﻿using Consilient.Background.Workers;
+using Consilient.BackgroundHost.Configuration;
 using Consilient.BackgroundHost.Infra.Security;
 using Consilient.BackgroundHost.Init;
 using Consilient.Constants;
@@ -51,7 +52,7 @@ namespace Consilient.BackgroundHost
                 builder.Services.RegisterSharedServices();
                 builder.Services.RegisterVisitServices();
                 builder.Services.AddExcelImporter();
-
+                builder.Services.AddWorkers();
                 builder.Services.RegisterLogging(logger);
 
                 var app = builder.Build();

@@ -13,22 +13,25 @@ namespace Consilient.Patients.Services
         public async Task<PatientDto?> CreateAsync(CreatePatientRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
-            var exists = await dataContext.Patients.AnyAsync(e => e.Mrn == request.Mrn);
-            if (exists)
+            if (request.FacilityId.HasValue && !string.IsNullOrEmpty(request.Mrn))
             {
-                throw new InvalidOperationException("A patient with the specified MRN already exists.");
+                var exists = await dataContext.Set<PatientFacility>().AnyAsync(e => e.Mrn.ToString() == request.Mrn && e.FacilityId == request.FacilityId);
+                if (exists)
+                {
+                    throw new InvalidOperationException("A patient with the specified MRN already exists.");
+                }
             }
             var entity = request.Adapt<Patient>();
             dataContext.Patients.Add(entity);
             await dataContext.SaveChangesAsync();
-
             return entity.Adapt<PatientDto>();
         }
 
-        public async Task<PatientDto?> GetByMrnAsync(int mrn)
+        public Task<PatientDto?> GetByMrnAsync(int mrn)
         {
-            var patient = await dataContext.Patients.FirstOrDefaultAsync(p => p.Mrn == mrn);
-            return patient?.Adapt<PatientDto>();
+            //var patient = await dataContext.Patients.FirstOrDefaultAsync(p => p.Mrn == mrn);
+            //return patient?.Adapt<PatientDto>();
+            throw new NotImplementedException();
         }
     }
 }

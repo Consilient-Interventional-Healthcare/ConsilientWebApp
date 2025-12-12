@@ -1,45 +1,41 @@
+using Consilient.Data;
+using Consilient.Data.Entities;
+using Consilient.DoctorAssignments.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Core;
-using Consilient.Infrastructure.ExcelImporter.Domain;
 using Consilient.Infrastructure.ExcelImporter.Mappers;
 using Consilient.Infrastructure.ExcelImporter.Models;
 using Consilient.Infrastructure.ExcelImporter.Readers;
-using Consilient.Infrastructure.ExcelImporter.Sinks;
 using Consilient.Infrastructure.ExcelImporter.Transformers;
-using Consilient.Infrastructure.ExcelImporter.Validators;
 using Microsoft.Extensions.Logging;
 
-namespace Consilient.Infrastructure.ExcelImporter.Factories
+namespace Consilient.DoctorAssignments.Services.Importer
 {
-    public class ImporterFactory(ILoggerFactory loggerFactory) : IImporterFactory
+    public class ImporterFactory(ILoggerFactory loggerFactory, ISinkProvider sinkProvider) : IImporterFactory
     {
-        public IExcelImporter<DoctorAssignment> Create(string connectionString, int facilityId, DateOnly serviceDate)
+        public IDoctorAssignmentsImporter Create(int facilityId, DateOnly serviceDate)
         {
-            return CreateWithSink(facilityId, serviceDate, CreateSink(connectionString));
-        }
-
-        public IExcelImporter<DoctorAssignment> CreateWithSink(int facilityId, DateOnly serviceDate, IDataSink sink)
-        {
-            ArgumentNullException.ThrowIfNull(sink, nameof(sink));
+            var sink = sinkProvider.GetSink();
             // Create transformers with parameters
-            var transformers = new List<IRowTransformer<DoctorAssignment>>
+            var transformers = new List<IRowTransformer<ExternalDoctorAssignment>>
             {
-                new TrimStringsTransformer<DoctorAssignment>(),
+                new TrimStringsTransformer<ExternalDoctorAssignment>(),
                 new SetImportParametersTransformer(facilityId, serviceDate)
             };
 
             var options = CreateDefaultImportOptions();
 
             // Create importer
-            var importer = new ExcelImporter<DoctorAssignment>(
+            var excelImporter = new ExcelImporter<ExternalDoctorAssignment>(
                 new NpoiExcelReader(),
-                new ReflectionRowMapper<DoctorAssignment>(loggerFactory.CreateLogger<ReflectionRowMapper<DoctorAssignment>>()),
+                new ReflectionRowMapper<ExternalDoctorAssignment>(loggerFactory.CreateLogger<ReflectionRowMapper<ExternalDoctorAssignment>>()),
                 new[] { new DoctorAssignmentValidator() },
                 transformers,
                 sink,
                 options,
-                loggerFactory.CreateLogger<ExcelImporter<DoctorAssignment>>());
+                loggerFactory.CreateLogger<ExcelImporter<ExternalDoctorAssignment>>());
 
-            return importer;
+
+            return new DoctorAssignmentsImporter(excelImporter);
         }
 
         private static ColumnMapping CreateColumnMapping()
@@ -72,11 +68,6 @@ namespace Consilient.Infrastructure.ExcelImporter.Factories
                 SkipEmptyRows = true,
                 MaxRows = int.MaxValue
             };
-        }
-
-        private static SqlServerBulkSink CreateSink(string connectionString)
-        {
-            return new SqlServerBulkSink(connectionString, "staging.DoctorAssignments");
         }
     }
 }

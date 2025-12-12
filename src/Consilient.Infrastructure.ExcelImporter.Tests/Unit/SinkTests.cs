@@ -1,7 +1,6 @@
-using Consilient.Infrastructure.ExcelImporter.Domain;
+using Consilient.DoctorAssignments.Contracts;
+using Consilient.DoctorAssignments.Services;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
-using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 {
@@ -14,8 +13,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public async Task InMemorySink_StoresAllRows()
         {
             // Arrange
-            var sink = new InMemorySink<DoctorAssignment>();
-            var patients = new List<DoctorAssignment>
+            var sink = new InMemorySink<ExternalDoctorAssignment>();
+            var patients = new List<ExternalDoctorAssignment>
             {
                 new() { Name = "Patient 1", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now },
                 new() { Name = "Patient 2", HospitalNumber = "002", Mrn = "M002", Age = 30, Admit = DateTime.Now },
@@ -38,15 +37,15 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public async Task InMemorySink_InitializeClearsExistingRows()
         {
             // Arrange
-            var sink = new InMemorySink<DoctorAssignment>();
-            await sink.WriteBatchAsync(new List<DoctorAssignment>
+            var sink = new InMemorySink<ExternalDoctorAssignment>();
+            await sink.WriteBatchAsync(new List<ExternalDoctorAssignment>
             {
                 new() { Name = "Old Patient", HospitalNumber = "000", Mrn = "M000", Age = 20, Admit = DateTime.Now }
             }, TestContext.CancellationToken);
 
             // Act
             await sink.InitializeAsync(TestContext.CancellationToken); // Should clear
-            await sink.WriteBatchAsync(new List<DoctorAssignment>
+            await sink.WriteBatchAsync(new List<ExternalDoctorAssignment>
             {
                 new() { Name = "New Patient", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now }
             }, TestContext.CancellationToken);
@@ -62,7 +61,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             // Arrange
             var outputPath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-sink-test");
             var sink = new CsvFileSink(outputPath);
-            var patients = new List<DoctorAssignment>
+            var patients = new List<ExternalDoctorAssignment>
             {
                 new() {
                     Name = "Wymer, Mias",
@@ -112,11 +111,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             // Arrange
             var outputPath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-multi-batch");
             var sink = new CsvFileSink(outputPath);
-            var batch1 = new List<DoctorAssignment>
+            var batch1 = new List<ExternalDoctorAssignment>
             {
                 new() { Name = "Patient 1", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now }
             };
-            var batch2 = new List<DoctorAssignment>
+            var batch2 = new List<ExternalDoctorAssignment>
             {
                 new() { Name = "Patient 2", HospitalNumber = "002", Mrn = "M002", Age = 30, Admit = DateTime.Now }
             };
@@ -149,7 +148,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             // Arrange
             var outputPath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-empty");
             var sink = new CsvFileSink(outputPath);
-            var emptyBatch = new List<DoctorAssignment>();
+            var emptyBatch = new List<ExternalDoctorAssignment>();
 
             try
             {
@@ -176,7 +175,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             var outputPath = Path.Combine(tempDir, "test.csv");
             var sink = new CsvFileSink(outputPath);
-            var patients = new List<DoctorAssignment>
+            var patients = new List<ExternalDoctorAssignment>
             {
                 new() { Name = "Test", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now }
             };

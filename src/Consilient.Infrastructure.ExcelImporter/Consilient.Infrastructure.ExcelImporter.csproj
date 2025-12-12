@@ -8,9 +8,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Factories\**" />
+    <EmbeddedResource Remove="Factories\**" />
+    <None Remove="Factories\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="AssignmentImporter.cs" />
     <Compile Remove="Contracts\IExcelDataMapper.cs" />
     <Compile Remove="NPOI\WorkbookFactory.cs" />
+    <Compile Remove="Transformers\CalculateAgeFromDobTransformer.cs" />
+    <Compile Remove="Transformers\SetImportParametersTransformer.cs" />
+    <Compile Remove="Validators\DoctorAssignmentValidator.cs" />
   </ItemGroup>
 
   <ItemGroup>

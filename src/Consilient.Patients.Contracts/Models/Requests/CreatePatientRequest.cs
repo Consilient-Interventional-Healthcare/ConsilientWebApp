@@ -2,9 +2,10 @@
 {
     public class CreatePatientRequest
     {
-        public int Mrn { get; init; }
-        public string? FirstName { get; init; }
-        public string? LastName { get; init; }
+        public string FirstName { get; init; } = string.Empty;
+        public string LastName { get; init; } = string.Empty;
         public DateOnly? PatientBirthDate { get; init; }
+        public int? FacilityId { get; init; }
+        public string? Mrn { get; init; }
     }
 }

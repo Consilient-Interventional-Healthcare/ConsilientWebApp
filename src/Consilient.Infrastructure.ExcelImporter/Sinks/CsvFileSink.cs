@@ -6,19 +6,13 @@ using System.Text;
 
 namespace Consilient.Infrastructure.ExcelImporter.Sinks
 {
-    public class CsvFileSink : IDataSink
+    public class CsvFileSink(string filePath, CsvConfiguration? config = null) : IDataSink
     {
-        private readonly string _filePath;
-        private readonly CsvConfiguration _config;
+        private readonly string _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
+        private readonly CsvConfiguration _config = config ?? new CsvConfiguration(CultureInfo.InvariantCulture);
         private StreamWriter? _writer;
         private CsvWriter? _csv;
         private bool _headerWritten;
-
-        public CsvFileSink(string filePath, CsvConfiguration? config = null)
-        {
-            _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
-            _config = config ?? new CsvConfiguration(CultureInfo.InvariantCulture);
-        }
 
         public Task InitializeAsync(CancellationToken cancellationToken = default)
         {
@@ -35,7 +29,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
             return Task.CompletedTask;
         }
 
-        public async Task WriteBatchAsync<TRow>(IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
+        public async Task<Guid?> WriteBatchAsync<TRow>(IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
             where TRow : class
         {
             if (_csv == null)
@@ -55,6 +49,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
                 _csv.WriteRecord(row);
                 await _csv.NextRecordAsync();
             }
+            return Guid.NewGuid();
         }
 
         public async Task FinalizeAsync(CancellationToken cancellationToken = default)

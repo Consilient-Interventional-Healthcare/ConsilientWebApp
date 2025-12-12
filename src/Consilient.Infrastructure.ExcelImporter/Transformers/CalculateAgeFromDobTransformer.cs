@@ -1,5 +1,4 @@
 using Consilient.Infrastructure.ExcelImporter.Core;
-using Consilient.Infrastructure.ExcelImporter.Domain;
 
 namespace Consilient.Infrastructure.ExcelImporter.Transformers
 {

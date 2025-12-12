@@ -1,0 +1,34 @@
+using Consilient.Data.Entities;
+
+namespace Consilient.DoctorAssignments.Services.Validators
+{
+    public class DoctorAssignmentValidator(Func<DateTime>? utcNow = null)
+    {
+        private readonly Func<DateTime> _utcNow = utcNow ?? (() => DateTime.UtcNow);
+
+        public List<string> Validate(DoctorAssignment record)
+        {
+            var errors = new List<string>();
+            var now = _utcNow();
+
+            // Required field validations
+            errors.AddRange(ValidationRules.ValidateMrn(record.Mrn));
+            errors.AddRange(ValidationRules.ValidateHospitalNumber(record.HospitalNumber));
+
+            if (string.IsNullOrWhiteSpace(record.AttendingMD))
+            {
+                errors.Add("Attending MD is required");
+            }
+
+            if (record.FacilityId == null)
+            {
+                errors.Add("Facility ID is required");
+            }
+
+            // Data integrity validations
+            errors.AddRange(ValidationRules.ValidateDateFields(record.Admit, record.Dob, now));
+
+            return errors;
+        }
+    }
+}

@@ -1,14 +1,9 @@
-﻿using Consilient.Infrastructure.ExcelImporter.Core;
-using Consilient.Infrastructure.ExcelImporter.Domain;
-using Consilient.Infrastructure.ExcelImporter.Factories;
-using Consilient.Infrastructure.ExcelImporter.Mappers;
+﻿using Consilient.DoctorAssignments.Contracts;
+using Consilient.DoctorAssignments.Services;
 using Consilient.Infrastructure.ExcelImporter.Models;
 using Consilient.Infrastructure.ExcelImporter.Readers;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
 using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
-using Consilient.Infrastructure.ExcelImporter.Transformers;
-using Consilient.Infrastructure.ExcelImporter.Validators;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests
 {
@@ -54,7 +49,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
             var csvSink = new CsvFileSink(outputFilePath);
-            var importer = ImporterFactoryHelper.CreateImporterWithInMemorySink(facilityId, serviceDate, csvSink);
+            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(csvSink), facilityId, serviceDate);
 
             try
             {
@@ -89,7 +84,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             // Arrange
             var outputFilePath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-writer-test");
 
-            var patients = new List<DoctorAssignment>
+            var patients = new List<ExternalDoctorAssignment>
             {
                 new() {
                     HospitalNumber = "2504322",

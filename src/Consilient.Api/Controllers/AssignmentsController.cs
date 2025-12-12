@@ -1,7 +1,6 @@
 ﻿using Consilient.Api.Configuration;
 using Consilient.Api.Helpers;
-using Consilient.Background.Workers;
-using Hangfire;
+using Consilient.Background.Workers.DoctorAssignments;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consilient.Api.Controllers
@@ -9,10 +8,10 @@ namespace Consilient.Api.Controllers
     [Route("[controller]")]
     [ApiController]
     public class AssignmentsController(
-        IBackgroundJobClient backgroundJobClient,
+        DoctorAssignmentsImportWorkerEnqueuer importWorkerEnqueuer,
         ApplicationSettings applicationSettings) : ControllerBase
     {
-        private readonly IBackgroundJobClient _backgroundJobClient = backgroundJobClient;
+        private readonly DoctorAssignmentsImportWorkerEnqueuer _importWorkerEnqueuer = importWorkerEnqueuer;
         private readonly FileUploadSettings _fileUploadSettings = applicationSettings.FileUpload;
 
 
@@ -37,13 +36,11 @@ namespace Consilient.Api.Controllers
             // Save the file
             var filePath = await fileUploaderHelper.SaveFileAsync(file, cancellationToken).ConfigureAwait(false);
 
-            //Queue the background job
-            var jobId = _backgroundJobClient.Enqueue<ImportDoctorAssignmentsWorker>(
-                worker => worker.Import(filePath, serviceDate, facilityId, null!));
+            // Queue the import job (which will automatically chain the resolution job)
+            _importWorkerEnqueuer.Import(filePath, facilityId, serviceDate);
 
             var result = new
             {
-                JobId = jobId,
                 file.FileName,
                 ServiceDate = serviceDate,
                 FacilityId = facilityId,

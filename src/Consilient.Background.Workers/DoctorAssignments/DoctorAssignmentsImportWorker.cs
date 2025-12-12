@@ -1,21 +1,22 @@
 ﻿using Consilient.Background.Workers.Contracts;
 using Consilient.Background.Workers.Models;
-using Consilient.Infrastructure.ExcelImporter.Factories;
+using Consilient.DoctorAssignments.Contracts;
+using Hangfire;
 using Hangfire.Server;
 
-namespace Consilient.Background.Workers
+namespace Consilient.Background.Workers.DoctorAssignments
 {
-    public class ImportDoctorAssignmentsWorker(IImporterFactory importerFactory, string connectionString) : IBackgroundWorker
+    public class DoctorAssignmentsImportWorker(IImporterFactory importerFactory) : IBackgroundWorker
     {
         // Event for progress reporting using the reusable WorkerProgressEventArgs
         public event EventHandler<WorkerProgressEventArgs>? ProgressChanged;
 
-        public async Task Import(string filePath, DateOnly serviceDate, int facilityId, PerformContext context)
+        public async Task<Guid> Import(string filePath, int facilityId, DateOnly serviceDate, PerformContext context)
         {
             var jobId = context.BackgroundJob.Id;
 
             // Create importer using factory
-            var importer = importerFactory.Create(connectionString, facilityId, serviceDate);
+            var importer = importerFactory.Create(facilityId, serviceDate);
 
             // Wire up progress events
             importer.ProgressChanged += (sender, p) =>
@@ -38,6 +39,8 @@ namespace Consilient.Background.Workers
                 // Import using the new pipeline
                 var result = await importer.ImportAsync(filePath, CancellationToken.None);
 
+                var batchId = result.BatchId ?? throw new InvalidOperationException("BatchId was not generated during import");
+
                 // Report completion
                 OnProgressChanged(new WorkerProgressEventArgs
                 {
@@ -52,7 +55,7 @@ namespace Consilient.Background.Workers
                         ["FileName"] = Path.GetFileName(filePath),
                         ["ServiceDate"] = serviceDate.ToString("yyyy-MM-dd"),
                         ["FacilityId"] = facilityId,
-                        ["BatchId"] = result.BatchId?.ToString() ?? string.Empty,
+                        ["BatchId"] = batchId.ToString(),
                         ["TotalRowsRead"] = result.TotalRowsRead,
                         ["TotalRowsWritten"] = result.TotalRowsWritten,
                         ["TotalRowsSkipped"] = result.TotalRowsSkipped,
@@ -60,6 +63,7 @@ namespace Consilient.Background.Workers
                         ["ValidationErrors"] = result.ValidationErrors.Count
                     }
                 });
+                return batchId;
             }
             catch (Exception ex)
             {

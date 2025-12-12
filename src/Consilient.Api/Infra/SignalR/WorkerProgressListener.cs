@@ -1,6 +1,6 @@
 using Consilient.Api.Hubs;
-using Consilient.Background.Workers;
 using Consilient.Background.Workers.Contracts;
+using Consilient.Background.Workers.DoctorAssignments;
 using Consilient.Background.Workers.Models;
 using Microsoft.AspNetCore.SignalR;
 
@@ -12,7 +12,7 @@ namespace Consilient.Api.Infra.SignalR
 
         public void SubscribeToWorker(IBackgroundWorker worker)
         {
-            if (worker is ImportDoctorAssignmentsWorker importWorker)
+            if (worker is DoctorAssignmentsImportWorker importWorker)
             {
                 importWorker.ProgressChanged += OnProgressChanged;
             }

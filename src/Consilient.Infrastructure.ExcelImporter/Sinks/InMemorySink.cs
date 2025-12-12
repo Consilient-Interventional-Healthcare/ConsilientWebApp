@@ -5,7 +5,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
 
     public class InMemorySink<TRow> : IDataSink where TRow : class
     {
-        public List<TRow> Rows { get; } = new();
+        public List<TRow> Rows { get; } = [];
 
         public Task InitializeAsync(CancellationToken cancellationToken = default)
         {
@@ -13,7 +13,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
             return Task.CompletedTask;
         }
 
-        public Task WriteBatchAsync<T>(IReadOnlyList<T> batch, CancellationToken cancellationToken = default)
+        public Task<Guid?> WriteBatchAsync<T>(IReadOnlyList<T> batch, CancellationToken cancellationToken = default)
             where T : class
         {
             if (batch is IReadOnlyList<TRow> typedBatch)
@@ -21,7 +21,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
                 Rows.AddRange(typedBatch);
             }
 
-            return Task.CompletedTask;
+            return Task.FromResult<Guid?>(Guid.NewGuid());
         }
 
         public Task FinalizeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

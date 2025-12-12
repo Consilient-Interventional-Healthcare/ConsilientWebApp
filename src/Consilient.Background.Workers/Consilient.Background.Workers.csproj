@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
+    <ProjectReference Include="..\Consilient.DoctorAssignments.Contracts\Consilient.DoctorAssignments.Contracts.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.EmailMonitor\Consilient.Infrastructure.EmailMonitor.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.ExcelImporter\Consilient.Infrastructure.ExcelImporter.csproj" />
   </ItemGroup>

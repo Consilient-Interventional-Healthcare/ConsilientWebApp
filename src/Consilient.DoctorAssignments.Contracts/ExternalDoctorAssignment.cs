@@ -1,6 +1,6 @@
-namespace Consilient.Infrastructure.ExcelImporter.Domain
+namespace Consilient.DoctorAssignments.Contracts
 {
-    public record DoctorAssignment
+    public record ExternalDoctorAssignment
     {
         public string Name { get; init; } = string.Empty;
         public string Location { get; init; } = string.Empty;

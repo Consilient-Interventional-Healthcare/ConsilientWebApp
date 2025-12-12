@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <None Remove="Models\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="DoctorAssignmentsService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.Core" Version="1.8.22" />
+    <PackageReference Include="EFCore.BulkExtensions" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
+    <ProjectReference Include="..\Consilient.DoctorAssignments.Contracts\Consilient.DoctorAssignments.Contracts.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.ExcelImporter\Consilient.Infrastructure.ExcelImporter.csproj" />
+  </ItemGroup>
+
+</Project>
