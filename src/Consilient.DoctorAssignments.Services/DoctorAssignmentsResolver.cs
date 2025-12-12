@@ -1,4 +1,5 @@
-﻿using Consilient.Data;
+﻿using Consilient.Common;
+using Consilient.Data;
 using Consilient.Data.Entities;
 using Consilient.DoctorAssignments.Contracts;
 using Consilient.DoctorAssignments.Services.Cache;
@@ -9,10 +10,9 @@ namespace Consilient.DoctorAssignments.Services
 {
     internal class DoctorAssignmentsResolver(ConsilientDbContext dbContext) : IDoctorAssignmentsResolver
     {
+        private readonly DoctorAssignmentResolutionCache _cache = new(dbContext);
         private readonly ConsilientDbContext _dbContext = dbContext;
         private readonly DoctorAssignmentValidator _validator = new();
-        private readonly DoctorAssignmentResolutionCache _cache = new(dbContext);
-
         public async Task ResolveAsync(Guid batchId, CancellationToken cancellationToken = default)
         {
             using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -58,138 +58,6 @@ namespace Consilient.DoctorAssignments.Services
             }
         }
 
-        private async Task<List<Data.Entities.DoctorAssignment>> GetStagingRecordsForResolution(Guid batchId, CancellationToken cancellationToken = default)
-        {
-            return await _dbContext.Set<DoctorAssignment>()
-                .Where(x => x.BatchId == batchId
-                    && (x.ValidationErrors == null || x.ValidationErrors.Count == 0)
-                    && !x.ShouldImport
-                    && x.ResolvedVisitId == null
-                    && !x.Imported)
-                .ToListAsync(cancellationToken);
-        }
-
-        private void ValidateDataIntegrity(List<DoctorAssignment> records, DoctorAssignmentResolutionCache cache)
-        {
-            // Run validator on each record and add validation errors to the record
-            foreach (var record in records)
-            {
-                var validationErrors = _validator.Validate(record);
-
-                // Additional validation: Check if FacilityId exists in the database
-                if (record.FacilityId.HasValue && !cache.FacilityIds.Contains(record.FacilityId.Value))
-                {
-                    validationErrors.Add($"Facility ID {record.FacilityId} does not exist");
-                }
-
-                if (validationErrors.Count > 0)
-                {
-                    record.ValidationErrors.AddRange(validationErrors);
-                }
-            }
-        }
-
-        private async Task BulkUpdateAllChanges(List<DoctorAssignment> records)
-        {
-            var recordIds = records.Select(r => r.Id).ToList();
-
-            foreach (var record in records)
-            {
-                _dbContext.Set<Data.Entities.DoctorAssignment>().Attach(record);
-                _dbContext.Entry(record).State = EntityState.Modified;
-            }
-
-            await _dbContext.SaveChangesAsync();
-        }
-
-        private void ResolveAttendingPhysicians(List<DoctorAssignment> records)
-        {
-            ResolveProviders(records,
-                record => record.AttendingMD,
-                (record, id) => record.ResolvedProviderId = id,
-                "Attending physician");
-        }
-
-        private void ResolveNursePractitioners(List<DoctorAssignment> records)
-        {
-            ResolveProviders(records,
-                record => record.NursePractitioner,
-                (record, id) => record.ResolvedNursePracticionerId = id,
-                "Nurse practitioner");
-        }
-
-        /// <summary>
-        /// Resolves provider information with consistent error handling.
-        /// </summary>
-        private void ResolveProviders(
-            List<DoctorAssignment> records,
-            Func<DoctorAssignment, string?> nameSelector,
-            Action<DoctorAssignment, int> idSetter,
-            string providerType)
-        {
-            foreach (var record in records)
-            {
-                if (record.ValidationErrors.Count > 0 || string.IsNullOrWhiteSpace(nameSelector(record)))
-                {
-                    continue;
-                }
-
-                var providerName = nameSelector(record)!.Trim();
-                var matchedEmployeeId = FindEmployeeByName(providerName);
-
-                if (matchedEmployeeId.HasValue)
-                {
-                    idSetter(record, matchedEmployeeId.Value);
-                }
-                else
-                {
-                    record.ValidationErrors.Add($"{providerType} not found");
-                }
-            }
-        }
-
-        private int? FindEmployeeByName(string fullName)
-        {
-            // Try exact match with just first and last name
-            if (_cache.EmployeeIdsByFullName.TryGetValue(fullName, out var exactMatches))
-            {
-                // Return first match if providers only
-                foreach (var employeeId in exactMatches)
-                {
-                    if (_cache.EmployeeDetailsById[employeeId].IsProvider)
-                    {
-                        return employeeId;
-                    }
-                }
-            }
-
-            // Try match with title extension (space-separated)
-            if (_cache.EmployeeIdsByFullNameWithTitle.TryGetValue(fullName, out var withTitleMatches))
-            {
-                foreach (var employeeId in withTitleMatches)
-                {
-                    if (_cache.EmployeeDetailsById[employeeId].IsProvider)
-                    {
-                        return employeeId;
-                    }
-                }
-            }
-
-            // Try match with title extension (comma-separated)
-            if (_cache.EmployeeIdsByFullNameWithTitleComma.TryGetValue(fullName, out var withTitleCommaMatches))
-            {
-                foreach (var employeeId in withTitleCommaMatches)
-                {
-                    if (_cache.EmployeeDetailsById[employeeId].IsProvider)
-                    {
-                        return employeeId;
-                    }
-                }
-            }
-
-            return null;
-        }
-
         private static void ApplyResolutionRules(List<DoctorAssignment> records)
         {
             foreach (var record in records)
@@ -204,40 +72,88 @@ namespace Consilient.DoctorAssignments.Services
             }
         }
 
-        private void ResolvePatients(List<DoctorAssignment> records)
+        private static List<EmployeeContractRow> FindEmployeesByName(string searchName, List<EmployeeContractRow> candidates)
         {
-            foreach (var record in records)
+            var strategies = new[]
             {
-                if (record.ValidationErrors.Count > 0 || !record.ShouldImport || string.IsNullOrWhiteSpace(record.Mrn) || !record.FacilityId.HasValue)
-                {
-                    continue;
-                }
+                searchName,  // Exact match: "FirstName LastName"
+                // Add more name-matching strategies here:
+                // Example: searchName with title extensions
+                // Example: fuzzy matching variants
+            };
 
-                var key = (record.Mrn, record.FacilityId.Value);
-                if (_cache.PatientIdByMrnAndFacility.TryGetValue(key, out var patientId))
+            foreach (var strategy in strategies)
+            {
+                var matches = candidates
+                    .Where(e => $"{e.FirstName} {e.LastName}".Equals(strategy, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (matches.Count > 0)
                 {
-                    record.ResolvedPatientId = patientId;
-                }
-                else
-                {
-                    record.NeedsNewPatient = true;
+                    return matches;
                 }
             }
+
+            return [];
+        }
+
+        private static bool HasActiveContractOnDateAndFacility(EmployeeContractRow employee, DateOnly visitDate, int facilityId)
+        {
+            if (employee.ProviderContractId == null)
+            {
+                return false;
+            }
+
+            return employee.StartDate <= visitDate && 
+                (employee.EndDate == null || visitDate <= employee.EndDate) && 
+                employee.FacilityId == facilityId;
+        }
+
+        private async Task BulkUpdateAllChanges(List<DoctorAssignment> records)
+        {
+            var recordIds = records.Select(r => r.Id).ToList();
+
+            foreach (var record in records)
+            {
+                _dbContext.Set<DoctorAssignment>().Attach(record);
+                _dbContext.Entry(record).State = EntityState.Modified;
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        private async Task<List<DoctorAssignment>> GetStagingRecordsForResolution(Guid batchId, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.Set<DoctorAssignment>()
+                .Where(x => x.BatchId == batchId
+                    && (x.ValidationErrors == null || x.ValidationErrors.Count == 0)
+                    && !x.ShouldImport
+                    && x.ResolvedVisitId == null
+                    && !x.Imported)
+                .ToListAsync(cancellationToken);
+        }
+
+        private void ResolveAttendingPhysicians(List<DoctorAssignment> records)
+        {
+            ResolveProviders(records,
+                record => record.AttendingMD,
+                (record, id) => record.ResolvedProviderId = id,
+                EmployeeRole.Provider);
         }
 
         private void ResolveHospitalizations(List<DoctorAssignment> records)
         {
             foreach (var record in records)
             {
-                if (record.ValidationErrors.Count > 0 || !record.ShouldImport || string.IsNullOrWhiteSpace(record.HospitalNumber) || !record.FacilityId.HasValue || !record.ResolvedPatientId.HasValue)
+                if (record.ValidationErrors.Count > 0 || !record.ShouldImport || string.IsNullOrWhiteSpace(record.HospitalNumber) || !record.ResolvedPatientId.HasValue)
                 {
                     continue;
                 }
 
                 if (int.TryParse(record.HospitalNumber, out var caseId))
                 {
-                    var key = (caseId, record.FacilityId.Value);
-                    if (_cache.HospitalizationsByCaseIdAndFacility.TryGetValue(key, out var hospitalizations))
+                    var key = (caseId, record.FacilityId);
+                    if (_cache.Hospitalizations.TryGetValue(key, out var hospitalizations))
                     {
                         // Find matching hospitalization with all three criteria: CaseId, FacilityId, and PatientId
                         var matching = hospitalizations.FirstOrDefault(h =>
@@ -256,6 +172,105 @@ namespace Consilient.DoctorAssignments.Services
                     {
                         record.NeedsNewHospitalization = true;
                     }
+                }
+            }
+        }
+
+        private void ResolveNursePractitioners(List<DoctorAssignment> records)
+        {
+            ResolveProviders(records,
+                record => record.NursePractitioner,
+                (record, id) => record.ResolvedNursePracticionerId = id,
+                EmployeeRole.NursePractitioner);
+        }
+
+        private void ResolvePatients(List<DoctorAssignment> records)
+        {
+            foreach (var record in records)
+            {
+                if (record.ValidationErrors.Count > 0 || !record.ShouldImport || string.IsNullOrWhiteSpace(record.Mrn))
+                {
+                    continue;
+                }
+
+                var key = (record.Mrn, record.FacilityId);
+                if (_cache.Patients.TryGetValue(key, out var patientId))
+                {
+                    record.ResolvedPatientId = patientId;
+                }
+                else
+                {
+                    record.NeedsNewPatient = true;
+                }
+            }
+        }
+
+        private void ResolveProviders(
+            List<DoctorAssignment> records,
+            Func<DoctorAssignment, string?> nameSelector,
+            Action<DoctorAssignment, int> idSetter,
+            EmployeeRole role)
+        {
+            var allEmployees = _cache.Employees;
+
+            // Step 1: Filter by date and facility (for all employees)
+            var first = records.First();
+            var visitDate = first.ServiceDate;
+            var facilityId = first.FacilityId;
+
+            var activeByDateAndFacility = allEmployees
+                .Where(e => HasActiveContractOnDateAndFacility(e, visitDate, facilityId))
+                .ToList();
+
+            // Step 2: Filter by role
+            var activeByDateFacilityAndRole = activeByDateAndFacility
+                .Where(e => e.Role == role)
+                .ToList();
+
+            // Step 3: Try to match by name using defined strategies
+            foreach (var record in records)
+            {
+                if (record.ValidationErrors.Count > 0 || string.IsNullOrWhiteSpace(nameSelector(record)))
+                {
+                    continue;
+                }
+
+                var providerName = nameSelector(record)!.Trim();
+
+                // Apply name-matching strategies
+                var matches = FindEmployeesByName(providerName, activeByDateFacilityAndRole);
+                var matchesGroupedById = matches.GroupBy(e => e.Id).Select(g => g.First()).ToList();
+                if (matchesGroupedById.Count == 0)
+                {
+                    record.ValidationErrors.Add($"{providerName} not found");
+                }
+                else if (matchesGroupedById.Count == 1)
+                {
+                    idSetter(record, matchesGroupedById.First().Id);
+                }
+                else
+                {
+                    record.ValidationErrors.Add($"Multiple matches found for {providerName}");
+                }
+            }
+        }
+
+        private void ValidateDataIntegrity(List<DoctorAssignment> records, DoctorAssignmentResolutionCache cache)
+        {
+            // Run validator on each record and add validation errors to the record
+            foreach (var record in records)
+            {
+                var validationErrors = _validator.Validate(record);
+
+                // Additional validation: Check if FacilityId exists in the database
+                if (!cache.Facilities.Contains(record.FacilityId))
+                {
+                    validationErrors.Add($"Facility ID {record.FacilityId} does not exist");
+                }
+
+                if (validationErrors.Count > 0)
+                {
+                    record.ValidationErrors.AddRange(validationErrors);
                 }
             }
         }

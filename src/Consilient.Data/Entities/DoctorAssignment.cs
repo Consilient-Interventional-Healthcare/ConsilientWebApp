@@ -7,14 +7,14 @@ namespace Consilient.Data.Entities
         public string HospitalNumber { get; set; } = string.Empty;
         public DateTime Admit { get; set; }
         public DateTime? Dob { get; set; }
-        public int? FacilityId { get; set; }
+        public int FacilityId { get; set; }
         public string Mrn { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Insurance { get; set; } = string.Empty;
         public string NursePractitioner { get; set; } = string.Empty;
         public string IsCleared { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
-        public DateOnly? ServiceDate { get; set; }
+        public DateOnly ServiceDate { get; set; }
         public string H_P { get; set; } = string.Empty;
         public string PsychEval { get; set; } = string.Empty;
         public int? ResolvedProviderId { get; set; }

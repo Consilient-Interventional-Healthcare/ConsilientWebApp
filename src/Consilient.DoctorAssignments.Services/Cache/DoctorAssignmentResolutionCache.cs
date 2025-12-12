@@ -1,137 +1,67 @@
+using Consilient.Common;
 using Consilient.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.DoctorAssignments.Services.Cache
 {
+    public record EmployeeContractRow(
+        int Id,
+        string LastName,
+        string FirstName,
+        EmployeeRole Role,
+        int? ProviderContractId,
+        DateOnly? StartDate,
+        DateOnly? EndDate,
+        int? FacilityId);
+
     public class DoctorAssignmentResolutionCache
     {
         private readonly ConsilientDbContext _dbContext;
-        private readonly Lazy<HashSet<int>> _lazyFacilityIds;
-        private readonly Lazy<Dictionary<int, (string FirstName, string LastName, string? TitleExtension, bool IsProvider)>> _lazyEmployeeDetailsById;
-        private readonly Lazy<Dictionary<string, List<int>>> _lazyEmployeeIdsByFullName;
-        private readonly Lazy<Dictionary<string, List<int>>> _lazyEmployeeIdsByFullNameWithTitle;
-        private readonly Lazy<Dictionary<string, List<int>>> _lazyEmployeeIdsByFullNameWithTitleComma;
-        private readonly Lazy<Dictionary<(string mrn, int facilityId), int>> _lazyPatientIdByMrnAndFacility;
-        private readonly Lazy<Dictionary<(int caseId, int facilityId), List<(int hospitalizationId, int patientId)>>> _lazyHospitalizationsByCaseIdAndFacility;
-
+        private readonly Lazy<List<EmployeeContractRow>> _lazyAllEmployees;
+        private readonly Lazy<HashSet<int>> _lazyFacilities;
+        private readonly Lazy<Dictionary<(int caseId, int facilityId), List<(int hospitalizationId, int patientId)>>> _lazyHospitalizations;
+        private readonly Lazy<Dictionary<(string mrn, int facilityId), int>> _lazyPatients;
         public DoctorAssignmentResolutionCache(ConsilientDbContext dbContext)
         {
             _dbContext = dbContext;
-            _lazyFacilityIds = new(() => LoadFacilityIds());
-            _lazyEmployeeDetailsById = new(() => LoadEmployeeDetails());
-            _lazyEmployeeIdsByFullName = new(() => LoadEmployeeIdsByFullName());
-            _lazyEmployeeIdsByFullNameWithTitle = new(() => LoadEmployeeIdsByFullNameWithTitle());
-            _lazyEmployeeIdsByFullNameWithTitleComma = new(() => LoadEmployeeIdsByFullNameWithTitleComma());
-            _lazyPatientIdByMrnAndFacility = new(() => LoadPatientIdByMrnAndFacility());
-            _lazyHospitalizationsByCaseIdAndFacility = new(() => LoadHospitalizationsByCaseIdAndFacility());
+            _lazyFacilities = new(LoadFacilities);
+            _lazyAllEmployees = new(LoadEmployees);
+            _lazyPatients = new(LoadPatients);
+            _lazyHospitalizations = new(LoadHospitalizations);
         }
 
-        public HashSet<int> FacilityIds => _lazyFacilityIds.Value;
-        public Dictionary<int, (string FirstName, string LastName, string? TitleExtension, bool IsProvider)> EmployeeDetailsById => _lazyEmployeeDetailsById.Value;
-        public Dictionary<string, List<int>> EmployeeIdsByFullName => _lazyEmployeeIdsByFullName.Value;
-        public Dictionary<string, List<int>> EmployeeIdsByFullNameWithTitle => _lazyEmployeeIdsByFullNameWithTitle.Value;
-        public Dictionary<string, List<int>> EmployeeIdsByFullNameWithTitleComma => _lazyEmployeeIdsByFullNameWithTitleComma.Value;
-        public Dictionary<(string mrn, int facilityId), int> PatientIdByMrnAndFacility => _lazyPatientIdByMrnAndFacility.Value;
-        public Dictionary<(int caseId, int facilityId), List<(int hospitalizationId, int patientId)>> HospitalizationsByCaseIdAndFacility => _lazyHospitalizationsByCaseIdAndFacility.Value;
+        public List<EmployeeContractRow> Employees => _lazyAllEmployees.Value;
+        public HashSet<int> Facilities => _lazyFacilities.Value;
+        public Dictionary<(int caseId, int facilityId), List<(int hospitalizationId, int patientId)>> Hospitalizations => _lazyHospitalizations.Value;
+        public Dictionary<(string mrn, int facilityId), int> Patients => _lazyPatients.Value;
 
-        private HashSet<int> LoadFacilityIds()
+        private List<EmployeeContractRow> LoadEmployees()
         {
-            var facilities = _dbContext.Facilities.ToList();
-            return [.. facilities.Select(f => f.Id)];
+            var rows = _dbContext.Database.SqlQueryRaw<EmployeeContractRow>(@"
+                SELECT
+                    E.Id AS EmployeeId,
+                    E.LastName,
+                    E.FirstName,
+                    E.Role,
+                    PC.Id AS ProviderContractId,
+                    PC.StartDate,
+                    PC.EndDate,
+                    PC.FacilityId
+                FROM Compensation.Employees AS E
+                LEFT JOIN Compensation.ProviderContracts AS PC 
+                    ON E.Id = PC.EmployeeId
+                WHERE E.Role = {Role1} OR E.Role = {Role2}", new { Role1 = (int)EmployeeRole.Provider, Role2 = (int)EmployeeRole.NursePractitioner }).ToList();
+            return rows;
         }
 
-        private Dictionary<int, (string FirstName, string LastName, string? TitleExtension, bool IsProvider)> LoadEmployeeDetails()
+        private HashSet<int> LoadFacilities()
         {
-            var employees = _dbContext.Employees.ToList();
-            var result = new Dictionary<int, (string, string, string?, bool)>();
-
-            foreach (var employee in employees)
-            {
-                result[employee.Id] = (
-                    employee.FirstName ?? string.Empty,
-                    employee.LastName ?? string.Empty,
-                    employee.TitleExtension,
-                    employee.IsProvider
-                );
-            }
-
-            return result;
+            var facilities = _dbContext.Facilities.Select(m => m.Id).ToHashSet();
+            return facilities;
         }
 
-        private Dictionary<string, List<int>> LoadEmployeeIdsByFullName()
-        {
-            return BuildEmployeeNameDictionary(employee =>
-                $"{employee.FirstName} {employee.LastName}".Trim(),
-                includeOnlyIfNotEmpty: true);
-        }
 
-        private Dictionary<string, List<int>> LoadEmployeeIdsByFullNameWithTitle()
-        {
-            return BuildEmployeeNameDictionary(employee =>
-            {
-                if (string.IsNullOrEmpty(employee.TitleExtension))
-                    return null!;
-                var fullName = $"{employee.FirstName} {employee.LastName}".Trim();
-                return $"{fullName} {employee.TitleExtension}";
-            },
-            includeOnlyIfNotEmpty: false);
-        }
-
-        private Dictionary<string, List<int>> LoadEmployeeIdsByFullNameWithTitleComma()
-        {
-            return BuildEmployeeNameDictionary(employee =>
-            {
-                if (string.IsNullOrEmpty(employee.TitleExtension))
-                    return null!;
-                var fullName = $"{employee.FirstName} {employee.LastName}".Trim();
-                return $"{fullName}, {employee.TitleExtension}";
-            },
-            includeOnlyIfNotEmpty: false);
-        }
-
-        /// <summary>
-        /// Generic builder for employee name-based dictionaries. Reduces code duplication
-        /// by handling the common pattern of mapping employee names to lists of IDs.
-        /// </summary>
-        private Dictionary<string, List<int>> BuildEmployeeNameDictionary(
-            Func<Data.Entities.Employee, string?> keySelector,
-            bool includeOnlyIfNotEmpty = false)
-        {
-            var employees = _dbContext.Employees.ToList();
-            var result = new Dictionary<string, List<int>>();
-
-            foreach (var employee in employees)
-            {
-                var key = keySelector(employee);
-
-                if (key == null || (includeOnlyIfNotEmpty && string.IsNullOrEmpty(key)))
-                    continue;
-
-                if (!result.TryGetValue(key, out var value))
-                {
-                    value = [];
-                    result[key] = value;
-                }
-
-                value.Add(employee.Id);
-            }
-
-            return result;
-        }
-
-        private Dictionary<(string mrn, int facilityId), int> LoadPatientIdByMrnAndFacility()
-        {
-            var patientFacilities = _dbContext.PatientFacilities.ToList();
-            var result = new Dictionary<(string mrn, int facilityId), int>();
-
-            foreach (var pf in patientFacilities)
-            {
-                result[(pf.Mrn, pf.FacilityId)] = pf.PatientId;
-            }
-
-            return result;
-        }
-
-        private Dictionary<(int caseId, int facilityId), List<(int hospitalizationId, int patientId)>> LoadHospitalizationsByCaseIdAndFacility()
+        private Dictionary<(int caseId, int facilityId), List<(int hospitalizationId, int patientId)>> LoadHospitalizations()
         {
             var hospitalizations = _dbContext.Hospitalizations.ToList();
             var result = new Dictionary<(int, int), List<(int, int)>>();
@@ -150,5 +80,17 @@ namespace Consilient.DoctorAssignments.Services.Cache
             return result;
         }
 
+        private Dictionary<(string mrn, int facilityId), int> LoadPatients()
+        {
+            var patientFacilities = _dbContext.PatientFacilities.ToList();
+            var result = new Dictionary<(string mrn, int facilityId), int>();
+
+            foreach (var pf in patientFacilities)
+            {
+                result[(pf.Mrn, pf.FacilityId)] = pf.PatientId;
+            }
+
+            return result;
+        }
     }
 }

@@ -20,9 +20,9 @@ namespace Consilient.DoctorAssignments.Services.Validators
                 errors.Add("Attending MD is required");
             }
 
-            if (record.FacilityId == null)
+            if (record.FacilityId <= 0)
             {
-                errors.Add("Facility ID is required");
+                errors.Add("Facility ID has to be a positive number");
             }
 
             // Data integrity validations

@@ -1,23 +1,19 @@
-﻿namespace Consilient.Data.Entities
+﻿using Consilient.Common;
+
+namespace Consilient.Data.Entities
 {
     public class Employee : BaseEntity<int>
     {
-        public string? FirstName { get; set; }
+        public string FirstName { get; set; } = string.Empty;
 
-        public string? LastName { get; set; }
+        public string LastName { get; set; } = string.Empty;
 
         public string? TitleExtension { get; set; }
 
-        public bool IsProvider { get; set; }
+        public EmployeeRole Role { get; set; }
 
-        public string? Role { get; set; }
+        public string Email { get; set; } = string.Empty;
 
-        public bool IsAdministrator { get; set; }
-
-        public string? Email { get; set; }
-
-        public bool CanApproveVisits { get; set; }
-
-        public virtual ICollection<VisitEvent> EnteredVisitEvents { get; set; } = null!;
+        //public bool CanApproveVisits { get; set; }
     }
 }

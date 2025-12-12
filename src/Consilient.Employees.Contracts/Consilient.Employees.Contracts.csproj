@@ -15,4 +15,8 @@
     <None Include="D:\Work\Consilient\src\Consilient.Employees.Contracts\.editorconfig" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Consilient.Common\Consilient.Common.csproj" />
+  </ItemGroup>
+
 </Project>

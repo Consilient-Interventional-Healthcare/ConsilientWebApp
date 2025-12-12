@@ -11,10 +11,14 @@ namespace Consilient.DoctorAssignments.Services.Validators
         public static string? ValidateNumericField(string? value, string fieldName)
         {
             if (string.IsNullOrWhiteSpace(value))
+            {
                 return null;
+            }
 
             if (!int.TryParse(value, out _))
+            {
                 return $"{fieldName} must be numeric";
+            }
 
             return null;
         }
@@ -25,7 +29,9 @@ namespace Consilient.DoctorAssignments.Services.Validators
         public static string? ValidateDateNotFuture(DateTime? date, string fieldName, DateTime now)
         {
             if (date.HasValue && date.Value > now)
+            {
                 return $"{fieldName} cannot be in the future";
+            }
 
             return null;
         }
@@ -45,7 +51,9 @@ namespace Consilient.DoctorAssignments.Services.Validators
             {
                 var error = ValidateNumericField(mrn, "MRN");
                 if (error != null)
+                {
                     errors.Add(error);
+                }
             }
 
             return errors;
@@ -66,7 +74,9 @@ namespace Consilient.DoctorAssignments.Services.Validators
             {
                 var error = ValidateNumericField(hospitalNumber, "Hospital Number");
                 if (error != null)
+                {
                     errors.Add(error);
+                }
             }
 
             return errors;
@@ -81,11 +91,15 @@ namespace Consilient.DoctorAssignments.Services.Validators
 
             var admitError = ValidateDateNotFuture(admit, "Admit date", now);
             if (admitError != null)
+            {
                 errors.Add(admitError);
+            }
 
             var dobError = ValidateDateNotFuture(dob, "Date of birth", now);
             if (dobError != null)
+            {
                 errors.Add(dobError);
+            }
 
             return errors;
         }

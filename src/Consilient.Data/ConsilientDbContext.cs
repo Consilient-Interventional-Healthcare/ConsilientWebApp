@@ -54,6 +54,7 @@ namespace Consilient.Data
         internal static class Schemas
         {
             public const string Clinical = "Clinical";
+            public const string Compensation = "Compensation";
         }
     }
 }

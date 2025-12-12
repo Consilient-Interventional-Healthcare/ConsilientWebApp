@@ -15,7 +15,9 @@ namespace Consilient.DoctorAssignments.Services.Serialization
         public static string? Serialize(List<string>? errors)
         {
             if (errors == null || errors.Count == 0)
+            {
                 return null;
+            }
 
             return JsonSerializer.Serialize(errors);
         }
@@ -27,7 +29,9 @@ namespace Consilient.DoctorAssignments.Services.Serialization
         public static List<string> Deserialize(string? json)
         {
             if (string.IsNullOrEmpty(json))
+            {
                 return [];
+            }
 
             try
             {

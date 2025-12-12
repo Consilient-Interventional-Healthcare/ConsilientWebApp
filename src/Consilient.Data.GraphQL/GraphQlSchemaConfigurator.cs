@@ -33,12 +33,12 @@ namespace Consilient.Data.GraphQL
             //patientType.AddField(m => m.Mrn, nameof(Patient.Mrn));
 
             var employeeType = schema.AddType<Employee>(ToGraphQlName(nameof(Employee)), $"{ToGraphQlName(nameof(Employee))} object");
-            employeeType.AddField(m => m.CanApproveVisits, nameof(Employee.CanApproveVisits));
+            //employeeType.AddField(m => m.CanApproveVisits, nameof(Employee.CanApproveVisits));
             employeeType.AddField(m => m.Email, nameof(Employee.Email));
             employeeType.AddField(m => m.Id, nameof(Employee.Id));
             employeeType.AddField(m => m.FirstName, nameof(Employee.FirstName));
-            employeeType.AddField(m => m.IsAdministrator, nameof(Employee.IsAdministrator));
-            employeeType.AddField(m => m.IsProvider, nameof(Employee.IsProvider));
+            //employeeType.AddField(m => m.IsAdministrator, nameof(Employee.IsAdministrator));
+            //employeeType.AddField(m => m.IsProvider, nameof(Employee.IsProvider));
             employeeType.AddField(m => m.LastName, nameof(Employee.LastName));
             employeeType.AddField(m => m.Role, nameof(Employee.Role));
 

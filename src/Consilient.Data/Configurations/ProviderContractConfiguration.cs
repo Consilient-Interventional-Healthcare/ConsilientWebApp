@@ -1,27 +1,49 @@
+using Consilient.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Consilient.Data.Mappings
+namespace Consilient.Data.Configurations
 {
-    internal class ProviderContractConfiguration : IEntityTypeConfiguration<ProviderContract>
+    internal class ProviderContractConfiguration : BaseEntityTypeConfigurationWithId<ProviderContract, int>
     {
-        public void Configure(EntityTypeBuilder<ProviderContract> entity)
+        public override void Configure(EntityTypeBuilder<ProviderContract> entity)
         {
-            entity.ToTable("ProviderContracts", "Compensation");
+            base.Configure(entity);
+            entity.ToTable("ProviderContracts", ConsilientDbContext.Schemas.Compensation);
 
-            entity.Property(e => e.ProviderContractId).HasColumnName("ProviderContractID");
-            entity.Property(e => e.ContractId).HasColumnName("ContractID");
-            entity.Property(e => e.EmployeeId).HasColumnName("EmployeeID");
+            //entity.Property(e => e.ContractId)
+            //    .HasColumnName("ContractID")
+            //    .IsRequired();
 
-            entity.HasOne(d => d.Contract).WithMany()
-                .HasForeignKey(d => d.ContractId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ProviderContracts_Contract");
+            entity.Property(e => e.EmployeeId)
+                .HasColumnName("EmployeeID")
+                .IsRequired();
 
-            entity.HasOne(d => d.Employee).WithMany()
+            entity.Property(e => e.StartDate)
+                .IsRequired();
+
+            entity.Property(e => e.EndDate)
+                .IsRequired();
+
+            entity.Property(e => e.FacilityId)
+                .IsRequired();
+            //entity.HasOne(d => d.Contract)
+            //    .WithMany()
+            //    .HasForeignKey(d => d.ContractId)
+            //    .OnDelete(DeleteBehavior.ClientSetNull)
+            //    .HasConstraintName("FK_ProviderContracts_Contract");
+
+            entity.HasOne<Employee>()
+                .WithMany()
                 .HasForeignKey(d => d.EmployeeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProviderContracts_Employee");
+
+            entity.HasOne<Facility>()
+                .WithMany()
+                .HasForeignKey(d => d.FacilityId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ProviderContracts_Facility");
         }
     }
 }

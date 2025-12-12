@@ -1,4 +1,3 @@
-using Consilient.Data;
 using Consilient.Data.Entities;
 using Consilient.DoctorAssignments.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Core;

@@ -123,10 +123,10 @@ namespace Consilient.Employees.Services
                     .SetProperty(e => e.FirstName, _ => request.FirstName)
                     .SetProperty(e => e.LastName, _ => request.LastName)
                     .SetProperty(e => e.TitleExtension, _ => request.TitleExtension)
-                    .SetProperty(e => e.IsProvider, _ => request.IsProvider)
+                    //.SetProperty(e => e.IsProvider, _ => request.IsProvider)
                     .SetProperty(e => e.Role, _ => request.Role)
-                    .SetProperty(e => e.IsAdministrator, _ => request.IsAdministrator)
-                    .SetProperty(e => e.CanApproveVisits, _ => request.CanApproveVisits)
+                    //.SetProperty(e => e.IsAdministrator, _ => request.IsAdministrator)
+                    //.SetProperty(e => e.CanApproveVisits, _ => request.CanApproveVisits)
                 );
 
             if (affected == 0)

@@ -22,7 +22,6 @@
     <Compile Remove="Entities\FacilityPay.cs" />
     <Compile Remove="Entities\PayrollDatum.cs" />
     <Compile Remove="Entities\PayrollPeriod.cs" />
-    <Compile Remove="Entities\ProviderContract.cs" />
     <Compile Remove="Entities\ProviderPay.cs" />
     <Compile Remove="Entities\VwPatientVisit.cs" />
     <Compile Remove="Entities\VwPatientVisitsCompareToLive.cs" />
@@ -32,7 +31,6 @@
     <Compile Remove="Configurations\FacilityPayConfiguration.cs" />
     <Compile Remove="Configurations\PayrollDatumConfiguration.cs" />
     <Compile Remove="Configurations\PayrollPeriodConfiguration.cs" />
-    <Compile Remove="Configurations\ProviderContractConfiguration.cs" />
     <Compile Remove="Configurations\ProviderPayConfiguration.cs" />
     <Compile Remove="PayrollDatum.cs" />
     <Compile Remove="PayrollPeriod.cs" />

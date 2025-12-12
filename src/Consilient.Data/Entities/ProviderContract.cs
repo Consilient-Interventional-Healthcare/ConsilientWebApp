@@ -1,20 +1,14 @@
 ﻿namespace Consilient.Data.Entities
 {
 
-    public class ProviderContract
+    public class ProviderContract : BaseEntity<int>
     {
-        public int ProviderContractId { get; set; }
 
         public int EmployeeId { get; set; }
-
-        public int ContractId { get; set; }
+        public int FacilityId { get; set; }
 
         public DateOnly StartDate { get; set; }
 
-        public DateOnly EndDate { get; set; }
-
-        public virtual Contract Contract { get; set; } = null!;
-
-        public virtual Employee Employee { get; set; } = null!;
+        public DateOnly? EndDate { get; set; }
     }
 }
