@@ -1,6 +1,9 @@
 name: Build and deploy Consilient.Api to Azure
 
 on:
+  push:
+    branches:
+      - '**'
   workflow_dispatch:
     inputs:
       environment:
