@@ -1,0 +1,242 @@
+name: Deploy Database to Azure SQL
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+        default: 'staging'
+      recreate_database:
+        description: 'Recreate ALL databases (DELETE ALL DATA - development only)'
+        required: true
+        type: boolean
+        default: false
+  push:
+    branches:
+      - main
+      - login 
+    paths:
+      - 'src/.docker/Db/**/*.sql'
+      - '.github/workflows/deploy-database-azure.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  discover-databases:
+    name: Discover Databases
+    runs-on: ubuntu-latest
+    outputs:
+      databases: ${{ steps.find-databases.outputs.databases }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Find database directories
+        id: find-databases
+        run: |
+          cd src/.docker/Db
+          databases=$(ls -d */ 2>/dev/null | sed 's/\///' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "databases=$databases" >> $GITHUB_OUTPUT
+          echo "Found databases: $databases"
+
+  deploy-database:
+    name: Deploy ${{ matrix.database }} (${{ github.event.inputs.environment || 'staging' }})
+    runs-on: ubuntu-latest
+    needs: discover-databases
+    if: needs.discover-databases.outputs.databases != '[]'
+    strategy:
+      matrix:
+        database: ${{ fromJson(needs.discover-databases.outputs.databases) }}
+      fail-fast: false
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+
+    env:
+      SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+      SQL_ADMIN_USER: ${{ secrets.AZURE_SQL_ADMIN_USER }}
+      SQL_ADMIN_PASSWORD: ${{ secrets.AZURE_SQL_ADMIN_PASSWORD }}
+      RECREATE_DB: ${{ github.event.inputs.recreate_database || 'false' }}
+      ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+      DATABASE_BASE_NAME: ${{ matrix.database }}
+      DATABASE_NAME: ${{ matrix.database }}_${{ github.event.inputs.environment || 'staging' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SQL Server tools
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list)"
+          sudo apt-get update
+          sudo apt-get install -y sqlcmd
+
+      - name: Validate recreate request
+        if: env.RECREATE_DB == 'true'
+        run: |
+          if [ "${{ env.ENVIRONMENT }}" != "development" ]; then
+            echo "❌ ERROR: Database recreation is only allowed in development environment!"
+            echo "Current environment: ${{ env.ENVIRONMENT }}"
+            exit 1
+          fi
+          echo "⚠️  WARNING: Database ${{ env.DATABASE_NAME }} will be dropped and recreated!"
+
+      - name: Drop database (development only)
+        if: env.RECREATE_DB == 'true' && env.ENVIRONMENT == 'development'
+        env:
+          SQLCMDPASSWORD: ${{ env.SQL_ADMIN_PASSWORD }}
+        run: |
+          echo "Dropping database ${{ env.DATABASE_NAME }}..."
+          sqlcmd -S "${{ env.SQL_SERVER }}" \
+            -U "${{ env.SQL_ADMIN_USER }}" \
+            -d master \
+            -Q "IF EXISTS (SELECT name FROM sys.databases WHERE name = N'${{ env.DATABASE_NAME }}') DROP DATABASE [${{ env.DATABASE_NAME }}];" \
+            -b
+
+      - name: Create database if not exists
+        env:
+          SQLCMDPASSWORD: ${{ env.SQL_ADMIN_PASSWORD }}
+        run: |
+          echo "Ensuring database ${{ env.DATABASE_NAME }} exists..."
+          sqlcmd -S "${{ env.SQL_SERVER }}" \
+            -U "${{ env.SQL_ADMIN_USER }}" \
+            -d master \
+            -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'${{ env.DATABASE_NAME }}') CREATE DATABASE [${{ env.DATABASE_NAME }}];" \
+            -b
+
+      - name: Wait for database to be ready
+        run: sleep 5
+
+      - name: List SQL files to apply
+        id: list-files
+        run: |
+          echo "SQL files in ${{ env.DATABASE_BASE_NAME }} directory:"
+          echo "Target database: ${{ env.DATABASE_NAME }}"
+          cd "src/.docker/Db/${{ env.DATABASE_BASE_NAME }}"
+          ls -1 *.sql 2>/dev/null || echo "No SQL files found"
+          echo ""
+
+      - name: Apply SQL scripts
+        env:
+          SQLCMDPASSWORD: ${{ env.SQL_ADMIN_PASSWORD }}
+        run: |
+          cd "src/.docker/Db/${{ env.DATABASE_BASE_NAME }}"
+
+          # Get all .sql files sorted alphabetically
+          sql_files=$(ls *.sql 2>/dev/null | sort)
+
+          if [ -z "$sql_files" ]; then
+            echo "⚠️  No SQL files found in ${{ env.DATABASE_BASE_NAME }} directory"
+            exit 0
+          fi
+
+          # Apply each SQL file in order
+          for sql_file in $sql_files; do
+            echo ""
+            echo "================================================"
+            echo "Applying: $sql_file to database ${{ env.DATABASE_NAME }}"
+            echo "================================================"
+
+            sqlcmd -S "${{ env.SQL_SERVER }}" \
+              -d "${{ env.DATABASE_NAME }}" \
+              -U "${{ env.SQL_ADMIN_USER }}" \
+              -i "$sql_file" \
+              -b
+
+            if [ $? -eq 0 ]; then
+              echo "✅ $sql_file completed successfully"
+            else
+              echo "❌ $sql_file failed"
+              exit 1
+            fi
+          done
+
+          echo ""
+          echo "✅ All SQL scripts from ${{ env.DATABASE_BASE_NAME }} applied to database ${{ env.DATABASE_NAME }}"
+
+      - name: Verify database deployment
+        env:
+          SQLCMDPASSWORD: ${{ env.SQL_ADMIN_PASSWORD }}
+        run: |
+          echo ""
+          echo "================================================"
+          echo "Verifying database: ${{ env.DATABASE_NAME }}"
+          echo "================================================"
+
+          echo "Tables in database:"
+          sqlcmd -S "${{ env.SQL_SERVER }}" \
+            -d "${{ env.DATABASE_NAME }}" \
+            -U "${{ env.SQL_ADMIN_USER }}" \
+            -Q "SELECT
+                  SCHEMA_NAME(schema_id) as SchemaName,
+                  name as TableName,
+                  create_date as Created
+                FROM sys.tables
+                ORDER BY SchemaName, TableName;" \
+            -b || echo "Could not list tables"
+
+          echo ""
+          echo "Database size:"
+          sqlcmd -S "${{ env.SQL_SERVER }}" \
+            -d "${{ env.DATABASE_NAME }}" \
+            -U "${{ env.SQL_ADMIN_USER }}" \
+            -Q "SELECT
+                  DB_NAME() as DatabaseName,
+                  COUNT(*) as TableCount
+                FROM sys.tables;" \
+            -b || echo "Could not get table count"
+
+          echo ""
+          echo "✅ Database ${{ env.DATABASE_NAME }} deployment completed successfully!"
+
+  notify:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [discover-databases, deploy-database]
+    if: always()
+    steps:
+      - name: Create deployment summary
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+
+          echo "### Database Deployment Summary 🗄️" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Recreate Databases**: ${{ github.event.inputs.recreate_database || 'false' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Base Names**: ${{ needs.discover-databases.outputs.databases }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **SQL Server**: ${{ secrets.AZURE_SQL_SERVER }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployment Status**: ${{ needs.deploy-database.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Show actual database names created
+          echo "#### Databases Deployed:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          databases='${{ needs.discover-databases.outputs.databases }}'
+          if [ "$databases" != "[]" ]; then
+            echo "$databases" | jq -r '.[]' | while read db; do
+              echo "- \`${db}_${ENVIRONMENT}\`" >> $GITHUB_STEP_SUMMARY
+            done
+          else
+            echo "- None (no directories found in src/.docker/Db/)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.deploy-database.result }}" == "success" ]; then
+            echo "✅ **All databases deployed successfully!**" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.deploy-database.result }}" == "failure" ]; then
+            echo "❌ **Some databases failed to deploy. Check the logs above.**" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ needs.discover-databases.outputs.databases }}" == "[]" ]; then
+            echo "⚠️  **No databases found in src/.docker/Db/**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️  **Deployment status: ${{ needs.deploy-database.result }}**" >> $GITHUB_STEP_SUMMARY
+          fi
