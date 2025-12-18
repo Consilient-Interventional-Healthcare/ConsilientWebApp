@@ -2,6 +2,11 @@ name: Build and deploy Consilient.Api to Azure
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'production'
 
 env:
   IMAGE_NAME: consilientapi
