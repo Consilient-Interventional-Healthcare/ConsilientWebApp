@@ -408,3 +408,5 @@ appsettings.Development.json
 /src/Consilient.WebApp2/*.pem
 /src/Consilient.WebApp2/.claude
 /src/.claude
+/infra/terraform/*.tfvars
+/infra/terraform/.terraform/
