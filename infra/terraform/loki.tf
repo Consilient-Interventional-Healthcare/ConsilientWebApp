@@ -1,14 +1,28 @@
 # Azure Container Apps Environment and Loki Deployment
 
+# Option: Create a new Container App Environment (may hit quota limits)
+# Comment this out if you want to use an existing environment
 resource "azurerm_container_app_environment" "shared" {
-  name                = "cae-shared-${var.environment}"
+  count               = var.create_container_app_environment ? 1 : 0
+  name                = local.loki.container_app_env_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.tags
 }
 
+# Option: Use an existing Container App Environment
+# Uncomment and configure if you hit quota limits
+# data "azurerm_container_app_environment" "existing" {
+#   name                = "your-existing-cae-name"
+#   resource_group_name = "your-existing-rg-name"
+# }
+
+locals {
+  container_app_env_id = var.create_container_app_environment ? azurerm_container_app_environment.shared[0].id : var.existing_container_app_environment_id
+}
+
 resource "azurerm_user_assigned_identity" "loki" {
-  name                = "loki-identity-${var.environment}"
+  name                = local.loki.identity_name
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   tags                = local.tags
@@ -21,8 +35,8 @@ resource "azurerm_role_assignment" "loki_blob" {
 }
 
 resource "azurerm_container_app" "loki" {
-  name                         = "loki-${var.environment}"
-  container_app_environment_id = azurerm_container_app_environment.shared.id
+  name                         = local.loki.container_app_name
+  container_app_environment_id = local.container_app_env_id
   resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
   tags                         = local.tags
@@ -50,18 +64,18 @@ resource "azurerm_container_app" "loki" {
         value = azurerm_storage_container.loki.name
       }
       liveness_probe {
-        port            = 3100
-        transport       = "HTTP"
+        port             = 3100
+        transport        = "HTTP"
         interval_seconds = 10
-        timeout         = 1
-        path            = "/ready"
+        timeout          = 1
+        path             = "/ready"
       }
       readiness_probe {
-        port            = 3100
-        transport       = "HTTP"
+        port             = 3100
+        transport        = "HTTP"
         interval_seconds = 10
-        timeout         = 1
-        path            = "/ready"
+        timeout          = 1
+        path             = "/ready"
       }
       # Add more Loki config as needed
     }

@@ -1,0 +1,75 @@
+name: CI/CD Dependencies Cache
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+      - login
+
+jobs:
+  cache-dependencies:
+    name: Cache and Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # === Build Tools Installation and Caching ===
+
+      # Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5 # Update as needed
+
+      # Azure CLI
+      - name: Install Azure CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y azure-cli
+
+      # sqlcmd
+      - name: Cache sqlcmd
+        id: cache-sqlcmd
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/bin/sqlcmd
+            /opt/mssql-tools*
+            /usr/lib/x86_64-linux-gnu/libmsodbcsql*
+          key: sqlcmd-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Install sqlcmd
+        if: steps.cache-sqlcmd.outputs.cache-hit != 'true'
+        run: |
+          # Detect Ubuntu version dynamically
+          UBUNTU_VERSION=$(lsb_release -rs)
+          echo "Installing sqlcmd for Ubuntu ${UBUNTU_VERSION}"
+
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/${UBUNTU_VERSION}/prod.list)"
+          sudo apt-get update
+          sudo apt-get install -y sqlcmd
+
+      # SchemaSpy
+      - name: Cache SchemaSpy
+        id: cache-schemaspy
+        uses: actions/cache@v4
+        with:
+          path: tools/schemaspy.jar
+          key: schemaspy-v6.2.4
+
+      - name: Download SchemaSpy
+        if: steps.cache-schemaspy.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p tools
+          curl -L -o tools/schemaspy.jar https://github.com/schemaspy/schemaspy/releases/download/v6.2.4/schemaspy-6.2.4.jar
+
+      - name: Summary
+        run: |
+          echo "✅ All build tools installed successfully"
+          echo "Terraform: $(terraform --version | head -n1)"
+          echo "Azure CLI: $(az --version | head -n1)"
+          echo "sqlcmd: $(sqlcmd -? 2>&1 | head -n1 || echo 'installed')"

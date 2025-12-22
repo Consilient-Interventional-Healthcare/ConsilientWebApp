@@ -408,5 +408,18 @@ appsettings.Development.json
 /src/Consilient.WebApp2/*.pem
 /src/Consilient.WebApp2/.claude
 /src/.claude
+# Terraform files
 /infra/terraform/*.tfvars
 /infra/terraform/.terraform/
+/infra/terraform/.terraform.lock.hcl
+/infra/terraform/terraform.tfstate
+/infra/terraform/terraform.tfstate.backup
+/infra/terraform/*.tfstate
+/infra/terraform/*.tfstate.*
+/infra/terraform/crash.log
+/infra/terraform/override.tf
+/infra/terraform/override.tf.json
+/infra/terraform/*_override.tf
+/infra/terraform/*_override.tf.json
+
+/.claude

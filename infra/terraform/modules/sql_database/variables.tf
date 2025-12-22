@@ -40,3 +40,15 @@ variable "server_id" {
   description = "The ID of the SQL server to associate with this database."
   type        = string
 }
+
+variable "min_capacity" {
+  description = "Minimal capacity for serverless databases (GP_S SKUs). Required for serverless tier."
+  type        = number
+  default     = null
+}
+
+variable "auto_pause_delay_in_minutes" {
+  description = "Time in minutes after which database is automatically paused. -1 to disable auto-pause."
+  type        = number
+  default     = null
+}

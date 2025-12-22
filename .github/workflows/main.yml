@@ -1,0 +1,193 @@
+name: Main Workflow Orchestrator
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: main-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Install and cache prerequisites first
+  setup-prerequisites:
+    name: Setup Prerequisites
+    uses: ./.github/workflows/actions/prerequisites.yml
+
+  # Determine what changed to optimize workflow execution
+#   detect-changes:
+#     name: Detect Changes
+#     runs-on: ubuntu-latest
+#     needs: [setup-prerequisites]
+#     outputs:
+#       infrastructure: ${{ steps.filter.outputs.infrastructure }}
+#       database: ${{ steps.filter.outputs.database }}
+#       frontend: ${{ steps.filter.outputs.frontend }}
+#       backend: ${{ steps.filter.outputs.backend }}
+#       workflows: ${{ steps.filter.outputs.workflows }}
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Detect file changes
+#         uses: dorny/paths-filter@v3
+#         id: filter
+#         with:
+#           filters: |
+#             infrastructure:
+#               - 'infra/**'
+#               - 'terraform/**'
+#             database:
+#               - 'src/.docker/Db/**/*.sql'
+#               - 'infra/db/**'
+#             frontend:
+#               - 'src/client/**'
+#               - 'src/web/**'
+#               - '**/package.json'
+#               - '**/package-lock.json'
+#             backend:
+#               - 'src/server/**'
+#               - 'src/api/**'
+#               - '**/*.csproj'
+#               - '**/*.cs'
+#             workflows:
+#               - '.github/workflows/**'
+
+#   # Build and test frontend
+#   build-frontend:
+#     name: Build Frontend
+#     needs: [setup-prerequisites, detect-changes]
+#     if: needs.detect-changes.outputs.frontend == 'true'
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 20
+#           cache: 'npm'
+#           cache-dependency-path: '**/package-lock.json'
+
+#       - name: Install dependencies
+#         run: |
+#           if [ -f "package-lock.json" ]; then
+#             npm ci
+#           elif [ -f "package.json" ]; then
+#             npm install
+#           fi
+
+#       - name: Build frontend
+#         run: |
+#           if [ -f "package.json" ] && grep -q '"build"' package.json; then
+#             npm run build
+#           else
+#             echo "No build script found, skipping"
+#           fi
+
+#       - name: Run tests
+#         run: |
+#           if [ -f "package.json" ] && grep -q '"test"' package.json; then
+#             npm test -- --passWithNoTests || echo "No tests found"
+#           else
+#             echo "No test script found, skipping"
+#           fi
+
+#   # Build and test backend
+#   build-backend:
+#     name: Build Backend
+#     needs: [setup-prerequisites, detect-changes]
+#     if: needs.detect-changes.outputs.backend == 'true'
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Setup .NET
+#         uses: actions/setup-dotnet@v4
+#         with:
+#           dotnet-version: '8.x'
+
+#       - name: Restore dependencies
+#         run: |
+#           if ls *.sln 1> /dev/null 2>&1; then
+#             dotnet restore
+#           elif ls **/*.csproj 1> /dev/null 2>&1; then
+#             dotnet restore **/*.csproj
+#           else
+#             echo "No .NET project files found"
+#           fi
+
+#       - name: Build backend
+#         run: |
+#           if ls *.sln 1> /dev/null 2>&1; then
+#             dotnet build --no-restore --configuration Release
+#           elif ls **/*.csproj 1> /dev/null 2>&1; then
+#             dotnet build **/*.csproj --no-restore --configuration Release
+#           else
+#             echo "No .NET project files found"
+#           fi
+
+#       - name: Run tests
+#         run: |
+#           if ls **/*Tests.csproj 1> /dev/null 2>&1 || ls **/*Test.csproj 1> /dev/null 2>&1; then
+#             dotnet test --no-build --configuration Release --verbosity normal
+#           else
+#             echo "No test projects found"
+#           fi
+
+#   # Summary job - always runs
+#   workflow-summary:
+#     name: Workflow Summary
+#     runs-on: ubuntu-latest
+#     needs: [setup-prerequisites, detect-changes, build-frontend, build-backend]
+#     if: always()
+#     steps:
+#       - name: Create workflow summary
+#         run: |
+#           echo "# Workflow Execution Summary 🚀" >> $GITHUB_STEP_SUMMARY
+#           echo "" >> $GITHUB_STEP_SUMMARY
+#           echo "## Run Information" >> $GITHUB_STEP_SUMMARY
+#           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+#           echo "" >> $GITHUB_STEP_SUMMARY
+
+#           echo "## Changes Detected" >> $GITHUB_STEP_SUMMARY
+#           echo "- Infrastructure: ${{ needs.detect-changes.outputs.infrastructure == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- Database: ${{ needs.detect-changes.outputs.database == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- Frontend: ${{ needs.detect-changes.outputs.frontend == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- Backend: ${{ needs.detect-changes.outputs.backend == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- Workflows: ${{ needs.detect-changes.outputs.workflows == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
+#           echo "" >> $GITHUB_STEP_SUMMARY
+
+#           echo "## Job Results" >> $GITHUB_STEP_SUMMARY
+#           echo "- Setup Prerequisites: ${{ needs.setup-prerequisites.result == 'success' && '✅ Success' || needs.setup-prerequisites.result == 'skipped' && '⏭️ Skipped' || needs.setup-prerequisites.result == 'failure' && '❌ Failed' || '⬜ Not Run' }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- Build Frontend: ${{ needs.build-frontend.result == 'success' && '✅ Success' || needs.build-frontend.result == 'skipped' && '⏭️ Skipped' || needs.build-frontend.result == 'failure' && '❌ Failed' || '⬜ Not Run' }}" >> $GITHUB_STEP_SUMMARY
+#           echo "- Build Backend: ${{ needs.build-backend.result == 'success' && '✅ Success' || needs.build-backend.result == 'skipped' && '⏭️ Skipped' || needs.build-backend.result == 'failure' && '❌ Failed' || '⬜ Not Run' }}" >> $GITHUB_STEP_SUMMARY
+#           echo "" >> $GITHUB_STEP_SUMMARY
+
+#           # Overall status
+#           if [ "${{ needs.build-frontend.result }}" == "failure" ] || [ "${{ needs.build-backend.result }}" == "failure" ]; then
+#             echo "## ❌ Overall Status: Failed" >> $GITHUB_STEP_SUMMARY
+#             exit 1
+#           elif [ "${{ needs.build-frontend.result }}" == "cancelled" ] || [ "${{ needs.build-backend.result }}" == "cancelled" ]; then
+#             echo "## ⚠️ Overall Status: Cancelled" >> $GITHUB_STEP_SUMMARY
+#           else
+#             echo "## ✅ Overall Status: Success" >> $GITHUB_STEP_SUMMARY
+#           fi
