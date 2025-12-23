@@ -9,9 +9,8 @@ on:
         type: string
       scripts_path:
         description: 'Path to database scripts (relative to repo root)'
-        required: false
+        required: true
         type: string
-        default: 'src/.docker/Db'
       recreate_database_objects:
         description: 'Recreate ALL database objects (DELETE ALL DATA - dev only)'
         required: false
@@ -46,9 +45,8 @@ on:
         default: 'dev'
       scripts_path:
         description: 'Path to database scripts'
-        required: false
+        required: true
         type: string
-        default: 'src/.docker/Db'
       recreate_database_objects:
         description: 'Recreate ALL database objects (DELETE ALL DATA - dev only)'
         required: false
@@ -83,6 +81,8 @@ jobs:
 
       - name: Validate inputs
         run: |
+          echo "Debugging scripts_path: ${{ inputs.scripts_path }}" # Added for debugging
+
           # Validate environment is dev or prod
           if [[ ! "${{ inputs.environment }}" =~ ^(dev|prod)$ ]]; then
             echo "❌ ERROR: Invalid environment '${{ inputs.environment }}'"

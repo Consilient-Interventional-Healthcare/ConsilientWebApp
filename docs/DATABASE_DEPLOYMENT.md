@@ -13,7 +13,7 @@ This guide covers setting up Azure SQL Database and deploying your database usin
 
 This workflow provides **automatic multi-database deployment** to Azure SQL with **full infrastructure automation**:
 
-✅ **Auto-Discovery**: Automatically finds all databases in `src/.docker/Db/`
+✅ **Auto-Discovery**: Automatically finds all databases in `src/Databases/`
 ✅ **Infrastructure Setup**: Creates SQL Server, resource group, and databases if they don't exist
 ✅ **Environment-Specific Names**: Database name = `{directory}_{environment}`
 ✅ **Parallel Deployment**: All databases deploy simultaneously
@@ -26,7 +26,7 @@ This workflow provides **automatic multi-database deployment** to Azure SQL with
 
 Directory structure:
 ```
-src/.docker/Db/
+src/Databases/
 ├── consilient_main/
 ├── consilient_hangfire/
 └── analytics/
@@ -195,7 +195,7 @@ sqlcmd -S $SQL_SERVER_NAME.database.windows.net \
 
 The workflow (`.github/workflows/deploy-database-azure.yml`) automatically discovers and deploys **multiple databases** with full infrastructure setup:
 
-1. **Discovers databases** - Scans `src/.docker/Db/` for subdirectories
+1. **Discovers databases** - Scans `src/Databases/` for subdirectories
 2. **Sets up infrastructure** - Creates Azure SQL Server and resource group if they don't exist
 3. **Creates databases** - Creates databases with environment-specific names: `{directory}_{environment}`
 4. **Handles recreation** - Can drop and recreate databases (development only, blocked in staging/production)
@@ -204,7 +204,7 @@ The workflow (`.github/workflows/deploy-database-azure.yml`) automatically disco
 
 **Example Structure:**
 ```
-src/.docker/Db/
+src/Databases/
 ├── consilient_main/
 │   ├── 01_init.sql
 │   ├── 02_identity.sql
@@ -234,7 +234,7 @@ src/.docker/Db/
 ### Triggers
 
 **Automatic**: Pushes to `main` branch that modify files in:
-- `src/.docker/Db/**/*.sql`
+- `src/Databases/**/*.sql`
 - The workflow file itself
 - Automatically uses staging environment with Basic tier
 
@@ -266,7 +266,7 @@ src/.docker/Db/
 **Important Notes:**
 - You need BOTH `AZURE_SQL_SERVER_NAME` (for az cli commands) AND `AZURE_SQL_SERVER` (for sqlcmd)
 - `AZURE_CREDENTIALS` is used for Azure login during infrastructure setup
-- Database names are automatically discovered from directory names in `src/.docker/Db/`
+- Database names are automatically discovered from directory names in `src/Databases/`
 - The workflow will create the SQL Server and resource group if they don't exist
 
 ### Setting Up Secrets
@@ -348,7 +348,7 @@ The output JSON should be used as the value for `AZURE_CREDENTIALS` secret.
 The workflow will:
 - Create Azure SQL Server if it doesn't exist
 - Create resource group if it doesn't exist
-- Discover all directories in `src/.docker/Db/`
+- Discover all directories in `src/Databases/`
 - Create each database if it doesn't exist (with specified service tier)
 - Apply all SQL scripts in each directory (sorted alphabetically)
 - Deploy all databases in parallel
@@ -428,10 +428,10 @@ Server=tcp:{SQL_SERVER},1433;Initial Catalog={DIRECTORY_NAME}_{ENVIRONMENT};User
 
 ### Directory Structure
 
-Each subdirectory in `src/.docker/Db/` represents one database family (deployed to each environment with environment suffix):
+Each subdirectory in `src/Databases/` represents one database family (deployed to each environment with environment suffix):
 
 ```
-src/.docker/Db/
+src/Databases/
 ├── consilient_main/          ← Databases: consilient_main_{environment}
 │   ├── 01_init.sql
 │   ├── 02_identity.sql
@@ -483,10 +483,10 @@ src/.docker/Db/
 
 To add a new database:
 
-1. Create a new directory: `src/.docker/Db/your_database_name/`
+1. Create a new directory: `src/Databases/your_database_name/`
 2. Add SQL scripts with numeric prefixes:
    ```
-   src/.docker/Db/your_database_name/
+   src/Databases/your_database_name/
    ├── 01_schema.sql
    ├── 02_tables.sql
    └── 03_seed.sql
@@ -655,10 +655,10 @@ az sql db create \
 
 **Symptom**: Workflow says "No databases found"
 
-**Cause**: No subdirectories in `src/.docker/Db/`
+**Cause**: No subdirectories in `src/Databases/`
 
 **Solution**:
-1. Ensure you have at least one subdirectory: `src/.docker/Db/database_name/`
+1. Ensure you have at least one subdirectory: `src/Databases/database_name/`
 2. Add at least one `.sql` file in the directory
 3. Commit and push
 
@@ -819,21 +819,21 @@ Monitor your database:
 5. Deploy to staging
 
 ### Adding a New Database
-1. Create directory: `src/.docker/Db/new_database_name/`
+1. Create directory: `src/Databases/new_database_name/`
 2. Add SQL scripts:
    ```bash
-   mkdir src/.docker/Db/analytics
-   echo "CREATE TABLE Reports (...)" > src/.docker/Db/analytics/01_tables.sql
+   mkdir src/Databases/analytics
+   echo "CREATE TABLE Reports (...)" > src/Databases/analytics/01_tables.sql
    ```
 3. Test locally (optional):
    ```bash
-   sqlcmd -S localhost -U sa -P password -i src/.docker/Db/analytics/01_tables.sql
+   sqlcmd -S localhost -U sa -P password -i src/Databases/analytics/01_tables.sql
    ```
 4. Commit and push to feature branch
 5. Merge to main → workflow automatically discovers and deploys the new database!
 
 ### Updating Database Schema
-1. Modify SQL files in `src/.docker/Db/{database_name}/`
+1. Modify SQL files in `src/Databases/{database_name}/`
 2. Add new script with next number (e.g., `04_new_feature.sql`)
 3. Test locally with Docker Compose or sqlcmd
 4. Commit and push to feature branch

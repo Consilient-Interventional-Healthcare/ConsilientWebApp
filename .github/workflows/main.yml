@@ -20,6 +20,11 @@ on:
         options:
           - dev
           - prod
+      db_scripts_path: # New input for database scripts path
+        description: 'Root directory for database scripts (e.g., src/Databases or src/.docker/Db)'
+        required: false
+        type: string
+        default: 'src/Databases' # Set a sensible default
       skip_terraform:
         description: 'Skip Terraform deployment'
         required: false
@@ -54,9 +59,9 @@ concurrency:
 
 # Global configuration variables
 # To customize these values, set them as repository/organization variables in GitHub:
-# - AZURE_REGION (default: canadacentral)
-# - AZURE_RESOURCE_GROUP (default: consilient-resource-group)
-# - DB_SCRIPTS_PATH (default: src/.docker/Db)
+# - AZURE_REGION
+# - AZURE_RESOURCE_GROUP
+# - DB_SCRIPTS_PATH # This is now less critical for workflow_dispatch, as it's an input
 
 jobs:
   validate-environment:
@@ -99,8 +104,8 @@ jobs:
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
-      region: ${{ vars.AZURE_REGION || 'canadacentral' }}
-      resource_group: ${{ vars.AZURE_RESOURCE_GROUP || 'consilient-resource-group' }}
+      region: ${{ vars.AZURE_REGION }}
+      resource_group: ${{ vars.AZURE_RESOURCE_GROUP }}
     secrets: inherit
 
   deploy-databases:
@@ -114,7 +119,7 @@ jobs:
     uses: ./.github/workflows/databases.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
-      scripts_path: ${{ vars.DB_SCRIPTS_PATH || 'src/.docker/Db' }}
+      scripts_path: ${{ inputs.db_scripts_path }} # Use the new input here
       recreate_database_objects: ${{ inputs.recreate_database_objects || false }}
       log_verbosity: ${{ inputs.log_verbosity || 'normal' }}
     secrets: inherit
@@ -143,7 +148,7 @@ jobs:
 #               - 'infra/**'
 #               - 'terraform/**'
 #             database:
-#               - 'src/.docker/Db/**/*.sql'
+#               - 'src/Databases/**/*.sql'
 #               - 'infra/db/**'
 #             frontend:
 #               - 'src/client/**'

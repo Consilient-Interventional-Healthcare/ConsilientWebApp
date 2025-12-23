@@ -6,12 +6,16 @@ on:
       - main
       - login
     paths:
-      - "src/.docker/Db/**/*.sql"
+      - "src/Databases/**/*.sql" # This path remains static for push triggers.
       - ".github/workflows/docs_db.yml"
   workflow_dispatch:
     inputs:
       db_name:
         description: 'Database name to document'
+        required: true
+        type: string
+      db_scripts_path: # New input for the database scripts root path
+        description: 'Root directory for database scripts'
         required: true
         type: string
 
@@ -43,6 +47,8 @@ jobs:
     env:
       # Set DB_NAME from workflow_dispatch input if present, else fallback to default for push
       DB_NAME: ${{ inputs.db_name }}
+      # Set DB_SCRIPTS_ROOT from workflow_dispatch input
+      DB_SCRIPTS_ROOT: ${{ inputs.db_scripts_path }}
 
     steps:
       - name: Validate secrets and db_name input
@@ -68,17 +74,17 @@ jobs:
         run: |
           set -e
           echo "🔍 Checking for SQL migration files..."
-          if [ ! -d "src/.docker/Db" ]; then
-            echo "❌ Directory src/.docker/Db not found"
+          if [ ! -d "${{ env.DB_SCRIPTS_ROOT }}" ]; then
+            echo "❌ Directory ${{ env.DB_SCRIPTS_ROOT }} not found"
             echo "📂 Repository structure:"
             ls -la
             exit 1
           fi
 
-          echo "✅ Found .docker/Db directory"
-          SQL_FILES=$(find src/.docker/Db -name "*.sql" -type f)
+          echo "✅ Found ${{ env.DB_SCRIPTS_ROOT }} directory"
+          SQL_FILES=$(find ${{ env.DB_SCRIPTS_ROOT }} -name "*.sql" -type f)
           if [ -z "$SQL_FILES" ]; then
-            echo "❌ No SQL files found in src/.docker/Db"
+            echo "❌ No SQL files found in ${{ env.DB_SCRIPTS_ROOT }}"
             exit 1
           fi
 
@@ -135,7 +141,7 @@ jobs:
           # Excludes: files starting with _ or . (like _backup.sql, .gitkeep)
           #           files containing "seed" in the name (like seed.sql, test-seed.sql)
           echo "📋 Discovering migration files..."
-          ALL_FILES=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | sort)
+          ALL_FILES=$(find ${{ env.DB_SCRIPTS_ROOT }}/${{ env.DB_NAME }} -name "*.sql" -type f | sort)
 
           # Filter out excluded files
           SQL_FILES=""
@@ -423,8 +429,8 @@ jobs:
           echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
 
           # Get migration version from SQL files (show latest or count)
-          SQL_FILE_COUNT=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | wc -l)
-          LATEST_FILE=$(find src/.docker/Db/${{ env.DB_NAME }} -name "*.sql" -type f | sort | tail -1 | xargs basename 2>/dev/null || echo "01_init.sql")
+          SQL_FILE_COUNT=$(find ${{ env.DB_SCRIPTS_ROOT }}/${{ env.DB_NAME }} -name "*.sql" -type f | wc -l)
+          LATEST_FILE=$(find ${{ env.DB_SCRIPTS_ROOT }}/${{ env.DB_NAME }} -name "*.sql" -type f | sort | tail -1 | xargs basename 2>/dev/null || echo "01_init.sql")
 
           if [ "$SQL_FILE_COUNT" -eq 1 ]; then
             MIGRATION_VERSION=$(echo "$LATEST_FILE" | sed 's/_.*//' || echo "01_init")

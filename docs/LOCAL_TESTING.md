@@ -120,7 +120,7 @@ When you run the main workflow:
 
 The database deployment workflow:
 
-1. **Discovers databases** - Scans `src/.docker/Db` for directories
+1. **Discovers databases** - Scans `src/Databases` for directories
 2. **Validates** - Checks that the directory exists and environment is valid
 3. **Deploys** - For each database directory found:
    - Creates/updates the database `<dirname>_<environment>` (e.g., `consilient_main_dev`)
@@ -133,7 +133,7 @@ Global configuration can be customized by setting GitHub repository variables:
 
 - `AZURE_REGION` - Default: `canadacentral`
 - `AZURE_RESOURCE_GROUP` - Default: `consilient-resource-group`
-- `DB_SCRIPTS_PATH` - Default: `src/.docker/Db`
+- `DB_SCRIPTS_PATH` - Default: `src/Databases`
 
 For local testing with `act`, these fallback to the default values.
 
@@ -142,7 +142,7 @@ For local testing with `act`, these fallback to the default values.
 ### Database Deployment Fails with "No databases found"
 
 - **Cause**: The database directory discovery failed
-- **Solution**: Ensure `src/.docker/Db` contains subdirectories with `.sql` files
+- **Solution**: Ensure `src/Databases` contains subdirectories with `.sql` files
 
 ### Database Deployment Fails with Authentication Error
 
