@@ -13,11 +13,17 @@ resource "azurerm_container_app_environment" "shared" {
 # Option: Use an existing Container App Environment
 # Set create_container_app_environment to false and provide either:
 # - existing_container_app_environment_id directly, OR
-# - existing_container_app_environment_name + existing_container_app_environment_resource_group to lookup
+# - For shared mode (use_shared_container_environment=true): shared_container_environment_name will be used for lookup
 data "azurerm_container_app_environment" "existing" {
-  count               = (var.create_container_app_environment == false && var.existing_container_app_environment_name != "") ? 1 : 0
-  name                = var.existing_container_app_environment_name
-  resource_group_name = var.existing_container_app_environment_resource_group
+  count = (
+    var.create_container_app_environment == false &&
+    var.existing_container_app_environment_id == "" &&
+    var.use_shared_container_environment
+  ) ? 1 : 0
+
+  # Use shared_container_environment_name for lookup when in shared mode
+  name                = var.shared_container_environment_name
+  resource_group_name = var.resource_group_name
 }
 
 locals {

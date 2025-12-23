@@ -96,14 +96,49 @@ variable "existing_container_app_environment_id" {
   default     = ""
 }
 
-variable "existing_container_app_environment_name" {
-  description = "Name of existing Container App Environment (only used if create_container_app_environment is false)"
-  type        = string
-  default     = ""
+variable "use_shared_container_environment" {
+  description = <<EOT
+Whether to use a shared Container App Environment across all environments.
+Set to true for Azure free-tier subscriptions (limited to 1 CAE) or when you want
+all environments to share the same CAE. Set to false for paid subscriptions where
+each environment can have its own CAE.
+
+When true: Uses shared_container_environment_name (ignores template)
+When false: Uses container_app_environment_name_template with {environment} placeholder
+EOT
+  type        = bool
+  default     = false
 }
 
-variable "existing_container_app_environment_resource_group" {
-  description = "Resource group of existing Container App Environment (only used if create_container_app_environment is false)"
+variable "shared_container_environment_name" {
+  description = <<EOT
+Fixed name for shared Container App Environment (used when use_shared_container_environment = true).
+This is the name used for Azure free-tier subscriptions where all environments must share one CAE.
+Default: "consilient-cae-shared"
+EOT
   type        = string
-  default     = ""
+  default     = "consilient-cae-shared"
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([a-z0-9-]{0,58}[a-z0-9])?$", var.shared_container_environment_name))
+    error_message = "Shared Container App Environment name must be a valid Azure resource name (lowercase alphanumeric and hyphens, 1-60 chars, start/end with alphanumeric)."
+  }
+}
+
+variable "container_app_environment_name_template" {
+  description = <<EOT
+Template for Container App Environment name with placeholder substitution.
+Used when use_shared_container_environment = false (paid-tier subscriptions).
+Supports {environment} placeholder which will be replaced with the actual environment value.
+Examples:
+  - "consilient-cae-{environment}" → "consilient-cae-dev" for dev environment
+  - "my-cae-{environment}" → "my-cae-prod" for prod environment
+EOT
+  type        = string
+  default     = "consilient-cae-{environment}"
+
+  validation {
+    condition     = can(regex("^[a-z0-9]([a-z0-9-]{0,58}[a-z0-9])?$", replace(var.container_app_environment_name_template, "{environment}", "dev")))
+    error_message = "Container App Environment name template must result in a valid Azure resource name (lowercase alphanumeric and hyphens, 1-60 chars, start/end with alphanumeric)."
+  }
 }

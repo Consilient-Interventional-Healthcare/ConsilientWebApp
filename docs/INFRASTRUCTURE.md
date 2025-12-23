@@ -312,7 +312,7 @@ All resource names are defined in [locals.tf](../infra/terraform/locals.tf) with
 | App Service Plan | `asp` | `consilient-asp-api-dev` |
 | App Service | (name) | `consilient-api-dev` |
 | Container Registry | `acr` | `consilientacrdev123abc` |
-| Container App Environment | `cae` | `consilient-cae-shared-dev` |
+| Container App Environment | `cae` | `consilient-cae-dev` (template-based) |
 | SQL Server | `sqlsrv` | `consilient-sqlsrv-dev-123abc` |
 | Storage Account | (name) | `consilientlokidev123abc` |
 | Private Endpoint | `pe` | `consilient-pe-loki-storage-dev` |
@@ -978,8 +978,10 @@ grafana = {
 **Configuration**:
 ```hcl
 # In locals.tf
+# Container App Environment name is resolved from template or shared name variable
 loki = {
-  container_app_env_name = "${var.project_name}-cae-shared-${var.environment}"
+  # Resolved from use_shared_container_environment or container_app_environment_name_template
+  container_app_env_name = local.container_app_environment_name
   container_app_name     = "${var.project_name}-loki-${var.environment}"
   identity_name          = "${var.project_name}-loki-identity-${var.environment}"
 }
@@ -1043,12 +1045,51 @@ acr = {
 **Configuration**:
 ```hcl
 # In locals.tf
+# Container App Environment name is resolved from variables
 loki = {
-  container_app_env_name = "${var.project_name}-cae-shared-${var.environment}"
+  container_app_env_name = local.container_app_environment_name
 }
 ```
 
 **Can be shared** across multiple container apps for cost efficiency.
+
+#### Container App Environment Naming
+
+The Container App Environment name is flexible and configurable to support both free-tier and paid-tier Azure subscriptions:
+
+**Variables**:
+- `use_shared_container_environment` - Set to `true` for shared CAE, `false` for per-environment CAEs
+- `shared_container_environment_name` - Name used for BOTH creating and looking up shared CAEs (default: `"consilient-cae-shared"`)
+- `container_app_environment_name_template` - Template for per-environment CAEs when not using shared mode (default: `"consilient-cae-{environment}"`)
+
+**Use Cases**:
+
+1. **Free-Tier Azure (Local Development)** - All environments share one CAE:
+   ```hcl
+   use_shared_container_environment = true
+   shared_container_environment_name = "consilient-cae-shared"
+   # dev, staging, prod all use "consilient-cae-shared"
+   ```
+
+2. **Paid-Tier Azure (Production)** - Each environment has its own CAE:
+   ```hcl
+   use_shared_container_environment = false
+   container_app_environment_name_template = "consilient-cae-{environment}"
+   # dev → "consilient-cae-dev"
+   # prod → "consilient-cae-prod"
+   ```
+
+3. **Hybrid Approach** - Share non-prod, dedicate prod:
+   ```hcl
+   # dev/staging use shared_container_environment = true
+   # prod uses shared_container_environment = false with template
+   ```
+
+**Migration from Previous Versions**:
+If you have existing CAEs named `"consilient-cae-shared-dev"`, preserve them using the template:
+```hcl
+container_app_environment_name_template = "consilient-cae-shared-{environment}"
+```
 
 ## Terraform Operations
 

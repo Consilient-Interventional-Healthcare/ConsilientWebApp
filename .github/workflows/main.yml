@@ -105,7 +105,6 @@ jobs:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
       region: ${{ vars.AZURE_REGION }}
-      resource_group: ${{ vars.AZURE_RESOURCE_GROUP }}
     secrets: inherit
 
   deploy-databases:
