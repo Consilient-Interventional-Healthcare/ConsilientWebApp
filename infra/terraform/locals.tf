@@ -24,10 +24,10 @@ locals {
   default_skus = {
     # Development - Minimal cost
     dev = {
-      app_service_plan   = "B1"           # Basic tier - ~$13/month
-      container_registry = "Basic"        # ~$5/month
-      sql_serverless     = "GP_S_Gen5_2"  # Serverless - ~$150/month (when active)
-      sql_provisioned    = "GP_Gen5_2"    # General Purpose - ~$650/month
+      app_service_plan   = "B1"          # Basic tier - ~$13/month
+      container_registry = "Basic"       # ~$5/month
+      sql_serverless     = "GP_S_Gen5_2" # Serverless - ~$150/month (when active)
+      sql_provisioned    = "GP_Gen5_2"   # General Purpose - ~$650/month
     }
 
     # Staging - Balanced cost/performance

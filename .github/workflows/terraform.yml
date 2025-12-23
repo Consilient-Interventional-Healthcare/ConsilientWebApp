@@ -1,171 +1,367 @@
-name: Terraform Infrastructure Deployment
+name: Terraform Infrastructure Deployment (Reusable)
 
 on:
-  push:
-    paths:
-      - 'infra/terraform/**'
-      - '.github/workflows/terraform.yml'
-  workflow_dispatch:
+  workflow_call:
     inputs:
       environment:
-        description: 'Deployment environment (dev, staging, prod)'
+        description: 'Deployment environment'
         required: true
-        default: 'dev'
-        type: choice
-        options:
-          - dev
-          - staging
-          - prod
+        type: string
       action:
         description: 'Terraform action to perform'
-        required: true
+        required: false
+        type: string
         default: 'plan'
-        type: choice
-        options:
-          - plan
-          - apply
-          - destroy
-  pull_request:
-    paths:
-      - 'infra/terraform/**'
-      - '.github/workflows/terraform.yml'
+      region:
+        description: 'Azure region'
+        required: true
+        type: string
+      resource_group:
+        description: 'Azure resource group name'
+        required: true
+        type: string
+    secrets:
+      AZURE_CREDENTIALS:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+      SQL_ADMIN_USERNAME:
+        required: true
+      SQL_ADMIN_PASSWORD:
+        required: true
+      ARM_CLIENT_ID:
+        required: true
+      ARM_CLIENT_SECRET:
+        required: true
+      ARM_TENANT_ID:
+        required: true
+
 
 env:
-  TERRAFORM_VERSION: '1.5.0'
   WORKING_DIRECTORY: './infra/terraform'
 
 jobs:
   terraform:
-    name: "Terraform ${{ github.event.inputs.action || 'plan' }}"
+    name: "Terraform ${{ inputs.action }}"
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'dev' }}
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 60
+
+    permissions:
+      contents: read
+      id-token: write
+
+    concurrency:
+      group: terraform-${{ inputs.environment }}
+      cancel-in-progress: false
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      TF_VAR_environment: ${{ inputs.environment }}
+      TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_VAR_region: ${{ inputs.region }}
+      TF_VAR_resource_group_name: ${{ inputs.resource_group }}
+      TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
+      TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
 
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIRECTORY }}
 
     steps:
+      - name: Validate Inputs
+        working-directory: .
+        run: |
+          # Validate action parameter
+          if [[ ! "${{ inputs.action }}" =~ ^(plan|apply|destroy)$ ]]; then
+            echo "❌ ERROR: Invalid action '${{ inputs.action }}'"
+            echo "Valid actions are: plan, apply, destroy"
+            exit 1
+          fi
+
+          echo "✅ Input validation passed"
+          echo "Action: ${{ inputs.action }}"
+          echo "Environment: ${{ inputs.environment }}"
+
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v3.1.2
         with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_version: 1.9.0
 
       - name: Login to Azure
-        uses: azure/login@v1
+        uses: azure/login@v2.3.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set Azure Subscription
-        run: az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
       - name: Terraform Format Check
         id: fmt
-        run: terraform fmt -check -recursive
-        continue-on-error: true
+        run: terraform fmt -check -recursive || [ -n "$ACT" ]
+
+      - name: Debug Environment Variables
+        run: |
+          echo "=== Terraform Environment Variables ==="
+          echo "TF_VAR_environment: ${TF_VAR_environment}"
+          echo "TF_VAR_subscription_id: ${TF_VAR_subscription_id:0:8}..."
+          echo "TF_VAR_region: ${TF_VAR_region}"
+          echo "TF_VAR_resource_group_name: ${TF_VAR_resource_group_name}"
+
+          # Fail early if environment is empty
+          if [ -z "${TF_VAR_environment}" ]; then
+            echo "❌ ERROR: TF_VAR_environment is empty!"
+            echo "When running with act, use: act workflow_dispatch --input environment=dev"
+            exit 1
+          fi
 
       - name: Terraform Init
         id: init
         run: terraform init
 
+      - name: Detect and Import Existing Resources
+        id: import
+        run: |
+          set +e  # Don't exit on error, we'll handle errors ourselves
+
+          echo "=== Step 1: Detecting Container App Environments ==="
+
+          # First, list ALL Container App Environments to see what's available
+          echo "Listing all Container App Environments in subscription..."
+          ALL_CAE_LIST=$(az containerapp env list --subscription "${TF_VAR_subscription_id}" -o json)
+          echo "All CAEs found:"
+          echo "$ALL_CAE_LIST" | jq -r '.[] | "  - \(.name) in \(.location) (RG: \(.resourceGroup))"'
+
+          # Now filter by region
+          # Note: Azure returns location as "Canada Central" but we use "canadacentral"
+          # We need to normalize both values for comparison (lowercase, no spaces)
+          echo ""
+          echo "Filtering by region: ${TF_VAR_region}"
+
+          # Normalize the target region (lowercase, remove spaces)
+          NORMALIZED_REGION=$(echo "${TF_VAR_region}" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+          echo "Normalized region: ${NORMALIZED_REGION}"
+
+          # Filter by comparing normalized locations
+          CAE_LIST=$(echo "$ALL_CAE_LIST" | jq --arg region "$NORMALIZED_REGION" '[.[] | select((.location | ascii_downcase | gsub(" "; "")) == $region)]')
+
+          CAE_COUNT=$(echo "$CAE_LIST" | jq '. | length')
+          echo "Found ${CAE_COUNT} Container App Environment(s) matching region '${TF_VAR_region}'"
+
+          USE_EXISTING_CAE="false"
+          EXISTING_CAE_ID=""
+
+          if [ "$CAE_COUNT" -gt 0 ]; then
+            echo "$CAE_LIST" | jq -r '.[] | "  - \(.name) (Resource Group: \(.rg))"'
+
+            # Get the first CAE
+            EXISTING_CAE_ID=$(echo "$CAE_LIST" | jq -r ".[0].id")
+            EXISTING_CAE_NAME=$(echo "$CAE_LIST" | jq -r ".[0].name")
+
+            echo ""
+            echo "Will use existing Container App Environment: ${EXISTING_CAE_NAME}"
+            echo "ID: ${EXISTING_CAE_ID}"
+            USE_EXISTING_CAE="true"
+
+            # Export for use in later steps (Terraform validate, plan, apply)
+            echo "TF_VAR_create_container_app_environment=false" >> $GITHUB_ENV
+            echo "TF_VAR_existing_container_app_environment_id=${EXISTING_CAE_ID}" >> $GITHUB_ENV
+          else
+            echo "No existing Container App Environment found. Will create a new one."
+            echo "TF_VAR_create_container_app_environment=true" >> $GITHUB_ENV
+          fi
+
+          echo ""
+          echo "=== Step 2: Importing Existing Azure Resources ==="
+          echo ""
+
+          # Function to import a resource if it exists
+          import_resource() {
+            local tf_address="$1"
+            local resource_id="$2"
+            local resource_name="$3"
+
+            # Check if already in state
+            if terraform state list | grep -q "^${tf_address}\$"; then
+              echo "  ✅ Already in state: ${resource_name}"
+              return 0
+            fi
+
+            # Try to import
+            echo "  📥 Importing: ${resource_name}"
+            local import_output
+            if import_output=$(terraform import "${tf_address}" "${resource_id}" 2>&1); then
+              echo "  ✅ Imported successfully: ${resource_name}"
+              return 0
+            else
+              # Check if error is because resource doesn't exist
+              if echo "$import_output" | grep -q "Cannot import non-existent"; then
+                echo "  ℹ️  Resource does not exist in Azure: ${resource_name}"
+              elif echo "$import_output" | grep -q "Resource already managed"; then
+                echo "  ✅ Already managed: ${resource_name}"
+              else
+                echo "  ⚠️  Import failed: ${resource_name}"
+                echo "$import_output" | grep -i "error" | head -3
+              fi
+              return 1
+            fi
+          }
+
+          echo "1. Resource Group"
+          RG_ID="/subscriptions/${TF_VAR_subscription_id}/resourceGroups/${TF_VAR_resource_group_name}"
+          import_resource "azurerm_resource_group.main" "${RG_ID}" "Resource Group"
+
+          echo ""
+          echo "2. Networking Resources"
+          VNET_ID="${RG_ID}/providers/Microsoft.Network/virtualNetworks/consilient-vnet-${TF_VAR_environment}"
+          SUBNET_ID="${VNET_ID}/subnets/consilient-subnet-${TF_VAR_environment}"
+          import_resource "azurerm_virtual_network.main" "${VNET_ID}" "Virtual Network"
+          import_resource "azurerm_subnet.main" "${SUBNET_ID}" "Subnet"
+
+          echo ""
+          echo "3. Container Registry"
+          ACR_NAME=$(terraform output -raw acr_name 2>/dev/null || echo "consilientacr${TF_VAR_environment}$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
+          ACR_ID="${RG_ID}/providers/Microsoft.ContainerRegistry/registries/${ACR_NAME}"
+          import_resource "azurerm_container_registry.main" "${ACR_ID}" "Container Registry"
+
+          echo ""
+          echo "4. SQL Server and Databases"
+          SQL_SUFFIX=$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)
+          SQL_SERVER_NAME="consilient-sqlsrv-${TF_VAR_environment}-${SQL_SUFFIX}"
+          SQL_SERVER_ID="${RG_ID}/providers/Microsoft.Sql/servers/${SQL_SERVER_NAME}"
+          MAIN_DB_ID="${SQL_SERVER_ID}/databases/consilient_main_${TF_VAR_environment}"
+          HANGFIRE_DB_ID="${SQL_SERVER_ID}/databases/consilient_hangfire_${TF_VAR_environment}"
+          import_resource "azurerm_mssql_server.main" "${SQL_SERVER_ID}" "SQL Server"
+          import_resource "module.main_db.azurerm_mssql_database.this" "${MAIN_DB_ID}" "Main Database"
+          import_resource "module.hangfire_db.azurerm_mssql_database.this" "${HANGFIRE_DB_ID}" "Hangfire Database"
+
+          echo ""
+          echo "5. Storage Account and Container"
+          STORAGE_NAME="consilientloki${TF_VAR_environment}${SQL_SUFFIX}"
+          STORAGE_ID="${RG_ID}/providers/Microsoft.Storage/storageAccounts/${STORAGE_NAME}"
+          STORAGE_CONTAINER_ID="${STORAGE_ID}/blobServices/default/containers/loki-data"
+          PRIVATE_ENDPOINT_ID="${RG_ID}/providers/Microsoft.Network/privateEndpoints/consilient-pe-loki-storage-${TF_VAR_environment}"
+          import_resource "azurerm_storage_account.loki" "${STORAGE_ID}" "Loki Storage Account"
+          import_resource "azurerm_storage_container.loki" "${STORAGE_CONTAINER_ID}" "Loki Storage Container"
+          import_resource "azurerm_private_endpoint.loki_storage" "${PRIVATE_ENDPOINT_ID}" "Loki Storage Private Endpoint"
+
+          echo ""
+          echo "6. Managed Identity"
+          IDENTITY_ID="${RG_ID}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/consilient-loki-identity-${TF_VAR_environment}"
+          import_resource "azurerm_user_assigned_identity.loki" "${IDENTITY_ID}" "Loki Managed Identity"
+
+          echo ""
+          echo "7. Role Assignment (Loki -> Storage)"
+          # Get the principal_id of the managed identity
+          PRINCIPAL_ID=$(az identity show --ids "${IDENTITY_ID}" --query principalId -o tsv 2>/dev/null || echo "")
+          if [ -n "$PRINCIPAL_ID" ]; then
+            echo "  Found managed identity principal ID: ${PRINCIPAL_ID}"
+            # List role assignments for the storage account and find the one with this principal
+            ROLE_ASSIGNMENT_ID=$(az role assignment list --scope "${STORAGE_ID}" --query "[?principalId=='${PRINCIPAL_ID}'].id | [0]" -o tsv 2>/dev/null || echo "")
+            if [ -n "$ROLE_ASSIGNMENT_ID" ]; then
+              echo "  Found role assignment: ${ROLE_ASSIGNMENT_ID}"
+              import_resource "azurerm_role_assignment.loki_blob" "${ROLE_ASSIGNMENT_ID}" "Loki Storage Blob Role Assignment"
+            else
+              echo "  ℹ️  No role assignment found for this managed identity on storage account"
+            fi
+          else
+            echo "  ℹ️  Managed identity not found, skipping role assignment import"
+          fi
+
+          echo ""
+          echo "8. Container App Environment"
+          # Only try to import if we're creating a new one (not using existing)
+          if [ "${USE_EXISTING_CAE}" = "false" ]; then
+            CAE_ID="${RG_ID}/providers/Microsoft.App/managedEnvironments/consilient-cae-shared-${TF_VAR_environment}"
+            import_resource "azurerm_container_app_environment.shared[0]" "${CAE_ID}" "Container App Environment"
+          else
+            echo "  ℹ️  Using existing Container App Environment from another resource group - skipping import"
+            echo "  ℹ️  Terraform will reference the existing CAE via data source or variable"
+          fi
+
+          echo ""
+          echo "9. Container App (Loki)"
+          CONTAINER_APP_ID="${RG_ID}/providers/Microsoft.App/containerApps/consilient-loki-${TF_VAR_environment}"
+          import_resource "azurerm_container_app.loki" "${CONTAINER_APP_ID}" "Loki Container App"
+
+          echo ""
+          echo "10. Grafana"
+          GRAFANA_ID="${RG_ID}/providers/Microsoft.Dashboard/grafana/consilient-grafana-${TF_VAR_environment}"
+          import_resource "azurerm_dashboard_grafana.main" "${GRAFANA_ID}" "Grafana Dashboard"
+
+          echo ""
+          echo "11. App Service Plans"
+          ASP_REACT_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/consilient-asp-react-${TF_VAR_environment}"
+          ASP_API_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/consilient-asp-api-${TF_VAR_environment}"
+          import_resource "module.react_app.azurerm_service_plan.this" "${ASP_REACT_ID}" "React App Service Plan"
+          import_resource "module.api_app.azurerm_service_plan.this" "${ASP_API_ID}" "API App Service Plan"
+
+          echo ""
+          echo "12. App Services"
+          APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-react-${TF_VAR_environment}"
+          APP_API_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-api-${TF_VAR_environment}"
+          import_resource "module.react_app.azurerm_linux_web_app.this" "${APP_REACT_ID}" "React App Service"
+          import_resource "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API App Service"
+
+          echo ""
+          echo "=== Import Process Complete ==="
+
+          # Write CAE configuration to a tfvars file for use in subsequent steps
+          # If USE_EXISTING_CAE is true, we should NOT create a new one
+          if [ "${USE_EXISTING_CAE}" = "true" ]; then
+            echo 'create_container_app_environment = false' > cae-config.auto.tfvars
+            echo "existing_container_app_environment_id = \"${EXISTING_CAE_ID}\"" >> cae-config.auto.tfvars
+          else
+            echo 'create_container_app_environment = true' > cae-config.auto.tfvars
+            echo 'existing_container_app_environment_id = ""' >> cae-config.auto.tfvars
+          fi
+
+          echo ""
+          echo "=== CAE Configuration ==="
+          cat cae-config.auto.tfvars
+
+          exit 0  # Always succeed, imports are best-effort
+
       - name: Terraform Validate
         id: validate
-        run: terraform validate
+        run: |
+          echo "=== Verifying CAE config file exists ==="
+          if [ -f "cae-config.auto.tfvars" ]; then
+            echo "✅ CAE config file found:"
+            cat cae-config.auto.tfvars
+          else
+            echo "❌ CAE config file NOT found!"
+            ls -la
+          fi
+          echo ""
+          terraform validate
 
       - name: Terraform Plan
         id: plan
-        if: github.event.inputs.action == 'plan' || github.event.inputs.action == '' || github.event_name == 'pull_request' || github.event_name == 'push'
-        run: |
-          terraform plan \
-            -var="environment=${{ github.event.inputs.environment || 'dev' }}" \
-            -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
-            -var="region=${{ secrets.AZURE_REGION }}" \
-            -var="resource_group_name=${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            -var="sql_admin_username=${{ secrets.SQL_ADMIN_USERNAME }}" \
-            -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
-            -out=tfplan
-        env:
-          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-
-      - name: Upload Plan
-        if: steps.plan.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan-${{ github.event.inputs.environment || 'dev' }}-${{ github.sha }}
-          path: ${{ env.WORKING_DIRECTORY }}/tfplan
-          retention-days: 30
-
-      - name: Comment Plan on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-
-            <details><summary>Show Plan</summary>
-
-            \`\`\`terraform
-            ${{ steps.plan.outputs.stdout }}
-            \`\`\`
-
-            </details>
-
-            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
+        if: inputs.action == 'plan'
+        run: terraform plan
 
       - name: Terraform Apply
-        if: github.event.inputs.action == 'apply' && github.event_name == 'workflow_dispatch'
+        if: inputs.action == 'apply'
         run: |
-          terraform apply \
-            -var="environment=${{ github.event.inputs.environment }}" \
-            -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
-            -var="region=${{ secrets.AZURE_REGION }}" \
-            -var="resource_group_name=${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            -var="sql_admin_username=${{ secrets.SQL_ADMIN_USERNAME }}" \
-            -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
-            -auto-approve
-        env:
-          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          echo "=== Pre-Apply Debug ==="
+          echo "Working directory: $(pwd)"
+          echo "CAE config file:"
+          cat cae-config.auto.tfvars || echo "File not found!"
+          echo ""
+          echo "=== Running Terraform Apply ==="
+          terraform apply -auto-approve
 
       - name: Terraform Destroy
-        if: github.event.inputs.action == 'destroy' && github.event_name == 'workflow_dispatch'
+        if: inputs.action == 'destroy'
         run: |
-          terraform destroy \
-            -var="environment=${{ github.event.inputs.environment }}" \
-            -var="subscription_id=${{ secrets.AZURE_SUBSCRIPTION_ID }}" \
-            -var="region=${{ secrets.AZURE_REGION }}" \
-            -var="resource_group_name=${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            -var="sql_admin_username=${{ secrets.SQL_ADMIN_USERNAME }}" \
-            -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
-            -auto-approve
-        env:
-          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-
-      - name: Upload Terraform State
-        if: always() && (steps.plan.outcome == 'success' || github.event.inputs.action == 'apply')
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-state-${{ github.event.inputs.environment || 'dev' }}-${{ github.sha }}
-          path: ${{ env.WORKING_DIRECTORY }}/*.tfstate
-          retention-days: 90
-          if-no-files-found: ignore
+          if [ "${{ inputs.environment }}" == "prod" ]; then
+            echo "❌ ERROR: Terraform destroy is not allowed in production environment!"
+            echo "This is a safety measure to prevent accidental deletion of production resources."
+            exit 1
+          fi
+          echo "✅ Proceeding with destroy for environment: ${{ inputs.environment }}"
+          terraform destroy -auto-approve

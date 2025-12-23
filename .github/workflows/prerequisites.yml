@@ -1,0 +1,62 @@
+name: Prerequisites Setup (Reusable)
+
+on:
+  workflow_call:
+
+jobs:
+  prerequisites:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # === Build Tools Installation and Caching ===
+
+      # Azure CLI
+      - name: Azure CLI
+        if: ${{ !env.ACT }}
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLI | bash
+
+      # sqlcmd
+      - name: Cache sqlcmd
+        id: cache-sqlcmd
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/bin/sqlcmd
+            /opt/mssql-tools*
+            /usr/lib/x86_64-linux-gnu/libmsodbcsql*
+          key: sqlcmd-${{ runner.os }}-${{ runner.arch }}-v1
+
+      - name: sqlcmd
+        if: ${{ !env.ACT && steps.cache-sqlcmd.outputs.cache-hit != 'true' }}
+        run: |
+          # Install sqlcmd using the direct GitHub script (latest official method)
+          curl -sSL https://raw.githubusercontent.com/microsoft/go-sqlcmd/main/scripts/install/sqlcmd-linux-install.sh | bash
+
+      # SchemaSpy
+      - name: Cache SchemaSpy
+        id: cache-schemaspy
+        uses: actions/cache@v4
+        with:
+          path: |
+            tools/schemaspy.jar
+            tools/mssql-jdbc.jar
+          key: schemaspy-6.2.4-jdbc-12.4.2
+
+      - name: Download SchemaSpy
+        if: ${{ !env.ACT && steps.cache-schemaspy.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p tools
+          curl -L -o tools/schemaspy.jar https://github.com/schemaspy/schemaspy/releases/download/v6.2.4/schemaspy-6.2.4.jar
+
+      - name: Summary
+        run: |
+          echo "✅ All build tools installed successfully"
+          echo "Azure CLI: $(az --version | head -n1)"
+          echo "sqlcmd: $(sqlcmd -? 2>&1 | head -n1 || echo 'installed')"
+
+#
+# Required input:
+#   environment: The target environment (dev, staging, prod, etc.)

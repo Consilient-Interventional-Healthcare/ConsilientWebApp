@@ -1,5 +1,8 @@
 # Azure SQL Server and Databases
 
+# Get current Azure AD client configuration for setting SQL admin
+data "azurerm_client_config" "current" {}
+
 resource "azurerm_mssql_server" "main" {
   name                = local.sql.server_name
   resource_group_name = azurerm_resource_group.main.name
@@ -10,6 +13,14 @@ resource "azurerm_mssql_server" "main" {
   administrator_login_password  = var.sql_admin_password
   public_network_access_enabled = false
   tags                          = local.tags
+
+  # Configure Azure AD admin for service principal authentication
+  azuread_administrator {
+    login_username              = "SQL Admin Service Principal"
+    object_id                   = data.azurerm_client_config.current.object_id
+    tenant_id                   = data.azurerm_client_config.current.tenant_id
+    azuread_authentication_only = false
+  }
 }
 
 # Enable Advanced Threat Protection (controlled by cost profile)

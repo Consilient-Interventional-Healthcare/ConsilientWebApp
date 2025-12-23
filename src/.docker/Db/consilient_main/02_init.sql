@@ -166,7 +166,7 @@ BEGIN
         [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
         CONSTRAINT [PK_HospitalizationStatusHistory] PRIMARY KEY ([Id]),
-        CONSTRAINT [FK_HospitalizationStatusHistories_Users_ChangedByUserId] CHECK (([ChangedByUserId] IS NULL) OR EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [ChangedByUserId])),
+        CONSTRAINT [FK_HospitalizationStatusHistories_Users_ChangedByUserId] FOREIGN KEY ([ChangedByUserId]) REFERENCES [Identity].[Users] ([Id]) ON DELETE NO ACTION,
         CONSTRAINT [FK_HospitalizationStatusHistories_HospitalizationStatuses_NewStatusId] FOREIGN KEY ([NewStatusId]) REFERENCES [Clinical].[HospitalizationStatuses] ([Id]) ON DELETE NO ACTION,
         CONSTRAINT [FK_HospitalizationStatusHistories_Hospitalizations_HospitalizationId] FOREIGN KEY ([HospitalizationId]) REFERENCES [Clinical].[Hospitalizations] ([Id]) ON DELETE NO ACTION
     );
@@ -211,7 +211,7 @@ BEGIN
         [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
         [RowVersion] rowversion NOT NULL,
         CONSTRAINT [PK_VisitEvent] PRIMARY KEY ([Id]),
-        CONSTRAINT [FK_VisitEvents_Users_EnteredByUserId] CHECK (EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [EnteredByUserId])),
+        CONSTRAINT [FK_VisitEvents_Users_EnteredByUserId] FOREIGN KEY ([EnteredByUserId]) REFERENCES [Identity].[Users] ([Id]) ON DELETE NO ACTION,
         CONSTRAINT [FK_VisitEvents_Employees_EmployeeId] FOREIGN KEY ([EmployeeId]) REFERENCES [Compensation].[Employees] ([Id]),
         CONSTRAINT [FK_VisitEvents_VisitEventTypes_EventTypeId] FOREIGN KEY ([EventTypeId]) REFERENCES [Clinical].[VisitEventTypes] ([Id]) ON DELETE NO ACTION,
         CONSTRAINT [FK_VisitEvents_Visits_VisitId] FOREIGN KEY ([VisitId]) REFERENCES [Clinical].[Visits] ([Id]) ON DELETE NO ACTION

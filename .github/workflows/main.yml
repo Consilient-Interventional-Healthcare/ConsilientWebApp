@@ -12,6 +12,37 @@ on:
       - main
       - develop
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      skip_terraform:
+        description: 'Skip Terraform deployment'
+        required: false
+        type: boolean
+        default: false
+      skip_databases:
+        description: 'Skip database deployment'
+        required: false
+        type: boolean
+        default: false
+      recreate_database_objects:
+        description: 'Recreate all database objects (DELETE ALL DATA - dev only)'
+        required: false
+        type: boolean
+        default: false
+      log_verbosity:
+        description: 'Log verbosity level'
+        required: false
+        type: choice
+        options:
+          - normal
+          - debug
+        default: 'normal'
 
 permissions:
   contents: read
@@ -21,11 +52,72 @@ concurrency:
   group: main-${{ github.ref }}
   cancel-in-progress: true
 
+# Global configuration variables
+# To customize these values, set them as repository/organization variables in GitHub:
+# - AZURE_REGION (default: canadacentral)
+# - AZURE_RESOURCE_GROUP (default: consilient-resource-group)
+# - DB_SCRIPTS_PATH (default: src/.docker/Db)
+
 jobs:
-  # Install and cache prerequisites first
+  validate-environment:
+    name: Validate Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.setenv.outputs.environment }}
+    steps:
+      - name: Set environment output
+        id: setenv
+        run: |
+          ENVIRONMENT_INPUT="${{ github.event.inputs.environment }}"
+
+          # Default to dev if no input (for non-dispatch events)
+          if [ -z "$ENVIRONMENT_INPUT" ]; then
+            ENVIRONMENT_INPUT="dev"
+            echo "No environment input provided. Defaulting to 'dev'."
+          fi
+
+          # Strict validation - only dev and prod allowed
+          if [[ ! "$ENVIRONMENT_INPUT" =~ ^(dev|prod)$ ]]; then
+            echo "❌ ERROR: Invalid environment '$ENVIRONMENT_INPUT'"
+            echo "Valid environments are: dev, prod"
+            exit 1
+          fi
+
+          echo "✅ Environment validation passed: $ENVIRONMENT_INPUT"
+          echo "environment=$ENVIRONMENT_INPUT" >> $GITHUB_OUTPUT
+
   setup-prerequisites:
     name: Setup Prerequisites
-    uses: ./.github/workflows/actions/prerequisites.yml
+    needs: validate-environment
+    uses: ./.github/workflows/prerequisites.yml
+
+  terraform:
+    name: Terraform Infrastructure Deployment
+    needs: [validate-environment, setup-prerequisites]
+    if: ${{ !inputs.skip_terraform }}
+    uses: ./.github/workflows/terraform.yml
+    with:
+      environment: ${{ needs.validate-environment.outputs.environment }}
+      action: apply
+      region: ${{ vars.AZURE_REGION || 'canadacentral' }}
+      resource_group: ${{ vars.AZURE_RESOURCE_GROUP || 'consilient-resource-group' }}
+    secrets: inherit
+
+  deploy-databases:
+    name: Deploy Databases
+    needs: [validate-environment, terraform]
+    if: |
+      !inputs.skip_databases &&
+      always() &&
+      needs.validate-environment.result == 'success' &&
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped')
+    uses: ./.github/workflows/databases.yml
+    with:
+      environment: ${{ needs.validate-environment.outputs.environment }}
+      scripts_path: ${{ vars.DB_SCRIPTS_PATH || 'src/.docker/Db' }}
+      recreate_database_objects: ${{ inputs.recreate_database_objects || false }}
+      log_verbosity: ${{ inputs.log_verbosity || 'normal' }}
+    secrets: inherit
 
   # Determine what changed to optimize workflow execution
 #   detect-changes:

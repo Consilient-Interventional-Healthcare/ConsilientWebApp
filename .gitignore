@@ -403,6 +403,8 @@ FodyWeavers.xsd
 appsettings.json
 appsettings.Development.json
 /src/.docker/.env
+.env.act
+.secrets
 /src/.docker/ollama/
 /src/.consilient_seed_password
 /src/Consilient.WebApp2/*.pem
@@ -423,3 +425,4 @@ appsettings.Development.json
 /infra/terraform/*_override.tf.json
 
 /.claude
+/infra/terraform/tfplan

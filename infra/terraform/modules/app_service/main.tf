@@ -18,7 +18,7 @@ resource "azurerm_linux_web_app" "this" {
   }
 
   site_config {
-    vnet_route_all_enabled   = var.vnet_route_all_enabled
+    vnet_route_all_enabled = var.vnet_route_all_enabled
   }
 
   app_settings = var.app_settings

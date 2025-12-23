@@ -32,6 +32,30 @@ output "cost_configuration" {
   }
 }
 
+# --------------------------------------------------------------------------
+# SQL SERVER OUTPUTS
+# --------------------------------------------------------------------------
+
+output "sql_server_fqdn" {
+  description = "The fully qualified domain name of the Azure SQL Server"
+  value       = azurerm_mssql_server.main.fully_qualified_domain_name
+}
+
+output "sql_server_name" {
+  description = "The name of the Azure SQL Server"
+  value       = azurerm_mssql_server.main.name
+}
+
+output "sql_main_database_name" {
+  description = "The name of the main database"
+  value       = module.main_db.name
+}
+
+output "sql_hangfire_database_name" {
+  description = "The name of the Hangfire database"
+  value       = module.hangfire_db.name
+}
+
 # Example: Mark sensitive outputs (add more as needed)
 # output "sql_admin_password" {
 #   value     = var.sql_admin_password
