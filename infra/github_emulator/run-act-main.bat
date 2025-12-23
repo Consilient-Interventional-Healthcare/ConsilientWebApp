@@ -81,45 +81,57 @@ if /i "%SKIP_DB%"=="y" (
     echo Database deployment will be EXECUTED
 )
 
-REM Ask if database objects should be recreated (default to false, only allowed in dev)
-set /p RECREATE_DB="Recreate all database objects? (y/n) [default: n, dev only]: "
-if "%RECREATE_DB%"=="" set RECREATE_DB=n
-if /i "%RECREATE_DB%"=="y" (
-    set RECREATE_DATABASE_OBJECTS=true
-    echo Database objects will be RECREATED ^(drops all objects first^)
-) else (
+REM --- Prompts for DATABASE WORKFLOWS (only if database deployment is NOT skipped) ---
+if /i "%SKIP_DATABASES%"=="true" (
+    echo.
+    echo Database deployment is SKIPPED - skipping database-specific prompts
+    echo.
+    set DB_SCRIPTS_PATH_INPUT=%DEFAULT_DB_SCRIPTS_PATH%
+    set LOG_VERBOSITY=%DEFAULT_LOG_VERBOSITY%
     set RECREATE_DATABASE_OBJECTS=false
-    echo Database objects will NOT be recreated
-)
-
-REM --- Prompts for DATABASE WORKFLOWS using defaults (if found) ---
-
-REM Prompt for DB_SCRIPTS_PATH
-set "DB_SCRIPTS_PATH_PROMPT=Enter root directory for database scripts (e.g., src/Databases or src/.docker/Db)"
-if not "%DEFAULT_DB_SCRIPTS_PATH%"=="" set "DB_SCRIPTS_PATH_PROMPT=%DB_SCRIPTS_PATH_PROMPT% [default: %DEFAULT_DB_SCRIPTS_PATH%]"
-set /p DB_SCRIPTS_PATH_INPUT="%DB_SCRIPTS_PATH_PROMPT%: "
-if "%DB_SCRIPTS_PATH_INPUT%"=="" set DB_SCRIPTS_PATH_INPUT=%DEFAULT_DB_SCRIPTS_PATH%
-echo Selected database scripts path: %DB_SCRIPTS_PATH_INPUT%
-
-REM Ask for log verbosity level
-set "LOG_VERBOSITY_PROMPT=Log verbosity level (normal/debug)"
-if not "%DEFAULT_LOG_VERBOSITY%"=="" set "LOG_VERBOSITY_PROMPT=%LOG_VERBOSITY_PROMPT% [default: %DEFAULT_LOG_VERBOSITY%]"
-set /p LOG_VERBOSITY_INPUT="%LOG_VERBOSITY_PROMPT%: "
-if "%LOG_VERBOSITY_INPUT%"=="" set LOG_VERBOSITY_INPUT=%DEFAULT_LOG_VERBOSITY%
-
-if /i "%LOG_VERBOSITY_INPUT%"=="debug" (
-    set LOG_VERBOSITY=debug
-    echo Log verbosity: DEBUG
 ) else (
-    set LOG_VERBOSITY=normal
-    echo Log verbosity: NORMAL
-)
+    echo.
+    echo Configuring database deployment options...
+    echo.
 
-REM --- Final validation for critical inputs before calling act ---
-if "%DB_SCRIPTS_PATH_INPUT%"=="" (
-    echo ERROR: DB_SCRIPTS_PATH_INPUT is empty and is a required variable for database deployment.
-    pause
-    exit /b 1
+    REM Prompt for DB_SCRIPTS_PATH
+    set "DB_SCRIPTS_PATH_PROMPT=Enter root directory for database scripts (e.g., src/Databases or src/.docker/Db)"
+    if not "%DEFAULT_DB_SCRIPTS_PATH%"=="" set "DB_SCRIPTS_PATH_PROMPT=%DB_SCRIPTS_PATH_PROMPT% [default: %DEFAULT_DB_SCRIPTS_PATH%]"
+    set /p DB_SCRIPTS_PATH_INPUT="%DB_SCRIPTS_PATH_PROMPT%: "
+    if "%DB_SCRIPTS_PATH_INPUT%"=="" set DB_SCRIPTS_PATH_INPUT=%DEFAULT_DB_SCRIPTS_PATH%
+    echo Selected database scripts path: %DB_SCRIPTS_PATH_INPUT%
+
+    REM Ask for log verbosity level
+    set "LOG_VERBOSITY_PROMPT=Log verbosity level (normal/debug)"
+    if not "%DEFAULT_LOG_VERBOSITY%"=="" set "LOG_VERBOSITY_PROMPT=%LOG_VERBOSITY_PROMPT% [default: %DEFAULT_LOG_VERBOSITY%]"
+    set /p LOG_VERBOSITY_INPUT="%LOG_VERBOSITY_PROMPT%: "
+    if "%LOG_VERBOSITY_INPUT%"=="" set LOG_VERBOSITY_INPUT=%DEFAULT_LOG_VERBOSITY%
+
+    if /i "%LOG_VERBOSITY_INPUT%"=="debug" (
+        set LOG_VERBOSITY=debug
+        echo Log verbosity: DEBUG
+    ) else (
+        set LOG_VERBOSITY=normal
+        echo Log verbosity: NORMAL
+    )
+
+    REM Ask if database objects should be recreated (default to false, only allowed in dev)
+    set /p RECREATE_DB="Recreate all database objects? (y/n) [default: n, dev only]: "
+    if "%RECREATE_DB%"=="" set RECREATE_DB=n
+    if /i "%RECREATE_DB%"=="y" (
+        set RECREATE_DATABASE_OBJECTS=true
+        echo Database objects will be RECREATED ^(drops all objects first^)
+    ) else (
+        set RECREATE_DATABASE_OBJECTS=false
+        echo Database objects will NOT be recreated
+    )
+
+    REM --- Final validation for critical inputs before calling act ---
+    if "%DB_SCRIPTS_PATH_INPUT%"=="" (
+        echo ERROR: DB_SCRIPTS_PATH_INPUT is empty and is a required variable for database deployment.
+        pause
+        exit /b 1
+    )
 )
 
 REM Remove the 'set DB_SCRIPTS_PATH' here, as it's not needed as a direct environment variable for 'vars'

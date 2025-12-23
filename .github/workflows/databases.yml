@@ -111,6 +111,7 @@ jobs:
           echo "Found databases: $databases"
 
   deploy-database:
+    
     name: Deploy ${{ matrix.database }} (${{ inputs.environment }})
     runs-on: ubuntu-latest
     needs: [discover-databases]
@@ -170,32 +171,6 @@ jobs:
             /usr/lib/x86_64-linux-gnu/libmsodbcsql*
           key: sqlcmd-${{ runner.os }}-${{ runner.arch }}-v1
 
-      - name: Install sqlcmd
-        if: steps.cache-sqlcmd.outputs.cache-hit != 'true'
-        run: |
-          # Check if sqlcmd is already installed (e.g., in custom Docker images)
-          if command -v sqlcmd &> /dev/null; then
-            echo "sqlcmd is already installed"
-            sqlcmd -?
-            exit 0
-          fi
-
-          # Check if lsb_release exists (Ubuntu/Debian)
-          if ! command -v lsb_release &> /dev/null; then
-            echo "ERROR: This system doesn't appear to be Ubuntu/Debian"
-            echo "sqlcmd installation requires Ubuntu/Debian or a custom image with sqlcmd pre-installed"
-            exit 1
-          fi
-
-          # Detect Ubuntu version dynamically
-          UBUNTU_VERSION=$(lsb_release -rs)
-          echo "Installing sqlcmd for Ubuntu ${UBUNTU_VERSION}"
-
-          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
-          sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/${UBUNTU_VERSION}/prod.list)"
-          sudo apt-get update
-          sudo apt-get install -y sqlcmd
-
       - name: List SQL files to apply
         id: list-files
         run: |
@@ -230,7 +205,18 @@ jobs:
           fi
 
           echo "   Files to execute:"
-          find . -maxdepth 1 -type f -name "*.sql" | sed 's|^\./||' | sort | sed 's/^/   - /' || echo "   No SQL files found"
+          SQL_FILES=$(find . -maxdepth 1 -type f -name "*.sql" | sed 's|^\./||' | sort)
+
+          # Filter out *seed.sql files if not recreating database objects
+          if [ "${{ env.RECREATE_DB }}" != "true" ]; then
+            SQL_FILES=$(echo "$SQL_FILES" | grep -v "seed\.sql$" || true)
+          fi
+
+          if [ -n "$SQL_FILES" ]; then
+            echo "$SQL_FILES" | sed 's/^/   - /'
+          else
+            echo "   No SQL files found (or all filtered out)"
+          fi
           echo ""
 
       - name: Prevent destructive actions in non-dev
@@ -288,6 +274,11 @@ jobs:
 
           # Get all .sql files sorted alphabetically (portable for both Alpine and Ubuntu)
           SQL_FILES=$(find . -maxdepth 1 -type f -name "*.sql" | sed 's|^\./||' | sort)
+
+          # Filter out *seed.sql files if not recreating database objects
+          if [ "$RECREATE_DB" != "true" ]; then
+            SQL_FILES=$(echo "$SQL_FILES" | grep -v "seed\.sql$" || true)
+          fi
 
           if [ -z "$SQL_FILES" ]; then
             echo "⚠️  No SQL files found in ${{ env.DATABASE_BASE_NAME }} directory"

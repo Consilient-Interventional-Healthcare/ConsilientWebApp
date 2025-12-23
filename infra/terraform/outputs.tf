@@ -56,6 +56,35 @@ output "sql_hangfire_database_name" {
   value       = module.hangfire_db.name
 }
 
+# --------------------------------------------------------------------------
+# CONTAINER REGISTRY OUTPUTS
+# --------------------------------------------------------------------------
+
+output "acr_registry_url" {
+  description = "The URL of the Azure Container Registry"
+  value       = azurerm_container_registry.main.login_server
+}
+
+output "acr_name" {
+  description = "The name of the Azure Container Registry"
+  value       = azurerm_container_registry.main.name
+}
+
+# --------------------------------------------------------------------------
+# ACR CI/CD SERVICE PRINCIPAL OUTPUTS
+# --------------------------------------------------------------------------
+# The service principal for ACR CI/CD is automatically created during Terraform apply
+# Credentials are saved to files in the terraform directory:
+#   - acr_client_id.txt: Service principal client ID
+#   - acr_client_secret.txt: Service principal client secret
+#   - acr_sp_object_id.txt: Service principal object ID
+#
+# These files are read by the .env.act update process for local testing.
+# To view the credentials after apply:
+#   - cat acr_client_id.txt
+#   - cat acr_client_secret.txt
+#   - cat acr_sp_object_id.txt
+
 # Example: Mark sensitive outputs (add more as needed)
 # output "sql_admin_password" {
 #   value     = var.sql_admin_password

@@ -1,7 +1,7 @@
 # Azure Container Apps Environment and Loki Deployment
 
 # Option: Create a new Container App Environment (may hit quota limits)
-# Comment this out if you want to use an existing environment
+# Set create_container_app_environment to false and provide existing_container_app_environment_id if quota is exceeded
 resource "azurerm_container_app_environment" "shared" {
   count               = var.create_container_app_environment ? 1 : 0
   name                = local.loki.container_app_env_name
@@ -11,14 +11,26 @@ resource "azurerm_container_app_environment" "shared" {
 }
 
 # Option: Use an existing Container App Environment
-# Uncomment and configure if you hit quota limits
-# data "azurerm_container_app_environment" "existing" {
-#   name                = "your-existing-cae-name"
-#   resource_group_name = "your-existing-rg-name"
-# }
+# Set create_container_app_environment to false and provide either:
+# - existing_container_app_environment_id directly, OR
+# - existing_container_app_environment_name + existing_container_app_environment_resource_group to lookup
+data "azurerm_container_app_environment" "existing" {
+  count               = (var.create_container_app_environment == false && var.existing_container_app_environment_name != "") ? 1 : 0
+  name                = var.existing_container_app_environment_name
+  resource_group_name = var.existing_container_app_environment_resource_group
+}
 
 locals {
-  container_app_env_id = var.create_container_app_environment ? azurerm_container_app_environment.shared[0].id : var.existing_container_app_environment_id
+  # Priority: explicit ID > looked up data > created resource
+  container_app_env_id = (
+    var.existing_container_app_environment_id != ""
+      ? var.existing_container_app_environment_id
+      : (var.create_container_app_environment
+          ? azurerm_container_app_environment.shared[0].id
+          : (length(data.azurerm_container_app_environment.existing) > 0
+              ? data.azurerm_container_app_environment.existing[0].id
+              : ""))
+  )
 }
 
 resource "azurerm_user_assigned_identity" "loki" {

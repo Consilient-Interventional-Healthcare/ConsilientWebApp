@@ -124,6 +124,18 @@ jobs:
       log_verbosity: ${{ inputs.log_verbosity || 'normal' }}
     secrets: inherit
 
+  deploy-dotnet-apps:
+    name: Deploy .NET Apps
+    needs: [validate-environment, deploy-databases]
+    if: |
+      always() &&
+      needs.validate-environment.result == 'success' &&
+      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
+    uses: ./.github/workflows/dotnet_apps.yml
+    with:
+      environment: ${{ needs.validate-environment.outputs.environment }}
+    secrets: inherit
+
   # Determine what changed to optimize workflow execution
 #   detect-changes:
 #     name: Detect Changes

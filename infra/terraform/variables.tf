@@ -95,3 +95,15 @@ variable "existing_container_app_environment_id" {
   type        = string
   default     = ""
 }
+
+variable "existing_container_app_environment_name" {
+  description = "Name of existing Container App Environment (only used if create_container_app_environment is false)"
+  type        = string
+  default     = ""
+}
+
+variable "existing_container_app_environment_resource_group" {
+  description = "Resource group of existing Container App Environment (only used if create_container_app_environment is false)"
+  type        = string
+  default     = ""
+}

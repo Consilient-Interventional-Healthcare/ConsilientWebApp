@@ -1,5 +1,3 @@
-name: Terraform Infrastructure Deployment (Reusable)
-
 on:
   workflow_call:
     inputs:
