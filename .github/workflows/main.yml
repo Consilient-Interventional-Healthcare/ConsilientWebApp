@@ -1,4 +1,4 @@
-name: Main Workflow Orchestrator
+name: "01 - Main Orchestrator"
 
 on:
   push:

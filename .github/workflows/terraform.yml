@@ -1,3 +1,5 @@
+# Add a short, numbered name for roadmap clarity
+name: "02 - Terraform Infrastructure"
 on:
   workflow_call:
     inputs:

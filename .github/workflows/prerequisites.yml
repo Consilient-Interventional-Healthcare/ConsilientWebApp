@@ -1,3 +1,5 @@
+# Add a short, numbered name for roadmap clarity
+name: "00 - Prerequisites Setup"
 on:
   workflow_call:
 

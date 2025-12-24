@@ -1,4 +1,4 @@
-name: Deploy Database to Azure SQL (Reusable)
+name: "06 - Deploy Database (Reusable)"
 
 on:
   workflow_call:

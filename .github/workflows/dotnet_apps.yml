@@ -1,4 +1,4 @@
-name: Build and deploy .NET apps to Azure
+name: "03 - Deploy .NET Apps"
 
 on:
   push:
