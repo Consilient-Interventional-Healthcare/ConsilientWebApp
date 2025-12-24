@@ -34,6 +34,11 @@ on:
         required: false
         type: string
         default: ''
+      resource_group:
+        description: 'Azure Resource Group name'
+        required: false
+        type: string
+        default: ''
 
 env:
   IMAGE_NAME: consilientwebapp2
@@ -41,6 +46,7 @@ env:
   # Three-tier fallback: input > secret > fail
   REACT_APP_NAME: ${{ inputs.react_app_name || secrets.AZURE_WEBAPP_NAME }}
   ACR_REGISTRY: ${{ inputs.acr_registry || secrets.ACR_REGISTRY }}
+  RESOURCE_GROUP: ${{ inputs.resource_group }}
 
 permissions:
   contents: read
@@ -53,7 +59,15 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
+    outputs:
+      react_app_name: ${{ env.REACT_APP_NAME }}
+      previous_image: ${{ steps.capture_previous.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -84,10 +98,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Install Azure CLI
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
       - name: Login to Azure
         uses: azure/login@v2.3.0
         with:
@@ -96,6 +106,21 @@ jobs:
       - name: Log in to ACR (via Azure CLI)
         run: |
           az acr login --name $(echo "${ACR_REGISTRY}" | sed 's/\.azurecr\.io//')
+
+      - name: Capture Previous Deployment
+        id: capture_previous
+        run: |
+          if [ -n "${RESOURCE_GROUP}" ]; then
+            CURRENT_IMAGE=$(az webapp config container show \
+              --name "${REACT_APP_NAME}" \
+              --resource-group "${RESOURCE_GROUP}" \
+              --query '[0].value' -o tsv 2>/dev/null || echo "")
+            echo "Previous image: ${CURRENT_IMAGE}"
+            echo "image=${CURRENT_IMAGE}" >> $GITHUB_OUTPUT
+          else
+            echo "No resource group configured - skipping previous image capture"
+            echo "image=" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build and push Docker image (Consilient.WebApp2)
         uses: docker/build-push-action@v5
@@ -112,3 +137,84 @@ jobs:
         with:
           app-name: ${{ env.REACT_APP_NAME }}
           images: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+  health-check-react:
+    name: Health Check React App
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    needs: build-and-deploy
+    environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Wait for Deployment
+        run: |
+          echo "Waiting 45 seconds for React app to fully initialize..."
+          sleep 45
+
+      - name: Run Lighthouse CI
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            https://${{ needs.build-and-deploy.outputs.react_app_name }}.azurewebsites.net
+          temporaryPublicStorage: true
+          runs: 3
+        env:
+          LHCI_ASSERT__ASSERTIONS__CATEGORIES_PERFORMANCE: '["error", {"minScore": 0.7}]'
+          LHCI_ASSERT__ASSERTIONS__CATEGORIES_ACCESSIBILITY: '["error", {"minScore": 0.9}]'
+          LHCI_ASSERT__ASSERTIONS__CATEGORIES_BEST_PRACTICES: '["warn", {"minScore": 0.7}]'
+          LHCI_ASSERT__ASSERTIONS__CATEGORIES_SEO: '["warn", {"minScore": 0.7}]'
+
+      - name: Login to Azure for Rollback
+        if: failure()
+        uses: azure/login@v2.3.0
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Rollback Deployment
+        if: failure()
+        env:
+          RESOURCE_GROUP: ${{ inputs.resource_group }}
+          APP_NAME: ${{ needs.build-and-deploy.outputs.react_app_name }}
+          PREVIOUS_IMAGE: ${{ needs.build-and-deploy.outputs.previous_image }}
+          ACR_REGISTRY: ${{ inputs.acr_registry || secrets.ACR_REGISTRY }}
+        run: |
+          echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
+          echo "Reason: Lighthouse checks failed"
+          echo "App Name: ${APP_NAME}"
+          echo "Resource Group: ${RESOURCE_GROUP}"
+          echo "Previous Image: ${PREVIOUS_IMAGE}"
+
+          if [ -z "$PREVIOUS_IMAGE" ]; then
+            echo "WARNING: No previous image - cannot rollback"
+            exit 1
+          fi
+
+          echo "Rolling back container image..."
+          az webapp config container set \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --docker-custom-image-name "$PREVIOUS_IMAGE" \
+            --docker-registry-server-url "https://${ACR_REGISTRY}"
+
+          echo "Restarting application..."
+          az webapp restart \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP"
+
+          sleep 20
+
+          CURRENT_IMAGE=$(az webapp config container show \
+            --name "$APP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --query '[0].value' -o tsv)
+
+          echo "Current image after rollback: ${CURRENT_IMAGE}"
+          echo "=== ROLLBACK COMPLETE ==="
+          exit 1

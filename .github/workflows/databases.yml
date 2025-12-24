@@ -111,9 +111,14 @@ jobs:
           echo "Found databases: $databases"
 
   deploy-database:
-    
+
     name: Deploy ${{ matrix.database }} (${{ inputs.environment }})
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     needs: [discover-databases]
     if: needs.discover-databases.outputs.databases != '[]'
     strategy:
@@ -160,16 +165,6 @@ jobs:
             echo "   RECREATE_DB: ${RECREATE_DB}"
             echo "   LOG_VERBOSITY: ${LOG_VERBOSITY}"
           fi
-
-      - name: Cache sqlcmd
-        id: cache-sqlcmd
-        uses: actions/cache@v4
-        with:
-          path: |
-            /usr/bin/sqlcmd
-            /opt/mssql-tools*
-            /usr/lib/x86_64-linux-gnu/libmsodbcsql*
-          key: sqlcmd-${{ runner.os }}-${{ runner.arch }}-v1
 
       - name: List SQL files to apply
         id: list-files

@@ -187,7 +187,14 @@ function Test-NSwagPackage {
         default { "Net90" }
     }
     
-    $nswagPath = "$env:USERPROFILE\.nuget\packages\nswag.msbuild\$NSwagVersion\tools\$runtimeFolder\dotnet-nswag.dll"
+    $nugetOutput = dotnet nuget locals global-packages --list
+    if ($nugetOutput -match "global-packages:\s*(.+)") {
+        $packageRoot = $matches[1].Trim()
+    } else {
+        $packageRoot = Join-Path $env:USERPROFILE ".nuget\packages"
+    }
+    
+    $nswagPath = Join-Path $packageRoot "nswag.msbuild\$NSwagVersion\tools\$runtimeFolder\dotnet-nswag.dll"
     
     if (-not (Test-Path $nswagPath)) {
         Write-Host "? NSwag.MSBuild v$NSwagVersion not found!" -ForegroundColor Red
@@ -273,10 +280,10 @@ function New-OpenApiSpec {
             Write-Host "? Failed to generate OpenAPI spec!" -ForegroundColor Red
             Write-Host ""
             Write-Host "This could mean:" -ForegroundColor Yellow
-            Write-Host "  • AddSwaggerGen() not configured in Program.cs/Startup.cs" -ForegroundColor Gray
-            Write-Host "  • Assembly loading issues or missing dependencies" -ForegroundColor Gray
-            Write-Host "  • Version mismatch between Swashbuckle packages" -ForegroundColor Gray
-            Write-Host "  • Missing configuration files" -ForegroundColor Gray
+            Write-Host "  - AddSwaggerGen() not configured in Program.cs/Startup.cs" -ForegroundColor Gray
+            Write-Host "  - Assembly loading issues or missing dependencies" -ForegroundColor Gray
+            Write-Host "  - Version mismatch between Swashbuckle packages" -ForegroundColor Gray
+            Write-Host "  - Missing configuration files" -ForegroundColor Gray
             Write-Host ""
             throw "OpenAPI spec generation failed"
         }

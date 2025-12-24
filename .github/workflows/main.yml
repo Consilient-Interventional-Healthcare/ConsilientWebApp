@@ -91,14 +91,9 @@ jobs:
           echo "✅ Environment validation passed: $ENVIRONMENT_INPUT"
           echo "environment=$ENVIRONMENT_INPUT" >> $GITHUB_OUTPUT
 
-  setup-prerequisites:
-    name: Setup Prerequisites
-    needs: validate-environment
-    uses: ./.github/workflows/prerequisites.yml
-
   terraform:
     name: Terraform Infrastructure Deployment
-    needs: [validate-environment, setup-prerequisites]
+    needs: [validate-environment]
     if: ${{ !inputs.skip_terraform }}
     uses: ./.github/workflows/terraform.yml
     with:
@@ -135,6 +130,7 @@ jobs:
       environment: ${{ needs.validate-environment.outputs.environment }}
       api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
     secrets: inherit
 
   deploy-react-apps:
@@ -150,6 +146,7 @@ jobs:
       environment: ${{ needs.validate-environment.outputs.environment }}
       react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution

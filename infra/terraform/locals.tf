@@ -70,6 +70,10 @@ locals {
     # Uses default_skus.app_service_plan for each environment
     # Override here if API needs different SKUs than default
     sku = local.default_skus[var.environment].app_service_plan
+
+    # Health check configuration
+    health_check_path                 = "/health"
+    health_check_eviction_time_in_min = 5
   }
 
   # --------------------------------------------------------------------------
