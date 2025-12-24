@@ -40,14 +40,16 @@ on:
         required: false
         type: boolean
         default: false
-      log_verbosity:
-        description: 'Log verbosity level'
+      allow_local_firewall:
+        description: 'Allow local firewall rule for SQL Server (act testing only - INSECURE)'
         required: false
-        type: choice
-        options:
-          - normal
-          - debug
-        default: 'normal'
+        type: boolean
+        default: false
+      skip_health_checks:
+        description: 'Skip health checks after deployment'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -99,6 +101,7 @@ jobs:
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
+      allow_local_firewall: ${{ inputs.allow_local_firewall }}
     secrets: inherit
 
   deploy-databases:
@@ -114,7 +117,6 @@ jobs:
       environment: ${{ needs.validate-environment.outputs.environment }}
       scripts_path: ${{ inputs.db_scripts_path }} # Use the new input here
       recreate_database_objects: ${{ inputs.recreate_database_objects || false }}
-      log_verbosity: ${{ inputs.log_verbosity || 'normal' }}
     secrets: inherit
 
   deploy-dotnet-apps:
@@ -131,6 +133,7 @@ jobs:
       api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      skip_health_checks: ${{ inputs.skip_health_checks || false }}
     secrets: inherit
 
   deploy-react-apps:
@@ -147,6 +150,7 @@ jobs:
       react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      skip_health_checks: ${{ inputs.skip_health_checks || false }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution

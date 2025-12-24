@@ -16,11 +16,6 @@ on:
         required: false
         type: boolean
         default: false
-      log_verbosity:
-        description: 'Log verbosity level (normal or debug)'
-        required: false
-        type: string
-        default: 'normal'
     secrets:
       AZURE_SQL_SERVER:
         required: true
@@ -52,14 +47,6 @@ on:
         required: false
         type: boolean
         default: false
-      log_verbosity:
-        description: 'Log verbosity level'
-        required: false
-        type: choice
-        options:
-          - normal
-          - debug
-        default: 'normal'
 
 permissions:
   contents: read
@@ -114,11 +101,6 @@ jobs:
 
     name: Deploy ${{ matrix.database }} (${{ inputs.environment }})
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
     needs: [discover-databases]
     if: needs.discover-databases.outputs.databases != '[]'
     strategy:
@@ -133,7 +115,6 @@ jobs:
       SCRIPTS_PATH: ${{ inputs.scripts_path }}
       DATABASE_BASE_NAME: ${{ matrix.database }}
       DATABASE_NAME: ${{ matrix.database }}_${{ inputs.environment }}
-      LOG_VERBOSITY: ${{ inputs.log_verbosity || 'normal' }}
       # Azure AD authentication environment variables for sqlcmd
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -156,14 +137,13 @@ jobs:
           echo "✅ SQL Server: ${SQL_SERVER}"
           echo "✅ Database: ${DATABASE_NAME}"
 
-          if [ "$LOG_VERBOSITY" = "debug" ]; then
+          if [ "${{ runner.debug }}" = "1" ]; then
             echo ""
             echo "🔍 DEBUG: Environment Variables"
             echo "   ENVIRONMENT: ${ENVIRONMENT}"
             echo "   SCRIPTS_PATH: ${SCRIPTS_PATH}"
             echo "   DATABASE_BASE_NAME: ${DATABASE_BASE_NAME}"
             echo "   RECREATE_DB: ${RECREATE_DB}"
-            echo "   LOG_VERBOSITY: ${LOG_VERBOSITY}"
           fi
 
       - name: List SQL files to apply
@@ -176,7 +156,7 @@ jobs:
 
           SCRIPTS_DIR="${{ env.SCRIPTS_PATH }}/${{ env.DATABASE_BASE_NAME }}"
 
-          if [ "$LOG_VERBOSITY" = "debug" ]; then
+          if [ "${{ runner.debug }}" = "1" ]; then
             echo ""
             echo "🔍 DEBUG: Script Directory"
             echo "   Full path: $SCRIPTS_DIR"
@@ -192,7 +172,7 @@ jobs:
 
           cd "$SCRIPTS_DIR"
 
-          if [ "$LOG_VERBOSITY" = "debug" ]; then
+          if [ "${{ runner.debug }}" = "1" ]; then
             echo ""
             echo "🔍 DEBUG: Directory contents"
             ls -lah
@@ -243,6 +223,7 @@ jobs:
           echo "✅ Database objects dropped successfully"
 
       - name: Apply SQL scripts
+        shell: bash
         run: |
           set -e
           set -o pipefail
@@ -294,7 +275,7 @@ jobs:
             echo "📝 Applying [$FILE_NUM/$FILE_COUNT]: $sql_file"
             echo "================================================"
 
-            if [ "$LOG_VERBOSITY" = "debug" ]; then
+            if [ "${{ runner.debug }}" = "1" ]; then
               echo "🔍 DEBUG: Execution details"
               echo "   Server: ${SQL_SERVER}"
               echo "   Database: ${DATABASE_NAME}"
@@ -334,6 +315,7 @@ jobs:
           echo "================================================"
 
       - name: Verify database deployment
+        shell: bash
         run: |
           set -e
 

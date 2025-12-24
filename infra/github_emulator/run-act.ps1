@@ -32,9 +32,10 @@
     Only allowed in dev environment.
     Default: Prompts interactively (default: no).
 
-.PARAMETER LogVerbosity
-    Log verbosity level (normal or debug).
-    Default: Prompts interactively (default: normal).
+.PARAMETER EnableDebugMode
+    Enable GitHub Actions debug logging (ACTIONS_STEP_DEBUG, ACTIONS_RUNNER_DEBUG).
+    Provides detailed step execution and runner diagnostics.
+    Default: Prompts interactively (default: no).
 
 .PARAMETER NonInteractive
     Run without prompts (requires all parameters).
@@ -95,8 +96,9 @@ param(
 
     [switch]$AllowLocalFirewall,
 
-    [ValidateSet('normal', 'debug')]
-    [string]$LogVerbosity = 'normal',
+    [switch]$EnableDebugMode,
+
+    [switch]$SkipHealthChecks,
 
     [switch]$NonInteractive,
 
@@ -115,7 +117,6 @@ $RepoRoot = Resolve-Path "$ScriptRoot\..\.."
 # Configuration constants
 $WorkflowFile = ".github\workflows\main.yml"
 $ActSecretFile = Join-Path $RepoRoot "infra\github_emulator\.env.act"
-$DefaultLogVerbosity = "normal"
 
 # Docker image configuration
 $LocalImageName = "consilientwebapp-runner"
@@ -362,9 +363,10 @@ function Show-ExecutionSummary {
         [string]$SkipTf,
         [string]$SkipDb,
         [string]$RecreateDb,
-        [string]$LogLevel,
+        [string]$DebugMode,
         [string]$SecretFile,
-        [string]$AllowFirewall
+        [string]$AllowFirewall,
+        [string]$SkipHealthChecks
     )
 
     Write-Host ""
@@ -379,7 +381,8 @@ function Show-ExecutionSummary {
     Write-Host "  Skip Database: $(if($SkipDb -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
     Write-Host "  Recreate DB Objects: $(if($RecreateDb -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
     Write-Host "  Allow Local Firewall: $(if($AllowFirewall -eq 'true') {'Yes (INSECURE - dev only)'} else {'No'})" -ForegroundColor $(if($AllowFirewall -eq 'true') {'Yellow'} else {'Gray'})
-    Write-Host "  Log Verbosity: $LogLevel" -ForegroundColor Gray
+    Write-Host "  Skip Health Checks: $(if($SkipHealthChecks -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
+    Write-Host "  Debug Mode: $(if($DebugMode -eq 'true') {'Enabled (ACTIONS_STEP_DEBUG, ACTIONS_RUNNER_DEBUG)'} else {'Disabled'})" -ForegroundColor $(if($DebugMode -eq 'true') {'Yellow'} else {'Gray'})
 
     if ($SecretFile) {
         Write-Host "  Secret File: Found" -ForegroundColor Gray
@@ -587,7 +590,8 @@ try {
     $SkipDbInput = $SkipDatabases
     $RecreateDbInput = $RecreateDatabase
     $AllowLocalFirewallInput = $AllowLocalFirewall
-    $LogVerbosityInput = $LogVerbosity
+    $SkipHealthChecksInput = $SkipHealthChecks
+    $EnableDebugModeInput = $EnableDebugMode
 
     # Interactive mode: Prompt for missing values
     if (-not $NonInteractive) {
@@ -648,13 +652,34 @@ try {
             Write-Host ""
         }
 
-        # Log verbosity
-        if ($LogVerbosityInput -eq 'normal') {
-            $LogInput = Get-ValidatedInput "Log verbosity level (normal/debug)" $DefaultLogVerbosity @("normal", "debug")
-            $LogVerbosityInput = $LogInput
+        # Health checks prompt
+        if (-not $SkipHealthChecksInput) {
+            $SkipHealthChecksResponse = Get-ValidatedInput "Skip health checks? (y/n)" "n" @("y", "n")
+            $SkipHealthChecksInput = $SkipHealthChecksResponse -eq "y"
         }
 
-        Write-Host "Log verbosity: $LogVerbosityInput" -ForegroundColor Green
+        if ($SkipHealthChecksInput) {
+            Write-Host "Health checks will be SKIPPED (faster but less safe)" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "Health checks will be ENABLED (recommended)" -ForegroundColor Green
+        }
+
+        Write-Host ""
+
+        # Debug mode prompt
+        if (-not $EnableDebugModeInput) {
+            $DebugResponse = Get-ValidatedInput "Enable debug logging? (y/n)" "n" @("y", "n")
+            $EnableDebugModeInput = $DebugResponse -eq "y"
+        }
+
+        if ($EnableDebugModeInput) {
+            Write-Host "Debug mode will be ENABLED (ACTIONS_STEP_DEBUG, ACTIONS_RUNNER_DEBUG)" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "Debug mode will be DISABLED (standard logging)" -ForegroundColor Green
+        }
+
         Write-Host ""
     }
     else {
@@ -677,12 +702,14 @@ try {
     $SkipDatabasesStr = if ($SkipDbInput) { "true" } else { "false" }
     $RecreateDbStr = if ($RecreateDbInput) { "true" } else { "false" }
     $AllowLocalFirewallStr = if ($AllowLocalFirewallInput) { "true" } else { "false" }
+    $SkipHealthChecksStr = if ($SkipHealthChecksInput) { "true" } else { "false" }
+    $DebugModeStr = if ($EnableDebugModeInput) { "true" } else { "false" }
 
     # ==============================
     # SHOW SUMMARY
     # ==============================
 
-    Show-ExecutionSummary -Environment $EnvInput -SkipTf $SkipTerraformStr -SkipDb $SkipDatabasesStr -RecreateDb $RecreateDbStr -LogLevel $LogVerbosityInput -SecretFile $secretFile -AllowFirewall $AllowLocalFirewallStr
+    Show-ExecutionSummary -Environment $EnvInput -SkipTf $SkipTerraformStr -SkipDb $SkipDatabasesStr -RecreateDb $RecreateDbStr -DebugMode $DebugModeStr -SecretFile $secretFile -AllowFirewall $AllowLocalFirewallStr -SkipHealthChecks $SkipHealthChecksStr
 
     # ==============================
     # BUILD ACT COMMAND
@@ -692,21 +719,33 @@ try {
         "workflow_dispatch",
         "--pull=false",
         "--bind",
-        "--secret", "GITHUB_TOKEN=ghp_dummy",
         "--input", "environment=$EnvInput",
         "--input", "skip_terraform=$SkipTerraformStr",
         "--input", "skip_databases=$SkipDatabasesStr",
         "--input", "recreate_database_objects=$RecreateDbStr",
         "--input", "allow_local_firewall=$AllowLocalFirewallStr",
-        "--input", "log_verbosity=$LogVerbosityInput",
+        "--input", "skip_health_checks=$SkipHealthChecksStr",
         "-W", $WorkflowFile,
         "-P", "ubuntu-latest=$LocalImageFull"
     )
 
-    # Add secret file if it exists
+    # Add secret file if it exists (this will include GITHUB_TOKEN from .env.act)
     if ($secretFile) {
         $ActArgs += "--secret-file"
         $ActArgs += $secretFile
+    }
+    else {
+        # Fallback: provide a dummy token if no secret file
+        $ActArgs += "--secret"
+        $ActArgs += "GITHUB_TOKEN=ghp_dummy_token_for_local_testing"
+    }
+
+    # Add debug secrets if debug mode is enabled
+    if ($EnableDebugModeInput) {
+        $ActArgs += "--secret"
+        $ActArgs += "ACTIONS_STEP_DEBUG=true"
+        $ActArgs += "--secret"
+        $ActArgs += "ACTIONS_RUNNER_DEBUG=true"
     }
 
     # ==============================
