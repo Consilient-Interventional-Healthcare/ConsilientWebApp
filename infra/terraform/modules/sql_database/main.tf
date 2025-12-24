@@ -5,7 +5,9 @@ resource "azurerm_mssql_database" "this" {
   zone_redundant = var.zone_redundant
   tags           = var.tags
 
-  # Serverless tier configuration (for GP_S SKUs)
-  min_capacity                = var.min_capacity
-  auto_pause_delay_in_minutes = var.auto_pause_delay_in_minutes
+  # Conditional attributes: only set for serverless SKUs (GP_S)
+  # Basic and GP_Gen5 SKUs don't support these parameters
+  # Setting to null for non-serverless SKUs prevents Azure API errors
+  min_capacity                = strcontains(var.sku_name, "GP_S") ? var.min_capacity : null
+  auto_pause_delay_in_minutes = strcontains(var.sku_name, "GP_S") ? var.auto_pause_delay_in_minutes : null
 }
