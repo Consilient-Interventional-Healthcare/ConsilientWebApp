@@ -24,10 +24,23 @@ on:
         description: 'Deployment environment'
         required: true
         type: string
+      api_app_name:
+        description: 'Name of the API App Service (from Terraform or calculated)'
+        required: false
+        type: string
+        default: ''
+      acr_registry:
+        description: 'Azure Container Registry URL (from Terraform)'
+        required: false
+        type: string
+        default: ''
 
 env:
   IMAGE_NAME: consilientapi
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
+  # Three-tier fallback: input > secret > fail
+  API_APP_NAME: ${{ inputs.api_app_name || secrets.AZURE_API_WEBAPP_NAME }}
+  ACR_REGISTRY: ${{ inputs.acr_registry || secrets.ACR_REGISTRY }}
 
 permissions:
   contents: read
@@ -45,20 +58,59 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate Deployment Configuration
+        run: |
+          echo "=== Deployment Configuration Validation ==="
+          echo "Environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}"
+          echo "API App Name: ${API_APP_NAME}"
+          echo "ACR Registry: ${ACR_REGISTRY}"
+
+          if [ -z "${API_APP_NAME}" ]; then
+            echo "ERROR: API App Service name is not set!"
+            echo "This value should come from:"
+            echo "  1. Terraform outputs (preferred)"
+            echo "  2. Workflow input (when terraform is skipped)"
+            echo "  3. Secret AZURE_API_WEBAPP_NAME (legacy fallback)"
+            exit 1
+          fi
+
+          if [ -z "${ACR_REGISTRY}" ]; then
+            echo "ERROR: ACR Registry URL is not set!"
+            exit 1
+          fi
+
+          echo "Configuration validation passed!"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Azure
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Login to Azure (OIDC)
+        if: ${{ !env.ACT }}
+        uses: azure/login@v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure (Service Principal for act)
+        if: ${{ env.ACT }}
         uses: azure/login@v2.3.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Log in to ACR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.ACR_REGISTRY }}
-          username: ${{ secrets.ACR_CICD_CLIENT_ID }}
-          password: ${{ secrets.ACR_CICD_CLIENT_SECRET }}
+      - name: Log in to ACR (via Azure CLI)
+        if: ${{ !env.ACT }}
+        run: |
+          az acr login --name $(echo "${ACR_REGISTRY}" | sed 's/\.azurecr\.io//')
+
+      - name: Log in to ACR (Service Principal for act)
+        if: ${{ env.ACT }}
+        run: |
+          az acr login --name $(echo "${ACR_REGISTRY}" | sed 's/\.azurecr\.io//')
 
       - name: Build and push Docker image (Consilient.Api)
         uses: docker/build-push-action@v5
@@ -66,12 +118,12 @@ jobs:
           context: ./src
           file: ./src/Consilient.Api/Dockerfile
           push: true
-          tags: ${{ secrets.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          tags: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
             BUILD_CONFIGURATION=Release
 
       - name: Deploy image to Azure Web App for Containers
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.AZURE_API_WEBAPP_NAME }}
-          images: ${{ secrets.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          app-name: ${{ env.API_APP_NAME }}
+          images: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}

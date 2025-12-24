@@ -10,13 +10,9 @@ This guide explains how to test GitHub Actions workflows locally using `act`.
 
 ## Setup
 
-### 1. Build the Custom Docker Image
+### 1. Prerequisites Note
 
-The first time you run `run-act-main.bat`, it will automatically build the custom Docker image if it doesn't exist. You can also build it manually:
-
-```batch
-docker build -t githubactions:latest -f GITHUBACTIONS.dockerfile .
-```
+The first time you run `run-act-main.bat`, it will automatically download the `catthehacker/ubuntu:act-latest` image (~1GB) if it's not already available on your machine. This is a one-time download and subsequent runs will use the cached image.
 
 ### 2. Configure Azure Credentials
 
@@ -48,7 +44,7 @@ This script will:
    az sql server list --resource-group consilient-resource-group --query "[?contains(name, 'dev')].fullyQualifiedDomainName" -o tsv
    ```
 
-3. Open `.env.act` and update the `AZURE_SQL_SERVER` value:
+3. Open `.env.act` and update the `AZURE_SQL_SERVER` value with the FQDN you retrieved:
    ```
    AZURE_SQL_SERVER=consilient-sqlsrv-dev-XXXXXX.database.windows.net
    ```

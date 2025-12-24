@@ -24,8 +24,9 @@ locals {
   default_skus = {
     # Development - Minimal cost
     dev = {
-      app_service_plan   = "B1"          # Basic tier - ~$13/month
-      container_registry = "Basic"       # ~$5/month
+      app_service_plan   = "B1"      # Basic tier - ~$13/month
+      container_registry = "Basic"   # ~$5/month
+      sql_basic          = "Basic"   # Basic DTU - ~$5/month
       sql_serverless     = "GP_S_Gen5_2" # Serverless - ~$150/month (when active)
       sql_provisioned    = "GP_Gen5_2"   # General Purpose - ~$650/month
     }
@@ -103,17 +104,17 @@ locals {
     main_db = {
       name = "${var.project_name}_main_${var.environment}"
 
-      # Uses default_skus.sql_provisioned for prod, sql_serverless for dev
-      sku = var.environment == "prod" ? local.default_skus[var.environment].sql_provisioned : local.default_skus[var.environment].sql_serverless
+      # Uses default_skus.sql_basic for dev, sql_provisioned for prod
+      sku = var.environment == "prod" ? local.default_skus[var.environment].sql_provisioned : (var.environment == "dev" ? local.default_skus[var.environment].sql_basic : local.default_skus[var.environment].sql_serverless)
 
       min_capacity = {
-        dev     = 0.5
+        dev     = null # Not serverless (Basic DTU)
         staging = null
         prod    = null
       }
 
       auto_pause_delay = {
-        dev     = 60   # Auto-pause after 1 hour
+        dev     = null # Not serverless (Basic DTU)
         staging = null # Not serverless
         prod    = null # Not serverless
       }
@@ -129,17 +130,17 @@ locals {
     hangfire_db = {
       name = "${var.project_name}_hangfire_${var.environment}"
 
-      # Uses default_skus.sql_serverless for dev/staging, sql_provisioned for prod
-      sku = var.environment == "prod" ? local.default_skus[var.environment].sql_provisioned : local.default_skus[var.environment].sql_serverless
+      # Uses default_skus.sql_basic for dev, sql_serverless for staging, sql_provisioned for prod
+      sku = var.environment == "prod" ? local.default_skus[var.environment].sql_provisioned : (var.environment == "dev" ? local.default_skus[var.environment].sql_basic : local.default_skus[var.environment].sql_serverless)
 
       min_capacity = {
-        dev     = 0.5
+        dev     = null # Not serverless (Basic DTU)
         staging = 0.5
         prod    = null
       }
 
       auto_pause_delay = {
-        dev     = 60   # Auto-pause after 1 hour
+        dev     = null # Not serverless (Basic DTU)
         staging = 120  # Auto-pause after 2 hours
         prod    = null # Not serverless
       }
@@ -213,7 +214,7 @@ locals {
   # COST ESTIMATES
   # --------------------------------------------------------------------------
   estimated_monthly_cost = {
-    dev     = 200  # USD/month
+    dev     = 45   # USD/month (reduced from 200 - Basic DTU SQL instead of Serverless Gen5)
     staging = 1200 # USD/month
     prod    = 2800 # USD/month
   }

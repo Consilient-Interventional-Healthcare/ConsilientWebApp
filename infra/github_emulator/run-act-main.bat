@@ -6,28 +6,10 @@ cd /d "%~dp0..\.."
 
 REM Define paths relative to the repository root
 set WORKFLOW_FILE=.github\workflows\main.yml
-set DOCKERFILE=infra\github_emulator\GITHUBACTIONS.dockerfile
 set ACT_SECRET_FILE=infra\github_emulator\.env.act
-
-set IMAGE_NAME=githubactions:latest
 
 REM Timestamp for log clarity
 echo [%DATE% %TIME%] Starting workflow run...
-
-REM Check if the image exists
-docker image inspect %IMAGE_NAME% >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    echo Docker image %IMAGE_NAME% not found. Building it now...
-    REM Use the repository root as the build context (the '.' at the end)
-    docker build -t %IMAGE_NAME% -f %DOCKERFILE% .
-    IF %ERRORLEVEL% NEQ 0 (
-        echo Failed to build Docker image. Exiting.
-        pause
-        exit /b 1
-    )
-) ELSE (
-    echo Docker image %IMAGE_NAME% found.
-)
 
 REM --- Initialize default values (can be overridden by .env.act or user input) ---
 set "DEFAULT_DB_SCRIPTS_PATH=src/Databases"
@@ -136,8 +118,8 @@ if /i "%SKIP_DATABASES%"=="true" (
 
 REM Remove the 'set DB_SCRIPTS_PATH' here, as it's not needed as a direct environment variable for 'vars'
 
-REM Run act with workflow file and image override, forcing use of local image
-echo Running act with image %IMAGE_NAME%...
+REM Run act with workflow file and image override, using catthehacker/ubuntu:act-latest
+echo Running act with catthehacker/ubuntu:act-latest image...
 echo.
 
 REM Check if .env.act file exists for loading secrets (now relative to root)
@@ -151,7 +133,7 @@ if exist %ACT_SECRET_FILE% (
         --input log_verbosity="%LOG_VERBOSITY%" ^
         --input DB_SCRIPTS_PATH="%DB_SCRIPTS_PATH_INPUT%" ^
         -W %WORKFLOW_FILE% ^
-        -P ubuntu-latest=%IMAGE_NAME% ^
+        -P ubuntu-latest=catthehacker/ubuntu:act-latest ^
         --pull=false --bind ^
         --secret-file %ACT_SECRET_FILE%
 ) else (
@@ -164,7 +146,7 @@ if exist %ACT_SECRET_FILE% (
         --input log_verbosity="%LOG_VERBOSITY%" ^
         --input DB_SCRIPTS_PATH="%DB_SCRIPTS_PATH_INPUT%" ^
         -W %WORKFLOW_FILE% ^
-        -P ubuntu-latest=%IMAGE_NAME% ^
+        -P ubuntu-latest=catthehacker/ubuntu:act-latest ^
         --pull=false --bind
 )
 

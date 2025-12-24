@@ -59,6 +59,12 @@ resource "azurerm_container_app" "loki" {
   revision_mode                = "Single"
   tags                         = local.tags
 
+  lifecycle {
+    ignore_changes = [
+      workload_profile_name
+    ]
+  }
+
   template {
     container {
       name   = "loki"

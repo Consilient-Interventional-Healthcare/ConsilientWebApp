@@ -70,23 +70,32 @@ output "acr_name" {
   value       = azurerm_container_registry.main.name
 }
 
-# --------------------------------------------------------------------------
-# ACR CI/CD SERVICE PRINCIPAL OUTPUTS
-# --------------------------------------------------------------------------
-# The service principal for ACR CI/CD is automatically created during Terraform apply
-# Credentials are saved to files in the terraform directory:
-#   - acr_client_id.txt: Service principal client ID
-#   - acr_client_secret.txt: Service principal client secret
-#   - acr_sp_object_id.txt: Service principal object ID
-#
-# These files are read by the .env.act update process for local testing.
-# To view the credentials after apply:
-#   - cat acr_client_id.txt
-#   - cat acr_client_secret.txt
-#   - cat acr_sp_object_id.txt
-
 # Example: Mark sensitive outputs (add more as needed)
 # output "sql_admin_password" {
 #   value     = var.sql_admin_password
 #   sensitive = true
 # }
+
+# --------------------------------------------------------------------------
+# APP SERVICE OUTPUTS
+# --------------------------------------------------------------------------
+
+output "api_app_service_name" {
+  description = "The name of the API App Service"
+  value       = module.api_app.app_service_name
+}
+
+output "react_app_service_name" {
+  description = "The name of the React App Service"
+  value       = module.react_app.app_service_name
+}
+
+output "api_app_service_hostname" {
+  description = "The default hostname of the API App Service"
+  value       = module.api_app.app_service_default_hostname
+}
+
+output "react_app_service_hostname" {
+  description = "The default hostname of the React App Service"
+  value       = module.react_app.app_service_default_hostname
+}

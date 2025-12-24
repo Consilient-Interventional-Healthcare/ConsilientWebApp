@@ -1,6 +1,11 @@
 on:
   workflow_call:
 
+env:
+  # FIX 1: Move tools to the Linux root home directory.
+  # This guarantees 'chmod +x' works and fixes the "Ghost Cache" warnings.
+  TOOLS_PATH: "/root/.tools"
+
 jobs:
   prerequisites:
     runs-on: ubuntu-latest
@@ -8,52 +13,56 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # === Build Tools Installation and Caching ===
-
-      # Azure CLI
-      - name: Azure CLI
-        if: ${{ !env.ACT }}
+      # === Azure CLI ===
+      - name: Install Azure CLI
         run: |
-          curl -sL https://aka.ms/InstallAzureCLI | bash
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
-      # sqlcmd
+      # === sqlcmd ===
       - name: Cache sqlcmd
         id: cache-sqlcmd
         uses: actions/cache@v4
         with:
-          path: |
-            /usr/bin/sqlcmd
-            /opt/mssql-tools*
-            /usr/lib/x86_64-linux-gnu/libmsodbcsql*
-          key: sqlcmd-${{ runner.os }}-${{ runner.arch }}-v1
+          path: ${{ env.TOOLS_PATH }}/sqlcmd
+          key: sqlcmd-linux-x64-v1.6.0
 
-      - name: sqlcmd
-        if: ${{ !env.ACT && steps.cache-sqlcmd.outputs.cache-hit != 'true' }}
+      - name: Install sqlcmd
+        # FIX 2: Removed '!env.ACT'. We WANT this to run locally if cache misses.
+        if: steps.cache-sqlcmd.outputs.cache-hit != 'true'
         run: |
-          # Install sqlcmd using the direct GitHub script (latest official method)
-          curl -sSL https://raw.githubusercontent.com/microsoft/go-sqlcmd/main/scripts/install/sqlcmd-linux-install.sh | bash
+          mkdir -p ${{ env.TOOLS_PATH }}/sqlcmd
+          curl -L -o sqlcmd.tar.bz2 https://github.com/microsoft/go-sqlcmd/releases/download/v1.6.0/sqlcmd-v1.6.0-linux-x64.tar.bz2
+          tar -xf sqlcmd.tar.bz2 -C ${{ env.TOOLS_PATH }}/sqlcmd
+          chmod +x ${{ env.TOOLS_PATH }}/sqlcmd/sqlcmd
+          rm sqlcmd.tar.bz2
 
       # SchemaSpy
       - name: Cache SchemaSpy
         id: cache-schemaspy
         uses: actions/cache@v4
         with:
-          path: |
-            tools/schemaspy.jar
-            tools/mssql-jdbc.jar
+          path: ${{ env.TOOLS_PATH }}/schemaspy
           key: schemaspy-6.2.4-jdbc-12.4.2
 
       - name: Download SchemaSpy
-        if: ${{ !env.ACT && steps.cache-schemaspy.outputs.cache-hit != 'true' }}
+        if: steps.cache-schemaspy.outputs.cache-hit != 'true'
         run: |
-          mkdir -p tools
-          curl -L -o tools/schemaspy.jar https://github.com/schemaspy/schemaspy/releases/download/v6.2.4/schemaspy-6.2.4.jar
+          mkdir -p ${{ env.TOOLS_PATH }}/schemaspy
+          curl -L -o ${{ env.TOOLS_PATH }}/schemaspy/schemaspy.jar https://github.com/schemaspy/schemaspy/releases/download/v6.2.4/schemaspy-6.2.4.jar
+          curl -L -o ${{ env.TOOLS_PATH }}/schemaspy/mssql-jdbc.jar https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.4.2.jre11/mssql-jdbc-12.4.2.jre11.jar
+
+      # === Final Setup ===
+      - name: Add Tools to Path
+        run: |
+          echo "${{ env.TOOLS_PATH }}/sqlcmd" >> $GITHUB_PATH
+          echo "${{ env.TOOLS_PATH }}/schemaspy" >> $GITHUB_PATH
 
       - name: Summary
         run: |
           echo "✅ All build tools installed successfully"
-          echo "Azure CLI: $(az --version | head -n1)"
-          echo "sqlcmd: $(sqlcmd -? 2>&1 | head -n1 || echo 'installed')"
+          echo "----------------------------------------"
+          echo "Azure CLI: $(az --version | head -n 1)"
+          echo "sqlcmd: $(sqlcmd --version)"
 
 #
 # Required input:

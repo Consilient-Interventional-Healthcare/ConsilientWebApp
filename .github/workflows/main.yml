@@ -104,7 +104,6 @@ jobs:
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
-      region: ${{ vars.AZURE_REGION }}
     secrets: inherit
 
   deploy-databases:
@@ -125,14 +124,32 @@ jobs:
 
   deploy-dotnet-apps:
     name: Deploy .NET Apps
-    needs: [validate-environment, deploy-databases]
+    needs: [validate-environment, terraform, deploy-databases]
     if: |
       always() &&
       needs.validate-environment.result == 'success' &&
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
     uses: ./.github/workflows/dotnet_apps.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
+      api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.validate-environment.outputs.environment) }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+    secrets: inherit
+
+  deploy-react-apps:
+    name: Deploy React Apps
+    needs: [validate-environment, terraform, deploy-databases, deploy-dotnet-apps]
+    if: |
+      always() &&
+      needs.validate-environment.result == 'success' &&
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
+    uses: ./.github/workflows/react_apps.yml
+    with:
+      environment: ${{ needs.validate-environment.outputs.environment }}
+      react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.validate-environment.outputs.environment) }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution
