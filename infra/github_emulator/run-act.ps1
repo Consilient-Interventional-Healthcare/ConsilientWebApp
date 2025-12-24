@@ -93,6 +93,8 @@ param(
 
     [switch]$RecreateDatabase,
 
+    [switch]$AllowLocalFirewall,
+
     [ValidateSet('normal', 'debug')]
     [string]$LogVerbosity = 'normal',
 
@@ -123,7 +125,7 @@ $DockerfilePath = Join-Path $RepoRoot ".github\workflows\runner\Dockerfile"
 $DockerContextPath = Join-Path $RepoRoot ".github\workflows\runner"
 
 # Cloud image (GHCR) - for reference/documentation only
-$CloudImageReference = "ghcr.io/your-org/consilientwebapp/actions-runner:latest"
+$CloudImageReference = "ghcr.io/your-github-username/consilientwebapp/actions-runner:latest"
 
 # ==============================
 # PREREQUISITE VALIDATION FUNCTIONS
@@ -328,7 +330,7 @@ function Get-ValidatedInput {
     )
 
     while ($true) {
-        $displayPrompt = if ($Default) { "$Prompt [$Default]: " } else { "$Prompt`: " }
+        $displayPrompt = if ($Default) { "$Prompt [$Default]" } else { "$Prompt" }
         $input = Read-Host $displayPrompt
 
         if ([string]::IsNullOrWhiteSpace($input) -and $Default) {
@@ -361,7 +363,8 @@ function Show-ExecutionSummary {
         [string]$SkipDb,
         [string]$RecreateDb,
         [string]$LogLevel,
-        [string]$SecretFile
+        [string]$SecretFile,
+        [string]$AllowFirewall
     )
 
     Write-Host ""
@@ -375,6 +378,7 @@ function Show-ExecutionSummary {
     Write-Host "  Skip Terraform: $(if($SkipTf -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
     Write-Host "  Skip Database: $(if($SkipDb -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
     Write-Host "  Recreate DB Objects: $(if($RecreateDb -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
+    Write-Host "  Allow Local Firewall: $(if($AllowFirewall -eq 'true') {'Yes (INSECURE - dev only)'} else {'No'})" -ForegroundColor $(if($AllowFirewall -eq 'true') {'Yellow'} else {'Gray'})
     Write-Host "  Log Verbosity: $LogLevel" -ForegroundColor Gray
 
     if ($SecretFile) {
@@ -550,6 +554,10 @@ try {
         Write-Host "✅ Custom runner image found ($LocalImageFull)" -ForegroundColor Green
     }
 
+    # Tag local image to match cloud reference so act uses it instead of pulling
+    Write-Host "  Tagging image as $CloudImageReference..." -ForegroundColor Gray
+    & docker tag $LocalImageFull $CloudImageReference
+
     Write-Host ""
 
     # ==============================
@@ -578,6 +586,7 @@ try {
     $SkipTfInput = $SkipTerraform
     $SkipDbInput = $SkipDatabases
     $RecreateDbInput = $RecreateDatabase
+    $AllowLocalFirewallInput = $AllowLocalFirewall
     $LogVerbosityInput = $LogVerbosity
 
     # Interactive mode: Prompt for missing values
@@ -622,6 +631,21 @@ try {
             }
 
             Write-Host ""
+
+            # Firewall rule prompt (only when databases are being deployed)
+            if (-not $AllowLocalFirewallInput) {
+                $AllowFirewallResponse = Get-ValidatedInput "Allow local firewall rule for SQL Server? (y/n)" "y" @("y", "n")
+                $AllowLocalFirewallInput = $AllowFirewallResponse -eq "y"
+            }
+
+            if ($AllowLocalFirewallInput) {
+                Write-Host "SQL Server firewall rule will be ENABLED for local testing" -ForegroundColor Yellow
+            }
+            else {
+                Write-Host "SQL Server firewall rule will NOT be enabled (connection may fail)" -ForegroundColor Red
+            }
+
+            Write-Host ""
         }
 
         # Log verbosity
@@ -636,8 +660,15 @@ try {
     else {
         # Non-interactive mode: Validate all required parameters are provided
         if (-not $EnvInput) {
-            Show-InvalidParamError "NonInteractive mode requires -Environment parameter"
-            exit 20
+            # If only rebuilding image, we can exit early without environment
+            if (-not $RebuildImage) {
+                Show-InvalidParamError "NonInteractive mode requires -Environment parameter"
+                exit 20
+            }
+            # Exit after image rebuild - don't execute workflow
+            Write-Host "✅ Image rebuild complete. Exiting." -ForegroundColor Green
+            Write-Host ""
+            exit 0
         }
     }
 
@@ -645,12 +676,13 @@ try {
     $SkipTerraformStr = if ($SkipTfInput) { "true" } else { "false" }
     $SkipDatabasesStr = if ($SkipDbInput) { "true" } else { "false" }
     $RecreateDbStr = if ($RecreateDbInput) { "true" } else { "false" }
+    $AllowLocalFirewallStr = if ($AllowLocalFirewallInput) { "true" } else { "false" }
 
     # ==============================
     # SHOW SUMMARY
     # ==============================
 
-    Show-ExecutionSummary -Environment $EnvInput -SkipTf $SkipTerraformStr -SkipDb $SkipDatabasesStr -RecreateDb $RecreateDbStr -LogLevel $LogVerbosityInput -SecretFile $secretFile
+    Show-ExecutionSummary -Environment $EnvInput -SkipTf $SkipTerraformStr -SkipDb $SkipDatabasesStr -RecreateDb $RecreateDbStr -LogLevel $LogVerbosityInput -SecretFile $secretFile -AllowFirewall $AllowLocalFirewallStr
 
     # ==============================
     # BUILD ACT COMMAND
@@ -658,10 +690,14 @@ try {
 
     $ActArgs = @(
         "workflow_dispatch",
+        "--pull=false",
+        "--bind",
+        "--secret", "GITHUB_TOKEN=ghp_dummy",
         "--input", "environment=$EnvInput",
         "--input", "skip_terraform=$SkipTerraformStr",
         "--input", "skip_databases=$SkipDatabasesStr",
         "--input", "recreate_database_objects=$RecreateDbStr",
+        "--input", "allow_local_firewall=$AllowLocalFirewallStr",
         "--input", "log_verbosity=$LogVerbosityInput",
         "-W", $WorkflowFile,
         "-P", "ubuntu-latest=$LocalImageFull"
