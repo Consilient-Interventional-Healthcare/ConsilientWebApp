@@ -11,7 +11,7 @@ resource "azurerm_mssql_server" "main" {
   administrator_login = var.sql_admin_username
   # IMPORTANT: Inject the password securely using environment variables, a secret manager, or your CI/CD pipeline. Never commit secrets.
   administrator_login_password  = var.sql_admin_password
-  public_network_access_enabled = false
+  public_network_access_enabled = var.enable_local_firewall
   tags                          = local.tags
 
   # Configure Azure AD admin for service principal authentication
@@ -21,6 +21,16 @@ resource "azurerm_mssql_server" "main" {
     tenant_id                   = data.azurerm_client_config.current.tenant_id
     azuread_authentication_only = false
   }
+}
+
+# Firewall rule for local act testing only
+# WARNING: Opens SQL Server to all IPs - only for development testing
+resource "azurerm_mssql_firewall_rule" "local_act" {
+  count            = var.enable_local_firewall ? 1 : 0
+  name             = "AllowLocalActTesting"
+  server_id        = azurerm_mssql_server.main.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "255.255.255.255"
 }
 
 # Enable Advanced Threat Protection (controlled by cost profile)

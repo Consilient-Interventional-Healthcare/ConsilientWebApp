@@ -142,3 +142,13 @@ EOT
     error_message = "Container App Environment name template must result in a valid Azure resource name (lowercase alphanumeric and hyphens, 1-60 chars, start/end with alphanumeric)."
   }
 }
+
+variable "enable_local_firewall" {
+  description = <<EOT
+Enable SQL Server firewall rule for local act testing.
+WARNING: This opens SQL Server to all IPs (0.0.0.0/0) and enables public network access.
+Only use for local development testing via act. Never enable in production.
+EOT
+  type        = bool
+  default     = false
+}

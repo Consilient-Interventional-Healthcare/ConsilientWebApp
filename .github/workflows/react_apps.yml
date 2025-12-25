@@ -39,6 +39,11 @@ on:
         required: false
         type: string
         default: ''
+      skip_health_checks:
+        description: 'Skip health checks after deployment'
+        required: false
+        type: boolean
+        default: false
 
 env:
   IMAGE_NAME: consilientwebapp2
@@ -147,6 +152,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     needs: build-and-deploy
+    if: ${{ !inputs.skip_health_checks }}
     environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
     steps:
       - name: Checkout

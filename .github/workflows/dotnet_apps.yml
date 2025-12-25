@@ -39,6 +39,11 @@ on:
         required: false
         type: string
         default: ''
+      skip_health_checks:
+        description: 'Skip health checks after deployment'
+        required: false
+        type: boolean
+        default: false
 
 env:
   IMAGE_NAME: consilientapi
@@ -59,11 +64,6 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
     environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
     outputs:
       api_app_name: ${{ env.API_APP_NAME }}
@@ -156,12 +156,8 @@ jobs:
   health-check-api:
     name: Health Check API
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
     needs: build-and-deploy
+    if: ${{ !inputs.skip_health_checks }}
     environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
     steps:
       - name: Wait for Deployment
