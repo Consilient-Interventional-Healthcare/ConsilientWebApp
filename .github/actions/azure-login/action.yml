@@ -13,7 +13,7 @@ inputs:
     required: true
   azure-credentials:
     description: 'JSON credentials for service principal (used only with act)'
-    required: true
+    required: false
 
 runs:
   using: 'composite'
@@ -34,6 +34,18 @@ runs:
 
         # Parse AZURE_CREDENTIALS JSON and login (for local testing with act)
         CREDS='${{ inputs.azure-credentials }}'
+
+        # Check if AZURE_CREDENTIALS is provided
+        if [ -z "$CREDS" ] || [ "$CREDS" = "{}" ]; then
+          echo "⚠️  Warning: Running with 'act' but AZURE_CREDENTIALS not provided"
+          echo "⚠️  Azure login will be skipped for local testing"
+          echo ""
+          echo "ℹ️  To enable authentication in act, set AZURE_CREDENTIALS secret with:"
+          echo '    {"clientId": "...", "clientSecret": "...", "tenantId": "..."}'
+          echo ""
+          echo "ℹ️  This is optional - workflows function without it (no Azure operations will be available)"
+          exit 0  # Don't fail, just skip authentication
+        fi
 
         # Validate JSON format
         if ! echo "$CREDS" | jq empty 2>/dev/null; then

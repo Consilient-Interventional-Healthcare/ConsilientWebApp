@@ -198,11 +198,14 @@ jobs:
           echo "Overall Status: $STATUS"
           echo "Database Status: $DB_STATUS"
 
-      - name: Login to Azure for Rollback
+      - name: Login to Azure for Rollback (OIDC + act fallback)
         if: failure()
-        uses: azure/login@v2.3.0
+        uses: ./.github/actions/azure-login
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
 
       - name: Rollback Deployment
         if: failure()

@@ -103,10 +103,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Azure
-        uses: azure/login@v2.3.0
+      - name: Login to Azure (OIDC + act fallback)
+        uses: ./.github/actions/azure-login
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
 
       - name: Log in to ACR (via Azure CLI)
         run: |
@@ -177,11 +180,14 @@ jobs:
           LHCI_ASSERT__ASSERTIONS__CATEGORIES_BEST_PRACTICES: '["warn", {"minScore": 0.7}]'
           LHCI_ASSERT__ASSERTIONS__CATEGORIES_SEO: '["warn", {"minScore": 0.7}]'
 
-      - name: Login to Azure for Rollback
+      - name: Login to Azure for Rollback (OIDC + act fallback)
         if: failure()
-        uses: azure/login@v2.3.0
+        uses: ./.github/actions/azure-login
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
 
       - name: Rollback Deployment
         if: failure()

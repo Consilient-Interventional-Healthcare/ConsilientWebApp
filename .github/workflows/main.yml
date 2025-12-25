@@ -101,7 +101,7 @@ jobs:
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
-      allow_local_firewall: ${{ inputs.allow_local_firewall }}
+      allow-local-firewall: ${{ inputs.allow_local_firewall }}
     secrets: inherit
 
   deploy-databases:

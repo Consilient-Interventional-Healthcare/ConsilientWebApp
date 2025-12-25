@@ -116,10 +116,6 @@ jobs:
       SCRIPTS_PATH: ${{ inputs.scripts_path }}
       DATABASE_BASE_NAME: ${{ matrix.database }}
       DATABASE_NAME: ${{ matrix.database }}_${{ inputs.environment }}
-      # Azure AD authentication environment variables for sqlcmd
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
     steps:
       - name: Checkout code
@@ -131,7 +127,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
 
       - name: Validate required secrets
         run: |
