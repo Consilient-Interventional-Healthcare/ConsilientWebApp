@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: 'plan'
+      allow_local_firewall:
+        description: 'Allow local firewall rule for SQL Server (act testing only)'
+        required: false
+        type: boolean
+        default: false
     outputs:
       api_app_name:
         description: "The name of the API App Service"
@@ -47,7 +52,7 @@ env:
 
 jobs:
   terraform:
-    name: "Terraform ${{ inputs.action }}"
+    name: "Terraform apply"
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
@@ -76,10 +81,21 @@ jobs:
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      # Terraform variables - all passed via environment to avoid committing .tfvars with secrets
       TF_VAR_environment: ${{ inputs.environment }}
       TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
       TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+      TF_VAR_enable_local_firewall: ${{ inputs.allow_local_firewall }}
+      # Non-sensitive configuration variables (from GitHub Variables)
+      # Environment-specific (from GitHub Environment Variables)
+      TF_VAR_region: ${{ vars.AZURE_REGION || 'canadacentral' }}
+      TF_VAR_resource_group_name: ${{ vars.AZURE_RESOURCE_GROUP_NAME || 'consilient-resource-group' }}
+      # Container App Environment configuration (from GitHub Repository Variables)
+      TF_VAR_create_container_app_environment: ${{ vars.CAE_CREATE_NEW || 'false' }}
+      TF_VAR_use_shared_container_environment: ${{ vars.CAE_USE_SHARED || 'true' }}
+      TF_VAR_shared_container_environment_name: ${{ vars.CAE_SHARED_NAME || 'consilient-env' }}
+      TF_VAR_container_app_environment_name_template: ${{ vars.CAE_NAME_TEMPLATE || 'consilient-cae-{environment}' }}
 
     defaults:
       run:
@@ -88,6 +104,7 @@ jobs:
     steps:
       - name: Validate Inputs
         working-directory: .
+        shell: bash
         run: |
           # Validate action parameter
           if [[ ! "${{ inputs.action }}" =~ ^(plan|apply|destroy)$ ]]; then
@@ -103,27 +120,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3.1.2
-        with:
-          terraform_version: 1.9.0
-
       - name: Login to Azure
-        uses: azure/login@v2.3.0
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        shell: bash
+        run: |
+          # Parse AZURE_CREDENTIALS JSON and login
+          CREDS='${{ secrets.AZURE_CREDENTIALS }}'
+
+          # Extract values from JSON
+          CLIENT_ID=$(echo "$CREDS" | jq -r '.clientId')
+          CLIENT_SECRET=$(echo "$CREDS" | jq -r '.clientSecret')
+          TENANT_ID=$(echo "$CREDS" | jq -r '.tenantId')
+
+          # Login to Azure using service principal
+          az login --service-principal \
+            -u "$CLIENT_ID" \
+            -p "$CLIENT_SECRET" \
+            --tenant "$TENANT_ID"
+
+          # Set subscription
+          az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+
+          echo "✅ Successfully logged in to Azure"
 
       - name: Terraform Format Check
         id: fmt
         run: terraform fmt -check -recursive || [ -n "$ACT" ]
 
       - name: Debug Environment Variables
+        shell: bash
         run: |
           echo "=== Terraform Environment Variables ==="
           echo "TF_VAR_environment: ${TF_VAR_environment}"
           echo "TF_VAR_subscription_id: ${TF_VAR_subscription_id:0:8}..."
           echo "TF_VAR_region: ${TF_VAR_region}"
           echo "TF_VAR_resource_group_name: ${TF_VAR_resource_group_name}"
+          echo ""
+          echo "=== Configuration Source ==="
+          echo "AZURE_REGION (from vars): ${{ vars.AZURE_REGION || 'not set (using default)' }}"
+          echo "AZURE_RESOURCE_GROUP_NAME (from vars): ${{ vars.AZURE_RESOURCE_GROUP_NAME || 'not set (using default)' }}"
+          echo "CAE_CREATE_NEW (from vars): ${{ vars.CAE_CREATE_NEW || 'not set (using default)' }}"
+          echo "CAE_USE_SHARED (from vars): ${{ vars.CAE_USE_SHARED || 'not set (using default)' }}"
+          echo ""
 
           # Fail early if environment is empty
           if [ -z "${TF_VAR_environment}" ]; then
@@ -132,49 +169,59 @@ jobs:
             exit 1
           fi
 
+      - name: Configure Local Firewall Variable
+        run: |
+          # Override TF_VAR_enable_local_firewall based on ACT environment
+          # ACT is set automatically by the act tool when running locally
+          if [ -n "$ACT" ] && [ "${{ inputs.allow_local_firewall }}" = "true" ]; then
+            echo "TF_VAR_enable_local_firewall=true" >> $GITHUB_ENV
+            echo "✅ Local firewall rule ENABLED (act detected)"
+          else
+            echo "TF_VAR_enable_local_firewall=false" >> $GITHUB_ENV
+            echo "ℹ️ Local firewall rule disabled"
+          fi
+
       - name: Terraform Init
         id: init
         run: terraform init
 
-      - name: Read Configuration from terraform.tfvars
-        id: read_config
+      - name: Build Resource Group ID
+        shell: bash
         run: |
           echo ""
-          echo "=== Reading Configuration from terraform.tfvars ==="
+          echo "=== Building Resource Group ID ==="
           echo ""
 
-          # Extract resource_group_name from terraform.tfvars
-          TF_VAR_resource_group_name=$(grep "^resource_group_name" terraform.tfvars | awk -F'=' '{print $2}' | tr -d ' "')
-          echo "Resource Group (from tfvars): ${TF_VAR_resource_group_name}"
+          echo "Environment: ${TF_VAR_environment}"
+          echo "Region: ${TF_VAR_region}"
+          echo "Resource Group: ${TF_VAR_resource_group_name}"
 
-          # Export for use in constructing resource IDs
-          echo "TF_VAR_resource_group_name=${TF_VAR_resource_group_name}" >> $GITHUB_ENV
-
-          # Extract region from terraform.tfvars
-          TF_VAR_region=$(grep "^region" terraform.tfvars | awk -F'=' '{print $2}' | tr -d ' "')
-          echo "Region (from tfvars): ${TF_VAR_region}"
-
-          # Export for use in Terraform
-          echo "TF_VAR_region=${TF_VAR_region}" >> $GITHUB_ENV
-
-          # Build RG_ID for later use
+          # Build RG_ID for later use in resource imports
           RG_ID="/subscriptions/${TF_VAR_subscription_id}/resourceGroups/${TF_VAR_resource_group_name}"
           echo "Resource Group ID: ${RG_ID}"
           echo "RG_ID=${RG_ID}" >> $GITHUB_ENV
 
       - name: Detect and Import Existing Resources
         id: import
+        shell: bash
         run: |
           set +e  # Don't exit on error, we'll handle errors ourselves
 
-          echo "=== Step 1: Reading CAE Configuration from terraform.tfvars ==="
+          # Check if state file exists - skip imports if this is a fresh deployment
+          if [ ! -f "terraform.tfstate" ] && [ ! -f ".terraform/terraform.tfstate" ]; then
+            echo "ℹ️  No Terraform state file found - this appears to be a fresh deployment"
+            echo "ℹ️  Skipping resource import step (will create all resources from scratch)"
+            exit 0
+          fi
 
-          # Read CAE configuration from terraform.tfvars
-          USE_SHARED_CAE=$(grep "^use_shared_container_environment" terraform.tfvars | awk -F'=' '{print $2}' | tr -d ' ')
-          SHARED_CAE_NAME=$(grep "^shared_container_environment_name" terraform.tfvars | awk -F'=' '{print $2}' | tr -d ' "')
-          CREATE_CAE=$(grep "^create_container_app_environment" terraform.tfvars | awk -F'=' '{print $2}' | tr -d ' ')
+          echo "=== Step 1: Reading CAE Configuration from Environment Variables ==="
 
-          echo "Configuration from terraform.tfvars:"
+          # CAE configuration from environment variables
+          USE_SHARED_CAE="${TF_VAR_use_shared_container_environment}"
+          SHARED_CAE_NAME="${TF_VAR_shared_container_environment_name}"
+          CREATE_CAE="${TF_VAR_create_container_app_environment}"
+
+          echo "Configuration from environment:"
           echo "  use_shared_container_environment: ${USE_SHARED_CAE}"
           echo "  shared_container_environment_name: ${SHARED_CAE_NAME}"
           echo "  create_container_app_environment: ${CREATE_CAE}"
@@ -191,10 +238,9 @@ jobs:
             EXPECTED_CAE_NAME=""  # Don't try to guess
           fi
 
-          # DON'T override create_container_app_environment - trust terraform.tfvars
           echo ""
-          echo "Workflow will NOT override Terraform configuration variables"
-          echo "All CAE settings will be managed by terraform.tfvars"
+          echo "✅ Configuration loaded from environment variables"
+          echo "All CAE settings will be managed by Terraform"
 
           echo ""
           echo "=== Step 2: Importing Existing Azure Resources ==="
@@ -326,8 +372,8 @@ jobs:
             if [ "$USE_SHARED_CAE" = "true" ]; then
               CAE_NAME="${EXPECTED_CAE_NAME}"
             else
-              # Template mode - resolve the template
-              CAE_TEMPLATE=$(grep "^container_app_environment_name_template" terraform.tfvars | awk -F'=' '{print $2}' | tr -d ' "')
+              # Template mode - resolve the template from environment variable
+              CAE_TEMPLATE="${TF_VAR_container_app_environment_name_template}"
               CAE_NAME="${CAE_TEMPLATE/\{environment\}/${TF_VAR_environment}}"
             fi
 
@@ -387,6 +433,7 @@ jobs:
       - name: Capture Terraform Outputs
         id: outputs
         if: inputs.action == 'apply'
+        shell: bash
         run: |
           API_APP_NAME=$(terraform output -raw api_app_service_name 2>/dev/null || echo "")
           REACT_APP_NAME=$(terraform output -raw react_app_service_name 2>/dev/null || echo "")
