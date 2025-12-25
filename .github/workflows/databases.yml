@@ -68,7 +68,7 @@ jobs:
 
       - name: Validate inputs
         run: |
-          echo "Debugging scripts_path: ${{ inputs.scripts_path }}" # Added for debugging
+          echo "::debug::scripts_path input value: ${{ inputs.scripts_path }}"
 
           # Validate environment is dev or prod
           if [[ ! "${{ inputs.environment }}" =~ ^(dev|prod)$ ]]; then
@@ -137,14 +137,7 @@ jobs:
           echo "✅ SQL Server: ${SQL_SERVER}"
           echo "✅ Database: ${DATABASE_NAME}"
 
-          if [ "${{ runner.debug }}" = "1" ]; then
-            echo ""
-            echo "🔍 DEBUG: Environment Variables"
-            echo "   ENVIRONMENT: ${ENVIRONMENT}"
-            echo "   SCRIPTS_PATH: ${SCRIPTS_PATH}"
-            echo "   DATABASE_BASE_NAME: ${DATABASE_BASE_NAME}"
-            echo "   RECREATE_DB: ${RECREATE_DB}"
-          fi
+          echo "::debug::Environment Variables - ENVIRONMENT: ${ENVIRONMENT}, SCRIPTS_PATH: ${SCRIPTS_PATH}, DATABASE_BASE_NAME: ${DATABASE_BASE_NAME}, RECREATE_DB: ${RECREATE_DB}"
 
       - name: List SQL files to apply
         id: list-files
@@ -156,13 +149,7 @@ jobs:
 
           SCRIPTS_DIR="${{ env.SCRIPTS_PATH }}/${{ env.DATABASE_BASE_NAME }}"
 
-          if [ "${{ runner.debug }}" = "1" ]; then
-            echo ""
-            echo "🔍 DEBUG: Script Directory"
-            echo "   Full path: $SCRIPTS_DIR"
-            echo "   Base path: ${{ env.SCRIPTS_PATH }}"
-            echo "   Database: ${{ env.DATABASE_BASE_NAME }}"
-          fi
+          echo "::debug::Script Directory - Full path: $SCRIPTS_DIR, Base path: ${{ env.SCRIPTS_PATH }}, Database: ${{ env.DATABASE_BASE_NAME }}"
 
           # Verify directory exists
           if [ ! -d "$SCRIPTS_DIR" ]; then
@@ -172,12 +159,7 @@ jobs:
 
           cd "$SCRIPTS_DIR"
 
-          if [ "${{ runner.debug }}" = "1" ]; then
-            echo ""
-            echo "🔍 DEBUG: Directory contents"
-            ls -lah
-            echo ""
-          fi
+          echo "::debug::Directory contents:" && ls -lah 2>&1 | while IFS= read -r line; do echo "::debug::  $line"; done
 
           echo "   Files to execute:"
           SQL_FILES=$(find . -maxdepth 1 -type f -name "*.sql" | sed 's|^\./||' | sort)
@@ -275,15 +257,7 @@ jobs:
             echo "📝 Applying [$FILE_NUM/$FILE_COUNT]: $sql_file"
             echo "================================================"
 
-            if [ "${{ runner.debug }}" = "1" ]; then
-              echo "🔍 DEBUG: Execution details"
-              echo "   Server: ${SQL_SERVER}"
-              echo "   Database: ${DATABASE_NAME}"
-              echo "   Script: $sql_file"
-              echo "   Auth: Azure AD (-G flag)"
-              echo "   Timeout: 600 seconds"
-              echo ""
-            fi
+            echo "::debug::Execution details - Server: ${SQL_SERVER}, Database: ${DATABASE_NAME}, Script: $sql_file, Auth: Azure AD (-G flag), Timeout: 600 seconds"
 
             run_sqlcmd "$sql_file"
             exit_code=$?
