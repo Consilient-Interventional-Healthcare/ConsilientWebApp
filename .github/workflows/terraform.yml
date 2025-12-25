@@ -120,10 +120,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
 
-      - name: Login to Azure
+      - name: Login to Azure (OIDC)
+        if: ${{ !env.ACT }}
+        uses: azure/login@v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure (Service Principal for act)
+        if: ${{ env.ACT }}
         shell: bash
         run: |
-          # Parse AZURE_CREDENTIALS JSON and login
+          # Parse AZURE_CREDENTIALS JSON and login (for local testing with act)
           CREDS='${{ secrets.AZURE_CREDENTIALS }}'
 
           # Extract values from JSON
@@ -140,7 +149,7 @@ jobs:
           # Set subscription
           az account set --subscription "${{ secrets.AZURE_SUBSCRIPTION_ID }}"
 
-          echo "✅ Successfully logged in to Azure"
+          echo "✅ Successfully logged in to Azure via service principal"
 
       - name: Terraform Format Check
         id: fmt

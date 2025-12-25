@@ -50,6 +50,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: deploy-database-${{ inputs.environment }}
@@ -123,6 +124,34 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Login to Azure (OIDC)
+        if: ${{ !env.ACT }}
+        uses: azure/login@v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to Azure (Service Principal for act)
+        if: ${{ env.ACT }}
+        shell: bash
+        run: |
+          # Parse AZURE_CREDENTIALS JSON and login (for local testing with act)
+          CREDS='${{ secrets.AZURE_CREDENTIALS }}'
+
+          # Extract values from JSON
+          CLIENT_ID=$(echo "$CREDS" | jq -r '.clientId')
+          CLIENT_SECRET=$(echo "$CREDS" | jq -r '.clientSecret')
+          TENANT_ID=$(echo "$CREDS" | jq -r '.tenantId')
+
+          # Login to Azure using service principal
+          az login --service-principal \
+            -u "$CLIENT_ID" \
+            -p "$CLIENT_SECRET" \
+            --tenant "$TENANT_ID"
+
+          echo "✅ Successfully logged in to Azure via service principal"
 
       - name: Validate required secrets
         run: |
