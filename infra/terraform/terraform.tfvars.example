@@ -1,0 +1,33 @@
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your values
+# NEVER commit terraform.tfvars to source control!
+
+# Azure Configuration
+region              = "canadacentral"  # or your preferred region (eastus, westus, etc.)
+environment         = "dev"            # or "prod"
+resource_group_name = "your-resource-group-name"
+subscription_id     = "00000000-0000-0000-0000-000000000000"  # Your Azure subscription GUID
+
+# SQL Configuration
+sql_admin_username = "sqladmin"        # Your SQL Server admin username
+sql_admin_password = "CHANGE-ME"       # Use a strong password! Store in GitHub Secrets for CI/CD
+
+# Container App Environment Configuration
+create_container_app_environment     = false  # Set to false to use existing CAE (matches workflow default)
+use_shared_container_environment     = true   # Set to true for free tier (single CAE across environments)
+shared_container_environment_name    = "consilient-env"
+
+# Optional: Uncomment to override defaults (defined in variables.tf)
+# project_name = "consilient"
+# grafana_major_version = 11
+# loki_retention = "30d"
+# loki_cpu_request = 0.5
+# loki_cpu_limit = 1.0
+# loki_memory_request = "1.0Gi"
+# loki_memory_limit = "2.0Gi"
+
+# Security Notes:
+# - This file is ignored by git (.gitignore line 414)
+# - For local development: Copy this to terraform.tfvars and fill in your values
+# - For CI/CD: Variables are set via GitHub Actions environment variables (TF_VAR_*)
+# - NEVER commit terraform.tfvars with real secrets
