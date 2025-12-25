@@ -31,9 +31,9 @@ concurrency:
 
 env:
   SQL_PASSWORD: ${{ secrets.SQL_SA_PASSWORD }}
-  SQL_SERVER_VERSION: "2022-latest"
-  SCHEMASPY_VERSION: "6.2.4"
-  JDBC_VERSION: "12.4.2.jre11"
+  SQL_SERVER_VERSION: ${{ vars.SQL_SERVER_VERSION || '2022-latest' }}
+  SCHEMASPY_VERSION: ${{ vars.SCHEMASPY_VERSION || '6.2.4' }}
+  JDBC_VERSION: ${{ vars.JDBC_DRIVER_VERSION || '12.4.2.jre11' }}
   # DB_NAME is set conditionally in the job (see below)
   WORKFLOW_TIMEOUT: 15
   SCHEMAS_TO_EXCLUDE: ""

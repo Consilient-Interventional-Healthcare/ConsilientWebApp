@@ -109,7 +109,7 @@ jobs:
       fail-fast: false
 
     env:
-      SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+      SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN || secrets.AZURE_SQL_SERVER }}
       RECREATE_DB: ${{ inputs.recreate_database_objects || 'false' }}
       ENVIRONMENT: ${{ inputs.environment }}
       SCRIPTS_PATH: ${{ inputs.scripts_path }}

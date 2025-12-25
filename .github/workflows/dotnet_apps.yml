@@ -46,11 +46,11 @@ on:
         default: false
 
 env:
-  IMAGE_NAME: consilientapi
+  IMAGE_NAME: ${{ vars.API_IMAGE_NAME || 'consilientapi' }}
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
-  # Three-tier fallback: input > secret > fail
+  # Three-tier fallback: input > variable > secret > fail
   API_APP_NAME: ${{ inputs.api_app_name || secrets.AZURE_API_WEBAPP_NAME }}
-  ACR_REGISTRY: ${{ inputs.acr_registry || secrets.ACR_REGISTRY }}
+  ACR_REGISTRY: ${{ inputs.acr_registry || vars.ACR_REGISTRY_URL || secrets.ACR_REGISTRY }}
   RESOURCE_GROUP: ${{ inputs.resource_group }}
 
 permissions:

@@ -28,7 +28,7 @@ permissions:
   packages: write
 
 env:
-  REGISTRY: ghcr.io
+  REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'ghcr.io' }}
   IMAGE_NAME: ${{ github.repository }}/actions-runner
 
 jobs:

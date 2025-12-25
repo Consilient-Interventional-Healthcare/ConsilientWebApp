@@ -84,7 +84,7 @@ jobs:
       # Terraform variables - all passed via environment to avoid committing .tfvars with secrets
       TF_VAR_environment: ${{ inputs.environment }}
       TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
+      TF_VAR_sql_admin_username: ${{ vars.SQL_ADMIN_USERNAME || 'sqladmin' }}
       TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
       TF_VAR_enable_local_firewall: ${{ inputs.allow_local_firewall }}
       # Non-sensitive configuration variables (from GitHub Variables)
