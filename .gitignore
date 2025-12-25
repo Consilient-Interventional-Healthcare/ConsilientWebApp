@@ -426,3 +426,4 @@ appsettings.Development.json
 
 /.claude
 /infra/terraform/tfplan
+/infra/act/.env
