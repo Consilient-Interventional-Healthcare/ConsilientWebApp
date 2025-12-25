@@ -1,0 +1,98 @@
+name: 'Execute SQL Scripts with Azure AD Auth'
+description: 'Helper action to execute SQL scripts against Azure SQL Database with Azure AD authentication'
+
+inputs:
+  sql-server:
+    description: 'SQL Server FQDN (e.g., server.database.windows.net)'
+    required: true
+  database-name:
+    description: 'Database name to target'
+    required: true
+  script-file:
+    description: 'Path to SQL script file to execute'
+    required: true
+  timeout:
+    description: 'Command timeout in seconds'
+    required: false
+    default: '600'
+  fail-on-error:
+    description: 'Whether to fail the workflow on SQL errors'
+    required: false
+    default: 'true'
+
+outputs:
+  exit-code:
+    description: 'Exit code from sqlcmd execution'
+    value: ${{ steps.execute.outputs.exit-code }}
+  error-message:
+    description: 'Error message if execution failed'
+    value: ${{ steps.execute.outputs.error-message }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Execute SQL script
+      id: execute
+      shell: bash
+      run: |
+        set +e  # Don't exit on error, we'll handle it ourselves
+
+        SCRIPT_FILE="${{ inputs.script-file }}"
+        TIMEOUT="${{ inputs.timeout }}"
+        SQL_SERVER="${{ inputs.sql-server }}"
+        DATABASE_NAME="${{ inputs.database-name }}"
+
+        # Validate script exists
+        if [ ! -f "$SCRIPT_FILE" ]; then
+          echo "❌ ERROR: SQL script not found: $SCRIPT_FILE"
+          echo "exit-code=1" >> $GITHUB_OUTPUT
+          echo "error-message=Script file not found: $SCRIPT_FILE" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        # Execute with timeout
+        timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
+          -d "$DATABASE_NAME" \
+          -G \
+          -i "$SCRIPT_FILE" \
+          -b 2>sqlcmd_error.log
+
+        EXIT_CODE=$?
+
+        # Check result
+        if [ $EXIT_CODE -eq 0 ]; then
+          echo "✅ Script executed successfully: $(basename $SCRIPT_FILE)"
+          echo "exit-code=0" >> $GITHUB_OUTPUT
+          echo "error-message=" >> $GITHUB_OUTPUT
+        elif [ $EXIT_CODE -eq 124 ]; then
+          ERROR_MSG="Script execution timed out after $TIMEOUT seconds"
+          echo "❌ $ERROR_MSG"
+          echo "exit-code=124" >> $GITHUB_OUTPUT
+          echo "error-message=$ERROR_MSG" >> $GITHUB_OUTPUT
+
+          if [ -f sqlcmd_error.log ]; then
+            echo "--- Error output ---"
+            cat sqlcmd_error.log
+          fi
+
+          if [ "${{ inputs.fail-on-error }}" = "true" ]; then
+            exit 1
+          fi
+        else
+          ERROR_MSG="Script execution failed with exit code $EXIT_CODE"
+          echo "❌ $ERROR_MSG"
+          echo "exit-code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          echo "error-message=$ERROR_MSG" >> $GITHUB_OUTPUT
+
+          if [ -f sqlcmd_error.log ]; then
+            echo "--- Error output ---"
+            cat sqlcmd_error.log
+          fi
+
+          if [ "${{ inputs.fail-on-error }}" = "true" ]; then
+            exit 1
+          fi
+        fi
+
+        # Cleanup
+        rm -f sqlcmd_error.log
