@@ -7,11 +7,11 @@ on:
         description: 'Environment to deploy to (dev or prod)'
         required: true
         type: string
-      scripts_path:
-        description: 'Path to database scripts (relative to repo root)'
+      databases:
+        description: 'JSON array of database directory names (from centralized discovery)'
         required: true
         type: string
-      recreate_database_objects:
+      recreate-database-objects:
         description: 'Recreate ALL database objects (DELETE ALL DATA - dev only)'
         required: false
         type: boolean
@@ -20,6 +20,18 @@ on:
       AZURE_SQL_SERVER:
         required: true
         description: 'Azure SQL Server FQDN (e.g., server.database.windows.net)'
+      AZURE_CLIENT_ID:
+        required: true
+        description: 'Azure Service Principal Client ID for OIDC authentication'
+      AZURE_TENANT_ID:
+        required: true
+        description: 'Azure Tenant ID for OIDC authentication'
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+        description: 'Azure Subscription ID for OIDC authentication'
+      AZURE_CREDENTIALS:
+        required: false
+        description: 'Azure credentials JSON for local testing with act (fallback)'
     outputs:
       deployment_status:
         description: 'Overall deployment status (success, failure, skipped)'
@@ -38,11 +50,7 @@ on:
           - dev
           - prod
         default: 'dev'
-      scripts_path:
-        description: 'Path to database scripts'
-        required: true
-        type: string
-      recreate_database_objects:
+      recreate-database-objects:
         description: 'Recreate ALL database objects (DELETE ALL DATA - dev only)'
         required: false
         type: boolean
@@ -58,68 +66,42 @@ concurrency:
 
 jobs:
 
-  discover-databases:
-    name: Discover Databases
+  validate-inputs:
+    name: Validate Inputs
     runs-on: ubuntu-latest
-    outputs:
-      databases: ${{ steps.find-databases.outputs.databases }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 1
 
-      - name: Validate inputs
-        run: |
-          echo "::debug::scripts_path input value: ${{ inputs.scripts_path }}"
-
-          # Validate environment is dev or prod
-          if [[ ! "${{ inputs.environment }}" =~ ^(dev|prod)$ ]]; then
-            echo "❌ ERROR: Invalid environment '${{ inputs.environment }}'"
-            echo "Valid values are: dev, prod"
-            exit 1
-          fi
-
-          # Validate scripts_path exists
-          if [ ! -d "${{ inputs.scripts_path }}" ]; then
-            echo "❌ ERROR: Scripts path not found: ${{ inputs.scripts_path }}"
-            exit 1
-          fi
-
-          echo "✅ Inputs validated successfully"
-          echo "   Environment: ${{ inputs.environment }}"
-          echo "   Scripts path: ${{ inputs.scripts_path }}"
-
-      - name: Find database directories
-        id: find-databases
-        run: |
-          cd "${{ inputs.scripts_path }}"
-
-          # Use a portable approach that works on both Alpine and Ubuntu
-          databases=$(find . -mindepth 1 -maxdepth 1 -type d | sed 's|^\./||' | sort | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          echo "databases=$databases" >> $GITHUB_OUTPUT
-          echo "Found databases: $databases"
+      - name: Validate environment input
+        uses: ./.github/actions/validate-inputs
+        with:
+          environment: ${{ inputs.environment }}
 
   deploy-database:
-
     name: Deploy ${{ matrix.database }} (${{ inputs.environment }})
+    needs: validate-inputs
     runs-on: ubuntu-latest
-    needs: [discover-databases]
-    if: needs.discover-databases.outputs.databases != '[]'
+    if: inputs.databases != '[]'
     strategy:
       matrix:
-        database: ${{ fromJson(needs.discover-databases.outputs.databases) }}
+        database: ${{ fromJson(inputs.databases) }}
       fail-fast: false
 
     env:
       SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN || secrets.AZURE_SQL_SERVER }}
-      RECREATE_DB: ${{ inputs.recreate_database_objects || 'false' }}
+      RECREATE_DB: ${{ inputs.recreate-database-objects || 'false' }}
       ENVIRONMENT: ${{ inputs.environment }}
-      SCRIPTS_PATH: ${{ inputs.scripts_path }}
       DATABASE_BASE_NAME: ${{ matrix.database }}
       DATABASE_NAME: ${{ matrix.database }}_${{ inputs.environment }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.2.2
+        with:
+          fetch-depth: 1
 
       - name: Login to Azure (OIDC + act fallback)
         uses: ./.github/actions/azure-login
@@ -142,7 +124,7 @@ jobs:
           echo "✅ SQL Server: ${SQL_SERVER}"
           echo "✅ Database: ${DATABASE_NAME}"
 
-          echo "::debug::Environment Variables - ENVIRONMENT: ${ENVIRONMENT}, SCRIPTS_PATH: ${SCRIPTS_PATH}, DATABASE_BASE_NAME: ${DATABASE_BASE_NAME}, RECREATE_DB: ${RECREATE_DB}"
+          echo "::debug::Environment Variables - ENVIRONMENT: ${ENVIRONMENT}, DATABASE_BASE_NAME: ${DATABASE_BASE_NAME}, RECREATE_DB: ${RECREATE_DB}"
 
       - name: List SQL files to apply
         id: list-files
@@ -152,9 +134,9 @@ jobs:
           echo "📄 SQL files in ${{ env.DATABASE_BASE_NAME }} directory:"
           echo "   Target database: ${{ env.DATABASE_NAME }}"
 
-          SCRIPTS_DIR="${{ env.SCRIPTS_PATH }}/${{ env.DATABASE_BASE_NAME }}"
+          SCRIPTS_DIR="${{ env.DATABASE_BASE_NAME }}"
 
-          echo "::debug::Script Directory - Full path: $SCRIPTS_DIR, Base path: ${{ env.SCRIPTS_PATH }}, Database: ${{ env.DATABASE_BASE_NAME }}"
+          echo "::debug::Script Directory - Full path: $SCRIPTS_DIR, Database: ${{ env.DATABASE_BASE_NAME }}"
 
           # Verify directory exists
           if [ ! -d "$SCRIPTS_DIR" ]; then
@@ -190,24 +172,13 @@ jobs:
 
       - name: Recreate all database objects (dev only)
         if: env.RECREATE_DB == 'true' && env.ENVIRONMENT == 'dev'
-        run: |
-          # Validate required SQL script exists
-          if [ ! -f "infra/db/drop_all_objects.sql" ]; then
-            echo "❌ Required file not found: infra/db/drop_all_objects.sql"
-            exit 1
-          fi
-
-          echo "Dropping all user objects in ${{ env.DATABASE_NAME }} (dev only)"
-          timeout 300 sqlcmd -S "${SQL_SERVER}" -d "${DATABASE_NAME}" -G -i "infra/db/drop_all_objects.sql" -b 2>drop_error.log
-
-          exit_code=$?
-          if [ $exit_code -ne 0 ]; then
-            echo "❌ Failed to drop database objects (exit code: $exit_code)"
-            echo "--- Error output ---"
-            cat drop_error.log 2>/dev/null || echo "No error log available"
-            exit 1
-          fi
-          echo "✅ Database objects dropped successfully"
+        uses: ./.github/actions/sqlcmd-execute
+        with:
+          sql-server: ${{ env.SQL_SERVER }}
+          database-name: ${{ env.DATABASE_NAME }}
+          script-file: "infra/db/drop_all_objects.sql"
+          timeout: '300'
+          fail-on-error: 'true'
 
       - name: Apply SQL scripts
         shell: bash
@@ -225,7 +196,7 @@ jobs:
               -b 2>sqlcmd_error.log || return $?
           }
 
-          SCRIPTS_DIR="${{ env.SCRIPTS_PATH }}/${{ env.DATABASE_BASE_NAME }}"
+          SCRIPTS_DIR="${{ env.DATABASE_BASE_NAME }}"
 
           # Verify directory exists
           if [ ! -d "$SCRIPTS_DIR" ]; then
@@ -339,7 +310,7 @@ jobs:
   notify:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [discover-databases, deploy-database]
+    needs: [deploy-database]
     if: always()
     outputs:
       status: ${{ steps.set-outputs.outputs.status }}
@@ -348,7 +319,7 @@ jobs:
       - name: Determine deployment status
         id: set-outputs
         run: |
-          DATABASES='${{ needs.discover-databases.outputs.databases }}'
+          DATABASES='${{ inputs.databases }}'
           DEPLOY_RESULT='${{ needs.deploy-database.result }}'
 
           # Determine overall status
@@ -368,14 +339,13 @@ jobs:
       - name: Create deployment summary
         run: |
           ENVIRONMENT="${{ inputs.environment }}"
-          DATABASES='${{ needs.discover-databases.outputs.databases }}'
+          DATABASES='${{ inputs.databases }}'
           DEPLOY_RESULT='${{ needs.deploy-database.result }}'
 
           echo "### Database Deployment Summary 🗄️" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment**: $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
-          echo "- **Recreate Database Objects**: ${{ inputs.recreate_database_objects || false }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Scripts Path**: ${{ inputs.scripts_path }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Recreate Database Objects**: ${{ inputs.recreate-database-objects || false }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Base Names**: $DATABASES" >> $GITHUB_STEP_SUMMARY
           echo "- **SQL Script Deployment**: $DEPLOY_RESULT" >> $GITHUB_STEP_SUMMARY
           if [ "${{ github.event_name }}" != "workflow_call" ]; then
@@ -393,7 +363,7 @@ jobs:
               echo "- \`${db}_${ENVIRONMENT}\`" >> $GITHUB_STEP_SUMMARY
             done < <(echo "$DATABASES" | jq -r '.[]')
           else
-            echo "- None (no directories found in ${{ inputs.scripts_path }})" >> $GITHUB_STEP_SUMMARY
+            echo "- None (no databases provided)" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -403,7 +373,7 @@ jobs:
           elif [ "$DEPLOY_RESULT" == "failure" ]; then
             echo "❌ **SQL script deployment failed. Check the logs above.**" >> $GITHUB_STEP_SUMMARY
           elif [ "$DATABASES" == "[]" ]; then
-            echo "⚠️  **No databases found in ${{ inputs.scripts_path }}**" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️  **No databases provided for deployment**" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️  **Deployment status - Scripts: $DEPLOY_RESULT**" >> $GITHUB_STEP_SUMMARY
           fi

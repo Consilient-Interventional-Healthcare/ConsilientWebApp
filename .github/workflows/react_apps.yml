@@ -39,14 +39,33 @@ on:
         required: false
         type: string
         default: ''
-      skip_health_checks:
+      skip-health-checks:
         description: 'Skip health checks after deployment'
         required: false
         type: boolean
         default: false
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+        description: 'Azure Service Principal Client ID for OIDC authentication'
+      AZURE_TENANT_ID:
+        required: true
+        description: 'Azure Tenant ID for OIDC authentication'
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+        description: 'Azure Subscription ID for OIDC authentication'
+      AZURE_CREDENTIALS:
+        required: false
+        description: 'Azure credentials JSON for local testing with act (fallback)'
+      AZURE_WEBAPP_NAME:
+        required: false
+        description: 'Azure Web App name (legacy fallback, prefer workflow input)'
+      ACR_REGISTRY:
+        required: false
+        description: 'Azure Container Registry URL (legacy fallback, prefer variable)'
 
 env:
-  IMAGE_NAME: ${{ vars.REACT_IMAGE_NAME || 'consilientwebapp2' }}
+  IMAGE_NAME: ${{ vars.REACT_IMAGE_NAME }}
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
   # Three-tier fallback: input > variable > secret > fail
   REACT_APP_NAME: ${{ inputs.react_app_name || secrets.AZURE_WEBAPP_NAME }}
@@ -65,7 +84,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
+      image: ${{ vars.ACTIONS_RUNNER_IMAGE || format('ghcr.io/{0}/consilientwebapp/actions-runner:v1.0.0', github.repository_owner) }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -75,7 +94,14 @@ jobs:
       previous_image: ${{ steps.capture_previous.outputs.image }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: Validate environment input
+        uses: ./.github/actions/validate-inputs
+        with:
+          environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
 
       - name: Validate Deployment Configuration
         run: |
@@ -101,7 +127,7 @@ jobs:
           echo "Configuration validation passed!"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@5fdf2e3b7e1dd9c9cf7bc340b0d94aa1db94e54d  # v3.2.0
 
       - name: Login to Azure (OIDC + act fallback)
         uses: ./.github/actions/azure-login
@@ -131,7 +157,7 @@ jobs:
           fi
 
       - name: Build and push Docker image (Consilient.WebApp2)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@4f58ea79222b3fa987ab5d21289c277378ad3fa0  # v5.1.0
         with:
           context: ./src/Consilient.WebApp2
           file: ./src/Consilient.WebApp2/Dockerfile
@@ -139,9 +165,11 @@ jobs:
           tags: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
             BUILD_CONFIGURATION=Release
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy image to Azure Web App for Containers
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@a26c2f17e3d2b67fb47ed504febc04e8db822407  # v3.0.0
         with:
           app-name: ${{ env.REACT_APP_NAME }}
           images: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
@@ -150,83 +178,34 @@ jobs:
     name: Health Check React App
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/your-github-username/consilientwebapp/actions-runner:latest
+      image: ${{ vars.ACTIONS_RUNNER_IMAGE || format('ghcr.io/{0}/consilientwebapp/actions-runner:v1.0.0', github.repository_owner) }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     needs: build-and-deploy
-    if: ${{ !inputs.skip_health_checks }}
+    if: ${{ !inputs.skip-health-checks }}
     environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Wait for Deployment
-        run: |
-          echo "Waiting 45 seconds for React app to fully initialize..."
-          sleep 45
-
-      - name: Run Lighthouse CI
-        id: lighthouse
-        uses: treosh/lighthouse-ci-action@v10
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.2.2
         with:
-          urls: |
-            https://${{ needs.build-and-deploy.outputs.react_app_name }}.azurewebsites.net
-          temporaryPublicStorage: true
-          runs: 3
-        env:
-          LHCI_ASSERT__ASSERTIONS__CATEGORIES_PERFORMANCE: '["error", {"minScore": 0.7}]'
-          LHCI_ASSERT__ASSERTIONS__CATEGORIES_ACCESSIBILITY: '["error", {"minScore": 0.9}]'
-          LHCI_ASSERT__ASSERTIONS__CATEGORIES_BEST_PRACTICES: '["warn", {"minScore": 0.7}]'
-          LHCI_ASSERT__ASSERTIONS__CATEGORIES_SEO: '["warn", {"minScore": 0.7}]'
+          fetch-depth: 1
 
-      - name: Login to Azure for Rollback (OIDC + act fallback)
-        if: failure()
-        uses: ./.github/actions/azure-login
+      - name: Lighthouse Health Check with Rollback
+        uses: ./.github/actions/health-check-lighthouse
         with:
+          app-url: https://${{ needs.build-and-deploy.outputs.react_app_name }}.azurewebsites.net
+          app-name: ${{ needs.build-and-deploy.outputs.react_app_name }}
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
-
-      - name: Rollback Deployment
-        if: failure()
-        env:
-          RESOURCE_GROUP: ${{ inputs.resource_group }}
-          APP_NAME: ${{ needs.build-and-deploy.outputs.react_app_name }}
-          PREVIOUS_IMAGE: ${{ needs.build-and-deploy.outputs.previous_image }}
-          ACR_REGISTRY: ${{ inputs.acr_registry || secrets.ACR_REGISTRY }}
-        run: |
-          echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
-          echo "Reason: Lighthouse checks failed"
-          echo "App Name: ${APP_NAME}"
-          echo "Resource Group: ${RESOURCE_GROUP}"
-          echo "Previous Image: ${PREVIOUS_IMAGE}"
-
-          if [ -z "$PREVIOUS_IMAGE" ]; then
-            echo "WARNING: No previous image - cannot rollback"
-            exit 1
-          fi
-
-          echo "Rolling back container image..."
-          az webapp config container set \
-            --name "$APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --docker-custom-image-name "$PREVIOUS_IMAGE" \
-            --docker-registry-server-url "https://${ACR_REGISTRY}"
-
-          echo "Restarting application..."
-          az webapp restart \
-            --name "$APP_NAME" \
-            --resource-group "$RESOURCE_GROUP"
-
-          sleep 20
-
-          CURRENT_IMAGE=$(az webapp config container show \
-            --name "$APP_NAME" \
-            --resource-group "$RESOURCE_GROUP" \
-            --query '[0].value' -o tsv)
-
-          echo "Current image after rollback: ${CURRENT_IMAGE}"
-          echo "=== ROLLBACK COMPLETE ==="
-          exit 1
+          resource-group: ${{ inputs.resource_group }}
+          previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
+          acr-registry: ${{ inputs.acr_registry || secrets.ACR_REGISTRY }}
+          wait-seconds: '45'
+          runs: '3'
+          min-perf-score: '0.7'
+          min-a11y-score: '0.9'
+          min-bp-score: '0.7'
+          min-seo-score: '0.7'

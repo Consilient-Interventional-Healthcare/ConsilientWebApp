@@ -1,23 +1,22 @@
 name: "05 - Generate DB Docs"
 
+# Runtime Dependencies
+# This workflow requires the following tools to be available in the runner environment:
+# - SchemaSpy JAR: /opt/schemaspy/schemaspy.jar (version controlled via SCHEMASPY_VERSION)
+# - JDBC Driver: /opt/schemaspy/mssql-jdbc.jar (SQL Server driver)
+# - Java: 17+ (for running SchemaSpy)
+# - sqlcmd: Azure SQL command-line tool (for schema discovery)
+# - jq: JSON query tool (for parsing JSON input)
+# Note: These are typically pre-installed in GitHub Actions Ubuntu runners
+
 on:
-  push:
-    branches:
-      - main
-      - login
-    paths:
-      - "src/Databases/**/*.sql" # This path remains static for push triggers.
-      - ".github/workflows/docs_db.yml"
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      db_name:
-        description: 'Database name to document'
-        required: true
+      database-configs:
+        description: 'JSON array of database config objects (from centralized discovery in main.yml)'
+        required: false
         type: string
-      db_scripts_path: # New input for the database scripts root path
-        description: 'Root directory for database scripts'
-        required: true
-        type: string
+        default: '[]'
 
 permissions:
   contents: read
@@ -26,293 +25,300 @@ permissions:
   # id-token: write
 
 concurrency:
-  group: "pages"
+  group: generate-db-docs
   cancel-in-progress: false
 
 env:
-  SQL_PASSWORD: ${{ secrets.SQL_SA_PASSWORD }}
-  SQL_SERVER_VERSION: ${{ vars.SQL_SERVER_VERSION || '2022-latest' }}
+  SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
   SCHEMASPY_VERSION: ${{ vars.SCHEMASPY_VERSION || '6.2.4' }}
   JDBC_VERSION: ${{ vars.JDBC_DRIVER_VERSION || '12.4.2.jre11' }}
-  # DB_NAME is set conditionally in the job (see below)
-  WORKFLOW_TIMEOUT: 15
-  SCHEMAS_TO_EXCLUDE: ""
-  GENERATE_COMBINED_DOCS: "true"
+  SCHEMASPY_TIMEOUT_SECONDS: 600
+  SCHEMA_DISCOVERY_TIMEOUT_SECONDS: 60
 
 jobs:
-  generate-docs:
+  extract-databases:
+    name: Extract Database Names
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    env:
-      # Set DB_NAME from workflow_dispatch input if present, else fallback to default for push
-      DB_NAME: ${{ inputs.db_name }}
-      # Set DB_SCRIPTS_ROOT from workflow_dispatch input
-      DB_SCRIPTS_ROOT: ${{ inputs.db_scripts_path }}
-
+    outputs:
+      databases: ${{ steps.extract.outputs.databases }}
     steps:
-      - name: Validate secrets and db_name input
-        run: |
-          if [ -z "${{ env.SQL_PASSWORD }}" ]; then
-            echo "❌ ERROR: SQL_SA_PASSWORD secret is not configured"
-            exit 1
-          fi
-
-          if [ -z "${{ env.DB_NAME }}" ]; then
-            echo "❌ ERROR: db_name input is required and was not provided."
-            exit 1
-          fi
-
-          echo "✅ Required secrets and db_name are configured"
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1 # Only need latest commit for metadata
-
-      - name: Verify SQL files exist
+      - name: Extract database names from config object
+        id: extract
         run: |
           set -e
-          echo "🔍 Checking for SQL migration files..."
-          if [ ! -d "${{ env.DB_SCRIPTS_ROOT }}" ]; then
-            echo "❌ Directory ${{ env.DB_SCRIPTS_ROOT }} not found"
-            echo "📂 Repository structure:"
-            ls -la
+
+          CONFIGS='${{ inputs.database-configs }}'
+
+          # Extract database names (keys) from the config object
+          DB_NAMES=$(echo "$CONFIGS" | jq -c 'keys')
+          echo "databases=$DB_NAMES" >> $GITHUB_OUTPUT
+
+          echo "✅ Extracted database names: $DB_NAMES"
+
+  validate-prerequisites:
+    name: Validate Workflow Prerequisites
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate configuration
+        run: |
+          set -e
+
+          echo "🔍 Validating workflow prerequisites..."
+          echo ""
+
+          # Check SQL_SERVER is configured
+          if [ -z "${{ env.SQL_SERVER }}" ]; then
+            echo "❌ ERROR: AZURE_SQL_SERVER secret not configured"
+            echo ""
+            echo "This secret must be set in your repository settings or GitHub organization."
+            echo "It should contain the FQDN of your Azure SQL Server (e.g., server.database.windows.net)"
             exit 1
           fi
 
-          echo "✅ Found ${{ env.DB_SCRIPTS_ROOT }} directory"
-          SQL_FILES=$(find ${{ env.DB_SCRIPTS_ROOT }} -name "*.sql" -type f)
-          if [ -z "$SQL_FILES" ]; then
-            echo "❌ No SQL files found in ${{ env.DB_SCRIPTS_ROOT }}"
+          # Check required CLI tools are available
+          REQUIRED_TOOLS=("sqlcmd" "jq" "java")
+          for tool in "${REQUIRED_TOOLS[@]}"; do
+            if ! command -v "$tool" &> /dev/null; then
+              echo "❌ ERROR: Required tool not found: $tool"
+              exit 1
+            fi
+          done
+
+          echo "✅ SQL Server configured: ${{ env.SQL_SERVER }}"
+          echo "✅ All required CLI tools available (sqlcmd, jq, java)"
+          echo ""
+          echo "🎯 Prerequisites validation passed"
+
+  generate-db-docs:
+    name: Generate Docs for ${{ matrix.database }}
+    needs: [extract-databases, validate-prerequisites]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        database: ${{ fromJson(needs.extract-databases.outputs.databases) }}
+      fail-fast: false
+
+    env:
+      DATABASE_NAME: ${{ matrix.database }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: Validate database name
+        run: |
+          set -e
+
+          DATABASE_NAME="${{ matrix.database }}"
+
+          # Validate database name matches safe pattern (alphanumeric, underscore, hyphen only)
+          if [[ ! "$DATABASE_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "❌ ERROR: Invalid database name: '$DATABASE_NAME'"
+            echo "Database names must contain only alphanumeric characters, underscores, and hyphens."
             exit 1
           fi
 
-          echo "Found SQL files:"
-          echo "$SQL_FILES"
+          echo "✅ Database name validated: $DATABASE_NAME"
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Parse database configuration
+        id: parse-config
+        run: |
+          set -e
+
+          echo "📋 Parsing configuration for ${{ matrix.database }}"
+
+          SCHEMAS_TO_EXCLUDE=""
+
+          # Extract config file path for this database (from centralized discovery)
+          CONFIG_DATA=$(echo '${{ inputs.database-configs }}' | jq -r '.["${{ matrix.database }}"]')
+
+          if [ "$CONFIG_DATA" != "null" ] && [ -n "$CONFIG_DATA" ]; then
+            CONFIG_PATH=$(echo "$CONFIG_DATA" | jq -r '.config_path')
+
+            if [ -f "$CONFIG_PATH" ]; then
+              CONFIG_FILE="$CONFIG_PATH"
+              echo "✅ Found config: $CONFIG_FILE"
+
+              # Install yq if not available
+              if ! command -v yq &> /dev/null; then
+                echo "📦 Installing yq..."
+                sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+                sudo chmod +x /usr/local/bin/yq
+              fi
+
+              # Parse schemas to exclude
+              EXCLUDE_LIST=$(yq eval '.schemas.exclude // []' "$CONFIG_FILE" | yq eval '.[]' - 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+              if [ -n "$EXCLUDE_LIST" ]; then
+                SCHEMAS_TO_EXCLUDE="$EXCLUDE_LIST"
+                echo "🚫 Schemas to exclude: $SCHEMAS_TO_EXCLUDE"
+              fi
+            else
+              echo "⚠️  Config file not found: $CONFIG_FILE - using defaults"
+            fi
+          else
+            echo "⚠️  No config data found for ${{ matrix.database }} - using defaults"
+          fi
+
+          # Export exclusions for use in subsequent steps
+          echo "SCHEMAS_TO_EXCLUDE=$SCHEMAS_TO_EXCLUDE" >> $GITHUB_ENV
+
+          echo "✅ Configuration parsing complete"
+
+      - name: Login to Azure (OIDC + act fallback)
+        uses: ./.github/actions/azure-login
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
+
+      - name: Discover database schemas
+        id: discover-schemas
+        run: |
+          set -e
+          set -o pipefail
+
+          echo "🔍 Discovering schemas in ${{ env.DATABASE_NAME }}..."
+
+          # Path to discovery SQL script
+          DISCOVERY_SQL="infra/db/list_user_schemas.sql"
+
+          if [ ! -f "$DISCOVERY_SQL" ]; then
+            echo "❌ ERROR: Schema discovery script not found: $DISCOVERY_SQL"
+            exit 1
+          fi
+
+          # Execute query using sqlcmd with Azure AD authentication
+          DISCOVERED_SCHEMAS=$(timeout ${{ env.SCHEMA_DISCOVERY_TIMEOUT_SECONDS }} sqlcmd \
+            -S "${{ env.SQL_SERVER }}" \
+            -d "${{ env.DATABASE_NAME }}" \
+            -G \
+            -i "$DISCOVERY_SQL" \
+            -h -1 \
+            -W \
+            -b 2>schema_discovery_error.log || echo "")
+
+          exit_code=$?
+
+          # Handle discovery failures
+          if [ $exit_code -ne 0 ]; then
+            echo "❌ Schema discovery failed with exit code $exit_code"
+            echo "--- Error output ---"
+            cat schema_discovery_error.log 2>/dev/null || echo "No error log available"
+            echo "-------------------"
+            exit 1
+          fi
+
+          # Clean output (remove empty lines and trim whitespace)
+          DISCOVERED_SCHEMAS=$(echo "$DISCOVERED_SCHEMAS" | grep -v "^[[:space:]]*$" | xargs)
+
+          # Validate at least one schema was found
+          if [ -z "$DISCOVERED_SCHEMAS" ]; then
+            echo "⚠️  WARNING: No user schemas discovered in database ${{ env.DATABASE_NAME }}"
+            echo "This could indicate:"
+            echo "  1. The database has no user-created schemas"
+            echo "  2. Authentication/permission issues"
+            echo "  3. The database is empty or newly created"
+            echo ""
+            echo "Skipping documentation generation for this database."
+            echo "SKIP_DOCUMENTATION=true" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "✅ Discovered schemas: $DISCOVERED_SCHEMAS"
+          echo "DISCOVERED_SCHEMAS=$DISCOVERED_SCHEMAS" >> $GITHUB_ENV
+
+          # Count schemas
+          SCHEMA_COUNT=$(echo "$DISCOVERED_SCHEMAS" | wc -w)
+          echo "📊 Total schemas found: $SCHEMA_COUNT"
+
+      - name: Initialize and validate configuration
+        run: |
+          set -e
+
+          # Check if documentation should be skipped
+          if [ "${{ env.SKIP_DOCUMENTATION }}" = "true" ]; then
+            echo "⏭️  Skipping documentation - no schemas to document"
+            exit 0
+          fi
+
+          # Use discovered schemas from previous step
+          SCHEMAS_TO_DOC="${{ env.DISCOVERED_SCHEMAS }}"
+
+          # Validate we have schemas to document
+          if [ -z "$SCHEMAS_TO_DOC" ]; then
+            echo "❌ ERROR: No schemas available for documentation"
+            echo "This is unexpected - the discovery step should have caught this."
+            exit 1
+          fi
+
+          # Filter out excluded schemas if provided
+          if [ -n "${{ env.SCHEMAS_TO_EXCLUDE }}" ]; then
+            echo "📋 Applying schema exclusions: ${{ env.SCHEMAS_TO_EXCLUDE }}"
+
+            # Convert comma-separated exclusions to array
+            IFS=',' read -ra EXCLUDE_ARRAY <<< "${{ env.SCHEMAS_TO_EXCLUDE }}"
+
+            # Build exclusion pattern
+            EXCLUDE_PATTERN=""
+            for exclude_schema in "${EXCLUDE_ARRAY[@]}"; do
+              exclude_schema=$(echo "$exclude_schema" | xargs)
+              [ -z "$exclude_schema" ] && continue
+              EXCLUDE_PATTERN="$EXCLUDE_PATTERN|$exclude_schema"
+            done
+
+            # Remove leading pipe
+            EXCLUDE_PATTERN="${EXCLUDE_PATTERN#|}"
+
+            # Filter schemas (case-insensitive) only if pattern is not empty
+            if [ -n "$EXCLUDE_PATTERN" ]; then
+              FILTERED_SCHEMAS=""
+              for schema in $SCHEMAS_TO_DOC; do
+                if ! echo "$schema" | grep -iE "^($EXCLUDE_PATTERN)$" > /dev/null; then
+                  FILTERED_SCHEMAS="$FILTERED_SCHEMAS $schema"
+                else
+                  echo "🚫 Excluding schema: $schema"
+                fi
+              done
+            else
+              # No patterns to exclude, keep all schemas
+              FILTERED_SCHEMAS="$SCHEMAS_TO_DOC"
+            fi
+
+            SCHEMAS_TO_DOC="$(echo $FILTERED_SCHEMAS | xargs)"
+
+            # Check if all schemas were excluded
+            if [ -z "$SCHEMAS_TO_DOC" ]; then
+              echo "⚠️  WARNING: All discovered schemas were excluded"
+              echo "Discovered: ${{ env.DISCOVERED_SCHEMAS }}"
+              echo "Excluded: ${{ env.SCHEMAS_TO_EXCLUDE }}"
+              echo "SKIP_DOCUMENTATION=true" >> $GITHUB_ENV
+              exit 0
+            fi
+
+            echo "✅ Filtered schemas: $SCHEMAS_TO_DOC"
+          fi
+
+          # Export for use in subsequent steps
+          echo "SCHEMAS_TO_DOC=$SCHEMAS_TO_DOC" >> $GITHUB_ENV
+
+          echo "✅ Configuration validated"
+          echo "Database: ${{ env.DATABASE_NAME }}"
+          echo "SQL Server: ${{ env.SQL_SERVER }}"
+          echo "Schemas to document: $SCHEMAS_TO_DOC"
+
+      - name: Set up Java
+        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e0  # v4.0.0
         with:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Cache SchemaSpy dependencies
-        id: cache-schemaspy
-        uses: actions/cache@v4
-        with:
-          path: schemaspy
-          key: schemaspy-${{ env.SCHEMASPY_VERSION }}-jdbc-${{ env.JDBC_VERSION }}
-          restore-keys: |
-            schemaspy-${{ env.SCHEMASPY_VERSION }}-
-            schemaspy-
-
-      - name: Setup SQL Server
-        run: |
-          set -e
-
-          # Start SQL Server with optimized health check settings
-          docker run -e "ACCEPT_EULA=Y" \
-            -e "SA_PASSWORD=${{ env.SQL_PASSWORD }}" \
-            -e "MSSQL_PID=Developer" \
-            -p 1433:1433 \
-            --name sql-server \
-            --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P '${{ env.SQL_PASSWORD }}' -C -Q 'SELECT 1' -b -o /dev/null" \
-            --health-interval=5s \
-            --health-timeout=3s \
-            --health-retries=12 \
-            --health-start-period=10s \
-            -d mcr.microsoft.com/mssql/server:${{ env.SQL_SERVER_VERSION }}
-
-          echo "⏳ Waiting for SQL Server to be healthy (max 60s)..."
-          timeout 60s bash -c 'until docker inspect --format="{{.State.Health.Status}}" sql-server | grep -q healthy; do sleep 2; done'
-          echo "✅ SQL Server is ready"
-
-      - name: Create database and run migrations
-        run: |
-          set -e
-
-          echo "📦 Creating database ${{ env.DB_NAME }}..."
-          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -Q "CREATE DATABASE ${{ env.DB_NAME }}" -b
-
-          # Find and run all SQL migration files in order
-          # Excludes: files starting with _ or . (like _backup.sql, .gitkeep)
-          #           files containing "seed" in the name (like seed.sql, test-seed.sql)
-          echo "📋 Discovering migration files..."
-          ALL_FILES=$(find ${{ env.DB_SCRIPTS_ROOT }}/${{ env.DB_NAME }} -name "*.sql" -type f | sort)
-
-          # Filter out excluded files
-          SQL_FILES=""
-          EXCLUDED_FILES=""
-          for file in $ALL_FILES; do
-            filename=$(basename "$file")
-            # Exclude if starts with _ or . OR contains "seed" (case-insensitive)
-            if [[ "$filename" =~ ^[._] ]] || [[ "$filename" =~ [Ss][Ee][Ee][Dd] ]]; then
-              EXCLUDED_FILES="$EXCLUDED_FILES$file"$'\n'
-            else
-              SQL_FILES="$SQL_FILES$file"$'\n'
-            fi
-          done
-
-          # Remove trailing newlines
-          SQL_FILES=$(echo "$SQL_FILES" | sed '/^$/d')
-          EXCLUDED_FILES=$(echo "$EXCLUDED_FILES" | sed '/^$/d')
-
-          FILE_COUNT=$(echo "$SQL_FILES" | wc -l)
-          echo "Found $FILE_COUNT migration file(s) to execute"
-
-          # Show excluded files (if any)
-          if [ -n "$EXCLUDED_FILES" ]; then
-            echo ""
-            echo "ℹ️  Excluded files (not executed):"
-            echo "$EXCLUDED_FILES" | while read file; do
-              [ -n "$file" ] && echo "  - $(basename "$file")"
-            done
-          fi
-
-          # Copy all SQL files to container
-          echo "📋 Copying migration files to container..."
-          for sql_file in $SQL_FILES; do
-            echo "  - $(basename "$sql_file")"
-            docker cp "$sql_file" sql-server:/tmp/
-          done
-
-          # Run migrations in order
-          echo "⚙️ Running migrations..."
-          MIGRATION_NUM=1
-          for sql_file in $SQL_FILES; do
-            FILENAME=$(basename "$sql_file")
-            echo "[$MIGRATION_NUM/$FILE_COUNT] Executing: $FILENAME"
-
-            docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
-              -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-              -C -d ${{ env.DB_NAME }} -i "/tmp/$FILENAME" -b \
-              || { echo "❌ Migration failed: $FILENAME"; exit 1; }
-
-            echo "  ✅ $FILENAME completed"
-            MIGRATION_NUM=$((MIGRATION_NUM + 1))
-          done
-
-          echo "✅ All $FILE_COUNT migration(s) completed successfully"
-
-      - name: Verify schema creation
-        run: |
-          set -e
-
-          echo "🔍 Verifying schemas were created..."
-
-          # Query for all user-created schemas (excluding system schemas)
-          ALL_SCHEMAS=$(docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -d ${{ env.DB_NAME }} \
-            -Q "SET NOCOUNT ON; SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME NOT IN ('db_owner', 'db_accessadmin', 'db_securityadmin', 'db_ddladmin', 'db_backupoperator', 'db_datareader', 'db_datawriter', 'db_denydatareader', 'db_denydatawriter', 'guest', 'INFORMATION_SCHEMA', 'sys', 'dbo')" -h -1 -W)
-
-          echo "Found user schemas: $ALL_SCHEMAS"
-
-          # Parse exclusion list
-          IFS=',' read -ra EXCLUDE_ARRAY <<< "${{ env.SCHEMAS_TO_EXCLUDE }}"
-
-          # Build list of schemas to document
-          SCHEMAS_TO_DOC=""
-          SCHEMA_COUNT=0
-          for schema in $ALL_SCHEMAS; do
-            schema=$(echo "$schema" | xargs) # trim whitespace
-            [ -z "$schema" ] && continue
-
-            # Check if schema should be excluded
-            EXCLUDED=false
-            for exclude_schema in "${EXCLUDE_ARRAY[@]}"; do
-              exclude_schema=$(echo "$exclude_schema" | xargs)
-              if [ "$schema" = "$exclude_schema" ]; then
-                echo "  ⊘ $schema (excluded)"
-                EXCLUDED=true
-                break
-              fi
-            done
-
-            if [ "$EXCLUDED" = false ]; then
-              echo "  ✓ $schema schema verified"
-              SCHEMAS_TO_DOC="$SCHEMAS_TO_DOC$schema "
-              SCHEMA_COUNT=$((SCHEMA_COUNT + 1))
-            fi
-          done
-
-          if [ $SCHEMA_COUNT -eq 0 ]; then
-            echo "❌ No schemas found to document"
-            exit 1
-          fi
-
-          echo "✅ Found $SCHEMA_COUNT schema(s) to document"
-
-          # Export for use in later steps
-          echo "SCHEMAS_TO_DOC=$SCHEMAS_TO_DOC" >> $GITHUB_ENV
-
-      - name: Validate schema integrity
-        run: |
-          set -e
-
-          echo "🔍 Validating database integrity..."
-
-          # Check for any database corruption
-          echo "Running DBCC CHECKDB..."
-          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -d ${{ env.DB_NAME }} \
-            -Q "DBCC CHECKDB (${{ env.DB_NAME }}) WITH NO_INFOMSGS" -b
-
-          # Build SQL IN clause dynamically for schema stats from SCHEMAS_TO_DOC
-          SCHEMA_LIST=""
-          for schema in ${SCHEMAS_TO_DOC}; do
-            schema=$(echo "$schema" | xargs)
-            [ -z "$schema" ] && continue
-            if [ -n "$SCHEMA_LIST" ]; then
-              SCHEMA_LIST="$SCHEMA_LIST, "
-            fi
-            SCHEMA_LIST="${SCHEMA_LIST}'${schema}'"
-          done
-
-          # Get table counts per schema
-          echo ""
-          echo "📊 Schema statistics:"
-          docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -d ${{ env.DB_NAME }} \
-            -Q "SET NOCOUNT ON; SELECT s.name AS [Schema], COUNT(t.name) AS [Tables] FROM sys.schemas s LEFT JOIN sys.tables t ON s.schema_id = t.schema_id WHERE s.name IN ($SCHEMA_LIST) GROUP BY s.name ORDER BY s.name" -h -1
-
-          # Verify foreign key constraints
-          echo ""
-          echo "🔗 Checking foreign key constraints..."
-          FK_COUNT=$(docker exec sql-server /opt/mssql-tools18/bin/sqlcmd \
-            -S localhost -U SA -P "${{ env.SQL_PASSWORD }}" \
-            -C -d ${{ env.DB_NAME }} \
-            -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.foreign_keys WHERE is_disabled = 0" -h -1 -W | tr -d '[:space:]')
-
-          echo "Active foreign keys: $FK_COUNT"
-
-          if [ "$FK_COUNT" -eq 0 ]; then
-            echo "⚠️  Warning: No foreign key constraints found - this may be expected for initial schema"
-          else
-            echo "✅ Foreign key constraints validated"
-          fi
-
-          echo ""
-          echo "✅ Schema integrity check passed"
-
-      - name: Install SchemaSpy
-        if: steps.cache-schemaspy.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p schemaspy
-          wget -q --show-progress \
-            https://github.com/schemaspy/schemaspy/releases/download/v${{ env.SCHEMASPY_VERSION }}/schemaspy-${{ env.SCHEMASPY_VERSION }}.jar \
-            -O schemaspy/schemaspy.jar
-          wget -q --show-progress \
-            https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/${{ env.JDBC_VERSION }}/mssql-jdbc-${{ env.JDBC_VERSION }}.jar \
-            -O schemaspy/mssql-jdbc.jar
-          echo "✅ SchemaSpy downloaded"
-
       - name: Generate schema documentation (parallel)
+        id: schema-doc
+        if: env.SKIP_DOCUMENTATION != 'true'
         run: |
           set -e
           set -o pipefail
@@ -324,76 +330,56 @@ jobs:
           # -imageformat svg: Use SVG for better quality
           # -noimplied: Don't show implied relationships
           SCHEMASPY_COMMON="-t mssql17 \
-            -dp schemaspy/mssql-jdbc.jar \
-            -host localhost:1433 \
-            -db ${{ env.DB_NAME }} \
-            -u SA \
-            -p \"${{ env.SQL_PASSWORD }}\" \
-            -connprops \"trustServerCertificate\\=true\" \
+            -dp /opt/schemaspy/mssql-jdbc.jar \
+            -host ${{ env.SQL_SERVER }} \
+            -db ${{ env.DATABASE_NAME }} \
+            -u unused \
+            -connprops \"authenticationScheme\\=ActiveDirectoryDefault;encrypt\\=true;trustServerCertificate\\=false\" \
             -norows \
             -vizjs \
             -imageformat svg \
             -noimplied"
 
-          # Schema descriptions mapping
-          declare -A SCHEMA_DESCRIPTIONS=(
-            ["Clinical"]="Clinical Schema - Patient management and clinical operations"
-            ["Compensation"]="Compensation Schema - Employee and provider data"
-          )
-
           # Create output directories dynamically
           DIRS_TO_CREATE=""
           for schema in ${SCHEMAS_TO_DOC}; do
-            schema=$(echo "$schema" | xargs) # trim whitespace
+            schema=$(echo "$schema" | xargs)
             [ -z "$schema" ] && continue
             schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
             DIRS_TO_CREATE="$DIRS_TO_CREATE docs/$schema_lower"
           done
 
-          # Add 'all' directory if combined docs are enabled
-          if [ "${{ env.GENERATE_COMBINED_DOCS }}" = "true" ]; then
-            DIRS_TO_CREATE="$DIRS_TO_CREATE docs/all"
-          fi
-
           mkdir -p $DIRS_TO_CREATE
 
-          echo "🚀 Starting parallel schema documentation generation..."
+          echo "🚀 Starting parallel schema documentation generation for ${{ env.DATABASE_NAME }}..."
           echo "Schemas to document: ${SCHEMAS_TO_DOC}"
 
           # Track PIDs for parallel execution
           declare -a PIDS
           declare -a SCHEMA_NAMES
+          declare -a START_TIMES
 
           # Generate documentation for each schema in parallel
           for schema in ${SCHEMAS_TO_DOC}; do
-            schema=$(echo "$schema" | xargs) # trim whitespace
+            schema=$(echo "$schema" | xargs)
             [ -z "$schema" ] && continue
             schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
 
             # Get description or use default
             DESCRIPTION="${SCHEMA_DESCRIPTIONS[$schema]:-$schema Schema Documentation}"
 
-            echo "📊 Starting $schema schema generation..."
-            java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
+            START_TIME=$(date +%s)
+            CURRENT_TIME=$(date -u '+%H:%M:%S UTC')
+            echo "📊 [$CURRENT_TIME] Starting $schema schema generation (timeout: ${{ env.SCHEMASPY_TIMEOUT_SECONDS }}s)..."
+            timeout ${{ env.SCHEMASPY_TIMEOUT_SECONDS }} java -jar /opt/schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
               -o docs/$schema_lower \
               -s $schema \
               -desc "$DESCRIPTION" &
 
             PIDS+=($!)
             SCHEMA_NAMES+=("$schema")
+            START_TIMES+=("$START_TIME")
           done
-
-          # Generate combined documentation if enabled
-          if [ "${{ env.GENERATE_COMBINED_DOCS }}" = "true" ]; then
-            echo "📊 Starting combined schema generation..."
-            java -jar schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
-              -o docs/all \
-              -desc "Complete Database Documentation - All Schemas" \
-              -all &
-
-            PIDS+=($!)
-            SCHEMA_NAMES+=("Combined")
-          fi
 
           # Wait for all processes and check exit codes
           TOTAL_TASKS=${#PIDS[@]}
@@ -403,73 +389,51 @@ jobs:
           for i in "${!PIDS[@]}"; do
             pid="${PIDS[$i]}"
             name="${SCHEMA_NAMES[$i]}"
+            start_time="${START_TIMES[$i]}"
 
-            echo "⏳ Waiting for $name schema generation..."
-            if wait $pid; then
-              echo "✅ $name schema complete"
+            CURRENT_TIME=$(date -u '+%H:%M:%S UTC')
+            echo "⏳ [$CURRENT_TIME] Waiting for $name schema generation (PID: $pid)..."
+            if wait "$pid"; then
+              end_time=$(date +%s)
+              elapsed=$((end_time - start_time))
+              echo "✅ $name schema complete (elapsed: ${elapsed}s)"
             else
-              echo "❌ $name schema failed"
+              echo "❌ $name schema failed with exit code: $?"
               exit 1
             fi
           done
 
           echo ""
-          echo "🎉 All schema documentation generated successfully"
+          echo "🎉 All schema documentation generated successfully for ${{ env.DATABASE_NAME }}"
 
-      - name: Get commit info
-        id: commit
+      - name: Cleanup on failure
+        if: failure() && steps.schema-doc.outcome == 'failure'
         run: |
-          # Properly escape commit message for use in HTML
-          SHA_SHORT=$(git rev-parse --short HEAD)
-          COMMIT_MSG=$(git log -1 --pretty=%B | head -1 | sed 's/"/\\"/g' | sed "s/'/\\'/g")
-          AUTHOR=$(git log -1 --pretty=format:'%an' | sed 's/"/\\"/g' | sed "s/'/\\'/g")
-
-          echo "sha_short=${SHA_SHORT}" >> $GITHUB_OUTPUT
-          echo "commit_msg=${COMMIT_MSG}" >> $GITHUB_OUTPUT
-          echo "author=${AUTHOR}" >> $GITHUB_OUTPUT
-
-          # Get migration version from SQL files (show latest or count)
-          SQL_FILE_COUNT=$(find ${{ env.DB_SCRIPTS_ROOT }}/${{ env.DB_NAME }} -name "*.sql" -type f | wc -l)
-          LATEST_FILE=$(find ${{ env.DB_SCRIPTS_ROOT }}/${{ env.DB_NAME }} -name "*.sql" -type f | sort | tail -1 | xargs basename 2>/dev/null || echo "01_init.sql")
-
-          if [ "$SQL_FILE_COUNT" -eq 1 ]; then
-            MIGRATION_VERSION=$(echo "$LATEST_FILE" | sed 's/_.*//' || echo "01_init")
-          else
-            # Show count and latest migration for multiple files
-            LATEST_NUM=$(echo "$LATEST_FILE" | sed 's/_.*//' || echo "01")
-            MIGRATION_VERSION="$SQL_FILE_COUNT migrations (latest: $LATEST_NUM)"
-          fi
-
-          echo "migration_version=${MIGRATION_VERSION}" >> $GITHUB_OUTPUT
+          echo "🧹 Cleaning up partial documentation due to schema generation failure..."
+          rm -rf docs/
+          echo "✅ Cleanup complete - partial docs removed"
 
       - name: Create enhanced index page
+        if: steps.schema-doc.outcome == 'success'
         env:
-          COMMIT_SHA: ${{ steps.commit.outputs.sha_short }}
-          COMMIT_MSG: ${{ steps.commit.outputs.commit_msg }}
-          COMMIT_AUTHOR: ${{ steps.commit.outputs.author }}
-          MIGRATION_VERSION: ${{ steps.commit.outputs.migration_version }}
-          DB_NAME: ${{ env.DB_NAME }}
+          DB_NAME: ${{ env.DATABASE_NAME }}
         run: |
+          set -e
+          set -o pipefail
+
+          # HTML escape function to prevent injection attacks
+          escape_html() {
+            local input="$1"
+            input="${input//&/&amp;}"
+            input="${input//</&lt;}"
+            input="${input//>/&gt;}"
+            input="${input//\"/&quot;}"
+            input="${input//$'\x27'/&#39;}"
+            echo "$input"
+          }
+
           # Use variables directly - no heredoc quoting to allow substitution
           CURRENT_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
-
-          # Schema metadata for cards
-          declare -A SCHEMA_ICONS=(
-            ["Clinical"]="📋"
-            ["Compensation"]="👥"
-          )
-          declare -A SCHEMA_TITLES=(
-            ["Clinical"]="Clinical Schema"
-            ["Compensation"]="Compensation Schema"
-          )
-          declare -A SCHEMA_DESCS=(
-            ["Clinical"]="Patient management, hospitalizations, visits, facilities, and clinical data."
-            ["Compensation"]="Employee management, roles, and provider information."
-          )
-          declare -A SCHEMA_ITEMS=(
-            ["Clinical"]="<li>Patients</li><li>Hospitalizations</li><li>Visits & VisitsStaging</li><li>Facilities</li><li>Insurances</li><li>Service Types</li>"
-            ["Compensation"]="<li>Employees</li><li>Provider Management</li><li>Role Assignments</li>"
-          )
 
           # Generate schema cards HTML from SCHEMAS_TO_DOC
           SCHEMA_CARDS=""
@@ -478,48 +442,29 @@ jobs:
             [ -z "$schema" ] && continue
             schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
 
-            # Get metadata or use defaults
-            ICON="${SCHEMA_ICONS[$schema]:-📦}"
-            TITLE="${SCHEMA_TITLES[$schema]:-$schema Schema}"
-            DESC="${SCHEMA_DESCS[$schema]:-Documentation for the $schema schema.}"
-            ITEMS="${SCHEMA_ITEMS[$schema]}"
+            # Use defaults for all metadata (no custom metadata supported in minimal config)
+            ICON="📦"
+            TITLE="$schema Schema"
+            DESC="Documentation for the $schema schema."
 
-            # Build card HTML
+            # Escape all dynamic content to prevent HTML injection
+            ICON_ESCAPED=$(escape_html "$ICON")
+            TITLE_ESCAPED=$(escape_html "$TITLE")
+            DESC_ESCAPED=$(escape_html "$DESC")
+            SCHEMA_LOWER_ESCAPED=$(escape_html "$schema_lower")
+
+            # Build card HTML with escaped content
             CARD="<div class=\"schema-card\">
-                          <h2>$ICON $TITLE</h2>
-                          <p>$DESC</p>"
-
-            # Add items list if available
-            if [ -n "$ITEMS" ]; then
-              CARD="$CARD
-                          <ul>
-                              $ITEMS
-                          </ul>"
-            fi
+                          <h2>$ICON_ESCAPED $TITLE_ESCAPED</h2>
+                          <p>$DESC_ESCAPED</p>"
 
             CARD="$CARD
-                          <a href=\"./$schema_lower/index.html\" class=\"btn\">View $schema Schema →</a>
+                          <a href=\"./$SCHEMA_LOWER_ESCAPED/index.html\" class=\"btn\">View $TITLE_ESCAPED Schema →</a>
                       </div>
                       "
 
             SCHEMA_CARDS="$SCHEMA_CARDS$CARD"
           done
-
-          # Add combined documentation cards if enabled
-          if [ "${{ env.GENERATE_COMBINED_DOCS }}" = "true" ]; then
-            SCHEMA_CARDS="$SCHEMA_CARDS
-                      <div class=\"schema-card\">
-                          <h2>🔗 Entity Relationships</h2>
-                          <p>Interactive entity-relationship diagrams showing table connections and foreign keys across all schemas.</p>
-                          <a href=\"./all/index.html\" class=\"btn\">View ER Diagram →</a>
-                      </div>
-
-                      <div class=\"schema-card\">
-                          <h2>📊 Complete Database</h2>
-                          <p>View all schemas, tables, and relationships in a unified documentation.</p>
-                          <a href=\"./all/index.html\" class=\"btn\">View All Schemas →</a>
-                      </div>"
-          fi
 
           cat > docs/index.html << EOF
           <!DOCTYPE html>
@@ -706,14 +651,6 @@ jobs:
                               <span class="info-label">Database</span>
                               <span class="info-value">${DB_NAME}</span>
                           </div>
-                          <div class="info-item">
-                              <span class="info-label">Migration</span>
-                              <span class="info-value">${MIGRATION_VERSION}</span>
-                          </div>
-                          <div class="info-item">
-                              <span class="info-label">Last Commit</span>
-                              <span class="info-value" title="${COMMIT_MSG}">${COMMIT_SHA}</span>
-                          </div>
                       </div>
                   </div>
 
@@ -726,6 +663,7 @@ jobs:
           EOF
 
       - name: Generate summary
+        if: steps.schema-doc.outcome == 'success'
         run: |
           echo "## 📚 Database Documentation Generated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -739,70 +677,55 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Schemas Documented" >> $GITHUB_STEP_SUMMARY
 
-          # Schema icons mapping
-          declare -A SCHEMA_ICONS=(
-            ["Clinical"]="📋"
-            ["Compensation"]="👥"
-          )
-          declare -A SCHEMA_DESCS=(
-            ["Clinical"]="Patient management and clinical operations"
-            ["Compensation"]="Employee and provider data"
-          )
-
           for schema in ${SCHEMAS_TO_DOC}; do
-            schema=$(echo "$schema" | xargs) # trim whitespace
+            schema=$(echo "$schema" | xargs)
             [ -z "$schema" ] && continue
-            ICON="${SCHEMA_ICONS[$schema]:-📦}"
-            DESC="${SCHEMA_DESCS[$schema]:-Schema documentation}"
+            ICON="📦"
+            DESC="Schema documentation"
             echo "- $ICON **$schema** - $DESC" >> $GITHUB_STEP_SUMMARY
           done
 
-          # Add combined docs if enabled
-          if [ "${{ env.GENERATE_COMBINED_DOCS }}" = "true" ]; then
-            echo "- 📊 **Combined** - All schemas with cross-schema relationships" >> $GITHUB_STEP_SUMMARY
-          fi
-
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Commit Info" >> $GITHUB_STEP_SUMMARY
-          echo "- **SHA**: ${{ steps.commit.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Message**: ${{ steps.commit.outputs.commit_msg }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Author**: ${{ steps.commit.outputs.author }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Database Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database**: ${{ env.DATABASE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Deployed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> 💡 **Tip**: Once GitHub Pages is enabled, uncomment the Pages deployment steps in this workflow" >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload documentation as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-documentation
-          path: ./docs
-          retention-days: 30
-          if-no-files-found: error
-
-      # Uncomment these steps once GitHub Pages is enabled for the repository
-      # - name: Setup Pages
-      #   uses: actions/configure-pages@v4
-      #
-      # - name: Upload to Pages
-      #   uses: actions/upload-pages-artifact@v3
-      #   with:
-      #     path: "./docs"
-      #
-      # - name: Deploy to GitHub Pages
-      #   id: deployment
-      #   uses: actions/deploy-pages@v4
-      #
-      # - name: Comment deployment URL
-      #   if: github.event_name == 'push'
-      #   uses: actions/github-script@v7
-      #   with:
-      #     script: |
-      #       const url = '${{ steps.deployment.outputs.page_url }}';
-      #       console.log(`Documentation deployed to: ${url}`);
-
-      - name: Cleanup
-        if: always()
+      - name: Prepare artifact metadata
+        id: artifact-meta
+        if: steps.schema-doc.outcome == 'success'
         run: |
-          echo "🧹 Cleaning up Docker containers..."
-          docker stop sql-server 2>/dev/null || true
-          docker rm sql-server 2>/dev/null || true
-          echo "✅ Cleanup completed"
+          set -e
+
+          # Determine artifact suffix based on event type
+          ARTIFACT_SUFFIX="latest"
+          RETENTION_DAYS=30
+
+          case "${{ github.event_name }}" in
+            pull_request)
+              ARTIFACT_SUFFIX="pr-${{ github.event.pull_request.number }}"
+              RETENTION_DAYS=7
+              ;;
+            workflow_call)
+              ARTIFACT_SUFFIX="latest"
+              RETENTION_DAYS=30
+              ;;
+            workflow_dispatch)
+              ARTIFACT_SUFFIX="manual-$(date +%s)"
+              RETENTION_DAYS=30
+              ;;
+          esac
+
+          echo "suffix=$ARTIFACT_SUFFIX" >> $GITHUB_OUTPUT
+          echo "retention=$RETENTION_DAYS" >> $GITHUB_OUTPUT
+          echo "Artifact suffix: $ARTIFACT_SUFFIX (retention: $RETENTION_DAYS days)"
+
+      - name: Upload documentation as artifact
+        if: steps.schema-doc.outcome == 'success'
+        uses: actions/upload-artifact@c7d193f32edde7bfad88884e873877e3fd052a52  # v4.1.0
+        with:
+          name: database-documentation-${{ matrix.database }}-${{ steps.artifact-meta.outputs.suffix }}
+          path: ./docs
+          retention-days: ${{ steps.artifact-meta.outputs.retention }}
+          if-no-files-found: error
