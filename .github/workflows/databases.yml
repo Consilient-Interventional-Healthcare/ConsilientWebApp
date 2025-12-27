@@ -133,7 +133,8 @@ jobs:
           echo "📄 SQL files in ${{ env.DATABASE_BASE_NAME }} directory:"
           echo "   Target database: ${{ env.DATABASE_NAME }}"
 
-          SCRIPTS_DIR="${{ env.DATABASE_BASE_NAME }}"
+          # Use absolute path to database scripts directory
+          SCRIPTS_DIR="${{ github.workspace }}/src/Databases/${{ env.DATABASE_BASE_NAME }}"
 
           echo "::debug::Script Directory - Full path: $SCRIPTS_DIR, Database: ${{ env.DATABASE_BASE_NAME }}"
 
@@ -195,7 +196,8 @@ jobs:
               -b 2>sqlcmd_error.log || return $?
           }
 
-          SCRIPTS_DIR="${{ env.DATABASE_BASE_NAME }}"
+          # Use absolute path to database scripts directory
+          SCRIPTS_DIR="${{ github.workspace }}/src/Databases/${{ env.DATABASE_BASE_NAME }}"
 
           # Verify directory exists
           if [ ! -d "$SCRIPTS_DIR" ]; then
