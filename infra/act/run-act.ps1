@@ -81,6 +81,14 @@
 
 .LINK
     https://github.com/nektos/act
+
+.AI-DOCS
+    For AI assistants: This script is part of the local GitHub Actions testing system.
+    Primary Documentation: docs/infra/components/local-testing.md
+    GitHub Actions Overview: docs/infra/components/github-actions.md
+    Configuration Files: .env.act (secrets, git-ignored)
+    Related Workflows: .github/workflows/main.yml (orchestrator)
+    Custom Runner: .github/workflows/runner/Dockerfile
 #>
 
 [CmdletBinding()]
@@ -100,6 +108,14 @@ param(
 
     [switch]$SkipHealthChecks,
 
+    [switch]$SkipDbDocs,
+
+    [string]$DbNames = '["ConsilientDB"]',
+
+    [switch]$SkipApiDeployment,
+
+    [switch]$SkipReactDeployment,
+
     [switch]$NonInteractive,
 
     [switch]$NoWait,
@@ -115,10 +131,16 @@ $ScriptRoot = $PSScriptRoot
 $RepoRoot = Resolve-Path "$ScriptRoot\..\.."
 
 # Configuration constants
+# For AI: Main workflow orchestrator file - see docs/infra/components/github-actions.md
 $WorkflowFile = ".github\workflows\main.yml"
-$ActSecretFile = Join-Path $RepoRoot "infra\act\.env.act"
+
+# For AI: .env.act contains all secrets and credentials (git-ignored)
+# See docs/infra/components/local-testing.md#secrets-management
+$ActSecretFile = Join-Path $ScriptRoot ".env.act"
 
 # Docker image configuration
+# For AI: Custom runner image with pre-installed tools (Azure CLI, sqlcmd, Terraform, etc.)
+# See docs/infra/components/github-actions.md#custom-runner-image
 $LocalImageName = "consilientwebapp-runner"
 $LocalImageTag = "latest"
 $LocalImageFull = "${LocalImageName}:${LocalImageTag}"
@@ -126,7 +148,22 @@ $DockerfilePath = Join-Path $RepoRoot ".github\workflows\runner\Dockerfile"
 $DockerContextPath = Join-Path $RepoRoot ".github\workflows\runner"
 
 # Cloud image (GHCR) - for reference/documentation only
-$CloudImageReference = "ghcr.io/your-github-username/consilientwebapp/actions-runner:latest"
+# This tag is used locally so act uses the local image instead of pulling
+# Extract GitHub username from repository URL
+$githubUsername = if ($env:GITHUB_REPOSITORY_OWNER) {
+    $env:GITHUB_REPOSITORY_OWNER
+} else {
+    # Fallback: try to extract from git remote origin
+    $gitRemote = git config --get remote.origin.url 2>$null
+    if ($gitRemote -match 'github\.com[:/]([^/]+)/') {
+        $matches[1]
+    } else {
+        "your-github-username"  # Final fallback
+    }
+}
+
+# Docker requires lowercase repository names, so convert username to lowercase
+$CloudImageReference = "ghcr.io/$($githubUsername.ToLower())/consilientwebapp/actions-runner:latest"
 
 # ==============================
 # PREREQUISITE VALIDATION FUNCTIONS
@@ -558,6 +595,8 @@ try {
     }
 
     # Tag local image to match cloud reference so act uses it instead of pulling
+    # For AI: This prevents act from pulling from GitHub Container Registry (GHCR)
+    # and forces it to use the local custom runner image instead
     Write-Host "  Tagging image as $CloudImageReference..." -ForegroundColor Gray
     & docker tag $LocalImageFull $CloudImageReference
 
@@ -591,6 +630,7 @@ try {
     $RecreateDbInput = $RecreateDatabase
     $AllowLocalFirewallInput = $AllowLocalFirewall
     $SkipHealthChecksInput = $SkipHealthChecks
+    $DbNamesInput = $DbNames
     $EnableDebugModeInput = $EnableDebugMode
 
     # Interactive mode: Prompt for missing values
@@ -650,6 +690,17 @@ try {
             }
 
             Write-Host ""
+
+            # Database names prompt (only when databases are being deployed)
+            if (-not $DbNamesInput) {
+                $DbNamesInput = Read-Host "Database names as JSON array (default: [""ConsilientDB""])"
+                if ([string]::IsNullOrWhiteSpace($DbNamesInput)) {
+                    $DbNamesInput = '["ConsilientDB"]'
+                }
+            }
+
+            Write-Host "Database names: $DbNamesInput" -ForegroundColor Green
+            Write-Host ""
         }
 
         # Health checks prompt
@@ -667,9 +718,39 @@ try {
 
         Write-Host ""
 
+        # API deployment prompt
+        if (-not $SkipApiDeployment) {
+            $SkipApiResponse = Get-ValidatedInput "Skip .NET API deployment? (y/n)" "n" @("y", "n")
+            $SkipApiDeployment = $SkipApiResponse -eq "y"
+        }
+
+        if ($SkipApiDeployment) {
+            Write-Host ".NET API deployment will be SKIPPED" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host ".NET API deployment will be EXECUTED" -ForegroundColor Green
+        }
+
+        Write-Host ""
+
+        # React deployment prompt
+        if (-not $SkipReactDeployment) {
+            $SkipReactResponse = Get-ValidatedInput "Skip React app deployment? (y/n)" "n" @("y", "n")
+            $SkipReactDeployment = $SkipReactResponse -eq "y"
+        }
+
+        if ($SkipReactDeployment) {
+            Write-Host "React app deployment will be SKIPPED" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "React app deployment will be EXECUTED" -ForegroundColor Green
+        }
+
+        Write-Host ""
+
         # Debug mode prompt
         if (-not $EnableDebugModeInput) {
-            $DebugResponse = Get-ValidatedInput "Enable debug logging? (y/n)" "n" @("y", "n")
+            $DebugResponse = Get-ValidatedInput "Enable debug logging? (y/n)" "y" @("y", "n")
             $EnableDebugModeInput = $DebugResponse -eq "y"
         }
 
@@ -703,7 +784,80 @@ try {
     $RecreateDbStr = if ($RecreateDbInput) { "true" } else { "false" }
     $AllowLocalFirewallStr = if ($AllowLocalFirewallInput) { "true" } else { "false" }
     $SkipHealthChecksStr = if ($SkipHealthChecksInput) { "true" } else { "false" }
+    $SkipDbDocsStr = if ($SkipDbDocs) { "true" } else { "false" }
+    $SkipApiDeploymentStr = if ($SkipApiDeployment) { "true" } else { "false" }
+    $SkipReactDeploymentStr = if ($SkipReactDeployment) { "true" } else { "false" }
     $DebugModeStr = if ($EnableDebugModeInput) { "true" } else { "false" }
+
+    # ==============================
+    # INITIALIZE ACT ACTION CACHE
+    # ==============================
+    # Extract pre-baked actions from Docker image to host cache for offline mode
+    # This enables --action-offline-mode to work correctly without network calls
+
+    Write-Verbose "Initializing act action cache from Docker image..."
+
+    $ActCachePath = Join-Path $env:USERPROFILE ".cache\act"
+
+    # Create cache directory if it doesn't exist
+    if (-not (Test-Path $ActCachePath)) {
+        Write-Host "📁 Creating act cache directory: $ActCachePath"
+        New-Item -ItemType Directory -Path $ActCachePath -Force | Out-Null
+    }
+
+    # Check if pre-baked actions already exist in host cache
+    $ExpectedActions = @(
+        "actions\checkout@v4",
+        "azure\login@v2",
+        "hashicorp\setup-terraform@v3",
+        "docker\setup-buildx-action@v3",
+        "docker\build-push-action@v5",
+        "docker\login-action@v3"
+    )
+
+    $AllActionsExist = $true
+    foreach ($action in $ExpectedActions) {
+        $actionPath = Join-Path $ActCachePath $action
+        if (-not (Test-Path $actionPath)) {
+            $AllActionsExist = $false
+            Write-Verbose "Missing action in cache: $action"
+            break
+        }
+    }
+
+    if (-not $AllActionsExist) {
+        Write-Host "📦 Extracting pre-baked actions from Docker image to host cache..."
+        Write-Host "   (This happens once per image rebuild, ~10-15 seconds)"
+
+        try {
+            # Extract actions from Docker image to host cache directory
+            $extractCmd = "docker run --rm -v `"${ActCachePath}:/host-cache`" $LocalImageFull sh -c 'cp -r /github/actions/* /host-cache/'"
+            Write-Verbose "Running: $extractCmd"
+
+            Invoke-Expression $extractCmd -ErrorAction Stop
+
+            # Verify extraction
+            $extractedCount = 0
+            foreach ($action in $ExpectedActions) {
+                $actionPath = Join-Path $ActCachePath $action
+                if (Test-Path $actionPath) {
+                    $extractedCount++
+                    Write-Verbose "  ✅ Extracted: $action"
+                }
+            }
+
+            Write-Host "✅ Successfully extracted $extractedCount pre-baked actions"
+            Write-Host ""
+        }
+        catch {
+            Write-Warning "⚠️  Could not extract actions from Docker image: $_"
+            Write-Warning "   act may clone actions from GitHub (slower, requires network)"
+            Write-Host ""
+        }
+    }
+    else {
+        Write-Verbose "✅ Pre-baked actions already cached at: $ActCachePath"
+    }
 
     # ==============================
     # SHOW SUMMARY
@@ -714,33 +868,52 @@ try {
     # ==============================
     # BUILD ACT COMMAND
     # ==============================
+    # For AI: This builds the complete act CLI command with all configuration
+    # --pull=false: Use local image only (don't download from GHCR)
+    # --bind: Mount workspace for state persistence (5x performance improvement)
+    # --action-offline-mode: Use pre-baked actions from /github/actions (zero network calls)
+    # See docs/infra/components/local-testing.md#performance-optimization for details
 
     $ActArgs = @(
         "workflow_dispatch",
-        "--pull=false",
-        "--bind",
+        "--pull=false",      # Use local image, don't pull from registry
+        "--bind",            # Mount workspace for persistent state
+        "--action-offline-mode",  # Use baked actions, don't pull from GitHub
         "--input", "environment=$EnvInput",
-        "--input", "skip_terraform=$SkipTerraformStr",
-        "--input", "skip_databases=$SkipDatabasesStr",
-        "--input", "recreate_database_objects=$RecreateDbStr",
-        "--input", "allow_local_firewall=$AllowLocalFirewallStr",
-        "--input", "skip_health_checks=$SkipHealthChecksStr",
+        "--input", "skip-terraform=$SkipTerraformStr",
+        "--input", "skip-databases=$SkipDatabasesStr",
+        "--input", "recreate-database-objects=$RecreateDbStr",
+        "--input", "allow-local-firewall=$AllowLocalFirewallStr",
+        "--input", "skip-health-checks=$SkipHealthChecksStr",
+        "--input", "skip-db-docs=$SkipDbDocsStr",
+        "--input", "db_names=$DbNamesInput",
+        "--input", "skip-api-deployment=$SkipApiDeploymentStr",
+        "--input", "skip-react-deployment=$SkipReactDeploymentStr",
         "-W", $WorkflowFile,
-        "-P", "ubuntu-latest=$LocalImageFull"
+        "-P", "ubuntu-latest=$LocalImageFull"  # Use custom runner image for ubuntu-latest
     )
 
     # Add secret file if it exists (this will include GITHUB_TOKEN from .env.act)
+    # For AI: .env.act contains all secrets - see docs/infra/components/local-testing.md
     if ($secretFile) {
         $ActArgs += "--secret-file"
+        $ActArgs += $secretFile
+
+        # CRITICAL: Also pass the same file as --var-file for GitHub Variables
+        # This makes values accessible via both ${{ secrets.* }} and ${{ vars.* }}
+        # Fixes Docker build tag error: vars.REACT_IMAGE_NAME was empty, causing "***/:v1-hash"
+        $ActArgs += "--var-file"
         $ActArgs += $secretFile
     }
     else {
         # Fallback: provide a dummy token if no secret file
+        # For AI: This is only used when .env.act is missing (rare case)
         $ActArgs += "--secret"
         $ActArgs += "GITHUB_TOKEN=ghp_dummy_token_for_local_testing"
     }
 
     # Add debug secrets if debug mode is enabled
+    # For AI: Enables ACTIONS_STEP_DEBUG and ACTIONS_RUNNER_DEBUG for verbose logging
     if ($EnableDebugModeInput) {
         $ActArgs += "--secret"
         $ActArgs += "ACTIONS_STEP_DEBUG=true"
