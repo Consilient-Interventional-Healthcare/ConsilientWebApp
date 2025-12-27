@@ -11,31 +11,59 @@
 
     The script handles:
     - Prerequisite validation (act CLI, Docker)
-    - Interactive prompts with smart defaults
+    - Interactive prompts with hierarchical, positive language ("Run X?" defaults)
     - Secret file loading and validation
+    - Custom runner Docker image management
     - Comprehensive error handling with troubleshooting guidance
 
 .PARAMETER Environment
     Target deployment environment (dev or prod).
     Default: Prompts interactively if not provided.
 
-.PARAMETER SkipTerraform
-    Skip Terraform infrastructure deployment.
+.PARAMETER RunTerraform
+    Run Terraform infrastructure deployment.
     Default: Prompts interactively (default: yes).
 
-.PARAMETER SkipDatabases
-    Skip database deployment.
-    Default: Prompts interactively (default: no).
+.PARAMETER AddFirewallRule
+    Add local firewall rule for Azure resources (only when Terraform is enabled).
+    Default: Prompts interactively (default: yes).
+
+.PARAMETER RunDatabases
+    Run database deployment.
+    Default: Prompts interactively (default: yes).
 
 .PARAMETER RecreateDatabase
     Recreate all database objects (drops and recreates).
-    Only allowed in dev environment.
-    Default: Prompts interactively (default: no).
+    Only allowed in dev environment. Sub-prompt under RunDatabases.
+    Default: Prompts interactively (default: yes).
 
-.PARAMETER EnableDebugMode
-    Enable GitHub Actions debug logging (ACTIONS_STEP_DEBUG, ACTIONS_RUNNER_DEBUG).
-    Provides detailed step execution and runner diagnostics.
-    Default: Prompts interactively (default: no).
+.PARAMETER RunDbDocs
+    Generate database documentation using SchemaSpy.
+    Sub-prompt under RunDatabases.
+    Default: Prompts interactively (default: yes).
+
+.PARAMETER RunApiDeployment
+    Run .NET App deployment.
+    Default: Prompts interactively (default: yes).
+
+.PARAMETER RunReactDeployment
+    Run React deployment.
+    Default: Prompts interactively (default: yes).
+
+.PARAMETER RunHealthChecks
+    Run health checks (only if apps are being deployed).
+    Conditional prompt shown only when RunApiDeployment or RunReactDeployment is true.
+    Default: Prompts interactively (default: yes).
+
+.PARAMETER RecreateImage
+    Force rebuild of the custom Docker runner image even if it exists.
+    Destructive operation - default is NO. Use when updating Dockerfile or tools.
+    Default: No (false) - only rebuild if missing.
+
+.PARAMETER RecreateCache
+    Force recreation of the act actions cache.
+    Destructive operation - default is NO. Use to clear cached actions for clean rebuild.
+    Default: No (false) - preserve existing cache.
 
 .PARAMETER NonInteractive
     Run without prompts (requires all parameters).
@@ -45,30 +73,50 @@
     Don't wait for keypress on exit (even on errors).
     Useful for automation.
 
-.PARAMETER RebuildImage
-    Force rebuild of the custom Docker runner image even if it exists.
-    Useful when updating the Dockerfile or when tools need updating.
-    Default: Prompts for confirmation if image missing (no rebuild if exists).
+.PARAMETER Quiet
+    Suppress non-error output (minimal clean runs).
+    Useful for CI/CD integration or when you want less verbose output.
+    Default: Verbose mode (shows all output).
+
+.PARAMETER Info
+    Force info-level output (override default verbose mode).
+    Useful for testing and seeing what output users see in GitHub Actions.
+    Default: Verbose mode in ACT (default behavior).
 
 .EXAMPLE
     .\run-act.ps1
 
-    Interactive mode (default). Prompts for all configuration options.
+    Interactive mode (default). Prompts for all configuration options with sensible defaults.
 
 .EXAMPLE
-    .\run-act.ps1 -Environment dev -SkipTerraform
+    .\run-act.ps1 -Environment dev
 
-    Partially parameterized - prompts for remaining options.
+    Partially parameterized with environment - prompts for remaining deployment options.
 
 .EXAMPLE
-    .\run-act.ps1 -Environment dev -SkipTerraform -SkipDatabases -NonInteractive
+    .\run-act.ps1 -Environment dev -RunTerraform -RunDatabases -RecreateDatabase -RunApiDeployment -RunReactDeployment -NonInteractive
 
-    Fully automated mode with no prompts.
+    Fully automated mode with all deployments enabled.
+
+.EXAMPLE
+    .\run-act.ps1 -Environment dev -RunTerraform:$false -RunDatabases:$false -NonInteractive
+
+    Fully automated mode - skip Terraform and database deployments, deploy apps only.
+
+.EXAMPLE
+    .\run-act.ps1 -RecreateImage -RecreateCache
+
+    Interactive mode with fresh Docker image and actions cache rebuild.
 
 .EXAMPLE
     .\run-act.ps1 -Verbose
 
     Interactive mode with detailed verbose output.
+
+.EXAMPLE
+    .\run-act.ps1 -Environment dev -NonInteractive -Info
+
+    Fully automated mode with info-level output (for testing).
 
 .NOTES
     Prerequisite: act CLI (https://github.com/nektos/act)
@@ -89,6 +137,7 @@
     Configuration Files: .env.act (secrets, git-ignored)
     Related Workflows: .github/workflows/main.yml (orchestrator)
     Custom Runner: .github/workflows/runner/Dockerfile
+    Docker Build Logic: infra/act/Build-RunnerImage.ps1
 #>
 
 [CmdletBinding()]
@@ -96,31 +145,33 @@ param(
     [ValidateSet('dev', 'prod')]
     [string]$Environment,
 
-    [switch]$SkipTerraform,
+    [switch]$RunTerraform,
 
-    [switch]$SkipDatabases,
+    [switch]$AddFirewallRule,
+
+    [switch]$RunDatabases,
 
     [switch]$RecreateDatabase,
 
-    [switch]$AllowLocalFirewall,
+    [switch]$RunDbDocs,
 
-    [switch]$EnableDebugMode,
+    [switch]$RunApiDeployment,
 
-    [switch]$SkipHealthChecks,
+    [switch]$RunReactDeployment,
 
-    [switch]$SkipDbDocs,
+    [switch]$RunHealthChecks,
 
-    [string]$DbNames = '["ConsilientDB"]',
+    [switch]$RecreateImage,
 
-    [switch]$SkipApiDeployment,
-
-    [switch]$SkipReactDeployment,
+    [switch]$RecreateCache,
 
     [switch]$NonInteractive,
 
     [switch]$NoWait,
 
-    [switch]$RebuildImage
+    [switch]$Quiet,
+
+    [switch]$Info
 )
 
 # ==============================
@@ -130,6 +181,34 @@ $ErrorActionPreference = "Stop"
 $ScriptRoot = $PSScriptRoot
 $RepoRoot = Resolve-Path "$ScriptRoot\..\.."
 
+# ==============================
+# OUTPUT HELPER FUNCTIONS
+# ==============================
+
+# Import shared Write-Message helper
+$WriteMessagePath = Join-Path $ScriptRoot "lib\Write-Message.ps1"
+if (Test-Path $WriteMessagePath) {
+    . $WriteMessagePath
+}
+else {
+    Write-Host "Error: Write-Message helper not found at: $WriteMessagePath" -ForegroundColor Red
+    exit 1
+}
+
+function ConvertTo-ActBooleanString {
+    <#
+    .SYNOPSIS
+        Convert PowerShell boolean to act command input string format.
+    .DESCRIPTION
+        Converts $true/$false to "true"/"false" strings for act workflow inputs.
+    .PARAMETER Value
+        The boolean value to convert.
+    #>
+    param([bool]$Value)
+    return if ($Value) { "true" } else { "false" }
+}
+
+
 # Configuration constants
 # For AI: Main workflow orchestrator file - see docs/infra/components/github-actions.md
 $WorkflowFile = ".github\workflows\main.yml"
@@ -138,32 +217,12 @@ $WorkflowFile = ".github\workflows\main.yml"
 # See docs/infra/components/local-testing.md#secrets-management
 $ActSecretFile = Join-Path $ScriptRoot ".env.act"
 
-# Docker image configuration
+# Docker image configuration (also defined in Build-RunnerImage.ps1)
 # For AI: Custom runner image with pre-installed tools (Azure CLI, sqlcmd, Terraform, etc.)
 # See docs/infra/components/github-actions.md#custom-runner-image
 $LocalImageName = "consilientwebapp-runner"
 $LocalImageTag = "latest"
 $LocalImageFull = "${LocalImageName}:${LocalImageTag}"
-$DockerfilePath = Join-Path $RepoRoot ".github\workflows\runner\Dockerfile"
-$DockerContextPath = Join-Path $RepoRoot ".github\workflows\runner"
-
-# Cloud image (GHCR) - for reference/documentation only
-# This tag is used locally so act uses the local image instead of pulling
-# Extract GitHub username from repository URL
-$githubUsername = if ($env:GITHUB_REPOSITORY_OWNER) {
-    $env:GITHUB_REPOSITORY_OWNER
-} else {
-    # Fallback: try to extract from git remote origin
-    $gitRemote = git config --get remote.origin.url 2>$null
-    if ($gitRemote -match 'github\.com[:/]([^/]+)/') {
-        $matches[1]
-    } else {
-        "your-github-username"  # Final fallback
-    }
-}
-
-# Docker requires lowercase repository names, so convert username to lowercase
-$CloudImageReference = "ghcr.io/$($githubUsername.ToLower())/consilientwebapp/actions-runner:latest"
 
 # ==============================
 # PREREQUISITE VALIDATION FUNCTIONS
@@ -174,34 +233,16 @@ function Test-ActInstalled {
     .SYNOPSIS
         Verify act CLI is installed and accessible.
     #>
-    Write-Host "  Checking act CLI..." -ForegroundColor Gray
+    if (-not $Info) {
+        Write-Message -Level Info -Message "  Checking act CLI..."
+    }
 
     try {
         $output = & act --version 2>&1
         if ($LASTEXITCODE -ne 0) {
             return $false
         }
-        Write-Host "  ✅ act CLI found ($($output.Trim()))" -ForegroundColor Green
-        return $true
-    }
-    catch {
-        return $false
-    }
-}
-
-function Test-DockerRunning {
-    <#
-    .SYNOPSIS
-        Verify Docker daemon is running and accessible.
-    #>
-    Write-Host "  Checking Docker..." -ForegroundColor Gray
-
-    try {
-        $output = & docker ps 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-            return $false
-        }
-        Write-Host "  ✅ Docker running" -ForegroundColor Green
+        Write-Message -Level Debug -Message "  ✅ act CLI found ($($output.Trim()))"
         return $true
     }
     catch {
@@ -214,134 +255,20 @@ function Test-SecretFile {
     .SYNOPSIS
         Check if secret file exists and return path or null.
     #>
-    Write-Host "  Checking secret file..." -ForegroundColor Gray
+    if (-not $Info) {
+        Write-Message -Level Info -Message "  Checking secret file..."
+    }
 
     if (Test-Path $ActSecretFile) {
-        Write-Host "  ✅ Secret file found" -ForegroundColor Green
+        Write-Message -Level Debug -Message "  ✅ Secret file found"
         return $ActSecretFile
     }
     else {
-        Write-Host "  ⚠️ Secret file not found ($ActSecretFile)" -ForegroundColor Yellow
+        Write-Message -Level Warning -Message "  ⚠️ Secret file not found ($ActSecretFile)"
         return $null
     }
 }
 
-function Test-DockerImageExists {
-    <#
-    .SYNOPSIS
-        Verify that the custom runner Docker image exists locally.
-
-    .DESCRIPTION
-        Checks if the custom GitHub Actions runner image is available
-        in the local Docker daemon.
-
-    .PARAMETER ImageName
-        The full image name in format "name:tag" (e.g., "consilientwebapp-runner:latest")
-    #>
-    param(
-        [string]$ImageName
-    )
-
-    Write-Host "  Checking Docker image..." -ForegroundColor Gray
-
-    try {
-        $images = & docker images --format "{{.Repository}}:{{.Tag}}" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "  ⚠️ Unable to list Docker images" -ForegroundColor Yellow
-            return $false
-        }
-
-        if ($images -contains $ImageName) {
-            Write-Host "  ✅ Custom runner image found ($ImageName)" -ForegroundColor Green
-            return $true
-        }
-        else {
-            Write-Host "  ⚠️ Custom runner image not found ($ImageName)" -ForegroundColor Yellow
-            return $false
-        }
-    }
-    catch {
-        Write-Host "  ⚠️ Error checking Docker images" -ForegroundColor Yellow
-        return $false
-    }
-}
-
-function Build-DockerImage {
-    <#
-    .SYNOPSIS
-        Build the custom runner Docker image locally.
-
-    .DESCRIPTION
-        Builds the custom GitHub Actions runner image from the Dockerfile
-        in .github/workflows/runner/. Shows progress and handles errors gracefully.
-
-    .PARAMETER ImageName
-        The name:tag for the Docker image to build.
-
-    .PARAMETER DockerfilePath
-        Path to the Dockerfile.
-
-    .PARAMETER ContextPath
-        Path to the Docker build context directory.
-    #>
-    param(
-        [string]$ImageName,
-        [string]$DockerfilePath,
-        [string]$ContextPath
-    )
-
-    Write-Host ""
-    Write-Host "🔨 Building custom runner image..." -ForegroundColor Cyan
-    Write-Host "  Image: $ImageName" -ForegroundColor Gray
-    Write-Host "  Dockerfile: $DockerfilePath" -ForegroundColor Gray
-    Write-Host ""
-
-    # Verify Dockerfile exists
-    if (-not (Test-Path $DockerfilePath)) {
-        throw "Dockerfile not found at: $DockerfilePath"
-    }
-
-    Write-Host "This may take a few minutes (downloading base image, installing tools)..." -ForegroundColor Yellow
-    Write-Host ""
-
-    try {
-        # Build with progress output
-        $buildArgs = @(
-            "build",
-            "-t", $ImageName,
-            "-f", $DockerfilePath,
-            $ContextPath
-        )
-
-        & docker $buildArgs
-
-        if ($LASTEXITCODE -ne 0) {
-            throw "Docker build failed with exit code $LASTEXITCODE"
-        }
-
-        Write-Host ""
-        Write-Host "✅ Docker image built successfully: $ImageName" -ForegroundColor Green
-        Write-Host ""
-
-        return $true
-    }
-    catch {
-        Write-Host ""
-        Write-Host "❌ Failed to build Docker image" -ForegroundColor Red
-        Write-Host ""
-        Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host ""
-        Write-Host "Troubleshooting:" -ForegroundColor Yellow
-        Write-Host "  1. Verify Docker has enough disk space (check Docker Desktop settings)" -ForegroundColor Gray
-        Write-Host "  2. Check network connectivity (downloads base Ubuntu image)" -ForegroundColor Gray
-        Write-Host "  3. Review Dockerfile at: $DockerfilePath" -ForegroundColor Gray
-        Write-Host "  4. Try building manually:" -ForegroundColor Gray
-        Write-Host "     docker build -t $ImageName -f $DockerfilePath $ContextPath" -ForegroundColor White
-        Write-Host ""
-
-        throw $_
-    }
-}
 
 # ==============================
 # USER INTERACTION FUNCTIONS
@@ -369,24 +296,24 @@ function Get-ValidatedInput {
 
     while ($true) {
         $displayPrompt = if ($Default) { "$Prompt [$Default]" } else { "$Prompt" }
-        $input = Read-Host $displayPrompt
+        $userInput = Read-Host $displayPrompt
 
-        if ([string]::IsNullOrWhiteSpace($input) -and $Default) {
-            $input = $Default
+        if ([string]::IsNullOrWhiteSpace($userInput) -and $Default) {
+            $userInput = $Default
         }
 
-        if ([string]::IsNullOrWhiteSpace($input)) {
+        if ([string]::IsNullOrWhiteSpace($userInput)) {
             Write-Host "Input is required." -ForegroundColor Red
             continue
         }
 
-        if ($AllowedValues -and $AllowedValues.Count -gt 0 -and $input -notin $AllowedValues) {
+        if ($AllowedValues -and $AllowedValues.Count -gt 0 -and $userInput -notin $AllowedValues) {
             Write-Host "Invalid input. Allowed values: $($AllowedValues -join ', ')" -ForegroundColor Red
             continue
         }
 
-        Write-Host "✅ Selected: $input" -ForegroundColor Green
-        return $input
+        Write-Host "✅ Selected: $userInput" -ForegroundColor Green
+        return $userInput
     }
 }
 
@@ -400,10 +327,10 @@ function Show-ExecutionSummary {
         [string]$SkipTf,
         [string]$SkipDb,
         [string]$RecreateDb,
-        [string]$DebugMode,
         [string]$SecretFile,
         [string]$AllowFirewall,
-        [string]$SkipHealthChecks
+        [string]$SkipHealthChecks,
+        [string]$VerbosityMode
     )
 
     Write-Host ""
@@ -419,7 +346,7 @@ function Show-ExecutionSummary {
     Write-Host "  Recreate DB Objects: $(if($RecreateDb -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
     Write-Host "  Allow Local Firewall: $(if($AllowFirewall -eq 'true') {'Yes (INSECURE - dev only)'} else {'No'})" -ForegroundColor $(if($AllowFirewall -eq 'true') {'Yellow'} else {'Gray'})
     Write-Host "  Skip Health Checks: $(if($SkipHealthChecks -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
-    Write-Host "  Debug Mode: $(if($DebugMode -eq 'true') {'Enabled (ACTIONS_STEP_DEBUG, ACTIONS_RUNNER_DEBUG)'} else {'Disabled'})" -ForegroundColor $(if($DebugMode -eq 'true') {'Yellow'} else {'Gray'})
+    Write-Host "  Output Verbosity: $VerbosityMode" -ForegroundColor $(if($VerbosityMode -eq 'Verbose') {'Yellow'} else {'Gray'})
 
     if ($SecretFile) {
         Write-Host "  Secret File: Found" -ForegroundColor Gray
@@ -444,8 +371,11 @@ function Invoke-ActExecution {
         [string[]]$ActArgs
     )
 
-    Write-Host "Running act with custom image ($LocalImageFull)..." -ForegroundColor Cyan
-    Write-Host ""
+    # In -Info mode, skip the step header (let act output speak for itself)
+    if (-not $Info) {
+        Write-Message -Level Step -Message "Running act with custom image ($LocalImageFull)..."
+        Write-Host ""
+    }
 
     try {
         & act $ActArgs
@@ -465,34 +395,34 @@ function Invoke-ActExecution {
 
 function Show-ActNotInstalledError {
     Write-Host ""
-    Write-Host "❌ Error: act CLI not found" -ForegroundColor Red
+    Write-Message -Level Error -Message "❌ Error: act CLI not found"
     Write-Host ""
-    Write-Host "The 'act' tool is required to run GitHub Actions workflows locally." -ForegroundColor Yellow
+    Write-Message -Level Warning -Message "The 'act' tool is required to run GitHub Actions workflows locally."
     Write-Host ""
-    Write-Host "Install with:" -ForegroundColor Yellow
+    Write-Message -Level Warning -Message "Install with:"
     Write-Host "  Windows (Chocolatey):  choco install act-cli" -ForegroundColor White
     Write-Host "  Windows (Scoop):       scoop install act" -ForegroundColor White
     Write-Host "  Linux/macOS:           brew install act" -ForegroundColor White
     Write-Host "  Manual:                https://github.com/nektos/act/releases" -ForegroundColor White
     Write-Host ""
-    Write-Host "After installation, restart your terminal and try again." -ForegroundColor Gray
+    Write-Message -Level Info -Message "After installation, restart your terminal and try again."
 }
 
 function Show-DockerNotRunningError {
     Write-Host ""
-    Write-Host "❌ Error: Docker is not running" -ForegroundColor Red
+    Write-Message -Level Error -Message "❌ Error: Docker is not running"
     Write-Host ""
-    Write-Host "GitHub Actions workflows run in Docker containers via act." -ForegroundColor Yellow
-    Write-Host "Docker must be running before executing this script." -ForegroundColor Yellow
+    Write-Message -Level Warning -Message "GitHub Actions workflows run in Docker containers via act."
+    Write-Message -Level Warning -Message "Docker must be running before executing this script."
     Write-Host ""
-    Write-Host "Troubleshooting:" -ForegroundColor Yellow
+    Write-Message -Level Warning -Message "Troubleshooting:"
     Write-Host "  Windows/Mac:  Start Docker Desktop" -ForegroundColor Gray
     Write-Host "  Linux:        sudo systemctl start docker" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "Verify with:" -ForegroundColor Yellow
+    Write-Message -Level Warning -Message "Verify with:"
     Write-Host "  docker ps" -ForegroundColor White
     Write-Host ""
-    Write-Host "If Docker Desktop is installed but not running:" -ForegroundColor Gray
+    Write-Message -Level Info -Message "If Docker Desktop is installed but not running:"
     Write-Host "  1. Open Docker Desktop application" -ForegroundColor Gray
     Write-Host "  2. Wait for the whale icon to stabilize" -ForegroundColor Gray
     Write-Host "  3. Verify with 'docker ps' in a new terminal" -ForegroundColor Gray
@@ -503,23 +433,23 @@ function Show-InvalidParamError {
     param([string]$Message)
 
     Write-Host ""
-    Write-Host "❌ Error: $Message" -ForegroundColor Red
+    Write-Message -Level Error -Message "❌ Error: $Message"
     Write-Host ""
 }
 
 function Show-ActExecutionError {
     Write-Host ""
-    Write-Host "❌ Error: Workflow execution failed" -ForegroundColor Red
+    Write-Message -Level Error -Message "❌ Error: Workflow execution failed"
     Write-Host ""
-    Write-Host "The act command failed. Check the output above for details." -ForegroundColor Yellow
+    Write-Message -Level Warning -Message "The act command failed. Check the output above for details."
     Write-Host ""
-    Write-Host "Possible causes:" -ForegroundColor Yellow
+    Write-Message -Level Warning -Message "Possible causes:"
     Write-Host "  - Workflow syntax error in .github/workflows/main.yml" -ForegroundColor Gray
     Write-Host "  - Docker image pull failed (network issue)" -ForegroundColor Gray
     Write-Host "  - Missing required secrets in .env.act" -ForegroundColor Gray
     Write-Host "  - Insufficient Docker resources" -ForegroundColor Gray
     Write-Host ""
-    Write-Host "Troubleshooting steps:" -ForegroundColor Yellow
+    Write-Message -Level Warning -Message "Troubleshooting steps:"
     Write-Host "  1. Run with -Verbose for more details" -ForegroundColor Gray
     Write-Host "  2. Check .github/workflows/main.yml syntax" -ForegroundColor Gray
     Write-Host "  3. Verify secrets in infra/act/.env.act" -ForegroundColor Gray
@@ -536,71 +466,53 @@ try {
     # ==============================
     # PREREQUISITE CHECKS
     # ==============================
-    Write-Host "🔍 Checking prerequisites..." -ForegroundColor Yellow
-    Write-Host ""
+    # In -Info mode, suppress all prerequisite diagnostic output
+    if (-not $Info) {
+        Write-Message -Level Info -Message "🔍 Checking prerequisites..."
+        Write-Host ""
+    }
 
     if (-not (Test-ActInstalled)) {
         Show-ActNotInstalledError
         exit 10
     }
 
-    if (-not (Test-DockerRunning)) {
-        Show-DockerNotRunningError
-        exit 11
-    }
-
     $secretFile = Test-SecretFile
 
-    # Check if custom runner image exists, build if missing or if rebuild requested
-    $needsBuild = (-not (Test-DockerImageExists -ImageName $LocalImageFull)) -or $RebuildImage
-
-    if ($needsBuild) {
-        if ($RebuildImage) {
-            Write-Host "Force rebuild requested for custom runner image." -ForegroundColor Yellow
-        }
-        else {
-            Write-Host "Custom runner image not found locally." -ForegroundColor Yellow
-            Write-Host "The image needs to be built before running act." -ForegroundColor Yellow
-        }
-        Write-Host ""
-        Write-Host "Building image: $LocalImageFull" -ForegroundColor Cyan
-        Write-Host "  From: $DockerfilePath" -ForegroundColor Gray
-        Write-Host ""
-
-        # Optional: Prompt for confirmation in interactive mode (unless forced rebuild)
-        if (-not $NonInteractive -and -not $RebuildImage) {
-            $buildConfirm = Get-ValidatedInput "Build the Docker image now? (y/n)" "y" @("y", "n")
-            if ($buildConfirm -ne "y") {
-                Write-Host ""
-                Write-Host "❌ Cannot proceed without the custom runner image" -ForegroundColor Red
-                Write-Host ""
-                Write-Host "To build manually, run:" -ForegroundColor Yellow
-                Write-Host "  docker build -t $LocalImageFull -f $DockerfilePath $DockerContextPath" -ForegroundColor White
-                Write-Host ""
-                exit 12
-            }
-        }
-
-        # Build the image
-        try {
-            Build-DockerImage -ImageName $LocalImageFull -DockerfilePath $DockerfilePath -ContextPath $DockerContextPath
-        }
-        catch {
-            Write-Host "Failed to build Docker image. Cannot proceed." -ForegroundColor Red
-            exit 13
-        }
-    }
-    else {
-        Write-Host "✅ Custom runner image found ($LocalImageFull)" -ForegroundColor Green
+    # Build or verify custom runner Docker image
+    # (Build-RunnerImage.ps1 will handle all Docker diagnostics)
+    $buildImageScript = Join-Path $PSScriptRoot "Build-RunnerImage.ps1"
+    if (-not (Test-Path $buildImageScript)) {
+        Write-Message -Level Error -Message "Build script not found: $buildImageScript"
+        exit 14
     }
 
-    # Tag local image to match cloud reference so act uses it instead of pulling
-    # For AI: This prevents act from pulling from GitHub Container Registry (GHCR)
-    # and forces it to use the local custom runner image instead
-    Write-Host "  Tagging image as $CloudImageReference..." -ForegroundColor Gray
-    & docker tag $LocalImageFull $CloudImageReference
+    $buildParams = @{
+        Force = $RebuildImage
+        Quiet = $Quiet
+    }
+    if ($Info) {
+        $buildParams['Info'] = $true
+    }
+    if ($VerbosePreference -eq 'Continue') {
+        $buildParams['Verbose'] = $true
+    }
+    if ($NonInteractive) {
+        $buildParams['NonInteractive'] = $true
+    }
 
-    Write-Host ""
+    try {
+        & $buildImageScript @buildParams
+        if ($LASTEXITCODE -ne 0) {
+            Write-Message -Level Error -Message "Failed to build or verify runner image"
+            exit 15
+        }
+    }
+    catch {
+        Write-Message -Level Error -Message "Error running Build-RunnerImage.ps1: $_"
+        exit 16
+    }
+
 
     # ==============================
     # PARAMETER VALIDATION
@@ -609,10 +521,10 @@ try {
     # Validate RecreateDatabase only in dev
     if ($RecreateDatabase -and $Environment -eq 'prod') {
         Show-InvalidParamError "Cannot recreate database objects in production"
-        Write-Host "Recreating database objects (drops all tables, views, procedures)" -ForegroundColor Yellow
-        Write-Host "is only allowed in the 'dev' environment for safety reasons." -ForegroundColor Yellow
+        Write-Message -Level Warning -Message "Recreating database objects (drops all tables, views, procedures)"
+        Write-Message -Level Warning -Message "is only allowed in the 'dev' environment for safety reasons."
         Write-Host ""
-        Write-Host "For production database changes:" -ForegroundColor Yellow
+        Write-Message -Level Warning -Message "For production database changes:"
         Write-Host "  1. Test in dev environment first" -ForegroundColor Gray
         Write-Host "  2. Create migration scripts" -ForegroundColor Gray
         Write-Host "  3. Review and approve changes" -ForegroundColor Gray
@@ -625,169 +537,108 @@ try {
     # ==============================
 
     $EnvInput = $Environment
-    $SkipTfInput = $SkipTerraform
-    $SkipDbInput = $SkipDatabases
-    $RecreateDbInput = $RecreateDatabase
-    $AllowLocalFirewallInput = $AllowLocalFirewall
-    $SkipHealthChecksInput = $SkipHealthChecks
-    $DbNamesInput = $DbNames
-    $EnableDebugModeInput = $EnableDebugMode
 
     # Interactive mode: Prompt for missing values
     if (-not $NonInteractive) {
-        Write-Host "📋 Configuration" -ForegroundColor Yellow
-        Write-Host ""
-
         if (-not $EnvInput) {
             $EnvInput = Get-ValidatedInput "Enter environment (dev/prod)" "dev" @("dev", "prod")
         }
-        else {
-            Write-Host "Environment: $EnvInput" -ForegroundColor Green
-        }
 
-        if (-not $SkipTfInput) {
-            $SkipTfResponse = Get-ValidatedInput "Skip Terraform deployment? (y/n)" "y" @("y", "n")
-            $SkipTfInput = $SkipTfResponse -eq "y"
-        }
+        # 0. Docker operations (destructive - defaults = no)
+        $RecreateImageResponse = Get-ValidatedInput "Recreate Docker Image? (y/n)" "n" @("y", "n")
+        $RecreateImage = $RecreateImageResponse -eq "y"
 
-        Write-Host "Terraform will be: $(if($SkipTfInput) {'SKIPPED'} else {'EXECUTED'})" -ForegroundColor $(if($SkipTfInput) {'Yellow'} else {'Yellow'})
+        $RecreateCacheResponse = Get-ValidatedInput "Recreate Actions Cache? (y/n)" "n" @("y", "n")
+        $RecreateCache = $RecreateCacheResponse -eq "y"
 
-        if (-not $SkipDbInput) {
-            $SkipDbResponse = Get-ValidatedInput "Skip Database deployment? (y/n)" "n" @("y", "n")
-            $SkipDbInput = $SkipDbResponse -eq "y"
-        }
-
-        Write-Host "Database deployment will be: $(if($SkipDbInput) {'SKIPPED'} else {'EXECUTED'})" -ForegroundColor $(if($SkipDbInput) {'Yellow'} else {'Yellow'})
         Write-Host ""
 
-        # Database-specific prompts only if databases are not skipped
-        if (-not $SkipDbInput) {
-            if (-not $RecreateDbInput) {
-                $RecreateDbResponse = Get-ValidatedInput "Recreate all database objects? (y/n)" "n" @("y", "n")
-                $RecreateDbInput = $RecreateDbResponse -eq "y"
-            }
+        # 1. Terraform deployment
+        $RunTerraformResponse = Get-ValidatedInput "Run Terraform deployment? (y/n)" "y" @("y", "n")
+        $RunTerraform = $RunTerraformResponse -eq "y"
 
-            if ($RecreateDbInput) {
-                Write-Host "Database objects will be RECREATED (drops all objects first)" -ForegroundColor Red
-            }
-            else {
-                Write-Host "Database objects will NOT be recreated" -ForegroundColor Green
-            }
+        # Firewall rule prompt (only when Terraform is enabled)
+        if ($RunTerraform) {
+            $AddFirewallRuleResponse = Get-ValidatedInput "  Add Firewall rule? (y/n)" "y" @("y", "n")
+            $AddFirewallRule = $AddFirewallRuleResponse -eq "y"
+        } else {
+            $AddFirewallRule = $false
+        }
 
+        Write-Host ""
+
+        # 2. Database deployment
+        $RunDatabaseResponse = Get-ValidatedInput "Run Database deployment? (y/n)" "y" @("y", "n")
+        $RunDatabases = $RunDatabaseResponse -eq "y"
+
+        # Database-specific sub-prompts (only if databases are being deployed)
+        if ($RunDatabases) {
+            $RecreateDbResponse = Get-ValidatedInput "  Recreate Database? (y/n)" "y" @("y", "n")
+            $RecreateDatabase = $RecreateDbResponse -eq "y"
+
+            $RunDbDocsResponse = Get-ValidatedInput "  Run DB Docs? (y/n)" "y" @("y", "n")
+            $RunDbDocs = $RunDbDocsResponse -eq "y"
+
+        } else {
+            $RecreateDatabase = $false
+            $RunDbDocs = $false
+        }
+
+        Write-Host ""
+
+        # 3. .NET App deployment
+        $RunApiResponse = Get-ValidatedInput "Run .NET App deployment? (y/n)" "y" @("y", "n")
+        $RunApiDeployment = $RunApiResponse -eq "y"
+
+        Write-Host ""
+
+        # 4. React deployment
+        $RunReactResponse = Get-ValidatedInput "Run React deployment? (y/n)" "y" @("y", "n")
+        $RunReactDeployment = $RunReactResponse -eq "y"
+
+        Write-Host ""
+
+        # 5. Health Checks (conditional - only if deploying apps)
+        if ($RunApiDeployment -or $RunReactDeployment) {
+            $RunHealthChecksResponse = Get-ValidatedInput "Run Health Checks? (y/n)" "y" @("y", "n")
+            $RunHealthChecks = $RunHealthChecksResponse -eq "y"
+        } else {
+            $RunHealthChecks = $false
+            Write-Message -Level Info -Message "Health checks skipped (no apps being deployed)"
+        }
+
+        Write-Host ""
+
+        # Handle RecreateCache if requested
+        if ($RecreateCache) {
+            Write-Message -Level Warning -Message "Clearing actions cache..."
+            $ActCachePath = Join-Path $env:USERPROFILE ".cache\act"
+            if (Test-Path $ActCachePath) {
+                Remove-Item -Path $ActCachePath -Recurse -Force
+                Write-Message -Level Success -Message "Actions cache cleared"
+            } else {
+                Write-Message -Level Info -Message "No existing cache to clear"
+            }
             Write-Host ""
-
-            # Firewall rule prompt (only when databases are being deployed)
-            if (-not $AllowLocalFirewallInput) {
-                $AllowFirewallResponse = Get-ValidatedInput "Allow local firewall rule for SQL Server? (y/n)" "y" @("y", "n")
-                $AllowLocalFirewallInput = $AllowFirewallResponse -eq "y"
-            }
-
-            if ($AllowLocalFirewallInput) {
-                Write-Host "SQL Server firewall rule will be ENABLED for local testing" -ForegroundColor Yellow
-            }
-            else {
-                Write-Host "SQL Server firewall rule will NOT be enabled (connection may fail)" -ForegroundColor Red
-            }
-
-            Write-Host ""
-
-            # Database names prompt (only when databases are being deployed)
-            if (-not $DbNamesInput) {
-                $DbNamesInput = Read-Host "Database names as JSON array (default: [""ConsilientDB""])"
-                if ([string]::IsNullOrWhiteSpace($DbNamesInput)) {
-                    $DbNamesInput = '["ConsilientDB"]'
-                }
-            }
-
-            Write-Host "Database names: $DbNamesInput" -ForegroundColor Green
-            Write-Host ""
         }
-
-        # Health checks prompt
-        if (-not $SkipHealthChecksInput) {
-            $SkipHealthChecksResponse = Get-ValidatedInput "Skip health checks? (y/n)" "n" @("y", "n")
-            $SkipHealthChecksInput = $SkipHealthChecksResponse -eq "y"
-        }
-
-        if ($SkipHealthChecksInput) {
-            Write-Host "Health checks will be SKIPPED (faster but less safe)" -ForegroundColor Yellow
-        }
-        else {
-            Write-Host "Health checks will be ENABLED (recommended)" -ForegroundColor Green
-        }
-
-        Write-Host ""
-
-        # API deployment prompt
-        if (-not $SkipApiDeployment) {
-            $SkipApiResponse = Get-ValidatedInput "Skip .NET API deployment? (y/n)" "n" @("y", "n")
-            $SkipApiDeployment = $SkipApiResponse -eq "y"
-        }
-
-        if ($SkipApiDeployment) {
-            Write-Host ".NET API deployment will be SKIPPED" -ForegroundColor Yellow
-        }
-        else {
-            Write-Host ".NET API deployment will be EXECUTED" -ForegroundColor Green
-        }
-
-        Write-Host ""
-
-        # React deployment prompt
-        if (-not $SkipReactDeployment) {
-            $SkipReactResponse = Get-ValidatedInput "Skip React app deployment? (y/n)" "n" @("y", "n")
-            $SkipReactDeployment = $SkipReactResponse -eq "y"
-        }
-
-        if ($SkipReactDeployment) {
-            Write-Host "React app deployment will be SKIPPED" -ForegroundColor Yellow
-        }
-        else {
-            Write-Host "React app deployment will be EXECUTED" -ForegroundColor Green
-        }
-
-        Write-Host ""
-
-        # Debug mode prompt
-        if (-not $EnableDebugModeInput) {
-            $DebugResponse = Get-ValidatedInput "Enable debug logging? (y/n)" "y" @("y", "n")
-            $EnableDebugModeInput = $DebugResponse -eq "y"
-        }
-
-        if ($EnableDebugModeInput) {
-            Write-Host "Debug mode will be ENABLED (ACTIONS_STEP_DEBUG, ACTIONS_RUNNER_DEBUG)" -ForegroundColor Yellow
-        }
-        else {
-            Write-Host "Debug mode will be DISABLED (standard logging)" -ForegroundColor Green
-        }
-
-        Write-Host ""
     }
     else {
         # Non-interactive mode: Validate all required parameters are provided
         if (-not $EnvInput) {
-            # If only rebuilding image, we can exit early without environment
-            if (-not $RebuildImage) {
-                Show-InvalidParamError "NonInteractive mode requires -Environment parameter"
-                exit 20
-            }
-            # Exit after image rebuild - don't execute workflow
-            Write-Host "✅ Image rebuild complete. Exiting." -ForegroundColor Green
-            Write-Host ""
-            exit 0
+            Show-InvalidParamError "NonInteractive mode requires -Environment parameter"
+            exit 20
         }
     }
 
-    # Convert boolean switches to string format for act
-    $SkipTerraformStr = if ($SkipTfInput) { "true" } else { "false" }
-    $SkipDatabasesStr = if ($SkipDbInput) { "true" } else { "false" }
-    $RecreateDbStr = if ($RecreateDbInput) { "true" } else { "false" }
-    $AllowLocalFirewallStr = if ($AllowLocalFirewallInput) { "true" } else { "false" }
-    $SkipHealthChecksStr = if ($SkipHealthChecksInput) { "true" } else { "false" }
-    $SkipDbDocsStr = if ($SkipDbDocs) { "true" } else { "false" }
-    $SkipApiDeploymentStr = if ($SkipApiDeployment) { "true" } else { "false" }
-    $SkipReactDeploymentStr = if ($SkipReactDeployment) { "true" } else { "false" }
-    $DebugModeStr = if ($EnableDebugModeInput) { "true" } else { "false" }
+    # Convert boolean switches to string format for act (invert Run* to Skip* for workflow)
+    $SkipTerraformStr = ConvertTo-ActBooleanString (-not $RunTerraform)
+    $SkipDatabasesStr = ConvertTo-ActBooleanString (-not $RunDatabases)
+    $RecreateDbStr = ConvertTo-ActBooleanString $RecreateDatabase
+    $AllowLocalFirewallStr = ConvertTo-ActBooleanString $AddFirewallRule
+    $SkipDbDocsStr = ConvertTo-ActBooleanString (-not $RunDbDocs)
+    $SkipApiDeploymentStr = ConvertTo-ActBooleanString (-not $RunApiDeployment)
+    $SkipReactDeploymentStr = ConvertTo-ActBooleanString (-not $RunReactDeployment)
+    $SkipHealthChecksStr = ConvertTo-ActBooleanString (-not $RunHealthChecks)
 
     # ==============================
     # INITIALIZE ACT ACTION CACHE
@@ -795,75 +646,55 @@ try {
     # Extract pre-baked actions from Docker image to host cache for offline mode
     # This enables --action-offline-mode to work correctly without network calls
 
-    Write-Verbose "Initializing act action cache from Docker image..."
-
+    # Call the cache utility script to initialize act cache with pre-baked actions
+    # The utility script handles extraction and flattening of Docker image actions
+    $cacheUtilScript = Join-Path $PSScriptRoot "lib\Initialize-ActCache.ps1"
     $ActCachePath = Join-Path $env:USERPROFILE ".cache\act"
 
-    # Create cache directory if it doesn't exist
-    if (-not (Test-Path $ActCachePath)) {
-        Write-Host "📁 Creating act cache directory: $ActCachePath"
-        New-Item -ItemType Directory -Path $ActCachePath -Force | Out-Null
+    if (Test-Path $cacheUtilScript) {
+        Write-Verbose "Calling cache utility script: $cacheUtilScript"
+        & $cacheUtilScript -ImageName $LocalImageFull -Verbose:($VerbosePreference -eq 'Continue')
+    } else {
+        Write-Warning "Cache utility script not found: $cacheUtilScript"
+        Write-Warning "Act may need to clone actions from GitHub (slower, requires network)"
     }
 
-    # Check if pre-baked actions already exist in host cache
-    $ExpectedActions = @(
-        "actions\checkout@v4",
-        "azure\login@v2",
-        "hashicorp\setup-terraform@v3",
-        "docker\setup-buildx-action@v3",
-        "docker\build-push-action@v5",
-        "docker\login-action@v3"
-    )
+    # ==============================
+    # DETERMINE VERBOSITY MODE
+    # ==============================
+    # Default: In ACT, verbose mode is default
+    # User can override with -Info (force info-level) or -Quiet (suppress output)
+    # -Verbose PowerShell parameter always forces verbose mode
 
-    $AllActionsExist = $true
-    foreach ($action in $ExpectedActions) {
-        $actionPath = Join-Path $ActCachePath $action
-        if (-not (Test-Path $actionPath)) {
-            $AllActionsExist = $false
-            Write-Verbose "Missing action in cache: $action"
-            break
-        }
+    $EffectiveVerboseMode = $false
+    $EffectiveQuietMode = $false
+
+    $VerbosityModeDisplay = switch ($true) {
+        ($VerbosePreference -eq 'Continue') { "Verbose (explicit)"; break }
+        $Info { "Info (test mode)"; break }
+        $Quiet { "Quiet"; break }
+        default { "Verbose (default)" }
     }
 
-    if (-not $AllActionsExist) {
-        Write-Host "📦 Extracting pre-baked actions from Docker image to host cache..."
-        Write-Host "   (This happens once per image rebuild, ~10-15 seconds)"
-
-        try {
-            # Extract actions from Docker image to host cache directory
-            $extractCmd = "docker run --rm -v `"${ActCachePath}:/host-cache`" $LocalImageFull sh -c 'cp -r /github/actions/* /host-cache/'"
-            Write-Verbose "Running: $extractCmd"
-
-            Invoke-Expression $extractCmd -ErrorAction Stop
-
-            # Verify extraction
-            $extractedCount = 0
-            foreach ($action in $ExpectedActions) {
-                $actionPath = Join-Path $ActCachePath $action
-                if (Test-Path $actionPath) {
-                    $extractedCount++
-                    Write-Verbose "  ✅ Extracted: $action"
-                }
-            }
-
-            Write-Host "✅ Successfully extracted $extractedCount pre-baked actions"
-            Write-Host ""
-        }
-        catch {
-            Write-Warning "⚠️  Could not extract actions from Docker image: $_"
-            Write-Warning "   act may clone actions from GitHub (slower, requires network)"
-            Write-Host ""
-        }
+    # Set effective modes based on selection
+    if ($VerbosePreference -eq 'Continue') {
+        $EffectiveVerboseMode = $true
+    }
+    elseif ($Quiet) {
+        $EffectiveQuietMode = $true
     }
     else {
-        Write-Verbose "✅ Pre-baked actions already cached at: $ActCachePath"
+        $EffectiveVerboseMode = $true
     }
 
     # ==============================
     # SHOW SUMMARY
     # ==============================
 
-    Show-ExecutionSummary -Environment $EnvInput -SkipTf $SkipTerraformStr -SkipDb $SkipDatabasesStr -RecreateDb $RecreateDbStr -DebugMode $DebugModeStr -SecretFile $secretFile -AllowFirewall $AllowLocalFirewallStr -SkipHealthChecks $SkipHealthChecksStr
+    # Only show summary in verbose mode (not in Info or Quiet mode)
+    if (-not $Info -and -not $Quiet) {
+        Show-ExecutionSummary -Environment $EnvInput -SkipTf $SkipTerraformStr -SkipDb $SkipDatabasesStr -RecreateDb $RecreateDbStr -SecretFile $secretFile -AllowFirewall $AllowLocalFirewallStr -SkipHealthChecks $SkipHealthChecksStr -VerbosityMode $VerbosityModeDisplay
+    }
 
     # ==============================
     # BUILD ACT COMMAND
@@ -887,7 +718,6 @@ try {
         "--input", "allow-local-firewall=$AllowLocalFirewallStr",
         "--input", "skip-health-checks=$SkipHealthChecksStr",
         "--input", "skip-db-docs=$SkipDbDocsStr",
-        "--input", "db_names=$DbNamesInput",
         "--input", "skip-api-deployment=$SkipApiDeploymentStr",
         "--input", "skip-react-deployment=$SkipReactDeploymentStr",
         "-W", $WorkflowFile,
@@ -913,13 +743,34 @@ try {
         $ActArgs += "GITHUB_TOKEN=ghp_dummy_token_for_local_testing"
     }
 
-    # Add debug secrets if debug mode is enabled
-    # For AI: Enables ACTIONS_STEP_DEBUG and ACTIONS_RUNNER_DEBUG for verbose logging
-    if ($EnableDebugModeInput) {
+    # Add verbosity flags based on effective mode
+    if ($EffectiveVerboseMode) {
+        Write-Verbose "Adding --verbose flag to act"
+        $ActArgs += "--verbose"
+    }
+    elseif ($EffectiveQuietMode) {
+        Write-Verbose "Adding --quiet flag to act"
+        $ActArgs += "--quiet"
+    }
+    else {
+        Write-Verbose "Using default act verbosity (info mode)"
+    }
+
+    # Add GitHub Actions debug secrets based on verbosity mode
+    # ACTIONS_STEP_DEBUG and ACTIONS_RUNNER_DEBUG control ::debug:: output visibility
+    if ($EffectiveVerboseMode) {
+        Write-Verbose "Enabling GitHub Actions debug logging (ACTIONS_STEP_DEBUG, ACTIONS_RUNNER_DEBUG)"
         $ActArgs += "--secret"
         $ActArgs += "ACTIONS_STEP_DEBUG=true"
         $ActArgs += "--secret"
         $ActArgs += "ACTIONS_RUNNER_DEBUG=true"
+    }
+    else {
+        Write-Verbose "GitHub Actions debug logging disabled"
+        $ActArgs += "--secret"
+        $ActArgs += "ACTIONS_STEP_DEBUG=false"
+        $ActArgs += "--secret"
+        $ActArgs += "ACTIONS_RUNNER_DEBUG=false"
     }
 
     # ==============================
@@ -929,13 +780,13 @@ try {
     Invoke-ActExecution $ActArgs
 
     Write-Host ""
-    Write-Host "✅ Done!" -ForegroundColor Green
+    Write-Message -Level Success -Message "✅ Done!"
     Write-Host ""
 }
 catch {
     if ($VerbosePreference -eq 'Continue') {
         Write-Host ""
-        Write-Host "Stack trace:" -ForegroundColor DarkGray
+        Write-Message -Level Debug -Message "Stack trace:"
         Write-Host $_.ScriptStackTrace -ForegroundColor DarkGray
     }
 
@@ -946,7 +797,7 @@ catch {
 
     if (-not $NoWait) {
         Write-Host ""
-        Write-Host "Press any key to exit..." -ForegroundColor Gray
+        Write-Message -Level Info -Message "Press any key to exit..."
         $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     }
 
