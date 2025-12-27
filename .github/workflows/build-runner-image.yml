@@ -13,12 +13,6 @@ on:
       - '.github/workflows/runner/Dockerfile'
       - '.github/workflows/build-runner-image.yml'
   workflow_dispatch:
-    inputs:
-      force_rebuild:
-        description: 'Force rebuild even if no changes detected'
-        required: false
-        type: boolean
-        default: false
   schedule:
     # Rebuild weekly on Sundays at 2 AM UTC to pick up latest Azure CLI
     - cron: '0 2 * * 0'
@@ -35,19 +29,22 @@ jobs:
   build-and-push:
     name: Build and Push Runner Image
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     outputs:
       image_tag: ${{ steps.meta.outputs.tags }}
       image_digest: ${{ steps.build.outputs.digest }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.2.2
+        with:
+          fetch-depth: 1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@5fdf2e3b7e1dd9c9cf7bc340b0d94aa1db94e54d  # v3.2.0
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117001a6143f8c93cc25595fbb  # v3.0.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -55,7 +52,7 @@ jobs:
 
       - name: Extract metadata for Docker
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@0eafba30ce213447979a2eec3c3512d10ce38f3d  # v5.1.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -72,7 +69,7 @@ jobs:
 
       - name: Build and push Docker image
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@4f58ea79222b3fa987ab5d21289c277378ad3fa0  # v5.1.0
         with:
           context: .github/workflows/runner
           file: .github/workflows/runner/Dockerfile
@@ -102,11 +99,12 @@ jobs:
     name: Verify Runner Image
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name != 'pull_request'
 
     steps:
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117001a6143f8c93cc25595fbb  # v3.0.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}

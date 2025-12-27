@@ -20,33 +20,43 @@ on:
         options:
           - dev
           - prod
-      db_scripts_path: # New input for database scripts path
-        description: 'Root directory for database scripts (e.g., src/Databases or src/.docker/Db)'
-        required: false
-        type: string
-        default: 'src/Databases' # Set a sensible default
-      skip_terraform:
+      skip-terraform:
         description: 'Skip Terraform deployment'
         required: false
         type: boolean
         default: false
-      skip_databases:
+      skip-databases:
         description: 'Skip database deployment'
         required: false
         type: boolean
         default: false
-      recreate_database_objects:
+      recreate-database-objects:
         description: 'Recreate all database objects (DELETE ALL DATA - dev only)'
         required: false
         type: boolean
         default: false
-      allow_local_firewall:
+      allow-local-firewall:
         description: 'Allow local firewall rule for SQL Server (act testing only - INSECURE)'
         required: false
         type: boolean
         default: false
-      skip_health_checks:
+      skip-health-checks:
         description: 'Skip health checks after deployment'
+        required: false
+        type: boolean
+        default: false
+      skip-db-docs:
+        description: 'Skip database documentation generation'
+        required: false
+        type: boolean
+        default: false
+      skip-api-deployment:
+        description: 'Skip .NET API deployment'
+        required: false
+        type: boolean
+        default: false
+      skip-react-deployment:
+        description: 'Skip React app deployment'
         required: false
         type: boolean
         default: false
@@ -69,9 +79,20 @@ jobs:
   validate-environment:
     name: Validate Environment
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       environment: ${{ steps.setenv.outputs.environment }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: Validate environment input
+        uses: ./.github/actions/validate-inputs
+        with:
+          environment: ${{ github.event.inputs.environment || 'dev' }}
+
       - name: Set environment output
         id: setenv
         run: |
@@ -80,49 +101,91 @@ jobs:
           # Default to dev if no input (for non-dispatch events)
           if [ -z "$ENVIRONMENT_INPUT" ]; then
             ENVIRONMENT_INPUT="dev"
-            echo "No environment input provided. Defaulting to 'dev'."
           fi
 
-          # Strict validation - only dev and prod allowed
-          if [[ ! "$ENVIRONMENT_INPUT" =~ ^(dev|prod)$ ]]; then
-            echo "❌ ERROR: Invalid environment '$ENVIRONMENT_INPUT'"
-            echo "Valid environments are: dev, prod"
-            exit 1
-          fi
-
-          echo "✅ Environment validation passed: $ENVIRONMENT_INPUT"
           echo "environment=$ENVIRONMENT_INPUT" >> $GITHUB_OUTPUT
 
   terraform:
     name: Terraform Infrastructure Deployment
     needs: [validate-environment]
-    if: ${{ !inputs.skip_terraform }}
+    if: ${{ !inputs.skip-terraform }}
     uses: ./.github/workflows/terraform.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
-      allow-local-firewall: ${{ inputs.allow_local_firewall }}
+      allow-local-firewall: ${{ inputs.allow-local-firewall }}
     secrets: inherit
+
+  # ============================================================================
+  # DATABASE MANAGEMENT: Discovery, Deployment, and Documentation
+  # ============================================================================
+  # This section handles all database-related operations:
+  # 1. discover-databases: Scans for databases and prepares metadata
+  # 2. deploy-databases: Deploys discovered databases
+  # 3. generate-db-docs: Generates documentation for configured databases
+  # ============================================================================
+
+  discover-databases:
+    name: Discover Databases
+    needs: [validate-environment]
+    runs-on: ubuntu-latest
+    outputs:
+      database_directories: ${{ steps.discover.outputs.database_directories }}
+      database_configs: ${{ steps.discover.outputs.database_configs }}
+      count: ${{ steps.discover.outputs.count }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.2.2
+        with:
+          fetch-depth: 1
+
+      - name: Discover databases with configs
+        id: discover
+        uses: ./.github/actions/discover-databases
+        with:
+          scripts_path: 'src/Databases'
+          config_file_name: 'db_docs.yml'
+          require_config: 'false'
 
   deploy-databases:
     name: Deploy Databases
-    needs: [validate-environment, terraform]
+    needs: [validate-environment, terraform, discover-databases]
     if: |
-      !inputs.skip_databases &&
+      !inputs.skip-databases &&
       always() &&
       needs.validate-environment.result == 'success' &&
-      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped')
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/databases.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
-      scripts_path: ${{ inputs.db_scripts_path }} # Use the new input here
-      recreate_database_objects: ${{ inputs.recreate_database_objects || false }}
+      databases: ${{ needs.discover-databases.outputs.database_directories }}
+      recreate-database-objects: ${{ inputs.recreate-database-objects || false }}
     secrets: inherit
+
+  generate-db-docs:
+    name: Generate Database Documentation
+    needs: [validate-environment, deploy-databases, discover-databases]
+    if: |
+      !inputs.skip-db-docs &&
+      github.event_name == 'pull_request' &&
+      always() &&
+      needs.validate-environment.result == 'success' &&
+      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
+    uses: ./.github/workflows/docs_db.yml
+    with:
+      database-configs: ${{ needs.discover-databases.outputs.database_configs }}
+    secrets: inherit
+
+  # ============================================================================
+  # END DATABASE MANAGEMENT SECTION
+  # ============================================================================
 
   deploy-dotnet-apps:
     name: Deploy .NET Apps
     needs: [validate-environment, terraform, deploy-databases]
     if: |
+      !inputs.skip-api-deployment &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
@@ -133,13 +196,14 @@ jobs:
       api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
-      skip_health_checks: ${{ inputs.skip_health_checks || false }}
+      skip-health-checks: ${{ inputs.skip-health-checks || false }}
     secrets: inherit
 
   deploy-react-apps:
     name: Deploy React Apps
     needs: [validate-environment, terraform, deploy-databases, deploy-dotnet-apps]
     if: |
+      !inputs.skip-react-deployment &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
@@ -150,7 +214,7 @@ jobs:
       react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
-      skip_health_checks: ${{ inputs.skip_health_checks || false }}
+      skip-health-checks: ${{ inputs.skip-health-checks || false }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution

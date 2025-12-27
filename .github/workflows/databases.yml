@@ -65,6 +65,7 @@ jobs:
   validate-inputs:
     name: Validate Inputs
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.2.2
@@ -80,6 +81,7 @@ jobs:
     name: Deploy ${{ matrix.database }} (${{ inputs.environment }})
     needs: validate-inputs
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: inputs.databases != '[]'
     strategy:
       matrix:
@@ -320,6 +322,7 @@ jobs:
   notify:
     name: Deployment Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [deploy-database]
     if: always()
     outputs:
