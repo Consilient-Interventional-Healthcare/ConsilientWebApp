@@ -83,6 +83,7 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
     outputs:
       api_app_name: ${{ env.API_APP_NAME }}
@@ -199,4 +200,6 @@ jobs:
           resource-group: ${{ inputs.resource_group }}
           previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
           acr-registry: ${{ inputs.acr_registry || secrets.ACR_REGISTRY }}
-          wait-seconds: '30'
+          wait-seconds: '120'
+          max-attempts: '8'
+          retry-delay: '15s'
