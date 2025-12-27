@@ -103,7 +103,7 @@ jobs:
       # Terraform variables - all passed via environment to avoid committing .tfvars with secrets
       TF_VAR_environment: ${{ inputs.environment }}
       TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME || 'sqladmin' }}
+      TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
       TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
       TF_VAR_enable_local_firewall: ${{ inputs.allow-local-firewall }}
       # Non-sensitive configuration variables (from GitHub Variables)
@@ -121,6 +121,13 @@ jobs:
         working-directory: ${{ env.WORKING_DIRECTORY }}  # All steps run in ./infra/terraform unless explicitly overridden
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 1
+        # Note: Checkout runs in root directory (./), composite action default overrides job default
+        # MUST run before custom actions that reference ./.github/actions/
+
       - name: Validate Inputs
         uses: ./.github/actions/validate-inputs
         with:
@@ -188,10 +195,6 @@ jobs:
 
           echo "✅ All required secrets are configured"
 
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-        # Note: Checkout runs in root directory (./), composite action default overrides job default
-
       - name: Login to Azure (OIDC + act fallback)
         # AZURE_CLIENT_ID is for OIDC authentication (production)
         # ARM_CLIENT_ID (from secrets) is used by Terraform for service principal auth
@@ -205,7 +208,18 @@ jobs:
       - name: Terraform Format Check
         id: fmt
         # Runs in ./infra/terraform (job default)
-        run: terraform fmt -check -recursive || [ -n "$ACT" ]
+        run: |
+          if ! terraform fmt -check -recursive; then
+            echo "⚠️ Terraform formatting issues detected"
+            if [ -z "$ACT" ]; then
+              echo "::error::Terraform files need formatting. Run 'terraform fmt -recursive' to fix."
+              exit 1
+            else
+              echo "Skipping format check failure in act environment (local testing)"
+            fi
+          else
+            echo "✅ Terraform formatting check passed"
+          fi
 
       - name: Debug Environment Variables
         if: inputs.enable-debug == true || runner.debug == '1'
@@ -224,16 +238,6 @@ jobs:
               "CAE_USE_SHARED": "${{ vars.CAE_USE_SHARED || 'not set (using default)' }}"
             }
 
-      - name: Validate Environment Variables
-        shell: bash
-        run: |
-          # Fail early if environment is empty
-          if [ -z "${TF_VAR_environment}" ]; then
-            echo "❌ ERROR: TF_VAR_environment is empty!"
-            echo "When running with act, use: act workflow_dispatch --input environment=dev"
-            exit 1
-          fi
-
       - name: Configure Local Firewall Variable
         run: |
           # Override TF_VAR_enable_local_firewall based on ACT environment
@@ -248,7 +252,7 @@ jobs:
 
       - name: Setup Terraform (if needed for non-container environments)
         if: false  # Currently uses container image with Terraform pre-installed
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@de84b05c27089f6cc8b3c38e5ddbe9dc3fd7e7b9  # v3.0.0
         with:
           terraform_version: ${{ vars.TERRAFORM_VERSION || '1.6.0' }}
 
@@ -318,11 +322,19 @@ jobs:
           echo "=== Step 2: Importing Existing Azure Resources ==="
           echo ""
 
+          # Initialize tracking for failed imports
+          failed_imports=0
+          failed_critical_imports=0
+          failed_import_list=()
+          failed_critical_import_list=()
+
           # Function to import a resource if it exists
+          # Second parameter can be "critical" to mark resource as essential
           import_resource() {
             local tf_address="$1"
             local resource_id="$2"
             local resource_name="$3"
+            local is_critical="${4:-false}"  # Default to non-critical
 
             # Check if already in state
             if terraform state list | grep -q "^${tf_address}\$"; then
@@ -345,6 +357,14 @@ jobs:
               else
                 echo "  ⚠️  Import failed: ${resource_name}"
                 echo "$import_output" | grep -i "error" | head -3
+                ((failed_imports++))
+
+                if [ "$is_critical" = "critical" ]; then
+                  ((failed_critical_imports++))
+                  failed_critical_import_list+=("${resource_name}")
+                else
+                  failed_import_list+=("${resource_name}")
+                fi
               fi
               return 1
             fi
@@ -365,7 +385,7 @@ jobs:
           echo "3. Container Registry"
           ACR_NAME=$(terraform output -raw acr_name 2>/dev/null || echo "consilientacr${TF_VAR_environment}$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
           ACR_ID="${RG_ID}/providers/Microsoft.ContainerRegistry/registries/${ACR_NAME}"
-          import_resource "azurerm_container_registry.main" "${ACR_ID}" "Container Registry"
+          import_resource "azurerm_container_registry.main" "${ACR_ID}" "Container Registry" "critical"
 
           echo ""
           echo "4. SQL Server and Databases"
@@ -374,9 +394,9 @@ jobs:
           SQL_SERVER_ID="${RG_ID}/providers/Microsoft.Sql/servers/${SQL_SERVER_NAME}"
           MAIN_DB_ID="${SQL_SERVER_ID}/databases/consilient_main_${TF_VAR_environment}"
           HANGFIRE_DB_ID="${SQL_SERVER_ID}/databases/consilient_hangfire_${TF_VAR_environment}"
-          import_resource "azurerm_mssql_server.main" "${SQL_SERVER_ID}" "SQL Server"
-          import_resource "module.main_db.azurerm_mssql_database.this" "${MAIN_DB_ID}" "Main Database"
-          import_resource "module.hangfire_db.azurerm_mssql_database.this" "${HANGFIRE_DB_ID}" "Hangfire Database"
+          import_resource "azurerm_mssql_server.main" "${SQL_SERVER_ID}" "SQL Server" "critical"
+          import_resource "module.main_db.azurerm_mssql_database.this" "${MAIN_DB_ID}" "Main Database" "critical"
+          import_resource "module.hangfire_db.azurerm_mssql_database.this" "${HANGFIRE_DB_ID}" "Hangfire Database" "critical"
 
           echo ""
           echo "5. Storage Account and Container"
@@ -471,15 +491,15 @@ jobs:
           echo "11. App Service Plans"
           ASP_REACT_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/consilient-asp-react-${TF_VAR_environment}"
           ASP_API_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/consilient-asp-api-${TF_VAR_environment}"
-          import_resource "module.react_app.azurerm_service_plan.this" "${ASP_REACT_ID}" "React App Service Plan"
-          import_resource "module.api_app.azurerm_service_plan.this" "${ASP_API_ID}" "API App Service Plan"
+          import_resource "module.react_app.azurerm_service_plan.this" "${ASP_REACT_ID}" "React App Service Plan" "critical"
+          import_resource "module.api_app.azurerm_service_plan.this" "${ASP_API_ID}" "API App Service Plan" "critical"
 
           echo ""
           echo "12. App Services"
           APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-react-${TF_VAR_environment}"
           APP_API_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-api-${TF_VAR_environment}"
-          import_resource "module.react_app.azurerm_linux_web_app.this" "${APP_REACT_ID}" "React App Service"
-          import_resource "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API App Service"
+          import_resource "module.react_app.azurerm_linux_web_app.this" "${APP_REACT_ID}" "React App Service" "critical"
+          import_resource "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API App Service" "critical"
 
           echo ""
           echo "=== Import Process Complete ==="
@@ -487,7 +507,51 @@ jobs:
           echo "Configuration will be managed by terraform.tfvars"
           echo "No workflow overrides applied"
 
-          exit 0  # Always succeed, imports are best-effort
+          # Generate GitHub step summary for critical failures
+          if [ $failed_critical_imports -gt 0 ]; then
+            echo "### ❌ Critical Import Failures" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following **critical** resources failed to import:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            for resource in "${failed_critical_import_list[@]}"; do
+              echo "- \`${resource}\`" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Action Required**: These resources are essential to the infrastructure and must be resolvable by Terraform." >> $GITHUB_STEP_SUMMARY
+            echo "- Check if the resources actually exist in Azure under the correct resource group" >> $GITHUB_STEP_SUMMARY
+            echo "- Verify the resource naming conventions match the Terraform configuration" >> $GITHUB_STEP_SUMMARY
+            echo "- Ensure proper Azure credentials and permissions to list resources" >> $GITHUB_STEP_SUMMARY
+            echo "- If resources don't exist yet, remove them from tfstate or use \`terraform apply\` to create them" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Generate GitHub step summary for non-critical warnings
+          if [ $failed_imports -gt 0 ] && [ $failed_critical_imports -eq 0 ]; then
+            echo "### ⚠️ Non-Critical Import Warnings" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following non-critical resources failed to import:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            for resource in "${failed_import_list[@]}"; do
+              echo "- \`${resource}\`" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Note**: Import failures are expected if resources don't exist in Azure yet." >> $GITHUB_STEP_SUMMARY
+            echo "Terraform will create them during the apply step." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "Total import attempts: $(terraform state list | wc -l) resources in state" >> $GITHUB_STEP_SUMMARY
+          echo "Failed critical imports: $failed_critical_imports" >> $GITHUB_STEP_SUMMARY
+          echo "Failed non-critical imports: ${#failed_import_list[@]}" >> $GITHUB_STEP_SUMMARY
+
+          # Fail if critical resources failed to import
+          if [ $failed_critical_imports -gt 0 ]; then
+            echo ""
+            echo "❌ FAILURE: Critical resources failed to import. Terraform state is out of sync with Azure resources."
+            exit 1
+          fi
+
+          exit 0  # Succeed if only non-critical imports failed
 
       - name: Terraform Validate
         id: validate
