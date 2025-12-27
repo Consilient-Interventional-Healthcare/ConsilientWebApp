@@ -77,7 +77,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: deploy-api-${{ github.event.inputs.environment || 'dev' }}
+  group: deploy-api-${{ inputs.environment || github.event.inputs.environment || 'dev' }}
   cancel-in-progress: false
 
 jobs:

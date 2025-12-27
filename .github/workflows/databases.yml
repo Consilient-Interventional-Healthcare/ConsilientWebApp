@@ -60,10 +60,6 @@ permissions:
   contents: read
   id-token: write
 
-concurrency:
-  group: deploy-database-${{ inputs.environment }}
-  cancel-in-progress: false
-
 jobs:
 
   validate-inputs:
@@ -89,6 +85,9 @@ jobs:
       matrix:
         database: ${{ fromJson(inputs.databases) }}
       fail-fast: false
+    concurrency:
+      group: deploy-database-${{ inputs.environment }}-${{ matrix.database }}
+      cancel-in-progress: false
 
     env:
       SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN || secrets.AZURE_SQL_SERVER }}
