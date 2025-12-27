@@ -60,6 +60,11 @@ on:
         required: false
         type: boolean
         default: false
+      enable-debug-output:
+        description: 'Enable detailed workflow step output (equivalent to -Verbose flag)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -114,6 +119,7 @@ jobs:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
       allow-local-firewall: ${{ inputs.allow-local-firewall }}
+      enable-debug-output: ${{ inputs.enable-debug-output }}
     secrets: inherit
 
   # ============================================================================

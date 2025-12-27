@@ -275,6 +275,71 @@ Prompts for:
 .\run-act.ps1 -RebuildImage
 ```
 
+## Controlling Output Verbosity
+
+The workflow output verbosity is controlled using GitHub Actions best practice environment variable `ACTIONS_STEP_DEBUG`.
+
+### Local Testing with act
+
+Use the `-LogLevel` parameter to control output detail:
+
+**Verbose mode (show all output - default):**
+```powershell
+.\run-act.ps1 -Environment dev                          # Default: verbose
+.\run-act.ps1 -Environment dev -LogLevel Verbose        # Explicit verbose
+```
+
+Shows:
+- Docker exec commands and container operations
+- All echo statements (configuration displays, progress messages)
+- Full Terraform output
+- Step-by-step import progress
+- Configuration summary
+
+**Normal mode (minimal output):**
+```powershell
+.\run-act.ps1 -Environment dev -LogLevel Normal
+```
+
+Shows:
+- Act step boundaries (⭐ Run, ✅ Success)
+- Error messages and warnings (❌, ⚠️)
+- Terraform/Azure CLI output
+- GitHub Actions step summaries
+- Hides: informational echo statements, docker exec details, configuration summary
+
+### GitHub Actions Cloud
+
+When triggering workflows manually (workflow_dispatch):
+
+1. Go to **Actions** tab → **01 - Main Orchestrator** → **Run workflow**
+2. Check **"Enable detailed workflow step output"** to show all echo statements (verbose mode)
+3. Leave unchecked for normal mode (shows only step summaries)
+
+**What gets suppressed in normal mode:**
+- Informational echo statements (configuration displays, headers)
+- Variable value displays
+- Step-by-step progress messages
+- Import resource progress
+
+**What remains visible:**
+- Act step boundaries (⭐ Run, ✅ Success)
+- Error messages and warnings (❌, ⚠️)
+- Terraform/Azure CLI tool output
+- GitHub Actions step summaries
+
+### Environment Variable Details
+
+The `ACTIONS_STEP_DEBUG` environment variable follows GitHub Actions conventions:
+- Set by `run-act.ps1` based on `-LogLevel` parameter (Verbose or Normal)
+- Set by workflow input `enable-debug-output` when running in cloud
+- Act environment variables override workflow inputs (local takes precedence)
+
+**Technical implementation:**
+- When `ACTIONS_STEP_DEBUG=true`: All informational echo statements execute
+- When `ACTIONS_STEP_DEBUG=false`: Informational echo statements are suppressed via `[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "..."`
+- Error/warning messages are always shown (not conditional)
+
 ## Custom Runner Image
 
 **Location:** [`.github/workflows/runner/Dockerfile`](../../../.github/workflows/runner/Dockerfile)

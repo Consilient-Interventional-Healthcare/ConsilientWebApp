@@ -17,24 +17,15 @@
     Useful when updating the Dockerfile or when tools need updating.
     Default: false (only rebuild if missing)
 
-.PARAMETER Quiet
-    Suppress non-error output (minimal clean runs).
-    Useful for CI/CD integration or when you want less verbose output.
-    Default: Verbose mode (shows all output)
-
-.PARAMETER Info
-    Test mode: show only essential information, suppress diagnostic output.
-    Useful for testing workflows without verbose diagnostic messages.
-    Default: false (show diagnostic output)
-
 .PARAMETER NonInteractive
     Run without prompts (requires image to exist or Force rebuild).
     Useful for scripting/automation.
     Default: Interactive mode (prompts if image missing)
 
-.PARAMETER Verbose
-    Show detailed verbose output for debugging.
-    Works with PowerShell's -Verbose parameter.
+.PARAMETER LogLevel
+    Control output verbosity level.
+    Valid values: 'Verbose' (show all output), 'Normal' (minimal output)
+    Default: 'Verbose' (shows all diagnostic output)
 
 .EXAMPLE
     .\Build-RunnerImage.ps1
@@ -42,12 +33,12 @@
     Build image if missing, interactive prompts enabled.
 
 .EXAMPLE
-    .\Build-RunnerImage.ps1 -Force -Verbose
+    .\Build-RunnerImage.ps1 -Force
 
-    Force rebuild with detailed output.
+    Force rebuild with default verbose output.
 
 .EXAMPLE
-    .\Build-RunnerImage.ps1 -Force -NonInteractive -Quiet
+    .\Build-RunnerImage.ps1 -Force -NonInteractive -LogLevel Normal
 
     Force rebuild in fully automated mode with minimal output.
 
@@ -61,8 +52,8 @@
 [CmdletBinding()]
 param(
     [switch]$Force,
-    [switch]$Quiet,
-    [switch]$Info,
+    [ValidateSet('Normal', 'Verbose')]
+    [string]$LogLevel = 'Verbose',
     [switch]$NonInteractive
 )
 
@@ -74,7 +65,7 @@ $ScriptRoot = $PSScriptRoot
 $RepoRoot = Resolve-Path "$ScriptRoot\..\.."
 
 # Import shared Write-Message helper
-$WriteMessagePath = Join-Path $ScriptRoot "lib\Write-Message.ps1"
+$WriteMessagePath = Join-Path $ScriptRoot "Write-Message.ps1"
 if (Test-Path $WriteMessagePath) {
     . $WriteMessagePath
 }
@@ -101,14 +92,14 @@ function Test-DockerRunning {
     .SYNOPSIS
         Verify Docker daemon is running and accessible.
     #>
-    Write-Message -Level Info -Message "  Checking Docker..."
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  Checking Docker..."
 
     try {
         $output = & docker ps 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
             return $false
         }
-        Write-Message -Level Debug -Message "  ✅ Docker running"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  ✅ Docker running"
         return $true
     }
     catch {
@@ -125,26 +116,26 @@ function Test-DockerImageExists {
         [string]$ImageName
     )
 
-    Write-Message -Level Info -Message "  Checking Docker image..."
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  Checking Docker image..."
 
     try {
         $images = & docker images --format "{{.Repository}}:{{.Tag}}" 2>&1
         if ($LASTEXITCODE -ne 0) {
-            Write-Message -Level Warning -Message "  ⚠️ Unable to list Docker images"
+            Write-Message -LogLevel $LogLevel -Level Warning -Message "  ⚠️ Unable to list Docker images"
             return $false
         }
 
         if ($images -contains $ImageName) {
-            Write-Message -Level Debug -Message "  ✅ Custom runner image found ($ImageName)"
+            Write-Message -LogLevel $LogLevel -Level Debug -Message "  ✅ Custom runner image found ($ImageName)"
             return $true
         }
         else {
-            Write-Message -Level Warning -Message "  ⚠️ Custom runner image not found ($ImageName)"
+            Write-Message -LogLevel $LogLevel -Level Warning -Message "  ⚠️ Custom runner image not found ($ImageName)"
             return $false
         }
     }
     catch {
-        Write-Message -Level Warning -Message "  ⚠️ Error checking Docker images"
+        Write-Message -LogLevel $LogLevel -Level Warning -Message "  ⚠️ Error checking Docker images"
         return $false
     }
 }
@@ -174,9 +165,9 @@ function Build-DockerImage {
     )
 
     Write-Host ""
-    Write-Message -Level Step -Message "🔨 Building custom runner image..."
-    Write-Message -Level Info -Message "  Image: $ImageName"
-    Write-Message -Level Info -Message "  Dockerfile: $DockerfilePath"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "🔨 Building custom runner image..."
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  Image: $ImageName"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  Dockerfile: $DockerfilePath"
     Write-Host ""
 
     # Verify Dockerfile exists
@@ -184,7 +175,7 @@ function Build-DockerImage {
         throw "Dockerfile not found at: $DockerfilePath"
     }
 
-    Write-Message -Level Warning -Message "This may take a few minutes (downloading base image, installing tools)..."
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "This may take a few minutes (downloading base image, installing tools)..."
     Write-Host ""
 
     try {
@@ -203,22 +194,22 @@ function Build-DockerImage {
         }
 
         Write-Host ""
-        Write-Message -Level Debug -Message "✅ Docker image built successfully: $ImageName"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "✅ Docker image built successfully: $ImageName"
         Write-Host ""
 
         return $true
     }
     catch {
         Write-Host ""
-        Write-Message -Level Error -Message "❌ Failed to build Docker image"
+        Write-Message -LogLevel $LogLevel -Level Error -Message "❌ Failed to build Docker image"
         Write-Host ""
-        Write-Message -Level Error -Message "Error: $($_.Exception.Message)"
+        Write-Message -LogLevel $LogLevel -Level Error -Message "Error: $($_.Exception.Message)"
         Write-Host ""
-        Write-Message -Level Warning -Message "Troubleshooting:"
-        Write-Message -Level Info -Message "  1. Verify Docker has enough disk space (check Docker Desktop settings)"
-        Write-Message -Level Info -Message "  2. Check network connectivity (downloads base Ubuntu image)"
-        Write-Message -Level Info -Message "  3. Review Dockerfile at: $DockerfilePath"
-        Write-Message -Level Info -Message "  4. Try building manually:"
+        Write-Message -LogLevel $LogLevel -Level Warning -Message "Troubleshooting:"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  1. Verify Docker has enough disk space (check Docker Desktop settings)"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  2. Check network connectivity (downloads base Ubuntu image)"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  3. Review Dockerfile at: $DockerfilePath"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  4. Try building manually:"
         Write-Host "     docker build -t $ImageName -f $DockerfilePath $ContextPath" -ForegroundColor White
         Write-Host ""
 
@@ -232,23 +223,23 @@ function Build-DockerImage {
 
 function Show-DockerNotRunningError {
     Write-Host ""
-    Write-Message -Level Error -Message "❌ Error: Docker is not running"
+    Write-Message -LogLevel $LogLevel -Level Error -Message "❌ Error: Docker is not running"
     Write-Host ""
-    Write-Message -Level Warning -Message "GitHub Actions workflows run in Docker containers via act."
-    Write-Message -Level Warning -Message "Docker must be running before executing this script."
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "GitHub Actions workflows run in Docker containers via act."
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Docker must be running before executing this script."
     Write-Host ""
-    Write-Message -Level Warning -Message "Troubleshooting:"
-    Write-Message -Level Info -Message "  Windows/Mac:  Start Docker Desktop"
-    Write-Message -Level Info -Message "  Linux:        sudo systemctl start docker"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Troubleshooting:"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  Windows/Mac:  Start Docker Desktop"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  Linux:        sudo systemctl start docker"
     Write-Host ""
-    Write-Message -Level Warning -Message "Verify with:"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Verify with:"
     Write-Host "  docker ps" -ForegroundColor White
     Write-Host ""
-    Write-Message -Level Info -Message "If Docker Desktop is installed but not running:"
-    Write-Message -Level Info -Message "  1. Open Docker Desktop application"
-    Write-Message -Level Info -Message "  2. Wait for the whale icon to stabilize"
-    Write-Message -Level Info -Message "  3. Verify with 'docker ps' in a new terminal"
-    Write-Message -Level Info -Message "  4. Try this script again"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "If Docker Desktop is installed but not running:"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  1. Open Docker Desktop application"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  2. Wait for the whale icon to stabilize"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  3. Verify with 'docker ps' in a new terminal"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "  4. Try this script again"
 }
 
 # ==============================
@@ -256,8 +247,7 @@ function Show-DockerNotRunningError {
 # ==============================
 
 try {
-    Write-Message -Level Info -Message "🔍 Checking Docker prerequisites..."
-    Write-Host ""
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "🔍 Checking Docker prerequisites..."
 
     if (-not (Test-DockerRunning)) {
         Show-DockerNotRunningError
@@ -270,15 +260,15 @@ try {
 
     if ($needsBuild) {
         if ($Force) {
-            Write-Message -Level Warning -Message "Force rebuild requested for custom runner image."
+            Write-Message -LogLevel $LogLevel -Level Warning -Message "Force rebuild requested for custom runner image."
         }
         else {
-            Write-Message -Level Warning -Message "Custom runner image not found locally."
-            Write-Message -Level Warning -Message "The image needs to be built before running act."
+            Write-Message -LogLevel $LogLevel -Level Warning -Message "Custom runner image not found locally."
+            Write-Message -LogLevel $LogLevel -Level Warning -Message "The image needs to be built before running act."
         }
         Write-Host ""
-        Write-Message -Level Info -Message "Building image: $LocalImageFull"
-        Write-Message -Level Debug -Message "  From: $DockerfilePath"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "Building image: $LocalImageFull"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  From: $DockerfilePath"
         Write-Host ""
 
         # Optional: Prompt for confirmation in interactive mode (unless forced rebuild)
@@ -290,9 +280,9 @@ try {
 
             if ($buildConfirm -ne "y") {
                 Write-Host ""
-                Write-Message -Level Error -Message "❌ Cannot proceed without the custom runner image"
+                Write-Message -LogLevel $LogLevel -Level Error -Message "❌ Cannot proceed without the custom runner image"
                 Write-Host ""
-                Write-Message -Level Warning -Message "To build manually, run:"
+                Write-Message -LogLevel $LogLevel -Level Warning -Message "To build manually, run:"
                 Write-Host "  docker build -t $LocalImageFull -f $DockerfilePath $DockerContextPath" -ForegroundColor White
                 Write-Host ""
                 exit 12
@@ -304,16 +294,16 @@ try {
             Build-DockerImage -ImageName $LocalImageFull -DockerfilePath $DockerfilePath -ContextPath $DockerContextPath
         }
         catch {
-            Write-Message -Level Error -Message "Failed to build Docker image. Cannot proceed."
+            Write-Message -LogLevel $LogLevel -Level Error -Message "Failed to build Docker image. Cannot proceed."
             exit 13
         }
     }
-    Write-Message -Level Debug -Message "✅ Docker image verification complete"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "✅ Docker image verification complete"
 }
 catch {
     if ($VerbosePreference -eq 'Continue') {
         Write-Host ""
-        Write-Message -Level Debug -Message "Stack trace:"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "Stack trace:"
         Write-Host $_.ScriptStackTrace -ForegroundColor DarkGray
     }
 

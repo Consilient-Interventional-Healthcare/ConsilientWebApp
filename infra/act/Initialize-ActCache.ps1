@@ -22,8 +22,20 @@ param(
     [string]$ImageName,
 
     [Parameter(Mandatory=$false)]
-    [string]$CachePath = (Join-Path $env:USERPROFILE ".cache\act")
+    [string]$CachePath = (Join-Path $env:USERPROFILE ".cache\act"),
+    
+    [ValidateSet('Normal', 'Verbose')]
+    [string]$LogLevel = 'Verbose'
 )
+
+# Import shared Write-Message helper
+$WriteMessagePath = Join-Path $ScriptRoot "Write-Message.ps1"
+if (Test-Path $WriteMessagePath) {
+    . $WriteMessagePath
+}
+else {
+    throw "Write-Message helper not found at: $WriteMessagePath"
+}
 
 # PROOF OF CONCEPT: Start with just one action
 # If this works, we'll extend to all 6 actions
@@ -36,18 +48,17 @@ $AllExist = $true
 foreach ($action in $ExpectedActions) {
     if (-not (Test-Path (Join-Path $CachePath $action))) {
         $AllExist = $false
-        Write-Verbose "Missing: $action"
+        Write-Message -LogLevel $LogLevel -Level Warning -Message "Missing: $action"
         break
     }
 }
 
 if ($AllExist) {
-    Write-Host "✅ All pre-baked actions already in cache"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "✅ All pre-baked actions already in cache"
     return
 }
 
-Write-Host "📦 Extracting pre-baked actions from Docker image..."
-
+Write-Message -LogLevel $LogLevel -Level Debug -Message "📦 Extracting pre-baked actions from Docker image..."
 # Ensure cache directory exists
 if (-not (Test-Path $CachePath)) {
     New-Item -ItemType Directory -Path $CachePath -Force | Out-Null
@@ -55,7 +66,7 @@ if (-not (Test-Path $CachePath)) {
 
 # Step 1: Extract hierarchical structure from Docker image using docker cp
 # This avoids permission issues with volume mounts on Windows Docker Desktop
-Write-Verbose "Creating temporary container to extract actions..."
+Write-Message -LogLevel $LogLevel -Level Debug -Message "Creating temporary container to extract actions..."
 
 $containerId = $null
 try {
@@ -65,23 +76,23 @@ try {
         throw "Failed to create temporary container from image $ImageName"
     }
 
-    Write-Verbose "Created temporary container: $containerId"
-    Write-Verbose "Copying /github/actions from container..."
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "Created temporary container: $containerId"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "Copying /github/actions from container..."
 
     # Copy actions from container to host using docker cp
     & docker cp "${containerId}:/github/actions/." "$CachePath/" 2>&1 | ForEach-Object {
-        Write-Verbose $_
+        Write-Message -LogLevel $LogLevel -Level Debug -Message $_
     }
 
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Docker cp had exit code $LASTEXITCODE, but continuing..."
+        Write-Message -LogLevel $LogLevel -Level Warning -Message "Docker cp had exit code $LASTEXITCODE, but continuing..."
     }
 
     # Clean up container
     & docker rm $containerId -f 2>$null | Out-Null
-    Write-Verbose "Cleaned up temporary container"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "Cleaned up temporary container"
 } catch {
-    Write-Warning "Error extracting actions from Docker image: $_"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Error extracting actions from Docker image: $_"
     if ($containerId) {
         & docker rm $containerId -f 2>$null | Out-Null
     }
@@ -108,7 +119,7 @@ foreach ($owner in $ownerDirs) {
             $destPath = Join-Path $CachePath $flatName
 
             # Move to flat structure
-            Write-Verbose "Flattening: $owner/$($repo.Name) → $flatName"
+            Write-Message -LogLevel $LogLevel -Level Debug -Message "Flattening: $owner/$($repo.Name) → $flatName"
             Move-Item -Path $repo.FullName -Destination $destPath -Force
             $flattenedCount++
         }
@@ -118,7 +129,7 @@ foreach ($owner in $ownerDirs) {
     }
 }
 
-Write-Host "✅ Extracted and flattened $flattenedCount actions"
+Write-Message -LogLevel $LogLevel -Level Debug -Message "✅ Extracted and flattened $flattenedCount actions"
 
 # Verify
 $verifiedCount = 0
@@ -129,7 +140,7 @@ foreach ($action in $ExpectedActions) {
 }
 
 if ($verifiedCount -eq $ExpectedActions.Count) {
-    Write-Host "✅ All $verifiedCount expected actions verified in cache"
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "✅ All $verifiedCount expected actions verified in cache"
 } else {
-    Write-Warning "⚠️  Only $verifiedCount of $($ExpectedActions.Count) actions verified"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "⚠️  Only $verifiedCount of $($ExpectedActions.Count) actions verified"
 }

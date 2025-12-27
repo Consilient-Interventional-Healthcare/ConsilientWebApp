@@ -73,15 +73,10 @@
     Don't wait for keypress on exit (even on errors).
     Useful for automation.
 
-.PARAMETER Quiet
-    Suppress non-error output (minimal clean runs).
-    Useful for CI/CD integration or when you want less verbose output.
-    Default: Verbose mode (shows all output).
-
-.PARAMETER Info
-    Force info-level output (override default verbose mode).
-    Useful for testing and seeing what output users see in GitHub Actions.
-    Default: Verbose mode in ACT (default behavior).
+.PARAMETER LogLevel
+    Control output verbosity level.
+    Valid values: 'Verbose' (show all output), 'Normal' (minimal output)
+    Default: 'Verbose' (shows all output including docker operations)
 
 .EXAMPLE
     .\run-act.ps1
@@ -169,9 +164,8 @@ param(
 
     [switch]$NoWait,
 
-    [switch]$Quiet,
-
-    [switch]$Info
+    [ValidateSet('Normal', 'Verbose')]
+    [string]$LogLevel = 'Verbose'
 )
 
 # ==============================
@@ -233,16 +227,14 @@ function Test-ActInstalled {
     .SYNOPSIS
         Verify act CLI is installed and accessible.
     #>
-    if (-not $Info) {
-        Write-Message -Level Info -Message "  Checking act CLI..."
-    }
+    Write-Message -LogLevel $LogLevel -Level Info -Message "  Checking act CLI..."
 
     try {
         $output = & act --version 2>&1
         if ($LASTEXITCODE -ne 0) {
             return $false
         }
-        Write-Message -Level Debug -Message "  ✅ act CLI found ($($output.Trim()))"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  ✅ act CLI found ($($output.Trim()))"
         return $true
     }
     catch {
@@ -255,16 +247,14 @@ function Test-SecretFile {
     .SYNOPSIS
         Check if secret file exists and return path or null.
     #>
-    if (-not $Info) {
-        Write-Message -Level Info -Message "  Checking secret file..."
-    }
+    Write-Message -LogLevel $LogLevel -Level Info -Message "  Checking secret file..."
 
     if (Test-Path $ActSecretFile) {
-        Write-Message -Level Debug -Message "  ✅ Secret file found"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  ✅ Secret file found"
         return $ActSecretFile
     }
     else {
-        Write-Message -Level Warning -Message "  ⚠️ Secret file not found ($ActSecretFile)"
+        Write-Message -LogLevel $LogLevel -Level Warning -Message "  ⚠️ Secret file not found ($ActSecretFile)"
         return $null
     }
 }
@@ -354,8 +344,7 @@ function Show-ExecutionSummary {
         [string]$RecreateDb,
         [string]$SecretFile,
         [string]$AllowFirewall,
-        [string]$SkipHealthChecks,
-        [string]$VerbosityMode
+        [string]$SkipHealthChecks
     )
 
     Write-Host ""
@@ -371,7 +360,6 @@ function Show-ExecutionSummary {
     Write-Host "  Recreate DB Objects: $(if($RecreateDb -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
     Write-Host "  Allow Local Firewall: $(if($AllowFirewall -eq 'true') {'Yes (INSECURE - dev only)'} else {'No'})" -ForegroundColor $(if($AllowFirewall -eq 'true') {'Yellow'} else {'Gray'})
     Write-Host "  Skip Health Checks: $(if($SkipHealthChecks -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
-    Write-Host "  Output Verbosity: $VerbosityMode" -ForegroundColor $(if($VerbosityMode -eq 'Verbose') {'Yellow'} else {'Gray'})
 
     if ($SecretFile) {
         Write-Host "  Secret File: Found" -ForegroundColor Gray
@@ -396,11 +384,7 @@ function Invoke-ActExecution {
         [string[]]$ActArgs
     )
 
-    # In -Info mode, skip the step header (let act output speak for itself)
-    if (-not $Info) {
-        Write-Message -Level Step -Message "Running act with custom image ($LocalImageFull)..."
-        Write-Host ""
-    }
+    Write-Message -LogLevel $LogLevel -Level Step -Message "Running act with custom image ($LocalImageFull)..."
 
     try {
         & act $ActArgs 2>&1
@@ -420,34 +404,34 @@ function Invoke-ActExecution {
 
 function Show-ActNotInstalledError {
     Write-Host ""
-    Write-Message -Level Error -Message "❌ Error: act CLI not found"
+    Write-Message -LogLevel $LogLevel -Level Error -Message "❌ Error: act CLI not found"
     Write-Host ""
-    Write-Message -Level Warning -Message "The 'act' tool is required to run GitHub Actions workflows locally."
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "The 'act' tool is required to run GitHub Actions workflows locally."
     Write-Host ""
-    Write-Message -Level Warning -Message "Install with:"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Install with:"
     Write-Host "  Windows (Chocolatey):  choco install act-cli" -ForegroundColor White
     Write-Host "  Windows (Scoop):       scoop install act" -ForegroundColor White
     Write-Host "  Linux/macOS:           brew install act" -ForegroundColor White
     Write-Host "  Manual:                https://github.com/nektos/act/releases" -ForegroundColor White
     Write-Host ""
-    Write-Message -Level Info -Message "After installation, restart your terminal and try again."
+    Write-Message -LogLevel $LogLevel -Level Info -Message "After installation, restart your terminal and try again."
 }
 
 function Show-DockerNotRunningError {
     Write-Host ""
-    Write-Message -Level Error -Message "❌ Error: Docker is not running"
+    Write-Message -LogLevel $LogLevel -Level Error -Message "❌ Error: Docker is not running"
     Write-Host ""
-    Write-Message -Level Warning -Message "GitHub Actions workflows run in Docker containers via act."
-    Write-Message -Level Warning -Message "Docker must be running before executing this script."
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "GitHub Actions workflows run in Docker containers via act."
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Docker must be running before executing this script."
     Write-Host ""
-    Write-Message -Level Warning -Message "Troubleshooting:"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Troubleshooting:"
     Write-Host "  Windows/Mac:  Start Docker Desktop" -ForegroundColor Gray
     Write-Host "  Linux:        sudo systemctl start docker" -ForegroundColor Gray
     Write-Host ""
-    Write-Message -Level Warning -Message "Verify with:"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Verify with:"
     Write-Host "  docker ps" -ForegroundColor White
     Write-Host ""
-    Write-Message -Level Info -Message "If Docker Desktop is installed but not running:"
+    Write-Message -LogLevel $LogLevel -Level Info -Message "If Docker Desktop is installed but not running:"
     Write-Host "  1. Open Docker Desktop application" -ForegroundColor Gray
     Write-Host "  2. Wait for the whale icon to stabilize" -ForegroundColor Gray
     Write-Host "  3. Verify with 'docker ps' in a new terminal" -ForegroundColor Gray
@@ -458,23 +442,23 @@ function Show-InvalidParamError {
     param([string]$Message)
 
     Write-Host ""
-    Write-Message -Level Error -Message "❌ Error: $Message"
+    Write-Message -LogLevel $LogLevel -Level Error -Message "❌ Error: $Message"
     Write-Host ""
 }
 
 function Show-ActExecutionError {
     Write-Host ""
-    Write-Message -Level Error -Message "❌ Error: Workflow execution failed"
+    Write-Message -LogLevel $LogLevel -Level Error -Message "❌ Error: Workflow execution failed"
     Write-Host ""
-    Write-Message -Level Warning -Message "The act command failed. Check the output above for details."
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "The act command failed. Check the output above for details."
     Write-Host ""
-    Write-Message -Level Warning -Message "Possible causes:"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Possible causes:"
     Write-Host "  - Workflow syntax error in .github/workflows/main.yml" -ForegroundColor Gray
     Write-Host "  - Docker image pull failed (network issue)" -ForegroundColor Gray
     Write-Host "  - Missing required secrets in .env.act" -ForegroundColor Gray
     Write-Host "  - Insufficient Docker resources" -ForegroundColor Gray
     Write-Host ""
-    Write-Message -Level Warning -Message "Troubleshooting steps:"
+    Write-Message -LogLevel $LogLevel -Level Warning -Message "Troubleshooting steps:"
     Write-Host "  1. Run with -Verbose for more details" -ForegroundColor Gray
     Write-Host "  2. Check .github/workflows/main.yml syntax" -ForegroundColor Gray
     Write-Host "  3. Verify secrets in infra/act/.env.act" -ForegroundColor Gray
@@ -491,11 +475,8 @@ try {
     # ==============================
     # PREREQUISITE CHECKS
     # ==============================
-    # In -Info mode, suppress all prerequisite diagnostic output
-    if (-not $Info) {
-        Write-Message -Level Info -Message "🔍 Checking prerequisites..."
-        Write-Host ""
-    }
+    Write-Message -LogLevel $LogLevel -Level Info -Message "🔍 Checking prerequisites..."
+    Write-Host ""
 
     if (-not (Test-ActInstalled)) {
         Show-ActNotInstalledError
@@ -508,16 +489,13 @@ try {
     # (Build-RunnerImage.ps1 will handle all Docker diagnostics)
     $buildImageScript = Join-Path $PSScriptRoot "Build-RunnerImage.ps1"
     if (-not (Test-Path $buildImageScript)) {
-        Write-Message -Level Error -Message "Build script not found: $buildImageScript"
+        Write-Message -LogLevel $LogLevel -Level Error -Message "Build script not found: $buildImageScript"
         exit 14
     }
 
     $buildParams = @{
         Force = $RebuildImage
-        Quiet = $Quiet
-    }
-    if ($Info) {
-        $buildParams['Info'] = $true
+        LogLevel = $LogLevel
     }
     if ($VerbosePreference -eq 'Continue') {
         $buildParams['Verbose'] = $true
@@ -529,12 +507,12 @@ try {
     try {
         & $buildImageScript @buildParams
         if ($LASTEXITCODE -ne 0) {
-            Write-Message -Level Error -Message "Failed to build or verify runner image"
+            Write-Message -LogLevel $LogLevel -Level Error -Message "Failed to build or verify runner image"
             exit 15
         }
     }
     catch {
-        Write-Message -Level Error -Message "Error running Build-RunnerImage.ps1: $_"
+        Write-Message -LogLevel $LogLevel -Level Error -Message "Error running Build-RunnerImage.ps1: $_"
         exit 16
     }
 
@@ -546,10 +524,10 @@ try {
     # Validate RecreateDatabase only in dev
     if ($RecreateDatabase -and $Environment -eq 'prod') {
         Show-InvalidParamError "Cannot recreate database objects in production"
-        Write-Message -Level Warning -Message "Recreating database objects (drops all tables, views, procedures)"
-        Write-Message -Level Warning -Message "is only allowed in the 'dev' environment for safety reasons."
+        Write-Message -LogLevel $LogLevel -Level Warning -Message "Recreating database objects (drops all tables, views, procedures)"
+        Write-Message -LogLevel $LogLevel -Level Warning -Message "is only allowed in the 'dev' environment for safety reasons."
         Write-Host ""
-        Write-Message -Level Warning -Message "For production database changes:"
+        Write-Message -LogLevel $LogLevel -Level Warning -Message "For production database changes:"
         Write-Host "  1. Test in dev environment first" -ForegroundColor Gray
         Write-Host "  2. Create migration scripts" -ForegroundColor Gray
         Write-Host "  3. Review and approve changes" -ForegroundColor Gray
@@ -611,18 +589,18 @@ try {
             $RunHealthChecks = $RunHealthChecksResponse -eq "y"
         } else {
             $RunHealthChecks = $false
-            Write-Message -Level Info -Message "Health checks skipped (no apps being deployed)"
+            Write-Message -LogLevel $LogLevel -Level Info -Message "Health checks skipped (no apps being deployed)"
         }
 
         # Handle RecreateCache if requested
         if ($RecreateCache) {
-            Write-Message -Level Warning -Message "Clearing actions cache..."
+            Write-Message -LogLevel $LogLevel -Level Warning -Message "Clearing actions cache..."
             $ActCachePath = Join-Path $env:USERPROFILE ".cache\act"
             if (Test-Path $ActCachePath) {
                 Remove-Item -Path $ActCachePath -Recurse -Force
-                Write-Message -Level Success -Message "Actions cache cleared"
+                Write-Message -LogLevel $LogLevel -Level Success -Message "Actions cache cleared"
             } else {
-                Write-Message -Level Info -Message "No existing cache to clear"
+                Write-Message -LogLevel $LogLevel -Level Info -Message "No existing cache to clear"
             }
         }
     }
@@ -664,47 +642,12 @@ try {
     }
 
     # ==============================
-    # DETERMINE VERBOSITY MODE
-    # ==============================
-    # Default: In ACT, verbose mode is default
-    # User can override with -Info (force info-level) or -Quiet (suppress output)
-    # -Verbose PowerShell parameter always forces verbose mode
-
-    $EffectiveVerboseMode = $false
-    $EffectiveQuietMode = $false
-
-    $VerbosityModeDisplay = switch ($true) {
-        ($VerbosePreference -eq 'Continue') { "Verbose (explicit)"; break }
-        $Info { "Info (test mode)"; break }
-        $Quiet { "Quiet"; break }
-        default { "Verbose (default)" }
-    }
-
-    # Set effective modes based on selection
-    # -Verbose (explicit) > -Info (test) > -Quiet > Default (verbose)
-    if ($VerbosePreference -eq 'Continue') {
-        $EffectiveVerboseMode = $true
-    }
-    elseif ($Info) {
-        # -Info mode: neither verbose nor quiet, let act use default (info-level)
-        $EffectiveVerboseMode = $false
-        $EffectiveQuietMode = $false
-    }
-    elseif ($Quiet) {
-        $EffectiveQuietMode = $true
-    }
-    else {
-        # Default: verbose mode
-        $EffectiveVerboseMode = $true
-    }
-
-    # ==============================
     # SHOW SUMMARY
     # ==============================
 
-    # Only show summary in verbose mode (not in Info or Quiet mode)
-    if (-not $Info -and -not $Quiet) {
-        Show-ExecutionSummary -Environment $EnvInput -SkipTf $SkipTerraformStr -SkipDb $SkipDatabasesStr -RecreateDb $RecreateDbStr -SecretFile $secretFile -AllowFirewall $AllowLocalFirewallStr -SkipHealthChecks $SkipHealthChecksStr -VerbosityMode $VerbosityModeDisplay
+    # Show summary in verbose mode (default)
+    if ($LogLevel -eq 'Verbose') {
+        Show-ExecutionSummary -Environment $EnvInput -SkipTf $SkipTerraformStr -SkipDb $SkipDatabasesStr -RecreateDb $RecreateDbStr -SecretFile $secretFile -AllowFirewall $AllowLocalFirewallStr -SkipHealthChecks $SkipHealthChecksStr
     }
 
     # ==============================
@@ -754,18 +697,18 @@ try {
         $ActArgs += "GITHUB_TOKEN=ghp_dummy_token_for_local_testing"
     }
 
-    # Add verbosity flags based on effective mode
-    if ($EffectiveQuietMode) {
-        Write-Verbose "Adding --quiet flag to act"
+    # Add verbosity flags based on LogLevel
+    if ($LogLevel -eq 'Normal') {
+        Write-Verbose "Adding --quiet flag to act (LogLevel=Normal)"
         $ActArgs += "--quiet"
     }
     else {
-        Write-Verbose "Using default act verbosity (info mode)"
+        Write-Verbose "Using default act verbosity (LogLevel=Verbose)"
     }
 
-    # Add GitHub Actions debug secrets based on verbosity mode
+    # Add GitHub Actions debug secrets based on LogLevel
     # ACTIONS_STEP_DEBUG and ACTIONS_RUNNER_DEBUG control ::debug:: output visibility
-    if ($EffectiveVerboseMode) {
+    if ($LogLevel -eq 'Verbose') {
         Write-Verbose "Enabling GitHub Actions debug logging (ACTIONS_STEP_DEBUG, ACTIONS_RUNNER_DEBUG)"
         $ActArgs += "--secret"
         $ActArgs += "ACTIONS_STEP_DEBUG=true"
@@ -773,7 +716,7 @@ try {
         $ActArgs += "ACTIONS_RUNNER_DEBUG=true"
     }
     else {
-        Write-Verbose "GitHub Actions debug logging disabled"
+        Write-Verbose "GitHub Actions debug logging disabled (LogLevel=Normal)"
         $ActArgs += "--secret"
         $ActArgs += "ACTIONS_STEP_DEBUG=false"
         $ActArgs += "--secret"
@@ -787,13 +730,13 @@ try {
     Invoke-ActExecution $ActArgs
 
     Write-Host ""
-    Write-Message -Level Success -Message "✅ Done!"
+    Write-Message -LogLevel $LogLevel -Level Success -Message "✅ Done!"
     Write-Host ""
 }
 catch {
     if ($VerbosePreference -eq 'Continue') {
         Write-Host ""
-        Write-Message -Level Debug -Message "Stack trace:"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "Stack trace:"
         Write-Host $_.ScriptStackTrace -ForegroundColor DarkGray
     }
 
@@ -804,7 +747,7 @@ catch {
 
     if (-not $NoWait) {
         Write-Host ""
-        Write-Message -Level Info -Message "Press any key to exit..."
+        Write-Message -LogLevel $LogLevel -Level Info -Message "Press any key to exit..."
         $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
     }
 
@@ -813,3 +756,4 @@ catch {
 finally {
     Pop-Location -ErrorAction SilentlyContinue
 }
+

@@ -1,5 +1,3 @@
-# Add a short, numbered name for roadmap clarity
-name: "02 - Terraform Infrastructure"
 on:
   workflow_call:
     inputs:
@@ -19,6 +17,11 @@ on:
         default: false
       enable-debug:
         description: 'Enable verbose debug logging'
+        required: false
+        type: boolean
+        default: false
+      enable-debug-output:
+        description: 'Enable detailed workflow step output (shows all echo statements)'
         required: false
         type: boolean
         default: false
@@ -115,6 +118,11 @@ jobs:
       TF_VAR_use_shared_container_environment: ${{ vars.CAE_USE_SHARED || 'true' }}
       TF_VAR_shared_container_environment_name: ${{ vars.CAE_SHARED_NAME || 'consilient-env' }}
       TF_VAR_container_app_environment_name_template: ${{ vars.CAE_NAME_TEMPLATE || 'consilient-cae-{environment}' }}
+      # GitHub Actions debug mode controls workflow output verbosity
+      # When ACTIONS_STEP_DEBUG=true: show all echo statements (verbose mode)
+      # When ACTIONS_STEP_DEBUG=false: suppress informational echo statements (quiet mode)
+      # This is set by run-act.ps1 (-Verbose/-Quiet flags) or workflow input (enable-debug-output)
+      ACTIONS_STEP_DEBUG: ${{ inputs.enable-debug-output && 'true' || 'false' }}
 
     defaults:
       run:
@@ -137,7 +145,7 @@ jobs:
       - name: Validate Required Secrets
         shell: bash
         run: |
-          echo "=== Validating Required Secrets ==="
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Validating Required Secrets ==="
           MISSING_SECRETS=()
 
           # OIDC Authentication Secrets (for azure-login)
@@ -172,7 +180,7 @@ jobs:
 
           # Act Testing Fallback (optional - only warn)
           if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
-            echo "ℹ️  Info: AZURE_CREDENTIALS not set (only required for local 'act' testing)"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Info: AZURE_CREDENTIALS not set (only required for local 'act' testing)"
           fi
 
           # Report missing secrets
@@ -185,15 +193,15 @@ jobs:
             echo ""
             echo "Please configure these secrets in GitHub repository settings."
             echo ""
-            echo "Secret Categories:"
-            echo "  OIDC Authentication: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID"
-            echo "  Terraform Provider: ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID"
-            echo "  SQL Server: SQL_ADMIN_USERNAME, SQL_ADMIN_PASSWORD"
-            echo "  Act Testing (optional): AZURE_CREDENTIALS"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Secret Categories:"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  OIDC Authentication: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Terraform Provider: ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  SQL Server: SQL_ADMIN_USERNAME, SQL_ADMIN_PASSWORD"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Act Testing (optional): AZURE_CREDENTIALS"
             exit 1
           fi
 
-          echo "✅ All required secrets are configured"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ All required secrets are configured"
 
       - name: Login to Azure (OIDC + act fallback)
         # AZURE_CLIENT_ID is for OIDC authentication (production)
@@ -265,17 +273,17 @@ jobs:
       - name: Build Resource Group ID
         shell: bash
         run: |
-          echo ""
-          echo "=== Building Resource Group ID ==="
-          echo ""
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Building Resource Group ID ==="
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 
-          echo "Environment: ${TF_VAR_environment}"
-          echo "Region: ${TF_VAR_region}"
-          echo "Resource Group: ${TF_VAR_resource_group_name}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Environment: ${TF_VAR_environment}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Region: ${TF_VAR_region}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Resource Group: ${TF_VAR_resource_group_name}"
 
           # Build RG_ID for later use in resource imports
           RG_ID="/subscriptions/${TF_VAR_subscription_id}/resourceGroups/${TF_VAR_resource_group_name}"
-          echo "Resource Group ID: ${RG_ID}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Resource Group ID: ${RG_ID}"
           echo "RG_ID=${RG_ID}" >> $GITHUB_ENV
 
       - name: Detect and Import Existing Resources (Fast Mode)
@@ -287,11 +295,11 @@ jobs:
 
           # Check if state file exists
           if [ ! -f "terraform.tfstate" ] && [ ! -f ".terraform/terraform.tfstate" ]; then
-            echo "ℹ️  No Terraform state file found - fresh deployment detected"
-            echo "✅ Import skipped (will create all resources from scratch)"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  No Terraform state file found - fresh deployment detected"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import skipped (will create all resources from scratch)"
           else
-            echo "ℹ️  Terraform state file found - assuming state is synced with Azure"
-            echo "✅ Import skipped (will run on-demand if Terraform operations fail)"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Terraform state file found - assuming state is synced with Azure"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import skipped (will run on-demand if Terraform operations fail)"
           fi
 
           # Set flag for conditional import in later steps
@@ -309,15 +317,15 @@ jobs:
 
             # Check if error is state-related
             if terraform validate 2>&1 | grep -qE "(resource doesn't exist|already exists|Cannot import|state)"; then
-              echo "ℹ️  State drift detected - running import script..."
+              [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  State drift detected - running import script..."
 
               # Run import script
               if bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/import.sh"; then
-                echo "✅ Import completed successfully - retrying terraform validate..."
+                [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import completed successfully - retrying terraform validate..."
 
                 # Retry validate
                 if terraform validate; then
-                  echo "✅ Terraform validate succeeded after import"
+                  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform validate succeeded after import"
                 else
                   echo "❌ Terraform validate still failing after import"
                   exit 1
@@ -331,7 +339,7 @@ jobs:
               exit 1
             fi
           else
-            echo "✅ Terraform validate succeeded (state is synced)"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform validate succeeded (state is synced)"
           fi
 
       - name: Terraform Plan
@@ -350,15 +358,15 @@ jobs:
 
             # Check if error is state-related
             if echo "$PLAN_OUTPUT" | grep -qE "(resource doesn't exist|already exists|Cannot import|state|no matching")"; then
-              echo "ℹ️  State drift detected - running import script..."
+              [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  State drift detected - running import script..."
 
               # Run import script
               if bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/import.sh"; then
-                echo "✅ Import completed successfully - retrying terraform plan..."
+                [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import completed successfully - retrying terraform plan..."
 
                 # Retry plan
                 if terraform plan; then
-                  echo "✅ Terraform plan succeeded after import"
+                  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform plan succeeded after import"
                 else
                   echo "❌ Terraform plan still failing after import"
                   exit 1
@@ -373,7 +381,7 @@ jobs:
               exit 1
             fi
           else
-            echo "✅ Terraform plan succeeded (state is synced)"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform plan succeeded (state is synced)"
           fi
 
       - name: Terraform Apply
@@ -391,15 +399,15 @@ jobs:
 
             # Check if error is state-related
             if echo "$APPLY_OUTPUT" | grep -qE "(resource doesn't exist|already exists|Cannot import|state|no matching)"; then
-              echo "ℹ️  State drift detected - running import script..."
+              [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  State drift detected - running import script..."
 
               # Run import script
               if bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/import.sh"; then
-                echo "✅ Import completed successfully - retrying terraform apply..."
+                [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import completed successfully - retrying terraform apply..."
 
                 # Retry apply
                 if terraform apply -auto-approve; then
-                  echo "✅ Terraform apply succeeded after import"
+                  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform apply succeeded after import"
                 else
                   echo "❌ Terraform apply still failing after import"
                   exit 1
@@ -414,7 +422,7 @@ jobs:
               exit 1
             fi
           else
-            echo "✅ Terraform apply succeeded (state is synced)"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform apply succeeded (state is synced)"
           fi
 
       - name: Capture Terraform Outputs
@@ -427,11 +435,11 @@ jobs:
           ACR_REGISTRY_URL=$(terraform output -raw acr_registry_url 2>/dev/null || echo "")
           RESOURCE_GROUP_NAME=$(terraform output -raw resource_group_name 2>/dev/null || echo "")
 
-          echo "Captured Terraform Outputs:"
-          echo "  API App Name: ${API_APP_NAME}"
-          echo "  React App Name: ${REACT_APP_NAME}"
-          echo "  ACR Registry URL: ${ACR_REGISTRY_URL}"
-          echo "  Resource Group Name: ${RESOURCE_GROUP_NAME}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Captured Terraform Outputs:"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  API App Name: ${API_APP_NAME}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  React App Name: ${REACT_APP_NAME}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ACR Registry URL: ${ACR_REGISTRY_URL}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Resource Group Name: ${RESOURCE_GROUP_NAME}"
 
           echo "api_app_name=${API_APP_NAME}" >> $GITHUB_OUTPUT
           echo "react_app_name=${REACT_APP_NAME}" >> $GITHUB_OUTPUT
@@ -447,5 +455,5 @@ jobs:
             echo "This is a safety measure to prevent accidental deletion of production resources."
             exit 1
           fi
-          echo "✅ Proceeding with destroy for environment: ${{ inputs.environment }}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Proceeding with destroy for environment: ${{ inputs.environment }}"
           terraform destroy -auto-approve
