@@ -377,7 +377,7 @@ function Invoke-ActExecution {
     }
 
     try {
-        & act $ActArgs
+        & act $ActArgs 2>&1
         if ($LASTEXITCODE -ne 0) {
             throw "act exited with code $LASTEXITCODE"
         }
@@ -542,7 +542,6 @@ try {
         if (-not $EnvInput) {
             $EnvInput = Get-ValidatedInput "Enter environment (dev/prod)" "dev" @("dev", "prod")
         }
-
         # 0. Docker operations (destructive - defaults = no)
         $RecreateImageResponse = Get-ValidatedInput "Recreate Docker Image? (y/n)" "n" @("y", "n")
         $RecreateImage = $RecreateImageResponse -eq "y"
