@@ -879,6 +879,7 @@ try {
         "--pull=false",      # Use local image, don't pull from registry
         "--bind",            # Mount workspace for persistent state
         "--action-offline-mode",  # Use baked actions, don't pull from GitHub
+        "--action-cache-path", $ActCachePath,  # Path to pre-baked action cache
         "--input", "environment=$EnvInput",
         "--input", "skip-terraform=$SkipTerraformStr",
         "--input", "skip-databases=$SkipDatabasesStr",
