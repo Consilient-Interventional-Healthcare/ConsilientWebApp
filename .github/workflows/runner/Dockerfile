@@ -7,7 +7,7 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 # Metadata labels
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
 LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
-LABEL org.opencontainers.image.version="2.0.0"
+LABEL org.opencontainers.image.version="2.1.0"
 LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17"
 
 # ============================================================
@@ -38,8 +38,8 @@ LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install only Java (required for SchemaSpy)
-# Other system dependencies are already in the catthehacker base image
+# Install Java (required for SchemaSpy)
+# Note: git is already in the catthehacker base image, so no need to install it
 RUN apt-get update && \
     apt-get install -y openjdk-17-jre-headless && \
     rm -rf /var/lib/apt/lists/*
@@ -80,6 +80,51 @@ RUN mkdir -p ${SCHEMASPY_PATH} && \
 
 # Add SchemaSpy to PATH
 ENV PATH="${SCHEMASPY_PATH}:${PATH}"
+
+# ============================================================
+# LAYER 3B: Bake GitHub Actions into the Image
+# ============================================================
+# Pre-clone frequently-used GitHub Actions to avoid network calls during workflow execution
+# This significantly speeds up act and GitHub Actions workflows, and provides offline capability
+# IMPORTANT: Directory structure must match act's expectations for --action-offline-mode
+# Format: /github/actions/<owner>/<repo>@<ref>/
+
+ENV GITHUB_ACTIONS_PATH=/github/actions
+RUN mkdir -p ${GITHUB_ACTIONS_PATH}
+
+# actions/checkout@v4
+# Essential action used by nearly all workflows (11 occurrences)
+RUN mkdir -p ${GITHUB_ACTIONS_PATH}/actions && \
+    git clone --depth 1 --branch v4 https://github.com/actions/checkout.git ${GITHUB_ACTIONS_PATH}/actions/checkout@v4 && \
+    echo "✅ Cloned actions/checkout@v4"
+
+# hashicorp/setup-terraform@v3
+# Used by terraform.yml workflow (disabled but still downloaded by GitHub Actions)
+RUN mkdir -p ${GITHUB_ACTIONS_PATH}/hashicorp && \
+    git clone --depth 1 --branch v3 https://github.com/hashicorp/setup-terraform.git ${GITHUB_ACTIONS_PATH}/hashicorp/setup-terraform@v3 && \
+    echo "✅ Cloned hashicorp/setup-terraform@v3"
+
+# azure/login@v2
+# Used by .github/actions/azure-login composite action
+RUN mkdir -p ${GITHUB_ACTIONS_PATH}/azure && \
+    git clone --depth 1 --branch v2 https://github.com/Azure/login.git ${GITHUB_ACTIONS_PATH}/azure/login@v2 && \
+    echo "✅ Cloned azure/login@v2"
+
+# docker/setup-buildx-action@v3
+# Required for all Docker builds (3 occurrences)
+RUN mkdir -p ${GITHUB_ACTIONS_PATH}/docker && \
+    git clone --depth 1 --branch v3 https://github.com/docker/setup-buildx-action.git ${GITHUB_ACTIONS_PATH}/docker/setup-buildx-action@v3 && \
+    echo "✅ Cloned docker/setup-buildx-action@v3"
+
+# docker/build-push-action@v5
+# Core Docker build action (3 occurrences)
+RUN git clone --depth 1 --branch v5 https://github.com/docker/build-push-action.git ${GITHUB_ACTIONS_PATH}/docker/build-push-action@v5 && \
+    echo "✅ Cloned docker/build-push-action@v5"
+
+# docker/login-action@v3
+# ACR authentication (2 occurrences)
+RUN git clone --depth 1 --branch v3 https://github.com/docker/login-action.git ${GITHUB_ACTIONS_PATH}/docker/login-action@v3 && \
+    echo "✅ Cloned docker/login-action@v3"
 
 # ============================================================
 # LAYER 4: Terraform v1.9.0 with Pre-cached Providers

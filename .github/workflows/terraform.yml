@@ -73,7 +73,7 @@ jobs:
     name: "Terraform apply"
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'ubuntu:latest' }}
+      image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'consilientwebapp-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -122,7 +122,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
         # Note: Checkout runs in root directory (./), composite action default overrides job default
@@ -212,9 +212,10 @@ jobs:
           if ! terraform fmt -check -recursive; then
             echo "⚠️ Terraform formatting issues detected"
             if [ -z "$ACT" ]; then
-              echo "::error::Terraform files need formatting. Run 'terraform fmt -recursive' to fix."
+              echo "::error::Terraform files need formatting. Recommendation: Run 'terraform fmt -recursive' in your infra/terraform directory locally to clean up the code files."
               exit 1
             else
+              echo "⚠️ Recommendation: Run 'terraform fmt -recursive' in your infra/terraform directory locally to clean up the code files."
               echo "Skipping format check failure in act environment (local testing)"
             fi
           else
@@ -252,7 +253,7 @@ jobs:
 
       - name: Setup Terraform (if needed for non-container environments)
         if: false  # Currently uses container image with Terraform pre-installed
-        uses: hashicorp/setup-terraform@de84b05c27089f6cc8b3c38e5ddbe9dc3fd7e7b9  # v3.0.0
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ vars.TERRAFORM_VERSION || '1.6.0' }}
 
@@ -277,297 +278,144 @@ jobs:
           echo "Resource Group ID: ${RG_ID}"
           echo "RG_ID=${RG_ID}" >> $GITHUB_ENV
 
-      - name: Detect and Import Existing Resources
+      - name: Detect and Import Existing Resources (Fast Mode)
         id: import
         shell: bash
         run: |
-          set +e  # Don't exit on error, we'll handle errors ourselves
+          # Fast Mode: Skip import step initially, run import on-demand if Terraform operations fail
+          # This saves ~17 seconds on happy path (state is synced)
 
-          # Check if state file exists - skip imports if this is a fresh deployment
+          # Check if state file exists
           if [ ! -f "terraform.tfstate" ] && [ ! -f ".terraform/terraform.tfstate" ]; then
-            echo "ℹ️  No Terraform state file found - this appears to be a fresh deployment"
-            echo "ℹ️  Skipping resource import step (will create all resources from scratch)"
-            exit 0
-          fi
-
-          echo "=== Step 1: Reading CAE Configuration from Environment Variables ==="
-
-          # CAE configuration from environment variables
-          USE_SHARED_CAE="${TF_VAR_use_shared_container_environment}"
-          SHARED_CAE_NAME="${TF_VAR_shared_container_environment_name}"
-          CREATE_CAE="${TF_VAR_create_container_app_environment}"
-
-          echo "Configuration from environment:"
-          echo "  use_shared_container_environment: ${USE_SHARED_CAE}"
-          echo "  shared_container_environment_name: ${SHARED_CAE_NAME}"
-          echo "  create_container_app_environment: ${CREATE_CAE}"
-
-          # Determine expected CAE name based on configuration
-          if [ "$USE_SHARED_CAE" = "true" ]; then
-            # Shared mode: Use fixed name (NO environment substitution!)
-            EXPECTED_CAE_NAME="${SHARED_CAE_NAME}"
-            echo "Using shared mode with FIXED name: ${EXPECTED_CAE_NAME}"
-            echo "  (This name is used across ALL environments: dev, staging, prod)"
+            echo "ℹ️  No Terraform state file found - fresh deployment detected"
+            echo "✅ Import skipped (will create all resources from scratch)"
           else
-            # Template mode: Would resolve from template, but we'll just let Terraform handle it
-            echo "Using template mode - Terraform will resolve the name"
-            EXPECTED_CAE_NAME=""  # Don't try to guess
+            echo "ℹ️  Terraform state file found - assuming state is synced with Azure"
+            echo "✅ Import skipped (will run on-demand if Terraform operations fail)"
           fi
 
-          echo ""
-          echo "✅ Configuration loaded from environment variables"
-          echo "All CAE settings will be managed by Terraform"
-
-          echo ""
-          echo "=== Step 2: Importing Existing Azure Resources ==="
-          echo ""
-
-          # Initialize tracking for failed imports
-          failed_imports=0
-          failed_critical_imports=0
-          failed_import_list=()
-          failed_critical_import_list=()
-
-          # Function to import a resource if it exists
-          # Second parameter can be "critical" to mark resource as essential
-          import_resource() {
-            local tf_address="$1"
-            local resource_id="$2"
-            local resource_name="$3"
-            local is_critical="${4:-false}"  # Default to non-critical
-
-            # Check if already in state
-            if terraform state list | grep -q "^${tf_address}\$"; then
-              echo "  ✅ Already in state: ${resource_name}"
-              return 0
-            fi
-
-            # Try to import
-            echo "  📥 Importing: ${resource_name}"
-            local import_output
-            if import_output=$(terraform import "${tf_address}" "${resource_id}" 2>&1); then
-              echo "  ✅ Imported successfully: ${resource_name}"
-              return 0
-            else
-              # Check if error is because resource doesn't exist
-              if echo "$import_output" | grep -q "Cannot import non-existent"; then
-                echo "  ℹ️  Resource does not exist in Azure: ${resource_name}"
-              elif echo "$import_output" | grep -q "Resource already managed"; then
-                echo "  ✅ Already managed: ${resource_name}"
-              else
-                echo "  ⚠️  Import failed: ${resource_name}"
-                echo "$import_output" | grep -i "error" | head -3
-                ((failed_imports++))
-
-                if [ "$is_critical" = "critical" ]; then
-                  ((failed_critical_imports++))
-                  failed_critical_import_list+=("${resource_name}")
-                else
-                  failed_import_list+=("${resource_name}")
-                fi
-              fi
-              return 1
-            fi
-          }
-
-          echo "1. Resource Group"
-          RG_ID="/subscriptions/${TF_VAR_subscription_id}/resourceGroups/${TF_VAR_resource_group_name}"
-          import_resource "azurerm_resource_group.main" "${RG_ID}" "Resource Group"
-
-          echo ""
-          echo "2. Networking Resources"
-          VNET_ID="${RG_ID}/providers/Microsoft.Network/virtualNetworks/consilient-vnet-${TF_VAR_environment}"
-          SUBNET_ID="${VNET_ID}/subnets/consilient-subnet-${TF_VAR_environment}"
-          import_resource "azurerm_virtual_network.main" "${VNET_ID}" "Virtual Network"
-          import_resource "azurerm_subnet.main" "${SUBNET_ID}" "Subnet"
-
-          echo ""
-          echo "3. Container Registry"
-          ACR_NAME=$(terraform output -raw acr_name 2>/dev/null || echo "consilientacr${TF_VAR_environment}$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
-          ACR_ID="${RG_ID}/providers/Microsoft.ContainerRegistry/registries/${ACR_NAME}"
-          import_resource "azurerm_container_registry.main" "${ACR_ID}" "Container Registry" "critical"
-
-          echo ""
-          echo "4. SQL Server and Databases"
-          SQL_SUFFIX=$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)
-          SQL_SERVER_NAME="consilient-sqlsrv-${TF_VAR_environment}-${SQL_SUFFIX}"
-          SQL_SERVER_ID="${RG_ID}/providers/Microsoft.Sql/servers/${SQL_SERVER_NAME}"
-          MAIN_DB_ID="${SQL_SERVER_ID}/databases/consilient_main_${TF_VAR_environment}"
-          HANGFIRE_DB_ID="${SQL_SERVER_ID}/databases/consilient_hangfire_${TF_VAR_environment}"
-          import_resource "azurerm_mssql_server.main" "${SQL_SERVER_ID}" "SQL Server" "critical"
-          import_resource "module.main_db.azurerm_mssql_database.this" "${MAIN_DB_ID}" "Main Database" "critical"
-          import_resource "module.hangfire_db.azurerm_mssql_database.this" "${HANGFIRE_DB_ID}" "Hangfire Database" "critical"
-
-          echo ""
-          echo "5. Storage Account and Container"
-          STORAGE_NAME="consilientloki${TF_VAR_environment}${SQL_SUFFIX}"
-          STORAGE_ID="${RG_ID}/providers/Microsoft.Storage/storageAccounts/${STORAGE_NAME}"
-          STORAGE_CONTAINER_ID="${STORAGE_ID}/blobServices/default/containers/loki-data"
-          PRIVATE_ENDPOINT_ID="${RG_ID}/providers/Microsoft.Network/privateEndpoints/consilient-pe-loki-storage-${TF_VAR_environment}"
-          import_resource "azurerm_storage_account.loki" "${STORAGE_ID}" "Loki Storage Account"
-          import_resource "azurerm_storage_container.loki" "${STORAGE_CONTAINER_ID}" "Loki Storage Container"
-          import_resource "azurerm_private_endpoint.loki_storage" "${PRIVATE_ENDPOINT_ID}" "Loki Storage Private Endpoint"
-
-          echo ""
-          echo "6. Managed Identity"
-          IDENTITY_ID="${RG_ID}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/consilient-loki-identity-${TF_VAR_environment}"
-          import_resource "azurerm_user_assigned_identity.loki" "${IDENTITY_ID}" "Loki Managed Identity"
-
-          echo ""
-          echo "7. Role Assignment (Loki -> Storage)"
-          # Get the principal_id of the managed identity
-          PRINCIPAL_ID=$(az identity show --ids "${IDENTITY_ID}" --query principalId -o tsv 2>/dev/null || echo "")
-          if [ -n "$PRINCIPAL_ID" ]; then
-            echo "  Found managed identity principal ID: ${PRINCIPAL_ID}"
-            # List role assignments for the storage account and find the one with this principal
-            ROLE_ASSIGNMENT_ID=$(az role assignment list --scope "${STORAGE_ID}" --query "[?principalId=='${PRINCIPAL_ID}'].id | [0]" -o tsv 2>/dev/null || echo "")
-            if [ -n "$ROLE_ASSIGNMENT_ID" ]; then
-              echo "  Found role assignment: ${ROLE_ASSIGNMENT_ID}"
-              import_resource "azurerm_role_assignment.loki_blob" "${ROLE_ASSIGNMENT_ID}" "Loki Storage Blob Role Assignment"
-            else
-              echo "  ℹ️  No role assignment found for this managed identity on storage account"
-            fi
-          else
-            echo "  ℹ️  Managed identity not found, skipping role assignment import"
-          fi
-
-          echo ""
-          echo "8. Container App Environment"
-          # Import CAE only if:
-          # 1. We're NOT creating a new one (create_container_app_environment = false)
-          # 2. We're in shared mode (use_shared_container_environment = true)
-          # 3. The CAE name is known (from terraform.tfvars)
-          # 4. The CAE is in the SAME resource group as other resources
-
-          if [ "$CREATE_CAE" = "false" ] && [ "$USE_SHARED_CAE" = "true" ] && [ -n "$EXPECTED_CAE_NAME" ]; then
-            echo "  Shared mode detected: Checking if CAE '${EXPECTED_CAE_NAME}' exists in resource group '${TF_VAR_resource_group_name}'"
-
-            # Check if CAE exists in Azure in the SAME resource group
-            CAE_EXISTS=$(az containerapp env show \
-              --name "${EXPECTED_CAE_NAME}" \
-              --resource-group "${TF_VAR_resource_group_name}" \
-              --query "id" -o tsv 2>/dev/null || echo "")
-
-            if [ -n "$CAE_EXISTS" ]; then
-              echo "  CAE exists in same resource group - attempting import"
-              CAE_ID="${RG_ID}/providers/Microsoft.App/managedEnvironments/${EXPECTED_CAE_NAME}"
-              import_resource "azurerm_container_app_environment.shared[0]" "${CAE_ID}" "Container App Environment"
-            else
-              echo "  ℹ️  CAE '${EXPECTED_CAE_NAME}' not found in resource group '${TF_VAR_resource_group_name}'"
-              echo "  ℹ️  Terraform will use data source to reference CAE from another resource group"
-            fi
-          elif [ "$CREATE_CAE" = "true" ]; then
-            echo "  ℹ️  create_container_app_environment=true - Terraform will create a new CAE"
-            echo "  ℹ️  Attempting to import in case it already exists..."
-
-            # Try to determine CAE name (in template mode, Terraform resolves it)
-            if [ "$USE_SHARED_CAE" = "true" ]; then
-              CAE_NAME="${EXPECTED_CAE_NAME}"
-            else
-              # Template mode - resolve the template from environment variable
-              CAE_TEMPLATE="${TF_VAR_container_app_environment_name_template}"
-              CAE_NAME="${CAE_TEMPLATE/\{environment\}/${TF_VAR_environment}}"
-            fi
-
-            if [ -n "$CAE_NAME" ]; then
-              CAE_ID="${RG_ID}/providers/Microsoft.App/managedEnvironments/${CAE_NAME}"
-              import_resource "azurerm_container_app_environment.shared[0]" "${CAE_ID}" "Container App Environment"
-            fi
-          else
-            echo "  ℹ️  CAE configuration doesn't require import (using existing CAE via data source or ID)"
-          fi
-
-          echo ""
-          echo "9. Container App (Loki)"
-          CONTAINER_APP_ID="${RG_ID}/providers/Microsoft.App/containerApps/consilient-loki-${TF_VAR_environment}"
-          import_resource "azurerm_container_app.loki" "${CONTAINER_APP_ID}" "Loki Container App"
-
-          echo ""
-          echo "10. Grafana"
-          GRAFANA_ID="${RG_ID}/providers/Microsoft.Dashboard/grafana/consilient-grafana-${TF_VAR_environment}"
-          import_resource "azurerm_dashboard_grafana.main" "${GRAFANA_ID}" "Grafana Dashboard"
-
-          echo ""
-          echo "11. App Service Plans"
-          ASP_REACT_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/consilient-asp-react-${TF_VAR_environment}"
-          ASP_API_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/consilient-asp-api-${TF_VAR_environment}"
-          import_resource "module.react_app.azurerm_service_plan.this" "${ASP_REACT_ID}" "React App Service Plan" "critical"
-          import_resource "module.api_app.azurerm_service_plan.this" "${ASP_API_ID}" "API App Service Plan" "critical"
-
-          echo ""
-          echo "12. App Services"
-          APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-react-${TF_VAR_environment}"
-          APP_API_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-api-${TF_VAR_environment}"
-          import_resource "module.react_app.azurerm_linux_web_app.this" "${APP_REACT_ID}" "React App Service" "critical"
-          import_resource "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API App Service" "critical"
-
-          echo ""
-          echo "=== Import Process Complete ==="
-          echo ""
-          echo "Configuration will be managed by terraform.tfvars"
-          echo "No workflow overrides applied"
-
-          # Generate GitHub step summary for critical failures
-          if [ $failed_critical_imports -gt 0 ]; then
-            echo "### ❌ Critical Import Failures" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The following **critical** resources failed to import:" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            for resource in "${failed_critical_import_list[@]}"; do
-              echo "- \`${resource}\`" >> $GITHUB_STEP_SUMMARY
-            done
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Action Required**: These resources are essential to the infrastructure and must be resolvable by Terraform." >> $GITHUB_STEP_SUMMARY
-            echo "- Check if the resources actually exist in Azure under the correct resource group" >> $GITHUB_STEP_SUMMARY
-            echo "- Verify the resource naming conventions match the Terraform configuration" >> $GITHUB_STEP_SUMMARY
-            echo "- Ensure proper Azure credentials and permissions to list resources" >> $GITHUB_STEP_SUMMARY
-            echo "- If resources don't exist yet, remove them from tfstate or use \`terraform apply\` to create them" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          # Generate GitHub step summary for non-critical warnings
-          if [ $failed_imports -gt 0 ] && [ $failed_critical_imports -eq 0 ]; then
-            echo "### ⚠️ Non-Critical Import Warnings" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The following non-critical resources failed to import:" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            for resource in "${failed_import_list[@]}"; do
-              echo "- \`${resource}\`" >> $GITHUB_STEP_SUMMARY
-            done
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Note**: Import failures are expected if resources don't exist in Azure yet." >> $GITHUB_STEP_SUMMARY
-            echo "Terraform will create them during the apply step." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "Total import attempts: $(terraform state list | wc -l) resources in state" >> $GITHUB_STEP_SUMMARY
-          echo "Failed critical imports: $failed_critical_imports" >> $GITHUB_STEP_SUMMARY
-          echo "Failed non-critical imports: ${#failed_import_list[@]}" >> $GITHUB_STEP_SUMMARY
-
-          # Fail if critical resources failed to import
-          if [ $failed_critical_imports -gt 0 ]; then
-            echo ""
-            echo "❌ FAILURE: Critical resources failed to import. Terraform state is out of sync with Azure resources."
-            exit 1
-          fi
-
-          exit 0  # Succeed if only non-critical imports failed
+          # Set flag for conditional import in later steps
+          echo "import_needed=false" >> $GITHUB_ENV
 
       - name: Terraform Validate
         id: validate
+        shell: bash
         # Runs in ./infra/terraform (job default)
-        run: terraform validate
+        run: |
+          # Try validate - if it fails with state errors, run import and retry
+          if ! terraform validate; then
+            echo ""
+            echo "⚠️  Terraform validate failed - checking for state drift..."
+
+            # Check if error is state-related
+            if terraform validate 2>&1 | grep -qE "(resource doesn't exist|already exists|Cannot import|state)"; then
+              echo "ℹ️  State drift detected - running import script..."
+
+              # Run import script
+              if bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/import.sh"; then
+                echo "✅ Import completed successfully - retrying terraform validate..."
+
+                # Retry validate
+                if terraform validate; then
+                  echo "✅ Terraform validate succeeded after import"
+                else
+                  echo "❌ Terraform validate still failing after import"
+                  exit 1
+                fi
+              else
+                echo "❌ Import script failed"
+                exit 1
+              fi
+            else
+              echo "❌ Terraform validate failed (not a state issue)"
+              exit 1
+            fi
+          else
+            echo "✅ Terraform validate succeeded (state is synced)"
+          fi
 
       - name: Terraform Plan
         id: plan
         if: inputs.action == 'plan'
+        shell: bash
         # Runs in ./infra/terraform (job default)
-        run: terraform plan
+        run: |
+          # Try plan - if it fails with state errors, run import and retry
+          if ! terraform plan; then
+            echo ""
+            echo "⚠️  Terraform plan failed - checking for state drift..."
+
+            # Capture plan output to check for state-related errors
+            PLAN_OUTPUT=$(terraform plan 2>&1 || true)
+
+            # Check if error is state-related
+            if echo "$PLAN_OUTPUT" | grep -qE "(resource doesn't exist|already exists|Cannot import|state|no matching")"; then
+              echo "ℹ️  State drift detected - running import script..."
+
+              # Run import script
+              if bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/import.sh"; then
+                echo "✅ Import completed successfully - retrying terraform plan..."
+
+                # Retry plan
+                if terraform plan; then
+                  echo "✅ Terraform plan succeeded after import"
+                else
+                  echo "❌ Terraform plan still failing after import"
+                  exit 1
+                fi
+              else
+                echo "❌ Import script failed"
+                exit 1
+              fi
+            else
+              echo "❌ Terraform plan failed (not a state issue)"
+              echo "$PLAN_OUTPUT" | head -20
+              exit 1
+            fi
+          else
+            echo "✅ Terraform plan succeeded (state is synced)"
+          fi
 
       - name: Terraform Apply
         if: inputs.action == 'apply'
+        shell: bash
         # Runs in ./infra/terraform (job default)
-        run: terraform apply -auto-approve
+        run: |
+          # Try apply - if it fails with state errors, run import and retry
+          if ! terraform apply -auto-approve; then
+            echo ""
+            echo "⚠️  Terraform apply failed - checking for state drift..."
+
+            # Capture apply output to check for state-related errors
+            APPLY_OUTPUT=$(terraform apply -auto-approve 2>&1 || true)
+
+            # Check if error is state-related
+            if echo "$APPLY_OUTPUT" | grep -qE "(resource doesn't exist|already exists|Cannot import|state|no matching)"; then
+              echo "ℹ️  State drift detected - running import script..."
+
+              # Run import script
+              if bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/import.sh"; then
+                echo "✅ Import completed successfully - retrying terraform apply..."
+
+                # Retry apply
+                if terraform apply -auto-approve; then
+                  echo "✅ Terraform apply succeeded after import"
+                else
+                  echo "❌ Terraform apply still failing after import"
+                  exit 1
+                fi
+              else
+                echo "❌ Import script failed"
+                exit 1
+              fi
+            else
+              echo "❌ Terraform apply failed (not a state issue)"
+              echo "$APPLY_OUTPUT" | head -20
+              exit 1
+            fi
+          else
+            echo "✅ Terraform apply succeeded (state is synced)"
+          fi
 
       - name: Capture Terraform Outputs
         id: outputs
