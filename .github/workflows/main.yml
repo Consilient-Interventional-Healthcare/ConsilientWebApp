@@ -128,6 +128,7 @@ jobs:
   discover-databases:
     name: Discover Databases
     needs: [validate-environment]
+    if: ${{ !inputs.skip-databases }}
     runs-on: ubuntu-latest
     outputs:
       database_directories: ${{ steps.discover.outputs.database_directories }}
@@ -155,6 +156,7 @@ jobs:
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/databases.yml
     with:
@@ -171,6 +173,7 @@ jobs:
       github.event_name == 'pull_request' &&
       always() &&
       needs.validate-environment.result == 'success' &&
+      (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
     uses: ./.github/workflows/docs_db.yml
     with:

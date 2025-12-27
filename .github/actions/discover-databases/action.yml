@@ -16,8 +16,14 @@ inputs:
 
 outputs:
   databases:
-    description: 'JSON array of discovered database objects with metadata'
+    description: 'JSON array of discovered databases with all metadata'
     value: ${{ steps.discover.outputs.databases }}
+  database_directories:
+    description: 'JSON array of database directory names (for databases.yml)'
+    value: ${{ steps.transform.outputs.database_directories }}
+  database_configs:
+    description: 'JSON object mapping database names to config data (for docs_db.yml)'
+    value: ${{ steps.transform.outputs.database_configs }}
   count:
     description: 'Number of databases discovered'
     value: ${{ steps.discover.outputs.count }}
@@ -99,17 +105,19 @@ runs:
                 fi
 
                 # Create database object with metadata
+                FULL_CONFIG_PATH="$SCRIPTS_PATH/$CONFIG_PATH"
                 DB_OBJ=$(jq -n \
                   --arg directory "$dir" \
                   --arg name "$DB_NAME" \
-                  --arg config_path "$CONFIG_PATH" \
+                  --arg config_path "$FULL_CONFIG_PATH" \
                   '{directory: $directory, name: $name, config_path: $config_path, has_config: true}')
               else
                 # Fallback without yq - just use directory name
                 echo "   ⚠️  yq not available - using basic parsing"
+                FULL_CONFIG_PATH="$SCRIPTS_PATH/$CONFIG_PATH"
                 DB_OBJ=$(jq -n \
                   --arg directory "$dir" \
-                  --arg config_path "$CONFIG_PATH" \
+                  --arg config_path "$FULL_CONFIG_PATH" \
                   '{directory: $directory, name: $directory, config_path: $config_path, has_config: true}')
               fi
 
@@ -144,8 +152,8 @@ runs:
         echo "   Databases to process: $COUNT"
         echo ""
 
-        # Output results
-        echo "databases=$DB_ARRAY" >> $GITHUB_OUTPUT
+        # Output results (use -c flag to ensure compact JSON on a single line for GitHub Actions compatibility)
+        echo "databases=$(echo "$DB_ARRAY" | jq -c .)" >> $GITHUB_OUTPUT
         echo "count=$COUNT" >> $GITHUB_OUTPUT
 
         if [ "$COUNT" -gt 0 ]; then
@@ -154,3 +162,26 @@ runs:
         else
           echo "⚠️  No databases discovered"
         fi
+
+    - name: Transform data for downstream workflows
+      id: transform
+      shell: bash
+      run: |
+        set -e
+
+        DATABASES='${{ steps.discover.outputs.databases }}'
+
+        # Format 1: Array of full directory paths for databases.yml
+        DIRECTORIES=$(echo "$DATABASES" | jq -c '[.[] | .directory]')
+        echo "database_directories=$DIRECTORIES" >> $GITHUB_OUTPUT
+
+        # Format 2: Object mapping names to config data for docs_db.yml
+        # Important: Use -c flag to ensure compact JSON output on a single line
+        CONFIGS="{}"
+        while IFS= read -r db_entry; do
+          DB_NAME=$(echo "$db_entry" | jq -r '.name')
+          CONFIG_DATA=$(echo "$db_entry" | jq -c '{directory: .directory, config_path: .config_path}')
+          CONFIGS=$(echo "$CONFIGS" | jq -c --argjson data "$CONFIG_DATA" --arg name "$DB_NAME" '.[$name] = $data')
+        done < <(echo "$DATABASES" | jq -c '.[]')
+
+        echo "database_configs=$CONFIGS" >> $GITHUB_OUTPUT
