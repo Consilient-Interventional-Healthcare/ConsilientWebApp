@@ -279,15 +279,19 @@ jobs:
           echo "Verifying database: ${{ env.DATABASE_NAME }}"
           echo "================================================"
 
-          # Validate required SQL scripts exist
+          # Validate required SQL scripts exist and are executable
+          VERIFICATION_FAILED=false
+
           if [ ! -f "infra/db/list_tables.sql" ]; then
-            echo "⚠️  Warning: infra/db/list_tables.sql not found, skipping table listing"
+            echo "❌ ERROR: infra/db/list_tables.sql not found"
+            VERIFICATION_FAILED=true
           else
             echo "Tables in database:"
             if run_sqlcmd_verify "infra/db/list_tables.sql"; then
               echo "✅ Table listing completed"
             else
-              echo "⚠️  Could not list tables (non-critical)"
+              echo "❌ ERROR: Could not list tables - database may be inaccessible or corrupt"
+              VERIFICATION_FAILED=true
             fi
           fi
 
@@ -299,11 +303,16 @@ jobs:
             if run_sqlcmd_verify "infra/db/table_count.sql"; then
               echo "✅ Table count completed"
             else
-              echo "⚠️  Could not get table count (non-critical)"
+              echo "⚠️  Could not get table count (optional check)"
             fi
           fi
 
           echo ""
+          if [ "$VERIFICATION_FAILED" = "true" ]; then
+            echo "❌ DEPLOYMENT FAILED: Database verification failed"
+            exit 1
+          fi
+
           echo "✅ Database ${{ env.DATABASE_NAME }} deployment completed successfully!"
 
   notify:
