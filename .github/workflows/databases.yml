@@ -381,7 +381,12 @@ jobs:
           if [ "$DEPLOY_RESULT" == "success" ]; then
             echo "✅ **All databases deployed successfully!**" >> $GITHUB_STEP_SUMMARY
           elif [ "$DEPLOY_RESULT" == "failure" ]; then
-            echo "❌ **SQL script deployment failed. Check the logs above.**" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **SQL script deployment failed for one or more databases.**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**To identify which databases failed:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Review the 'Deploy \${{ matrix.database }}' job logs above" >> $GITHUB_STEP_SUMMARY
+            echo "2. Search for '❌' or 'ERROR' in the step outputs" >> $GITHUB_STEP_SUMMARY
+            echo "3. Check the specific database deployment logs for error details" >> $GITHUB_STEP_SUMMARY
           elif [ "$DATABASES" == "[]" ]; then
             echo "⚠️  **No databases provided for deployment**" >> $GITHUB_STEP_SUMMARY
           else

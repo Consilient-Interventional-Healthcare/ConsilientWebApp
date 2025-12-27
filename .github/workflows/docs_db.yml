@@ -412,6 +412,17 @@ jobs:
           echo "🧹 Cleaning up partial documentation due to schema generation failure..."
           rm -rf docs/
           echo "✅ Cleanup complete - partial docs removed"
+          echo ""
+          echo "### ❌ Schema Documentation Generation Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Database**: ${{ env.DATABASE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Reason**: One or more schemas failed to generate documentation." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**To diagnose:**" >> $GITHUB_STEP_SUMMARY
+          echo "1. Check the 'Generate Schema Documentation' step logs above" >> $GITHUB_STEP_SUMMARY
+          echo "2. Look for schema-specific error messages (❌ marks)" >> $GITHUB_STEP_SUMMARY
+          echo "3. Verify SchemaSpy timeout limits and database connectivity" >> $GITHUB_STEP_SUMMARY
 
       - name: Create enhanced index page
         if: steps.schema-doc.outcome == 'success'
