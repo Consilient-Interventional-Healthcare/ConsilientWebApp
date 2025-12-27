@@ -71,7 +71,7 @@ runs:
 
     - name: Run Lighthouse CI
       id: lighthouse
-      uses: treosh/lighthouse-ci-action@b3f9c2b27bce0d6d4f14e02d04b6c08d9f2ebc2f  # v10.0.0
+      uses: treosh/lighthouse-ci-action@v10
       with:
         urls: |
           ${{ inputs.app-url }}

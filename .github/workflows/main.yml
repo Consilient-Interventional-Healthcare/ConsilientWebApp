@@ -127,7 +127,7 @@ jobs:
 
   discover-databases:
     name: Discover Databases
-    needs: [validate-environment]
+    needs: [validate-environment, terraform]
     if: ${{ !inputs.skip-databases }}
     runs-on: ubuntu-latest
     outputs:

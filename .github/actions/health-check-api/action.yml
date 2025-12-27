@@ -62,7 +62,7 @@ runs:
 
     - name: Health Check with Retry
       id: health_check
-      uses: jtalk/url-health-check-action@1d91dc2f4f8d6e64f5aaca33ac876b5c8c3a76c3  # v3.2
+      uses: jtalk/url-health-check-action@v3
       with:
         url: ${{ inputs.endpoint-url }}
         max-attempts: ${{ inputs.max-attempts }}

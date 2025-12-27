@@ -91,9 +91,6 @@ $LocalImageFull = "${LocalImageName}:${LocalImageTag}"
 $DockerfilePath = Join-Path $RepoRoot ".github\workflows\runner\Dockerfile"
 $DockerContextPath = Join-Path $RepoRoot ".github\workflows\runner"
 
-Write-Message -Level Debug -Message "Image Name: $LocalImageFull"
-Write-Message -Level Debug -Message "Dockerfile: $DockerfilePath"
-Write-Message -Level Debug -Message "Context: $DockerContextPath"
 
 # ==============================
 # PREREQUISITE VALIDATION
@@ -311,10 +308,6 @@ try {
             exit 13
         }
     }
-    else {
-        Write-Message -Level Debug -Message "✅ Custom runner image found ($LocalImageFull)"
-    }
-
     Write-Message -Level Debug -Message "✅ Docker image verification complete"
 }
 catch {

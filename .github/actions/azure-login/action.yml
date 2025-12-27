@@ -20,7 +20,7 @@ runs:
   steps:
     - name: Login to Azure (OIDC)
       if: ${{ !env.ACT }}
-      uses: azure/login@e64b5ba4e56656c5ca4c9f7b80f87c0f9a0a6bc5  # v2.3.0
+      uses: azure/login@v2
       with:
         client-id: ${{ inputs.client-id }}
         tenant-id: ${{ inputs.tenant-id }}

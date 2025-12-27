@@ -104,7 +104,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.2.2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -311,7 +311,7 @@ jobs:
           echo "Schemas to document: $SCHEMAS_TO_DOC"
 
       - name: Set up Java
-        uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e0  # v4.0.0
+        uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "17"
@@ -734,7 +734,7 @@ jobs:
 
       - name: Upload documentation as artifact
         if: steps.schema-doc.outcome == 'success'
-        uses: actions/upload-artifact@c7d193f32edde7bfad88884e873877e3fd052a52  # v4.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: database-documentation-${{ matrix.database }}-${{ steps.artifact-meta.outputs.suffix }}
           path: ./docs

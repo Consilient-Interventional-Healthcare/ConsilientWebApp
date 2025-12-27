@@ -1,5 +1,5 @@
 name: 'Validate Workflow Inputs'
-description: 'Validate required inputs and configuration values before execution'
+description: 'Centralized validation for workflow inputs - SINGLE SOURCE OF TRUTH for environment and action validation'
 
 inputs:
   environment:
@@ -34,10 +34,12 @@ runs:
         echo "=== Input Validation ==="
 
         # Validate environment
+        # IMPORTANT: This is the SINGLE SOURCE OF TRUTH for valid environment values
+        # If you need to add/remove environments, update the regex here and nowhere else
         if [ -n "${{ inputs.environment }}" ]; then
-          if [[ ! "${{ inputs.environment }}" =~ ^(dev|prod|staging)$ ]]; then
+          if [[ ! "${{ inputs.environment }}" =~ ^(dev|prod)$ ]]; then
             echo "❌ ERROR: Invalid environment '${{ inputs.environment }}'"
-            echo "   Valid values are: dev, prod, staging"
+            echo "   Valid values are: dev, prod"
             PASSED=false
           else
             echo "✅ Environment: ${{ inputs.environment }}"

@@ -69,16 +69,20 @@ AZURE_SQL_SERVER=...
 - See [reference/secrets-checklist.md](../reference/secrets-checklist.md)
 - Or run: `az account show`
 
-### Step 2: Configure Environment Variables
+### Step 2: Configure GitHub Variables
 
-**File:** [`infra/act/.env`](../../../infra/act/.env)
+GitHub variables (`vars.*` in workflows) are now included in the same `.env.act` file:
 
-Non-sensitive configuration (default usually works):
 ```bash
+# Add to your existing .env.act file:
+REACT_IMAGE_NAME=consilientwebapp2
+API_IMAGE_NAME=consilientapi
+ACR_REGISTRY_URL=your-registry.azurecr.io
 AZURE_REGION=canadacentral
-AZURE_RESOURCE_GROUP_NAME=consilient-resource-group
-ACR_REGISTRY=your-registry.azurecr.io
+# ... (see full list in .env.act)
 ```
+
+**Note:** The script passes `.env.act` with both `--secret-file` AND `--var-file` flags, making all values accessible via both `${{ secrets.* }}` and `${{ vars.* }}` contexts.
 
 ### Step 3: Script Configuration
 
@@ -95,8 +99,8 @@ No additional configuration files needed - the script manages everything.
 
 | File | Purpose | Required | Notes |
 |------|---------|----------|-------|
-| `.env` | Repository variables (non-sensitive) | ✅ YES | Contains configuration like regions, image names, versions |
-| `.env.act` | Secrets & credentials | ✅ YES | Loaded by `run-act.ps1` with `--secret-file` flag; **add to .gitignore** |
+| `.env.act` | Secrets, credentials & variables | ✅ YES | Loaded by `run-act.ps1` with `--secret-file` AND `--var-file` flags; **add to .gitignore** |
+| `.env.act.template` | Template for new setup | 📋 Reference | Copy to `.env.act` and fill in your credentials |
 | `run-act.ps1` | Main orchestrator script | ✅ YES | Handles Docker image build, act execution, parameter validation |
 
 **Removed Files (No Longer Needed):**
@@ -140,6 +144,51 @@ GITHUB_TOKEN=...
 ```
 
 **Important:** Add `.env.act` to `.gitignore` to prevent committing credentials.
+
+### GitHub Variables (vars.*)
+
+The **same `.env.act` file also provides GitHub Variables**:
+
+**What are GitHub Variables?**
+- Configuration values (image names, versions, regions)
+- Non-sensitive values that can be public
+- Accessible via `${{ vars.KEY_NAME }}` in workflows
+- Separate from `${{ secrets.* }}` for security
+
+**How it works with act:**
+
+1. **Script passes file twice:**
+   ```powershell
+   $ActArgs += "--secret-file"
+   $ActArgs += $ActSecretFile
+   $ActArgs += "--var-file"      # Same file!
+   $ActArgs += $ActSecretFile
+   ```
+
+2. **Act loads as variables:**
+   ```bash
+   act ... --var-file infra/act/.env.act
+   ```
+
+3. **Variables available in workflow:**
+   ```yaml
+   env:
+     IMAGE_NAME: ${{ vars.REACT_IMAGE_NAME }}
+     ACR_REGISTRY: ${{ vars.ACR_REGISTRY_URL }}
+   ```
+
+**Example variables in `.env.act`:**
+```bash
+# Image Names (used by Docker workflows)
+REACT_IMAGE_NAME=consilientwebapp2
+API_IMAGE_NAME=consilientapi
+
+# Versions
+TERRAFORM_VERSION=1.6.0
+SQL_SERVER_VERSION=2022-latest
+```
+
+This dual-purpose approach keeps all configuration in one file while maintaining compatibility with GitHub Actions' secret/variable distinction.
 
 ### How Configuration Works
 
@@ -371,8 +420,8 @@ See [TROUBLESHOOTING.md#local-testing-act](../TROUBLESHOOTING.md#local-testing-a
 ## Files Reference
 
 - [infra/act/run-act.ps1](../../../infra/act/run-act.ps1) - Main orchestrator script
-- [infra/act/.env](../../../infra/act/.env) - Repository variables
-- [infra/act/.env.act](../../../infra/act/.env.act) - Secrets & credentials (in .gitignore)
+- [infra/act/.env.act](../../../infra/act/.env.act) - Secrets, credentials & variables (in .gitignore, dual-purpose)
+- [infra/act/.env.act.template](../../../infra/act/.env.act.template) - Template for new setup
 - [.github/workflows/runner/Dockerfile](../../../.github/workflows/runner/Dockerfile) - Custom runner image
 
 ## Related Documentation

@@ -3,7 +3,7 @@
 
 database:
   # Base database name (will be combined with environment)
-  name: "ConsilientDB"
+  name: "consilient_main"
 
   # Whether to generate documentation for this database
   generate_docs: true

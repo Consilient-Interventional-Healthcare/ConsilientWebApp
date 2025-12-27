@@ -105,6 +105,40 @@ See [components/databases.md](databases.md) for complete database guide.
 - Health check: Lighthouse CI quality gates
 - Automatic rollback on failure
 
+## Database Documentation Workflow
+
+**File:** [`.github/workflows/docs_db.yml`](../../../.github/workflows/docs_db.yml)
+
+**Purpose:** Auto-generate interactive HTML documentation for database schemas using SchemaSpy
+
+**Trigger:**
+- Called from `main.yml` on pull requests (after database deployment)
+- Manual trigger: GitHub Actions UI → "05 - Generate DB Docs" → Run workflow
+- Skippable via `skip_db_docs` input to main.yml
+
+**Process:**
+1. **Extract Database Names** - Parse discovered databases
+2. **Validate Prerequisites** - Check SQL Server, sqlcmd, java, SchemaSpy available
+3. **Generate Docs (Matrix Job)** - For each database:
+   - Parse `db_docs.yml` configuration
+   - Query database for schemas (`list_user_schemas.sql`)
+   - Filter excluded schemas (from `schemas.exclude` list)
+   - Run SchemaSpy in parallel for each schema
+   - Generate HTML documentation
+   - Create index.html with schema navigation
+
+**Configuration:**
+Per-database control via `src/Databases/{Name}/db_docs.yml`:
+- `database.generate_docs` - Enable/disable documentation
+- `schemas.exclude` - Schemas to skip in documentation
+
+**Output:**
+- Artifact: `database-documentation-{database}-{suffix}.zip`
+- Contents: Interactive HTML docs with diagrams, table details, relationships
+- Retention: 7 days (PR), 30 days (manual/main.yml)
+
+See [components/database-documentation.md](database-documentation.md) for comprehensive guide.
+
 ## Composite Actions
 
 ### azure-login

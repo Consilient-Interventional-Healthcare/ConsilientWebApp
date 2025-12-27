@@ -211,7 +211,115 @@ See [components/local-testing.md](components/local-testing.md) for comprehensive
 
 ---
 
-## 4. Add a New Azure Resource (~20 min)
+## 4. Generate Database Documentation (~5 min)
+
+Auto-generate interactive HTML documentation for your database schemas using SchemaSpy.
+
+### Prerequisites
+- Database deployed (see Task 2)
+- `db_docs.yml` configuration file (optional, uses defaults if missing)
+
+### Steps
+
+#### Step 1: Create Database Configuration (Optional)
+
+If you want to customize documentation generation, create `src/Databases/{DatabaseName}/db_docs.yml`:
+
+```yaml
+database:
+  name: "MyDatabase"
+  generate_docs: true
+
+schemas:
+  exclude:
+    - "internal_schema"
+    - "temp_schema"
+```
+
+**Or copy the template:**
+```bash
+cp src/Databases/db_docs.yml.template src/Databases/{DatabaseName}/db_docs.yml
+```
+
+#### Step 2: Trigger Documentation Generation
+
+**Option A: Automatic (Recommended)**
+Push your changes to main - `main.yml` calls `docs_db.yml` automatically on pull requests.
+
+**Option B: Manual Trigger**
+1. Go to GitHub → Repository → Actions
+2. Select workflow: "05 - Generate DB Docs"
+3. Click "Run workflow" → Select branch → Click "Run"
+
+#### Step 3: Download Documentation
+
+1. Go to GitHub → Actions → Workflow run summary
+2. Scroll to "Artifacts" section
+3. Download artifact: `database-documentation-{database_name}-{suffix}.zip`
+
+#### Step 4: View Documentation
+
+1. Extract the ZIP file
+2. Open `docs/index.html` in your browser
+3. Click schema names to explore relationships, tables, columns, and constraints
+
+### What Gets Documented
+
+Each schema documentation includes:
+- **Schema Overview** - Tables, views, stored procedures
+- **Entity Relationship Diagrams** - Visual table relationships
+- **Table Details** - Columns, types, sizes, constraints
+- **Foreign Keys** - Relationships between tables
+- **Indexes** - All indexes and keys
+- **Constraints** - Primary, foreign, unique, check constraints
+
+### Configuration Options
+
+**Document All Schemas:**
+```yaml
+database:
+  generate_docs: true
+
+schemas:
+  exclude: []
+```
+
+**Exclude Specific Schemas:**
+```yaml
+schemas:
+  exclude:
+    - "TempSchema"
+    - "TestSchema"
+```
+
+**Skip Documentation for Database:**
+```yaml
+database:
+  generate_docs: false
+```
+
+### Troubleshooting
+
+**No artifact generated:**
+- Check `generate_docs: true` in `db_docs.yml`
+- Ensure database has user-created schemas
+- Check workflow logs for errors
+
+**Schemas missing from documentation:**
+- Verify they're not in `schemas.exclude` list
+- Regenerate workflow (download previous artifact is cached)
+- Use hard refresh: Ctrl+Shift+R
+
+**Generation timeout:**
+- Large databases may exceed 600-second timeout
+- Exclude large schemas: add to `schemas.exclude` list
+- See [components/database-documentation.md](components/database-documentation.md#schemaspytimeout) for detailed solutions
+
+See [components/database-documentation.md](components/database-documentation.md) for complete troubleshooting guide.
+
+---
+
+## 5. Add a New Azure Resource (~20 min)
 
 Add a new Azure resource (e.g., Storage Account, App Service) to your infrastructure.
 
@@ -299,7 +407,7 @@ See [components/terraform.md](components/terraform.md#resources-by-category) for
 
 ---
 
-## 5. Configure GitHub Secrets (~10 min)
+## 6. Configure GitHub Secrets (~10 min)
 
 Set up authentication secrets required for GitHub Actions workflows.
 
@@ -375,6 +483,7 @@ See [components/authentication.md](components/authentication.md) for complete au
 - [ ] Ran `terraform plan` and reviewed costs
 - [ ] Configured all 8 GitHub secrets
 - [ ] Tested database deployment with sample script
+- [ ] Generated database documentation (Task 4)
 - [ ] (Optional) Tested act locally with `run-act.ps1`
 
 ### Before Production Deployment

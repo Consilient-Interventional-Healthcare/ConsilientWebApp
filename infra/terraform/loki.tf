@@ -8,6 +8,12 @@ resource "azurerm_container_app_environment" "shared" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   tags                = local.tags
+
+  lifecycle {
+    ignore_changes = [
+      workload_profile
+    ]
+  }
 }
 
 # Option: Use an existing Container App Environment
@@ -30,12 +36,12 @@ locals {
   # Priority: explicit ID > looked up data > created resource
   container_app_env_id = (
     var.existing_container_app_environment_id != ""
-      ? var.existing_container_app_environment_id
-      : (var.create_container_app_environment
-          ? azurerm_container_app_environment.shared[0].id
-          : (length(data.azurerm_container_app_environment.existing) > 0
-              ? data.azurerm_container_app_environment.existing[0].id
-              : ""))
+    ? var.existing_container_app_environment_id
+    : (var.create_container_app_environment
+      ? azurerm_container_app_environment.shared[0].id
+      : (length(data.azurerm_container_app_environment.existing) > 0
+        ? data.azurerm_container_app_environment.existing[0].id
+    : ""))
   )
 }
 
@@ -61,7 +67,8 @@ resource "azurerm_container_app" "loki" {
 
   lifecycle {
     ignore_changes = [
-      workload_profile_name
+      workload_profile_name,
+      template
     ]
   }
 

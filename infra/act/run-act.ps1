@@ -205,7 +205,7 @@ function ConvertTo-ActBooleanString {
         The boolean value to convert.
     #>
     param([bool]$Value)
-    return if ($Value) { "true" } else { "false" }
+    if ($Value) { "true" } else { "false" }
 }
 
 
@@ -295,12 +295,38 @@ function Get-ValidatedInput {
     )
 
     while ($true) {
-        $displayPrompt = if ($Default) { "$Prompt [$Default]" } else { "$Prompt" }
-        $userInput = Read-Host $displayPrompt
-
-        if ([string]::IsNullOrWhiteSpace($userInput) -and $Default) {
-            $userInput = $Default
+        if ($Default) {
+            Write-Host -NoNewline ($Prompt + " [" + $Default + "]: ")
+        } else {
+            Write-Host -NoNewline ($Prompt + ": ")
         }
+
+        # Read input character by character and echo it back
+        $userInput = ""
+        while ($true) {
+            $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            if ($key.VirtualKeyCode -eq 13) {  # Enter key
+                break
+            }
+            elseif ($key.VirtualKeyCode -eq 8) {  # Backspace key
+                if ($userInput.Length -gt 0) {
+                    $userInput = $userInput.Substring(0, $userInput.Length - 1)
+                    Write-Host -NoNewline "`b `b"
+                }
+            }
+            else {
+                $userInput += $key.Character
+                Write-Host -NoNewline $key.Character
+            }
+        }
+
+        $isDefault = [string]::IsNullOrWhiteSpace($userInput)
+        if ($isDefault -and $Default) {
+            $userInput = $Default
+            Write-Host -NoNewline $userInput
+        }
+
+        Write-Host ""
 
         if ([string]::IsNullOrWhiteSpace($userInput)) {
             Write-Host "Input is required." -ForegroundColor Red
@@ -729,11 +755,7 @@ try {
     }
 
     # Add verbosity flags based on effective mode
-    if ($EffectiveVerboseMode) {
-        Write-Verbose "Adding --verbose flag to act"
-        $ActArgs += "--verbose"
-    }
-    elseif ($EffectiveQuietMode) {
+    if ($EffectiveQuietMode) {
         Write-Verbose "Adding --quiet flag to act"
         $ActArgs += "--quiet"
     }

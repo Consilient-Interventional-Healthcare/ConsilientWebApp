@@ -24,9 +24,9 @@ locals {
   default_skus = {
     # Development - Minimal cost
     dev = {
-      app_service_plan   = "B1"      # Basic tier - ~$13/month
-      container_registry = "Basic"   # ~$5/month
-      sql_basic          = "Basic"   # Basic DTU - ~$5/month
+      app_service_plan   = "B1"          # Basic tier - ~$13/month
+      container_registry = "Basic"       # ~$5/month
+      sql_basic          = "Basic"       # Basic DTU - ~$5/month
       sql_serverless     = "GP_S_Gen5_2" # Serverless - ~$150/month (when active)
       sql_provisioned    = "GP_Gen5_2"   # General Purpose - ~$650/month
     }
@@ -185,7 +185,7 @@ locals {
   # Paid-tier (use_shared_container_environment = false): Uses template with {environment} placeholder
   container_app_environment_name = var.use_shared_container_environment ? (
     var.shared_container_environment_name
-  ) : (
+    ) : (
     replace(
       var.container_app_environment_name_template,
       "{environment}",

@@ -162,6 +162,47 @@ Custom deploy ────────┘
 4. Verify indexes created
 5. Confirm no errors in logs
 
+## Automated Documentation Generation
+
+Interactive HTML documentation is automatically generated for your database schemas using SchemaSpy, an open-source reverse-engineering tool.
+
+**Workflow:** [`.github/workflows/docs_db.yml`](../../../.github/workflows/docs_db.yml)
+
+**Configuration:** Per-database control via [`db_docs.yml`](../../../src/Databases/)
+
+**What Gets Generated:**
+- Interactive schema diagrams (entity relationship diagrams)
+- Table and column documentation
+- Foreign key relationships and constraints
+- Indexes and keys information
+- Navigable HTML documentation with search
+
+**How It Works:**
+1. Database discovery: Scan `src/Databases/` for configuration files
+2. Schema discovery: Query database for user-created schemas
+3. Configuration filtering: Apply exclusions from `db_docs.yml`
+4. Documentation generation: SchemaSpy generates HTML for each schema (parallel)
+5. Artifact upload: Documentation packaged as workflow artifact
+
+**Schema Exclusion:**
+Control which schemas are documented via the `schemas.exclude` list in your database's `db_docs.yml` configuration file. This allows you to exclude internal, temporary, or staging schemas from the documentation.
+
+**Example Configuration:**
+```yaml
+database:
+  name: "ConsilientDB"
+  generate_docs: true
+
+schemas:
+  exclude:
+    - "internal_schema"
+    - "temp_schema"
+```
+
+See [components/database-documentation.md](database-documentation.md) for complete guide, configuration options, and troubleshooting.
+
+---
+
 ## Terraform Integration
 
 **Database Resources:** [`sql.tf`](../../../infra/terraform/sql.tf)
@@ -195,7 +236,9 @@ See [TROUBLESHOOTING.md#database-deployment](../TROUBLESHOOTING.md#database-depl
 
 - [components/terraform.md](terraform.md) - SQL Server creation
 - [components/authentication.md](authentication.md) - Auth details
-- [ARCHITECTURE.md#database-deployment-flow](../ARCHITECTURE.md#database-deployment-flow) - Process diagram
+- [components/database-documentation.md](database-documentation.md) - Automated documentation generation
+- [ARCHITECTURE.md#database-deployment-flow](../ARCHITECTURE.md#database-deployment-flow) - Database deployment process diagram
+- [ARCHITECTURE.md#database-documentation-generation-flow](../ARCHITECTURE.md#database-documentation-generation-flow) - Documentation generation process
 - [DATABASE_DEPLOYMENT.md](../../DATABASE_DEPLOYMENT.md) - Original detailed guide
 
 ---
