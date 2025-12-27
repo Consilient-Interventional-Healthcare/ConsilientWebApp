@@ -93,7 +93,7 @@ jobs:
     name: Generate Docs for ${{ matrix.database }}
     needs: [extract-databases, validate-prerequisites]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       matrix:
         database: ${{ fromJson(needs.extract-databases.outputs.databases) }}
