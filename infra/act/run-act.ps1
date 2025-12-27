@@ -655,13 +655,20 @@ try {
     }
 
     # Set effective modes based on selection
+    # -Verbose (explicit) > -Info (test) > -Quiet > Default (verbose)
     if ($VerbosePreference -eq 'Continue') {
         $EffectiveVerboseMode = $true
+    }
+    elseif ($Info) {
+        # -Info mode: neither verbose nor quiet, let act use default (info-level)
+        $EffectiveVerboseMode = $false
+        $EffectiveQuietMode = $false
     }
     elseif ($Quiet) {
         $EffectiveQuietMode = $true
     }
     else {
+        # Default: verbose mode
         $EffectiveVerboseMode = $true
     }
 
