@@ -312,7 +312,6 @@ function Get-ValidatedInput {
             continue
         }
 
-        Write-Host "✅ Selected: $userInput" -ForegroundColor Green
         return $userInput
     }
 }
@@ -547,17 +546,12 @@ try {
         # 0. Docker operations (destructive - defaults = no)
         $RecreateImageResponse = Get-ValidatedInput "Recreate Docker Image? (y/n)" "n" @("y", "n")
         $RecreateImage = $RecreateImageResponse -eq "y"
-
         $RecreateCacheResponse = Get-ValidatedInput "Recreate Actions Cache? (y/n)" "n" @("y", "n")
         $RecreateCache = $RecreateCacheResponse -eq "y"
-
-        Write-Host ""
 
         # 1. Terraform deployment
         $RunTerraformResponse = Get-ValidatedInput "Run Terraform deployment? (y/n)" "y" @("y", "n")
         $RunTerraform = $RunTerraformResponse -eq "y"
-
-        # Firewall rule prompt (only when Terraform is enabled)
         if ($RunTerraform) {
             $AddFirewallRuleResponse = Get-ValidatedInput "  Add Firewall rule? (y/n)" "y" @("y", "n")
             $AddFirewallRule = $AddFirewallRuleResponse -eq "y"
@@ -565,38 +559,26 @@ try {
             $AddFirewallRule = $false
         }
 
-        Write-Host ""
-
         # 2. Database deployment
         $RunDatabaseResponse = Get-ValidatedInput "Run Database deployment? (y/n)" "y" @("y", "n")
         $RunDatabases = $RunDatabaseResponse -eq "y"
-
-        # Database-specific sub-prompts (only if databases are being deployed)
         if ($RunDatabases) {
             $RecreateDbResponse = Get-ValidatedInput "  Recreate Database? (y/n)" "y" @("y", "n")
             $RecreateDatabase = $RecreateDbResponse -eq "y"
-
             $RunDbDocsResponse = Get-ValidatedInput "  Run DB Docs? (y/n)" "y" @("y", "n")
             $RunDbDocs = $RunDbDocsResponse -eq "y"
-
         } else {
             $RecreateDatabase = $false
             $RunDbDocs = $false
         }
 
-        Write-Host ""
-
         # 3. .NET App deployment
         $RunApiResponse = Get-ValidatedInput "Run .NET App deployment? (y/n)" "y" @("y", "n")
         $RunApiDeployment = $RunApiResponse -eq "y"
 
-        Write-Host ""
-
         # 4. React deployment
         $RunReactResponse = Get-ValidatedInput "Run React deployment? (y/n)" "y" @("y", "n")
         $RunReactDeployment = $RunReactResponse -eq "y"
-
-        Write-Host ""
 
         # 5. Health Checks (conditional - only if deploying apps)
         if ($RunApiDeployment -or $RunReactDeployment) {
@@ -606,8 +588,6 @@ try {
             $RunHealthChecks = $false
             Write-Message -Level Info -Message "Health checks skipped (no apps being deployed)"
         }
-
-        Write-Host ""
 
         # Handle RecreateCache if requested
         if ($RecreateCache) {
@@ -619,7 +599,6 @@ try {
             } else {
                 Write-Message -Level Info -Message "No existing cache to clear"
             }
-            Write-Host ""
         }
     }
     else {
