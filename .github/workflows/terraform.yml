@@ -73,7 +73,7 @@ jobs:
     name: "Terraform apply"
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.ACTIONS_RUNNER_IMAGE || format('ghcr.io/{0}/consilientwebapp/actions-runner:v1.0.0', github.repository_owner) }}
+      image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'ubuntu:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
