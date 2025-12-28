@@ -22,9 +22,9 @@ resource "azurerm_linux_web_app" "this" {
 
     # Managed identity authentication for ACR
     container_registry_use_managed_identity = var.container_registry_use_managed_identity
-    # When using system-assigned identity, we can omit client_id or set to empty string
-    # The provider will use the system-assigned identity automatically
-    container_registry_managed_identity_client_id = var.container_registry_managed_identity_client_id
+    # Only set client_id if provided (must be a valid UUID)
+    # When omitted/null, the provider uses the system-assigned identity automatically
+    container_registry_managed_identity_client_id = var.container_registry_managed_identity_client_id != "" ? var.container_registry_managed_identity_client_id : null
   }
 
   app_settings = var.app_settings
