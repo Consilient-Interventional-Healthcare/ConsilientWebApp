@@ -697,6 +697,45 @@ try {
         # Convert to absolute path for act command (important when running from repo root)
         $secretFileAbsolute = Resolve-Path $secretFile -ErrorAction Stop
 
+        # IMPORTANT: Parse the file and explicitly add each secret via --secret flag
+        # This ensures act properly makes each secret available as an environment variable
+        # Even though we also pass --secret-file and --var-file below, the explicit --secret
+        # flags ensure compatibility with how act processes secrets
+        Write-Verbose "Parsing secrets from file and adding to act via --secret flags..."
+        Write-Verbose "Reading from: $secretFileAbsolute"
+        $secretContent = Get-Content $secretFileAbsolute -Raw
+        Write-Verbose "File size: $($secretContent.Length) bytes"
+
+        $secretLines = @($secretContent -split "`n" | Where-Object { $_ -match '^\s*[A-Z_]+=.*' -and $_ -notmatch '^\s*#' })
+        Write-Verbose "Total lines matching pattern: $($secretLines.Count)"
+
+        $secretCount = 0
+        $addedSecrets = @()
+        foreach ($line in $secretLines) {
+            $line = $line.Trim()
+            if ($line -and -not $line.StartsWith('#')) {
+                # Split KEY=VALUE carefully to preserve special characters in value
+                $eqIndex = $line.IndexOf('=')
+                if ($eqIndex -gt 0) {
+                    $secretName = $line.Substring(0, $eqIndex)
+                    $secretValue = $line.Substring($eqIndex + 1)
+
+                    # Add as separate arguments to avoid shell interpretation issues
+                    $ActArgs += "--secret"
+                    $ActArgs += "$secretName=$secretValue"
+
+                    $addedSecrets += $secretName
+                    $secretCount++
+                }
+            }
+        }
+        Write-Verbose "Total secrets added via --secret: $secretCount"
+        if ($VerbosePreference -eq 'Continue') {
+            Write-Verbose "Secrets being added:"
+            $addedSecrets | ForEach-Object { Write-Verbose "  - $_" }
+        }
+
+        # Also pass the file as --secret-file for act's native secret file support
         $ActArgs += "--secret-file"
         $ActArgs += $secretFileAbsolute
 
@@ -705,22 +744,6 @@ try {
         # Fixes Docker build tag error: vars.REACT_IMAGE_NAME was empty, causing "***/:v1-hash"
         $ActArgs += "--var-file"
         $ActArgs += $secretFileAbsolute
-
-        # IMPORTANT: Also parse the file and explicitly add each secret via --secret flag
-        # This ensures act properly maps ${{ secrets.* }} context expressions to environment variables
-        # Without this, act may not properly evaluate context expressions in step-level env: sections
-        Write-Verbose "Parsing secrets from file and adding to act via --secret flags..."
-        $secretContent = Get-Content $secretFileAbsolute -Raw
-        $secretLines = $secretContent -split "`n" | Where-Object { $_ -match '^\s*[A-Z_]+=.*' -and $_ -notmatch '^\s*#' }
-
-        foreach ($line in $secretLines) {
-            $line = $line.Trim()
-            if ($line -and -not $line.StartsWith('#')) {
-                $ActArgs += "--secret"
-                $ActArgs += $line
-                Write-Verbose "  Added secret: $($line.Split('=')[0])"
-            }
-        }
     }
     else {
         # Fallback: provide a dummy token if no secret file
