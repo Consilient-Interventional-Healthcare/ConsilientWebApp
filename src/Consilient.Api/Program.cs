@@ -124,6 +124,10 @@ namespace Consilient.Api
 
                 builder.Services.AddHealthChecks().ConfigureHealthChecks();
 
+                // Configure Data Protection with proper cryptographic algorithms
+                // Note: In Azure App Service containers, data protection keys are ephemeral by design.
+                // For applications requiring persistent data protection keys across container restarts,
+                // configure blob storage via WEBSITE_DataProtectionKeysPath in App Service settings.
                 builder.Services.AddDataProtection()
                     .UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration
                     {
@@ -156,12 +160,15 @@ namespace Consilient.Api
 
                 if (app.Environment.IsProduction())
                 {
+                    // In production, the container listens directly on HTTPS/443
+                    // so we can enable HTTPS redirection (HTTP->HTTPS) and HSTS
                     app.UseHttpsRedirection();
                     app.UseHsts();
                 }
                 else
                 {
-                    // In non-production, still prefer HTTPS for cookie security during local testing
+                    // In development, enable HTTPS redirection for local testing
+                    // (from http://localhost:8090 to https://localhost:8091)
                     app.UseHttpsRedirection();
                 }
 

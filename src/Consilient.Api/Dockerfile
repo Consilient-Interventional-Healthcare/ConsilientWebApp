@@ -4,9 +4,9 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 USER $APP_UID
 WORKDIR /app
-# Expose port 80 for production deployment
-EXPOSE 80
-# Expose port 8090/8091 for development/debugging
+# Expose port 443 for production deployment (HTTPS)
+EXPOSE 443
+# Expose port 8090 for development (HTTP) and 8091 for development (HTTPS)
 EXPOSE 8090
 EXPOSE 8091
 
