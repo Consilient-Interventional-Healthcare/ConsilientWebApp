@@ -98,11 +98,19 @@ jobs:
       cancel-in-progress: false
 
     env:
+      # OIDC Authentication secrets (for azure-login action and validation)
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       # ARM_* variables are for Terraform Azure provider service principal authentication
       # These must be available to all steps for Terraform to work
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      # SQL Admin credentials for Terraform
+      SQL_ADMIN_USERNAME: ${{ secrets.SQL_ADMIN_USERNAME }}
+      SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
       # Terraform variables - all passed via environment to avoid committing .tfvars with secrets
       TF_VAR_environment: ${{ inputs.environment }}
       TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
