@@ -426,4 +426,3 @@ appsettings.Development.json
 /.claude
 /infra/terraform/tfplan
 /infra/act/.env
-/src/Consilient.Api/appsettings.Production.json
