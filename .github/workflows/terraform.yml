@@ -153,89 +153,38 @@ jobs:
       - name: Validate Required Secrets
         shell: bash
         run: |
-          # Debug: Show what environment variables are actually available
-          echo "=== DEBUG: Available environment variables ==="
-          env | grep -E '^(AZURE|ARM|SQL|TF_VAR)' | sort || echo "NONE FOUND"
-          echo "=== END DEBUG ==="
-          echo ""
+          # CRITICAL: Bash runs with -e -o pipefail in GitHub Actions workflows.
+          # This means: (1) any command returning non-zero exits the script, and
+          # (2) scripts must explicitly exit 0 on success or return non-zero on failure.
+          # Without explicit exit 0, the script can fail even when validation passes.
 
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Validating Required Secrets ==="
           MISSING_SECRETS=()
 
-          # In act: Secrets are loaded directly from --secret-file (.env.act) as environment variables
-          # In GitHub Actions: Secrets are injected from repository configuration
-          # We check environment variables directly - no context expression evaluation needed
+          # Check all required secrets are available as environment variables
+          # In GitHub Actions: injected from repository secrets via job env:
+          # In act: loaded from .env.act via PowerShell --secret flags and job env:
 
-          # OIDC Authentication Secrets (for azure-login)
-          # Note: In act, these come from .env.act file
-          # Note: In GitHub Actions, these come from repository secrets
-          if [ -z "${AZURE_CLIENT_ID}" ]; then
-            MISSING_SECRETS+=("AZURE_CLIENT_ID (OIDC authentication)")
-          fi
-          if [ -z "${AZURE_TENANT_ID}" ]; then
-            MISSING_SECRETS+=("AZURE_TENANT_ID (OIDC authentication)")
-          fi
-          if [ -z "${AZURE_SUBSCRIPTION_ID}" ]; then
-            MISSING_SECRETS+=("AZURE_SUBSCRIPTION_ID (Azure subscription)")
-          fi
+          [ -z "${AZURE_CLIENT_ID}" ] && MISSING_SECRETS+=("AZURE_CLIENT_ID (OIDC authentication)")
+          [ -z "${AZURE_TENANT_ID}" ] && MISSING_SECRETS+=("AZURE_TENANT_ID (OIDC authentication)")
+          [ -z "${AZURE_SUBSCRIPTION_ID}" ] && MISSING_SECRETS+=("AZURE_SUBSCRIPTION_ID (Azure subscription)")
+          [ -z "${ARM_CLIENT_ID}" ] && MISSING_SECRETS+=("ARM_CLIENT_ID (Terraform provider auth)")
+          [ -z "${ARM_CLIENT_SECRET}" ] && MISSING_SECRETS+=("ARM_CLIENT_SECRET (Terraform provider auth)")
+          [ -z "${ARM_TENANT_ID}" ] && MISSING_SECRETS+=("ARM_TENANT_ID (Terraform provider auth)")
+          [ -z "${SQL_ADMIN_USERNAME}" ] && MISSING_SECRETS+=("SQL_ADMIN_USERNAME (SQL server creation)")
+          [ -z "${SQL_ADMIN_PASSWORD}" ] && MISSING_SECRETS+=("SQL_ADMIN_PASSWORD (SQL server creation)")
 
-          # Terraform Provider Secrets (service principal) - these should be available from job env
-          if [ -z "${ARM_CLIENT_ID}" ]; then
-            MISSING_SECRETS+=("ARM_CLIENT_ID (Terraform provider auth)")
-          fi
-          if [ -z "${ARM_CLIENT_SECRET}" ]; then
-            MISSING_SECRETS+=("ARM_CLIENT_SECRET (Terraform provider auth)")
-          fi
-          if [ -z "${ARM_TENANT_ID}" ]; then
-            MISSING_SECRETS+=("ARM_TENANT_ID (Terraform provider auth)")
-          fi
-
-          # SQL Server Secrets (for Terraform)
-          if [ -z "${SQL_ADMIN_USERNAME}" ]; then
-            MISSING_SECRETS+=("SQL_ADMIN_USERNAME (SQL server creation)")
-          fi
-          if [ -z "${SQL_ADMIN_PASSWORD}" ]; then
-            MISSING_SECRETS+=("SQL_ADMIN_PASSWORD (SQL server creation)")
-          fi
-
-          # Act Testing Fallback (optional - only warn)
-          if [ -z "${AZURE_CREDENTIALS}" ]; then
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Info: AZURE_CREDENTIALS not set (only required for local 'act' testing)"
-          fi
-
-          # Detailed variable check for debugging
-          echo "=== DETAILED SECRET CHECK ==="
-          echo "AZURE_CLIENT_ID: '${AZURE_CLIENT_ID}' (empty: $([ -z "${AZURE_CLIENT_ID}" ] && echo 'YES' || echo 'NO'))"
-          echo "AZURE_TENANT_ID: '${AZURE_TENANT_ID}' (empty: $([ -z "${AZURE_TENANT_ID}" ] && echo 'YES' || echo 'NO'))"
-          echo "AZURE_SUBSCRIPTION_ID: '${AZURE_SUBSCRIPTION_ID}' (empty: $([ -z "${AZURE_SUBSCRIPTION_ID}" ] && echo 'YES' || echo 'NO'))"
-          echo "ARM_CLIENT_ID: '${ARM_CLIENT_ID}' (empty: $([ -z "${ARM_CLIENT_ID}" ] && echo 'YES' || echo 'NO'))"
-          echo "ARM_CLIENT_SECRET: '${ARM_CLIENT_SECRET}' (empty: $([ -z "${ARM_CLIENT_SECRET}" ] && echo 'YES' || echo 'NO'))"
-          echo "ARM_TENANT_ID: '${ARM_TENANT_ID}' (empty: $([ -z "${ARM_TENANT_ID}" ] && echo 'YES' || echo 'NO'))"
-          echo "SQL_ADMIN_USERNAME: '${SQL_ADMIN_USERNAME}' (empty: $([ -z "${SQL_ADMIN_USERNAME}" ] && echo 'YES' || echo 'NO'))"
-          echo "SQL_ADMIN_PASSWORD: '${SQL_ADMIN_PASSWORD}' (empty: $([ -z "${SQL_ADMIN_PASSWORD}" ] && echo 'YES' || echo 'NO'))"
-          echo "MISSING_SECRETS array size: ${#MISSING_SECRETS[@]}"
-          echo "=== END DETAILED CHECK ==="
-          echo ""
-
-          # Report missing secrets
+          # Report any missing secrets and exit with error
           if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
-            echo ""
             echo "❌ ERROR: Missing required secrets:"
             for secret in "${MISSING_SECRETS[@]}"; do
               echo "   - $secret"
             done
             echo ""
             echo "Please configure these secrets in GitHub repository settings or .env.act file."
-            echo ""
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Secret Categories:"
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  OIDC Authentication: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID"
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Terraform Provider: ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID"
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  SQL Server: SQL_ADMIN_USERNAME, SQL_ADMIN_PASSWORD"
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Act Testing (optional): AZURE_CREDENTIALS"
             exit 1
           fi
 
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ All required secrets are configured"
+          echo "✅ All required secrets are configured"
           exit 0
 
       - name: Login to Azure (OIDC + act fallback)
