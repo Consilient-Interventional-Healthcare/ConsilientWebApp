@@ -99,9 +99,9 @@ jobs:
 
     env:
       # ARM_* variables are for Terraform Azure provider service principal authentication
+      # These must be available to all steps for Terraform to work
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
       # Terraform variables - all passed via environment to avoid committing .tfvars with secrets
       TF_VAR_environment: ${{ inputs.environment }}
@@ -144,42 +144,54 @@ jobs:
 
       - name: Validate Required Secrets
         shell: bash
+        env:
+          # In GitHub Actions, these come from the caller workflow's secrets
+          # In act, these are loaded from --secret-file (.env.act)
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          SQL_ADMIN_USERNAME: ${{ secrets.SQL_ADMIN_USERNAME }}
+          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Validating Required Secrets ==="
           MISSING_SECRETS=()
 
           # OIDC Authentication Secrets (for azure-login)
-          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+          if [ -z "${AZURE_CLIENT_ID}" ]; then
             MISSING_SECRETS+=("AZURE_CLIENT_ID (OIDC authentication)")
           fi
-          if [ -z "${{ secrets.AZURE_TENANT_ID }}" ]; then
+          if [ -z "${AZURE_TENANT_ID}" ]; then
             MISSING_SECRETS+=("AZURE_TENANT_ID (OIDC authentication)")
           fi
-          if [ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
+          if [ -z "${AZURE_SUBSCRIPTION_ID}" ]; then
             MISSING_SECRETS+=("AZURE_SUBSCRIPTION_ID (Azure subscription)")
           fi
 
           # Terraform Provider Secrets (service principal)
-          if [ -z "${{ secrets.ARM_CLIENT_ID }}" ]; then
+          if [ -z "${ARM_CLIENT_ID}" ]; then
             MISSING_SECRETS+=("ARM_CLIENT_ID (Terraform provider auth)")
           fi
-          if [ -z "${{ secrets.ARM_CLIENT_SECRET }}" ]; then
+          if [ -z "${ARM_CLIENT_SECRET}" ]; then
             MISSING_SECRETS+=("ARM_CLIENT_SECRET (Terraform provider auth)")
           fi
-          if [ -z "${{ secrets.ARM_TENANT_ID }}" ]; then
+          if [ -z "${ARM_TENANT_ID}" ]; then
             MISSING_SECRETS+=("ARM_TENANT_ID (Terraform provider auth)")
           fi
 
           # SQL Server Secrets (for Terraform)
-          if [ -z "${{ secrets.SQL_ADMIN_USERNAME }}" ]; then
+          if [ -z "${SQL_ADMIN_USERNAME}" ]; then
             MISSING_SECRETS+=("SQL_ADMIN_USERNAME (SQL server creation)")
           fi
-          if [ -z "${{ secrets.SQL_ADMIN_PASSWORD }}" ]; then
+          if [ -z "${SQL_ADMIN_PASSWORD}" ]; then
             MISSING_SECRETS+=("SQL_ADMIN_PASSWORD (SQL server creation)")
           fi
 
           # Act Testing Fallback (optional - only warn)
-          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+          if [ -z "${AZURE_CREDENTIALS}" ]; then
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Info: AZURE_CREDENTIALS not set (only required for local 'act' testing)"
           fi
 
@@ -191,7 +203,7 @@ jobs:
               echo "   - $secret"
             done
             echo ""
-            echo "Please configure these secrets in GitHub repository settings."
+            echo "Please configure these secrets in GitHub repository settings or .env.act file."
             echo ""
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Secret Categories:"
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  OIDC Authentication: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID"
