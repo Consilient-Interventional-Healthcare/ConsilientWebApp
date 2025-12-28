@@ -17,7 +17,7 @@ resource "azurerm_key_vault" "main" {
   sku_name            = "standard"  # Standard tier is sufficient for secrets
 
   # RBAC authorization model (not legacy access policies)
-  enable_rbac_authorization       = true
+  rbac_authorization_enabled      = true
   enabled_for_deployment          = false
   enabled_for_disk_encryption     = false
   enabled_for_template_deployment = false
