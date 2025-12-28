@@ -12,8 +12,11 @@ module "react_app" {
   vnet_route_all_enabled = false
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
-    # DOCKER_REGISTRY_SERVER_URL is managed automatically by Azure
-    # DOCKER_REGISTRY_SERVER_USERNAME and DOCKER_REGISTRY_SERVER_PASSWORD should be injected securely via pipeline or Key Vault
+
+    # Docker Registry configuration for ACR with Managed Identity
+    # Setting DOCKER_REGISTRY_SERVER_URL without USERNAME/PASSWORD credentials
+    # tells App Service to use the system-assigned managed identity for authentication
+    "DOCKER_REGISTRY_SERVER_URL" = "https://${azurerm_container_registry.main.login_server}"
   }
   tags     = local.tags
   sku_name = local.react.sku

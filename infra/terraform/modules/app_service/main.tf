@@ -22,5 +22,15 @@ resource "azurerm_linux_web_app" "this" {
   }
 
   app_settings = var.app_settings
-  tags         = var.tags
+
+  dynamic "connection_string" {
+    for_each = var.connection_strings
+    content {
+      name  = connection_string.key
+      type  = connection_string.value.type
+      value = connection_string.value.value
+    }
+  }
+
+  tags = var.tags
 }

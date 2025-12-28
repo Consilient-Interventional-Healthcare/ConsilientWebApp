@@ -55,3 +55,12 @@ variable "sku_name" {
   description = "The SKU name for the App Service Plan."
   type        = string
 }
+
+variable "connection_strings" {
+  description = "Connection strings for the App Service. Each entry should have 'type' and 'value' keys."
+  type = map(object({
+    type  = string
+    value = string
+  }))
+  default = {}
+}

@@ -13,6 +13,11 @@ module "api_app" {
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
 
+    # Docker Registry configuration for ACR with Managed Identity
+    # Setting DOCKER_REGISTRY_SERVER_URL without USERNAME/PASSWORD credentials
+    # tells App Service to use the system-assigned managed identity for authentication
+    "DOCKER_REGISTRY_SERVER_URL" = "https://${azurerm_container_registry.main.login_server}"
+
     # Key Vault configuration for secret loading via Managed Identity
     "KeyVault__Url" = "https://${azurerm_key_vault.main.name}.vault.azure.net/"
 
