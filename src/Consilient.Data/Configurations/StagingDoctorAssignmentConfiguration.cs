@@ -35,7 +35,11 @@ namespace Consilient.Data.Configurations
                 .HasColumnType("nvarchar(max)")
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                .Metadata.SetValueComparer(new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>>(
+                    (l1, l2) => (l1 ?? new()).SequenceEqual(l2 ?? new()),
+                    l => l.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    l => new List<string>(l ?? new())));
             entity.Property(e => e.ExclusionReason).HasMaxLength(500);
             entity.Property(e => e.ShouldImport).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.NeedsNewPatient).IsRequired().HasDefaultValue(false);
