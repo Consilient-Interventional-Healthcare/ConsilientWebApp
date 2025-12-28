@@ -29,7 +29,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SQL_SERVER: ${{ secrets.AZURE_SQL_SERVER }}
+  SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN }}
   SCHEMASPY_VERSION: ${{ vars.SCHEMASPY_VERSION || '6.2.4' }}
   JDBC_VERSION: ${{ vars.JDBC_DRIVER_VERSION || '12.4.2.jre11' }}
   SCHEMASPY_TIMEOUT_SECONDS: 600
@@ -68,9 +68,9 @@ jobs:
 
           # Check SQL_SERVER is configured
           if [ -z "${{ env.SQL_SERVER }}" ]; then
-            echo "❌ ERROR: AZURE_SQL_SERVER secret not configured"
+            echo "❌ ERROR: AZURE_SQL_SERVER_FQDN variable not configured"
             echo ""
-            echo "This secret must be set in your repository settings or GitHub organization."
+            echo "This variable must be set in your repository settings as a GitHub Variable."
             echo "It should contain the FQDN of your Azure SQL Server (e.g., server.database.windows.net)"
             exit 1
           fi

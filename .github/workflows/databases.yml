@@ -17,9 +17,6 @@ on:
         type: boolean
         default: false
     secrets:
-      AZURE_SQL_SERVER:
-        required: true
-        description: 'Azure SQL Server FQDN (e.g., server.database.windows.net)'
       AZURE_CLIENT_ID:
         required: true
         description: 'Azure Service Principal Client ID for OIDC authentication'
@@ -92,7 +89,7 @@ jobs:
       cancel-in-progress: false
 
     env:
-      SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN || secrets.AZURE_SQL_SERVER }}
+      SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN }}
       RECREATE_DB: ${{ inputs.recreate-database-objects || 'false' }}
       ENVIRONMENT: ${{ inputs.environment }}
       DATABASE_BASE_NAME: ${{ matrix.database }}

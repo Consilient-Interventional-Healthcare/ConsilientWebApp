@@ -60,16 +60,13 @@ on:
       AZURE_WEBAPP_NAME:
         required: false
         description: 'Azure Web App name (legacy fallback, prefer workflow input)'
-      ACR_REGISTRY:
-        required: false
-        description: 'Azure Container Registry URL (legacy fallback, prefer variable)'
 
 env:
   IMAGE_NAME: ${{ vars.REACT_IMAGE_NAME }}
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
-  # Three-tier fallback: input > variable > secret > fail
+  # Fallback: input > variable
   REACT_APP_NAME: ${{ inputs.react_app_name || secrets.AZURE_WEBAPP_NAME }}
-  ACR_REGISTRY: ${{ inputs.acr_registry || vars.ACR_REGISTRY_URL || secrets.ACR_REGISTRY }}
+  ACR_REGISTRY: ${{ inputs.acr_registry || vars.ACR_REGISTRY_URL }}
   RESOURCE_GROUP: ${{ inputs.resource_group }}
 
 permissions:
@@ -203,7 +200,7 @@ jobs:
           azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
           resource-group: ${{ inputs.resource_group }}
           previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
-          acr-registry: ${{ inputs.acr_registry || secrets.ACR_REGISTRY }}
+          acr-registry: ${{ inputs.acr_registry || vars.ACR_REGISTRY_URL }}
           wait-seconds: '120'
           runs: '3'
           min-perf-score: '0.7'

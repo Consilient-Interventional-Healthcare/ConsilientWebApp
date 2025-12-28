@@ -18,3 +18,10 @@ module "api_app" {
   tags     = local.tags
   sku_name = local.api.sku
 }
+
+# Grant API App Service permission to pull images from ACR
+resource "azurerm_role_assignment" "api_acr_pull" {
+  scope                = azurerm_container_registry.main.id
+  role_definition_name = "AcrPull"
+  principal_id         = module.api_app.app_service_principal_id
+}
