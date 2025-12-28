@@ -42,6 +42,10 @@ inputs:
     description: 'Delay between retry attempts'
     required: false
     default: '10s'
+  environment:
+    description: 'Deployment environment (dev/prod)'
+    required: false
+    default: 'prod'
 
 outputs:
   status:
@@ -62,14 +66,52 @@ runs:
 
     - name: Health Check with Retry
       id: health_check
-      uses: jtalk/url-health-check-action@v3
-      with:
-        url: ${{ inputs.endpoint-url }}
-        max-attempts: ${{ inputs.max-attempts }}
-        retry-delay: ${{ inputs.retry-delay }}
-        retry-all: true
+      shell: bash
+      run: |
+        set -e
+        MAX_ATTEMPTS=${{ inputs.max-attempts }}
+        RETRY_DELAY=${{ inputs.retry-delay }}
+        ATTEMPT=1
+        SUCCESS=false
+
+        while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+          echo "🔍 Health check attempt $ATTEMPT/$MAX_ATTEMPTS..."
+
+          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" "${{ inputs.endpoint-url }}" 2>/dev/null || echo "")
+          HTTP_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$HEALTH_RESPONSE" | head -n-1)
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ HTTP 200 received"
+
+            # Verify JSON response
+            if echo "$RESPONSE_BODY" | jq empty 2>/dev/null; then
+              echo "$RESPONSE_BODY" > /tmp/health_response.json
+              echo "response=$(cat /tmp/health_response.json)" >> $GITHUB_OUTPUT
+              SUCCESS=true
+              break
+            else
+              echo "⚠️  Invalid JSON response"
+            fi
+          else
+            echo "⚠️  HTTP $HTTP_CODE received"
+          fi
+
+          if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+            echo "⏳ Waiting $RETRY_DELAY before retry..."
+            sleep "${RETRY_DELAY%s}"
+          fi
+
+          ATTEMPT=$((ATTEMPT + 1))
+        done
+
+        if [ "$SUCCESS" != "true" ]; then
+          echo "❌ Health check failed after $MAX_ATTEMPTS attempts"
+          exit 1
+        fi
 
     - name: Verify Health Status
+      id: verify_health
       shell: bash
       run: |
         echo "🔍 Verifying health check response..."
@@ -79,6 +121,7 @@ runs:
         if ! echo "$RESPONSE" | jq empty 2>/dev/null; then
           echo "❌ ERROR: Invalid JSON response"
           echo "Response: $RESPONSE"
+          echo "health_verified=false" >> $GITHUB_OUTPUT
           exit 1
         fi
 
@@ -86,13 +129,15 @@ runs:
         STATUS=$(echo "$RESPONSE" | jq -r '.status // .overall_status // "unknown"' 2>/dev/null)
         if [ "$STATUS" != "Healthy" ] && [ "$STATUS" != "healthy" ]; then
           echo "❌ ERROR: API health status is $STATUS"
+          echo "health_verified=false" >> $GITHUB_OUTPUT
           exit 1
         fi
 
         # Verify database connectivity if available
-        DB_STATUS=$(echo "$RESPONSE" | jq -r '.results.ConsilientDbContext.status // "N/A"' 2>/dev/null)
+        DB_STATUS=$(echo "$RESPONSE" | jq -r '.checks[0].status // "N/A"' 2>/dev/null)
         if [ "$DB_STATUS" != "N/A" ] && [ "$DB_STATUS" != "Healthy" ]; then
           echo "❌ ERROR: Database connection status is $DB_STATUS"
+          echo "health_verified=false" >> $GITHUB_OUTPUT
           exit 1
         fi
 
@@ -101,10 +146,11 @@ runs:
         if [ "$DB_STATUS" != "N/A" ]; then
           echo "  Database Status: $DB_STATUS"
         fi
+        echo "health_verified=true" >> $GITHUB_OUTPUT
 
     - name: Login to Azure for Rollback (OIDC + act fallback)
-      if: failure() && inputs.resource-group != '' && !env.ACT
-      uses: ./../../.github/actions/azure-login
+      if: steps.verify_health.outcome == 'failure' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      uses: ./.github/actions/azure-login
       with:
         client-id: ${{ inputs.client-id }}
         tenant-id: ${{ inputs.tenant-id }}
@@ -112,7 +158,7 @@ runs:
         azure-credentials: ${{ inputs.azure-credentials }}
 
     - name: Rollback Deployment
-      if: failure() && inputs.resource-group != '' && !env.ACT
+      if: steps.verify_health.outcome == 'failure' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
@@ -151,7 +197,7 @@ runs:
         echo "✅ Rollback completed"
 
     - name: Verify Rollback - Health Check After Rollback
-      if: failure() && inputs.resource-group != '' && !env.ACT
+      if: steps.verify_health.outcome == 'failure' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "🔍 Verifying previous image is healthy after rollback..."
@@ -210,8 +256,15 @@ runs:
           exit 1
         fi
 
+    - name: Fail if health check failed
+      if: steps.verify_health.outcome == 'failure'
+      shell: bash
+      run: |
+        echo "❌ Health check verification failed - failing the job"
+        exit 1
+
     - name: Provide Debug Help (act environment)
-      if: failure() && env.ACT
+      if: failure() && ${{ env.ACT }}
       shell: bash
       run: |
         echo "======================================================================"
@@ -254,7 +307,7 @@ runs:
         echo "   ❌ Container image issues"
         echo "      - Verify Docker image was pushed to ACR"
         echo "      - Check ACR repository: https://portal.azure.com"
-        echo "      - Verify image digest: \${{ needs.build-and-deploy.outputs.api_app_name }}"
+        echo "      - Verify image was successfully built and tagged"
         echo ""
         echo "   ❌ Application startup errors"
         echo "      - Check 'Diagnose and solve problems' > Application Crashes"
