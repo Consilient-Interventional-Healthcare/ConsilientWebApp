@@ -1,3 +1,5 @@
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Identity;
 using Consilient.Api.Configuration;
 using Consilient.Api.Hubs;
 using Consilient.Api.Infra.Authentication;
@@ -40,6 +42,19 @@ namespace Consilient.Api
                 .AddJsonFile(ApplicationConstants.ConfigurationFiles.AppSettings, optional: true, reloadOnChange: true)
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
+
+            // Add Key Vault configuration (using Managed Identity)
+            // In production (Azure), this uses the App Service's managed identity
+            // In development, this uses DefaultAzureCredential (Azure CLI, Visual Studio, etc.)
+            var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+            if (!string.IsNullOrEmpty(keyVaultUrl))
+            {
+                var credential = new DefaultAzureCredential();
+                builder.Configuration.AddAzureKeyVault(
+                    new Uri(keyVaultUrl),
+                    credential,
+                    new KeyVaultSecretManager());
+            }
 
             var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)?.Get<LoggingConfiguration>();
             var logger = CreateLogger(builder, loggingConfiguration);

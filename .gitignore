@@ -400,7 +400,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
-appsettings.json
 appsettings.Development.json
 /src/.docker/.env
 .env.act
@@ -427,3 +426,4 @@ appsettings.Development.json
 /.claude
 /infra/terraform/tfplan
 /infra/act/.env
+/src/Consilient.Api/appsettings.Production.json
