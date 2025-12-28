@@ -72,7 +72,7 @@ variable "container_registry_use_managed_identity" {
 }
 
 variable "container_registry_managed_identity_client_id" {
-  description = "The client ID of the managed identity to use for container registry authentication. Use 'system' for system-assigned identity."
+  description = "The client ID of the managed identity to use for container registry authentication. Leave empty for system-assigned identity."
   type        = string
   default     = ""
 }

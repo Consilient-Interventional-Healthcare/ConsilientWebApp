@@ -18,9 +18,13 @@ resource "azurerm_linux_web_app" "this" {
   }
 
   site_config {
-    vnet_route_all_enabled                        = var.vnet_route_all_enabled
-    container_registry_use_managed_identity       = var.container_registry_use_managed_identity
-    container_registry_managed_identity_client_id = var.container_registry_managed_identity_client_id != "" ? var.container_registry_managed_identity_client_id : null
+    vnet_route_all_enabled = var.vnet_route_all_enabled
+
+    # Managed identity authentication for ACR
+    container_registry_use_managed_identity = var.container_registry_use_managed_identity
+    # When using system-assigned identity, we can omit client_id or set to empty string
+    # The provider will use the system-assigned identity automatically
+    container_registry_managed_identity_client_id = var.container_registry_managed_identity_client_id
   }
 
   app_settings = var.app_settings

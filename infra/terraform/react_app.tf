@@ -12,15 +12,12 @@ module "react_app" {
   vnet_route_all_enabled = false
 
   # Enable managed identity for ACR authentication
+  # Uses the system-assigned managed identity (client_id left empty)
   container_registry_use_managed_identity       = true
-  container_registry_managed_identity_client_id = "system"
+  container_registry_managed_identity_client_id = ""
 
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
-
-    # Docker Registry Server URL for ACR (required for image pulls)
-    # When provided without USERNAME/PASSWORD, App Service uses Managed Identity
-    "DOCKER_REGISTRY_SERVER_URL" = "https://${azurerm_container_registry.main.login_server}"
   }
   tags     = local.tags
   sku_name = local.react.sku
