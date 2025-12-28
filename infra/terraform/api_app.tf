@@ -22,6 +22,7 @@ module "api_app" {
 
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+    ASPNETCORE_ENVIRONMENT              = "Production"
 
     # Key Vault configuration for secret loading via Managed Identity
     "KeyVault__Url" = "https://${azurerm_key_vault.main.name}.vault.azure.net/"
