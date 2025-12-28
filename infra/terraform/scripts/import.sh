@@ -124,6 +124,13 @@ import_resource "azurerm_mssql_server.main" "${SQL_SERVER_ID}" "SQL Server" "cri
 import_resource "module.main_db.azurerm_mssql_database.this" "${MAIN_DB_ID}" "Main Database" "critical"
 import_resource "module.hangfire_db.azurerm_mssql_database.this" "${HANGFIRE_DB_ID}" "Hangfire Database" "critical"
 
+# Import SQL firewall rule if local firewall is enabled
+if [ "${TF_VAR_enable_local_firewall}" = "true" ]; then
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Importing SQL Firewall Rule (local firewall enabled)"
+  FIREWALL_RULE_ID="${SQL_SERVER_ID}/firewallRules/AllowLocalActTesting"
+  import_resource "azurerm_mssql_firewall_rule.local_act[0]" "${FIREWALL_RULE_ID}" "SQL Firewall Rule (Local Act)"
+fi
+
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "5. Storage Account and Container"
 STORAGE_NAME="consilientloki${TF_VAR_environment}${SQL_SUFFIX}"
@@ -226,6 +233,40 @@ APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-react-${TF_VAR_e
 APP_API_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-api-${TF_VAR_environment}"
 import_resource "module.react_app.azurerm_linux_web_app.this" "${APP_REACT_ID}" "React App Service" "critical"
 import_resource "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API App Service" "critical"
+
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "13. ACR Pull Role Assignments"
+# Get the principal IDs of the app services
+REACT_PRINCIPAL_ID=$(az web app identity show --ids "${APP_REACT_ID}" --query "principalId" -o tsv 2>/dev/null || echo "")
+API_PRINCIPAL_ID=$(az web app identity show --ids "${APP_API_ID}" --query "principalId" -o tsv 2>/dev/null || echo "")
+
+if [ -n "$REACT_PRINCIPAL_ID" ]; then
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found React app service principal ID: ${REACT_PRINCIPAL_ID}"
+  # Find the role assignment for AcrPull on ACR
+  REACT_ROLE_ASSIGNMENT_ID=$(az role assignment list --scope "${ACR_ID}" --query "[?principalId=='${REACT_PRINCIPAL_ID}' && roleDefinitionName=='AcrPull'].id | [0]" -o tsv 2>/dev/null || echo "")
+  if [ -n "$REACT_ROLE_ASSIGNMENT_ID" ]; then
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found React ACR pull role assignment: ${REACT_ROLE_ASSIGNMENT_ID}"
+    import_resource "azurerm_role_assignment.react_acr_pull" "${REACT_ROLE_ASSIGNMENT_ID}" "React ACR Pull Role Assignment"
+  else
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  No AcrPull role assignment found for React app service on ACR"
+  fi
+else
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  React app service not found, skipping role assignment import"
+fi
+
+if [ -n "$API_PRINCIPAL_ID" ]; then
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found API app service principal ID: ${API_PRINCIPAL_ID}"
+  # Find the role assignment for AcrPull on ACR
+  API_ROLE_ASSIGNMENT_ID=$(az role assignment list --scope "${ACR_ID}" --query "[?principalId=='${API_PRINCIPAL_ID}' && roleDefinitionName=='AcrPull'].id | [0]" -o tsv 2>/dev/null || echo "")
+  if [ -n "$API_ROLE_ASSIGNMENT_ID" ]; then
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found API ACR pull role assignment: ${API_ROLE_ASSIGNMENT_ID}"
+    import_resource "azurerm_role_assignment.api_acr_pull" "${API_ROLE_ASSIGNMENT_ID}" "API ACR Pull Role Assignment"
+  else
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  No AcrPull role assignment found for API app service on ACR"
+  fi
+else
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  API app service not found, skipping role assignment import"
+fi
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Import Process Complete ==="
