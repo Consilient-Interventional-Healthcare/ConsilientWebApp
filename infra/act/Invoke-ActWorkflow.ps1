@@ -735,13 +735,14 @@ try {
             $addedSecrets | ForEach-Object { Write-Verbose "  - $_" }
         }
 
-        # Also pass the file as --secret-file for act's native secret file support
-        $ActArgs += "--secret-file"
-        $ActArgs += $secretFileAbsolute
+        # NOTE: We explicitly add secrets via --secret above, which is more reliable than
+        # --secret-file for act. We still pass --var-file for non-secret GitHub Variables
+        # like REACT_IMAGE_NAME, ACR_REGISTRY_URL, etc.
 
-        # CRITICAL: Also pass the same file as --var-file for GitHub Variables
-        # This makes values accessible via both ${{ secrets.* }} and ${{ vars.* }}
+        # CRITICAL: Pass the file as --var-file for GitHub Variables
+        # This makes values accessible via both ${{ vars.* }}
         # Fixes Docker build tag error: vars.REACT_IMAGE_NAME was empty, causing "***/:v1-hash"
+        Write-Verbose "Adding --var-file for GitHub Variables..."
         $ActArgs += "--var-file"
         $ActArgs += $secretFileAbsolute
     }
