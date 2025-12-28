@@ -394,20 +394,6 @@ function Show-ExecutionSummary {
         [string]$SkipHealthChecks
     )
 
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  GitHub Actions Local Emulator" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Configuration Summary:" -ForegroundColor Yellow
-    Write-Host "  Workflow: main.yml" -ForegroundColor Gray
-    Write-Host "  Environment: $Environment" -ForegroundColor Gray
-    Write-Host "  Skip Terraform: $(if($SkipTf -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
-    Write-Host "  Skip Database: $(if($SkipDb -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
-    Write-Host "  Recreate DB Objects: $(if($RecreateDb -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
-    Write-Host "  Allow Local Firewall: $(if($AllowFirewall -eq 'true') {'Yes (INSECURE - dev only)'} else {'No'})" -ForegroundColor $(if($AllowFirewall -eq 'true') {'Yellow'} else {'Gray'})
-    Write-Host "  Skip Health Checks: $(if($SkipHealthChecks -eq 'true') {'Yes'} else {'No'})" -ForegroundColor Gray
-
     if ($SecretFile) {
         Write-Host "  Secret File: Found" -ForegroundColor Gray
     }
@@ -471,18 +457,6 @@ function Show-DockerNotRunningError {
     Write-Message -LogLevel $LogLevel -Level Warning -Message "GitHub Actions workflows run in Docker containers via act."
     Write-Message -LogLevel $LogLevel -Level Warning -Message "Docker must be running before executing this script."
     Write-Host ""
-    Write-Message -LogLevel $LogLevel -Level Warning -Message "Troubleshooting:"
-    Write-Host "  Windows/Mac:  Start Docker Desktop" -ForegroundColor Gray
-    Write-Host "  Linux:        sudo systemctl start docker" -ForegroundColor Gray
-    Write-Host ""
-    Write-Message -LogLevel $LogLevel -Level Warning -Message "Verify with:"
-    Write-Host "  docker ps" -ForegroundColor White
-    Write-Host ""
-    Write-Message -LogLevel $LogLevel -Level Info -Message "If Docker Desktop is installed but not running:"
-    Write-Host "  1. Open Docker Desktop application" -ForegroundColor Gray
-    Write-Host "  2. Wait for the whale icon to stabilize" -ForegroundColor Gray
-    Write-Host "  3. Verify with 'docker ps' in a new terminal" -ForegroundColor Gray
-    Write-Host "  4. Try this script again" -ForegroundColor Gray
 }
 
 function Show-InvalidParamError {
@@ -499,17 +473,6 @@ function Show-ActExecutionError {
     Write-Host ""
     Write-Message -LogLevel $LogLevel -Level Warning -Message "The act command failed. Check the output above for details."
     Write-Host ""
-    Write-Message -LogLevel $LogLevel -Level Warning -Message "Possible causes:"
-    Write-Host "  - Workflow syntax error in .github/workflows/main.yml" -ForegroundColor Gray
-    Write-Host "  - Docker image pull failed (network issue)" -ForegroundColor Gray
-    Write-Host "  - Missing required secrets in .env.act" -ForegroundColor Gray
-    Write-Host "  - Insufficient Docker resources" -ForegroundColor Gray
-    Write-Host ""
-    Write-Message -LogLevel $LogLevel -Level Warning -Message "Troubleshooting steps:"
-    Write-Host "  1. Run with -Verbose for more details" -ForegroundColor Gray
-    Write-Host "  2. Check .github/workflows/main.yml syntax" -ForegroundColor Gray
-    Write-Host "  3. Verify secrets in infra/act/.env.act" -ForegroundColor Gray
-    Write-Host "  4. Check Docker Desktop resources (memory, disk space)" -ForegroundColor Gray
 }
 
 # ==============================
@@ -731,14 +694,33 @@ try {
     # Add secret file if it exists (this will include GITHUB_TOKEN from .env.act)
     # For AI: .env.act contains all secrets - see docs/infra/components/local-testing.md
     if ($secretFile) {
+        # Convert to absolute path for act command (important when running from repo root)
+        $secretFileAbsolute = Resolve-Path $secretFile -ErrorAction Stop
+
         $ActArgs += "--secret-file"
-        $ActArgs += $secretFile
+        $ActArgs += $secretFileAbsolute
 
         # CRITICAL: Also pass the same file as --var-file for GitHub Variables
         # This makes values accessible via both ${{ secrets.* }} and ${{ vars.* }}
         # Fixes Docker build tag error: vars.REACT_IMAGE_NAME was empty, causing "***/:v1-hash"
         $ActArgs += "--var-file"
-        $ActArgs += $secretFile
+        $ActArgs += $secretFileAbsolute
+
+        # IMPORTANT: Also parse the file and explicitly add each secret via --secret flag
+        # This ensures act properly maps ${{ secrets.* }} context expressions to environment variables
+        # Without this, act may not properly evaluate context expressions in step-level env: sections
+        Write-Verbose "Parsing secrets from file and adding to act via --secret flags..."
+        $secretContent = Get-Content $secretFileAbsolute -Raw
+        $secretLines = $secretContent -split "`n" | Where-Object { $_ -match '^\s*[A-Z_]+=.*' -and $_ -notmatch '^\s*#' }
+
+        foreach ($line in $secretLines) {
+            $line = $line.Trim()
+            if ($line -and -not $line.StartsWith('#')) {
+                $ActArgs += "--secret"
+                $ActArgs += $line
+                Write-Verbose "  Added secret: $($line.Split('=')[0])"
+            }
+        }
     }
     else {
         # Fallback: provide a dummy token if no secret file

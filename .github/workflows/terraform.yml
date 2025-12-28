@@ -145,22 +145,32 @@ jobs:
       - name: Validate Required Secrets
         shell: bash
         env:
-          # In GitHub Actions, these come from the caller workflow's secrets
-          # In act, these are loaded from --secret-file (.env.act)
+          # Step-level env for secrets validation
+          # In GitHub Actions: These context expressions are evaluated at parse time
+          # In act: These come from --secret-file (.env.act) loaded as environment variables
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
           SQL_ADMIN_USERNAME: ${{ secrets.SQL_ADMIN_USERNAME }}
           SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
           AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
+          # Debug: Show what environment variables are actually available
+          echo "=== DEBUG: Available environment variables ==="
+          env | grep -E '^(AZURE|ARM|SQL|TF_VAR)' | sort || echo "NONE FOUND"
+          echo "=== END DEBUG ==="
+          echo ""
+
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Validating Required Secrets ==="
           MISSING_SECRETS=()
 
+          # In act: Secrets are loaded directly from --secret-file (.env.act) as environment variables
+          # In GitHub Actions: Secrets are injected from repository configuration
+          # We check environment variables directly - no context expression evaluation needed
+
           # OIDC Authentication Secrets (for azure-login)
+          # Note: In act, these come from .env.act file
+          # Note: In GitHub Actions, these come from repository secrets
           if [ -z "${AZURE_CLIENT_ID}" ]; then
             MISSING_SECRETS+=("AZURE_CLIENT_ID (OIDC authentication)")
           fi
@@ -171,7 +181,7 @@ jobs:
             MISSING_SECRETS+=("AZURE_SUBSCRIPTION_ID (Azure subscription)")
           fi
 
-          # Terraform Provider Secrets (service principal)
+          # Terraform Provider Secrets (service principal) - these should be available from job env
           if [ -z "${ARM_CLIENT_ID}" ]; then
             MISSING_SECRETS+=("ARM_CLIENT_ID (Terraform provider auth)")
           fi
