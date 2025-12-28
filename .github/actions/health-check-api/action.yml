@@ -149,7 +149,7 @@ runs:
         echo "health_verified=true" >> $GITHUB_OUTPUT
 
     - name: Login to Azure for Rollback (OIDC + act fallback)
-      if: steps.verify_health.outcome == 'failure' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
       uses: ./.github/actions/azure-login
       with:
         client-id: ${{ inputs.client-id }}
@@ -158,7 +158,7 @@ runs:
         azure-credentials: ${{ inputs.azure-credentials }}
 
     - name: Rollback Deployment
-      if: steps.verify_health.outcome == 'failure' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
@@ -197,7 +197,7 @@ runs:
         echo "✅ Rollback completed"
 
     - name: Verify Rollback - Health Check After Rollback
-      if: steps.verify_health.outcome == 'failure' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "🔍 Verifying previous image is healthy after rollback..."
@@ -256,11 +256,16 @@ runs:
           exit 1
         fi
 
-    - name: Fail if health check failed
-      if: steps.verify_health.outcome == 'failure'
+    - name: Exit successfully if health checks passed
       shell: bash
       run: |
-        echo "❌ Health check verification failed - failing the job"
+        HEALTH_VERIFIED='${{ steps.verify_health.outputs.health_verified }}'
+        if [ "$HEALTH_VERIFIED" = "true" ]; then
+          echo "✅ All health checks passed - exiting successfully"
+          exit 0
+        fi
+        # If we reach here, health check failed but we're not in a rollback scenario
+        echo "Health verification did not complete successfully"
         exit 1
 
     - name: Provide Debug Help (act environment)
