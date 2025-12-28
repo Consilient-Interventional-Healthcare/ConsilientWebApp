@@ -144,16 +144,6 @@ jobs:
 
       - name: Validate Required Secrets
         shell: bash
-        env:
-          # Step-level env for secrets validation
-          # In GitHub Actions: These context expressions are evaluated at parse time
-          # In act: These come from --secret-file (.env.act) loaded as environment variables
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          SQL_ADMIN_USERNAME: ${{ secrets.SQL_ADMIN_USERNAME }}
-          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
-          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
           # Debug: Show what environment variables are actually available
           echo "=== DEBUG: Available environment variables ==="
