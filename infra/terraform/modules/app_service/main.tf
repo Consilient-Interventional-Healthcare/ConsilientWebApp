@@ -18,7 +18,9 @@ resource "azurerm_linux_web_app" "this" {
   }
 
   site_config {
-    vnet_route_all_enabled = var.vnet_route_all_enabled
+    vnet_route_all_enabled                        = var.vnet_route_all_enabled
+    container_registry_use_managed_identity       = var.container_registry_use_managed_identity
+    container_registry_managed_identity_client_id = var.container_registry_managed_identity_client_id != "" ? var.container_registry_managed_identity_client_id : null
   }
 
   app_settings = var.app_settings

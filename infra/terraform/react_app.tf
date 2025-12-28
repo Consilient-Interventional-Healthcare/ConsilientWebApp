@@ -10,8 +10,17 @@ module "react_app" {
   resource_group_name    = azurerm_resource_group.main.name
   linux_fx_version       = "DOCKER|<acr-login-server>/<react-image>:<tag>"
   vnet_route_all_enabled = false
+
+  # Enable managed identity for ACR authentication
+  container_registry_use_managed_identity       = true
+  container_registry_managed_identity_client_id = "system"
+
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+
+    # Docker Registry Server URL for ACR (required for image pulls)
+    # When provided without USERNAME/PASSWORD, App Service uses Managed Identity
+    "DOCKER_REGISTRY_SERVER_URL" = "https://${azurerm_container_registry.main.login_server}"
   }
   tags     = local.tags
   sku_name = local.react.sku

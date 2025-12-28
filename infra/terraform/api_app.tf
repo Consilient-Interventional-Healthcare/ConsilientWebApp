@@ -10,8 +10,17 @@ module "api_app" {
   resource_group_name    = azurerm_resource_group.main.name
   linux_fx_version       = "DOCKER|<acr-login-server>/<api-image>:<tag>"
   vnet_route_all_enabled = true
+
+  # Enable managed identity for ACR authentication
+  container_registry_use_managed_identity       = true
+  container_registry_managed_identity_client_id = "system"
+
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+
+    # Docker Registry Server URL for ACR (required for image pulls)
+    # When provided without USERNAME/PASSWORD, App Service uses Managed Identity
+    "DOCKER_REGISTRY_SERVER_URL" = "https://${azurerm_container_registry.main.login_server}"
 
     # Key Vault configuration for secret loading via Managed Identity
     "KeyVault__Url" = "https://${azurerm_key_vault.main.name}.vault.azure.net/"
@@ -26,14 +35,14 @@ module "api_app" {
     "ApplicationSettings__Authentication__UserService__OAuth__ClientSecret" = var.oauth_client_secret != "" ? "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=oauth-client-secret)" : ""
 
     # Non-secret configuration
-    "ApplicationSettings__Authentication__UserService__Jwt__Issuer"     = "https://${local.api.service_name}.azurewebsites.net"
-    "ApplicationSettings__Authentication__UserService__Jwt__Audience"   = "https://${local.api.service_name}.azurewebsites.net"
+    "ApplicationSettings__Authentication__UserService__Jwt__Issuer"        = "https://${local.api.service_name}.azurewebsites.net"
+    "ApplicationSettings__Authentication__UserService__Jwt__Audience"      = "https://${local.api.service_name}.azurewebsites.net"
     "ApplicationSettings__Authentication__UserService__Jwt__ExpiryMinutes" = "60"
-    "ApplicationSettings__Authentication__Enabled"                      = "true"
-    "Logging__GrafanaLoki__PushEndpoint"                                = "/loki/api/v1/push"
-    "Logging__GrafanaLoki__BatchPostingLimit"                           = "100"
-    "Logging__LogLevel__Default"                                        = "Information"
-    "Logging__LogLevel__Microsoft.AspNetCore"                           = "Warning"
+    "ApplicationSettings__Authentication__Enabled"                         = "true"
+    "Logging__GrafanaLoki__PushEndpoint"                                   = "/loki/api/v1/push"
+    "Logging__GrafanaLoki__BatchPostingLimit"                              = "100"
+    "Logging__LogLevel__Default"                                           = "Information"
+    "Logging__LogLevel__Microsoft.AspNetCore"                              = "Warning"
   }
 
   # Connection strings must be separate from app_settings
