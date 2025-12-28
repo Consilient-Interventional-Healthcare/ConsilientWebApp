@@ -152,3 +152,47 @@ EOT
   type        = bool
   default     = false
 }
+
+variable "jwt_signing_secret" {
+  description = <<EOT
+JWT signing secret for authentication tokens.
+SECURITY: Never set a default or commit this value to source control.
+Inject securely using environment variables (TF_VAR_jwt_signing_secret), a secret manager, or your CI/CD pipeline.
+Generate using: openssl rand -base64 64
+EOT
+  type        = string
+  sensitive   = true
+}
+
+variable "oauth_client_secret" {
+  description = <<EOT
+OAuth provider client secret (if OAuth is enabled).
+SECURITY: Never set a default or commit this value to source control.
+Set to empty string "" if OAuth is not used.
+EOT
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "api_custom_domain" {
+  description = <<EOT
+Custom domain name for the API App Service.
+If provided, Azure will automatically issue and manage an SSL certificate for this domain.
+The domain must be registered and its DNS must be configured to point to the App Service.
+Example: "api.example.com"
+EOT
+  type        = string
+  default     = ""
+}
+
+variable "react_custom_domain" {
+  description = <<EOT
+Custom domain name for the React App Service.
+If provided, Azure will automatically issue and manage an SSL certificate for this domain.
+The domain must be registered and its DNS must be configured to point to the App Service.
+Example: "app.example.com"
+EOT
+  type        = string
+  default     = ""
+}

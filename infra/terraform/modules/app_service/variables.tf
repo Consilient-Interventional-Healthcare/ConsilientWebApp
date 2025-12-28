@@ -76,3 +76,15 @@ variable "container_registry_managed_identity_client_id" {
   type        = string
   default     = ""
 }
+
+variable "custom_domain_name" {
+  description = "Custom domain name for the App Service. If provided, Azure-managed SSL certificate will be automatically issued."
+  type        = string
+  default     = ""
+}
+
+variable "enable_https_only" {
+  description = "Enforce HTTPS-only traffic to the App Service."
+  type        = bool
+  default     = true
+}

@@ -12,6 +12,7 @@ resource "azurerm_linux_web_app" "this" {
   location            = var.location
   resource_group_name = var.resource_group_name
   service_plan_id     = azurerm_service_plan.this.id
+  https_only          = var.enable_https_only
 
   identity {
     type = "SystemAssigned"
@@ -39,4 +40,28 @@ resource "azurerm_linux_web_app" "this" {
   }
 
   tags = var.tags
+}
+
+# Custom domain hostname binding (required before certificate can be issued)
+resource "azurerm_app_service_custom_hostname_binding" "custom_domain" {
+  count               = var.custom_domain_name != "" ? 1 : 0
+  app_service_name    = azurerm_linux_web_app.this.name
+  resource_group_name = var.resource_group_name
+  hostname            = var.custom_domain_name
+
+  depends_on = [azurerm_linux_web_app.this]
+}
+
+# Azure-managed SSL certificate for the custom domain
+resource "azurerm_app_service_managed_certificate" "custom_domain" {
+  count               = var.custom_domain_name != "" ? 1 : 0
+  custom_hostname_binding_id = azurerm_app_service_custom_hostname_binding.custom_domain[0].id
+}
+
+# Bind the managed certificate to the custom domain
+resource "azurerm_app_service_certificate_binding" "custom_domain" {
+  count               = var.custom_domain_name != "" ? 1 : 0
+  hostname_binding_id = azurerm_app_service_custom_hostname_binding.custom_domain[0].id
+  certificate_id      = azurerm_app_service_managed_certificate.custom_domain[0].id
+  ssl_state           = "SniEnabled"
 }

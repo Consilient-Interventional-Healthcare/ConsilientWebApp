@@ -16,6 +16,10 @@ module "react_app" {
   container_registry_use_managed_identity       = true
   container_registry_managed_identity_client_id = ""
 
+  # HTTPS configuration
+  enable_https_only  = true
+  custom_domain_name = var.react_custom_domain
+
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
   }
