@@ -14,7 +14,7 @@ resource "azurerm_key_vault" "main" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
-  sku_name            = "standard"  # Standard tier is sufficient for secrets
+  sku_name            = "standard" # Standard tier is sufficient for secrets
 
   # RBAC authorization model (not legacy access policies)
   rbac_authorization_enabled      = true
@@ -23,14 +23,14 @@ resource "azurerm_key_vault" "main" {
   enabled_for_template_deployment = false
 
   # Network security
-  public_network_access_enabled = true  # Required for App Service Key Vault references
+  public_network_access_enabled = true # Required for App Service Key Vault references
   network_acls {
-    bypass         = "AzureServices"  # Allow Azure services to bypass firewall
-    default_action = "Allow"          # For dev; use "Deny" + IP rules in prod
+    bypass         = "AzureServices" # Allow Azure services to bypass firewall
+    default_action = "Allow"         # For dev; use "Deny" + IP rules in prod
   }
 
   # Security settings
-  purge_protection_enabled   = var.environment == "prod" ? true : false  # Prevent permanent deletion in prod
+  purge_protection_enabled   = var.environment == "prod" ? true : false # Prevent permanent deletion in prod
   soft_delete_retention_days = 90
 
   tags = local.tags
@@ -39,7 +39,7 @@ resource "azurerm_key_vault" "main" {
 # Grant API App Service "Key Vault Secrets User" role (read-only access to secrets)
 resource "azurerm_role_assignment" "api_keyvault_secrets_user" {
   scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User"  # Built-in role for reading secrets
+  role_definition_name = "Key Vault Secrets User" # Built-in role for reading secrets
   principal_id         = module.api_app.app_service_principal_id
 
   # Prevent race condition - ensure identity exists before assigning role
@@ -50,7 +50,7 @@ resource "azurerm_role_assignment" "api_keyvault_secrets_user" {
 # This allows Terraform to create/update/delete secrets
 resource "azurerm_role_assignment" "terraform_keyvault_secrets_officer" {
   scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets Officer"  # Built-in role for managing secrets
+  role_definition_name = "Key Vault Secrets Officer" # Built-in role for managing secrets
   principal_id         = data.azurerm_client_config.current.object_id
 
   depends_on = [azurerm_key_vault.main]

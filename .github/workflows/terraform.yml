@@ -58,6 +58,12 @@ on:
       SQL_ADMIN_PASSWORD:
         required: true
         description: 'SQL Server admin password'
+      JWT_SIGNING_SECRET:
+        required: true
+        description: 'JWT signing secret for authentication tokens'
+      OAUTH_CLIENT_SECRET:
+        required: false
+        description: 'OAuth provider client secret (optional, set to empty string if not used)'
       AZURE_CREDENTIALS:
         required: false
         description: 'JSON credentials for service principal (used only with act) - optional'
@@ -106,11 +112,16 @@ jobs:
       # SQL Admin credentials for Terraform
       SQL_ADMIN_USERNAME: ${{ secrets.SQL_ADMIN_USERNAME }}
       SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+      # Key Vault credentials for Terraform
+      JWT_SIGNING_SECRET: ${{ secrets.JWT_SIGNING_SECRET }}
+      OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET || '' }}
       # Terraform variables - all passed via environment to avoid committing .tfvars with secrets
       TF_VAR_environment: ${{ inputs.environment }}
       TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       TF_VAR_sql_admin_username: ${{ secrets.SQL_ADMIN_USERNAME }}
       TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+      TF_VAR_jwt_signing_secret: ${{ secrets.JWT_SIGNING_SECRET }}
+      TF_VAR_oauth_client_secret: ${{ secrets.OAUTH_CLIENT_SECRET || '' }}
       TF_VAR_enable_local_firewall: ${{ inputs.allow-local-firewall }}
       # Non-sensitive configuration variables (from GitHub Variables)
       # Environment-specific (from GitHub Environment Variables)
@@ -167,6 +178,7 @@ jobs:
           [ -z "${ARM_TENANT_ID}" ] && MISSING_SECRETS+=("ARM_TENANT_ID (Terraform provider auth)")
           [ -z "${SQL_ADMIN_USERNAME}" ] && MISSING_SECRETS+=("SQL_ADMIN_USERNAME (SQL server creation)")
           [ -z "${SQL_ADMIN_PASSWORD}" ] && MISSING_SECRETS+=("SQL_ADMIN_PASSWORD (SQL server creation)")
+          [ -z "${JWT_SIGNING_SECRET}" ] && MISSING_SECRETS+=("JWT_SIGNING_SECRET (API authentication)")
 
           # Report any missing secrets and exit with error
           if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then

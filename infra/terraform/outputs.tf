@@ -99,3 +99,32 @@ output "react_app_service_hostname" {
   description = "The default hostname of the React App Service"
   value       = module.react_app.app_service_default_hostname
 }
+
+output "api_app_service_principal_id" {
+  description = "The principal ID of the API App Service managed identity"
+  value       = module.api_app.app_service_principal_id
+}
+
+output "react_app_service_principal_id" {
+  description = "The principal ID of the React App Service managed identity"
+  value       = module.react_app.app_service_principal_id
+}
+
+# --------------------------------------------------------------------------
+# KEY VAULT OUTPUTS
+# --------------------------------------------------------------------------
+
+output "key_vault_name" {
+  description = "The name of the Azure Key Vault"
+  value       = azurerm_key_vault.main.name
+}
+
+output "key_vault_uri" {
+  description = "The URI of the Azure Key Vault"
+  value       = azurerm_key_vault.main.vault_uri
+}
+
+output "key_vault_id" {
+  description = "The resource ID of the Azure Key Vault"
+  value       = azurerm_key_vault.main.id
+}

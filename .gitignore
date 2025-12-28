@@ -400,7 +400,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
-appsettings.Development.json
 /src/.docker/.env
 .env.act
 .secrets

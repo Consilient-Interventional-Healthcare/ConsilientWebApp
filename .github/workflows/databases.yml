@@ -1,5 +1,3 @@
-name: "06 - Deploy Database (Reusable)"
-
 on:
   workflow_call:
     inputs:

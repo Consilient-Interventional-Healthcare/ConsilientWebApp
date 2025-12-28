@@ -5,9 +5,15 @@ set +e  # Don't exit on error, we'll handle errors ourselves
 # This script attempts to import existing Azure resources into the Terraform state
 # It's designed to be called standalone or from GitHub Actions workflow
 
-# ACTIONS_STEP_DEBUG environment variable controls verbosity (GitHub Actions best practice)
+# When running in GitHub Actions, always print verbose output
 # When ACTIONS_STEP_DEBUG=true: show all echo statements (verbose mode)
 # When ACTIONS_STEP_DEBUG=false: suppress informational echo statements (quiet mode)
+# In GitHub Actions, always set DEBUG=true for full visibility
+IN_GITHUB_ACTIONS=false
+if [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITHUB_WORKSPACE" ]; then
+  IN_GITHUB_ACTIONS=true
+  ACTIONS_STEP_DEBUG=true  # Force verbose output in GitHub Actions
+fi
 
 # Check if state file exists - skip imports if this is a fresh deployment
 if [ ! -f "terraform.tfstate" ] && [ ! -f ".terraform/terraform.tfstate" ]; then
@@ -236,9 +242,13 @@ import_resource "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "13. ACR Pull Role Assignments"
-# Get the principal IDs of the app services
-REACT_PRINCIPAL_ID=$(az web app identity show --ids "${APP_REACT_ID}" --query "principalId" -o tsv 2>/dev/null || echo "")
-API_PRINCIPAL_ID=$(az web app identity show --ids "${APP_API_ID}" --query "principalId" -o tsv 2>/dev/null || echo "")
+# Get the principal IDs from Terraform root outputs (now exposed in outputs.tf)
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Retrieving app service principal IDs from Terraform outputs..."
+REACT_PRINCIPAL_ID=$(terraform output -raw "react_app_service_principal_id" 2>/dev/null || echo "")
+API_PRINCIPAL_ID=$(terraform output -raw "api_app_service_principal_id" 2>/dev/null || echo "")
+
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && [ -n "$REACT_PRINCIPAL_ID" ] && echo "  ✅ React app principal ID: ${REACT_PRINCIPAL_ID}"
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && [ -n "$API_PRINCIPAL_ID" ] && echo "  ✅ API app principal ID: ${API_PRINCIPAL_ID}"
 
 if [ -n "$REACT_PRINCIPAL_ID" ]; then
   [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found React app service principal ID: ${REACT_PRINCIPAL_ID}"
@@ -251,7 +261,7 @@ if [ -n "$REACT_PRINCIPAL_ID" ]; then
     [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  No AcrPull role assignment found for React app service on ACR"
   fi
 else
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  React app service not found, skipping role assignment import"
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  React app service principal ID not found, skipping role assignment import"
 fi
 
 if [ -n "$API_PRINCIPAL_ID" ]; then
@@ -265,7 +275,36 @@ if [ -n "$API_PRINCIPAL_ID" ]; then
     [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  No AcrPull role assignment found for API app service on ACR"
   fi
 else
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  API app service not found, skipping role assignment import"
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  API app service principal ID not found, skipping role assignment import"
+fi
+
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "14. Key Vault"
+KV_NAME=$(terraform output -raw key_vault_name 2>/dev/null || echo "consilient-kv-${TF_VAR_environment}-$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
+KV_ID="${RG_ID}/providers/Microsoft.KeyVault/vaults/${KV_NAME}"
+import_resource "azurerm_key_vault.main" "${KV_ID}" "Key Vault" "critical"
+
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "15. Key Vault Secrets"
+import_resource "azurerm_key_vault_secret.sql_connection_main" "${KV_ID}/secrets/sql-connection-string-main" "SQL Main Connection Secret"
+import_resource "azurerm_key_vault_secret.sql_connection_hangfire" "${KV_ID}/secrets/sql-connection-string-hangfire" "SQL Hangfire Connection Secret"
+import_resource "azurerm_key_vault_secret.jwt_signing_secret" "${KV_ID}/secrets/jwt-signing-secret" "JWT Signing Secret"
+import_resource "azurerm_key_vault_secret.grafana_loki_url" "${KV_ID}/secrets/grafana-loki-url" "Grafana Loki URL Secret"
+
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "16. Key Vault Role Assignments"
+if [ -n "$API_PRINCIPAL_ID" ]; then
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found API app service principal ID: ${API_PRINCIPAL_ID}"
+  # Find the role assignment for Key Vault Secrets User
+  API_KV_ROLE_ASSIGNMENT_ID=$(az role assignment list --scope "${KV_ID}" --query "[?principalId=='${API_PRINCIPAL_ID}' && roleDefinitionName=='Key Vault Secrets User'].id | [0]" -o tsv 2>/dev/null || echo "")
+  if [ -n "$API_KV_ROLE_ASSIGNMENT_ID" ]; then
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found API Key Vault role assignment: ${API_KV_ROLE_ASSIGNMENT_ID}"
+    import_resource "azurerm_role_assignment.api_keyvault_secrets_user" "${API_KV_ROLE_ASSIGNMENT_ID}" "API Key Vault Secrets User Role Assignment"
+  else
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  No Key Vault Secrets User role assignment found for API app service"
+  fi
+else
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  API app service principal ID not found, skipping Key Vault role assignment import"
 fi
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
