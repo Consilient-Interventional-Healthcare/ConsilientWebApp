@@ -236,6 +236,7 @@ jobs:
           fi
 
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ All required secrets are configured"
+          exit 0
 
       - name: Login to Azure (OIDC + act fallback)
         # AZURE_CLIENT_ID is for OIDC authentication (production)
