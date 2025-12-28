@@ -205,6 +205,20 @@ jobs:
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Info: AZURE_CREDENTIALS not set (only required for local 'act' testing)"
           fi
 
+          # Detailed variable check for debugging
+          echo "=== DETAILED SECRET CHECK ==="
+          echo "AZURE_CLIENT_ID: '${AZURE_CLIENT_ID}' (empty: $([ -z "${AZURE_CLIENT_ID}" ] && echo 'YES' || echo 'NO'))"
+          echo "AZURE_TENANT_ID: '${AZURE_TENANT_ID}' (empty: $([ -z "${AZURE_TENANT_ID}" ] && echo 'YES' || echo 'NO'))"
+          echo "AZURE_SUBSCRIPTION_ID: '${AZURE_SUBSCRIPTION_ID}' (empty: $([ -z "${AZURE_SUBSCRIPTION_ID}" ] && echo 'YES' || echo 'NO'))"
+          echo "ARM_CLIENT_ID: '${ARM_CLIENT_ID}' (empty: $([ -z "${ARM_CLIENT_ID}" ] && echo 'YES' || echo 'NO'))"
+          echo "ARM_CLIENT_SECRET: '${ARM_CLIENT_SECRET}' (empty: $([ -z "${ARM_CLIENT_SECRET}" ] && echo 'YES' || echo 'NO'))"
+          echo "ARM_TENANT_ID: '${ARM_TENANT_ID}' (empty: $([ -z "${ARM_TENANT_ID}" ] && echo 'YES' || echo 'NO'))"
+          echo "SQL_ADMIN_USERNAME: '${SQL_ADMIN_USERNAME}' (empty: $([ -z "${SQL_ADMIN_USERNAME}" ] && echo 'YES' || echo 'NO'))"
+          echo "SQL_ADMIN_PASSWORD: '${SQL_ADMIN_PASSWORD}' (empty: $([ -z "${SQL_ADMIN_PASSWORD}" ] && echo 'YES' || echo 'NO'))"
+          echo "MISSING_SECRETS array size: ${#MISSING_SECRETS[@]}"
+          echo "=== END DETAILED CHECK ==="
+          echo ""
+
           # Report missing secrets
           if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
             echo ""
