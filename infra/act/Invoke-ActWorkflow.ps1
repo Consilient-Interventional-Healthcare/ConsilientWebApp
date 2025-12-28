@@ -689,6 +689,7 @@ try {
         "--input", "skip-react-deployment=$SkipReactDeploymentStr",
         "-W", $WorkflowFile,
         "-P", "ubuntu-latest=$LocalImageFull"  # Use custom runner image for ubuntu-latest
+        #"--log-prefix-job-id"   # Show job name in log headers
     )
 
     # Add secret file if it exists (this will include GITHUB_TOKEN from .env.act)

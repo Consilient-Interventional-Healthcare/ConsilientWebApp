@@ -332,7 +332,7 @@ When triggering workflows manually (workflow_dispatch):
 
 The `ACTIONS_STEP_DEBUG` environment variable follows GitHub Actions conventions:
 - Set by `run-act.ps1` based on `-LogLevel` parameter (Verbose or Normal)
-- Set by workflow input `enable-debug-output` when running in cloud
+- Set by workflow input `enable-debug` when running in cloud
 - Act environment variables override workflow inputs (local takes precedence)
 
 **Technical implementation:**

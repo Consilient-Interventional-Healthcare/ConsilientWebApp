@@ -103,7 +103,7 @@ runs:
         fi
 
     - name: Login to Azure for Rollback (OIDC + act fallback)
-      if: failure() && inputs.resource-group != ''
+      if: failure() && inputs.resource-group != '' && !env.ACT
       uses: ./../../.github/actions/azure-login
       with:
         client-id: ${{ inputs.client-id }}
@@ -112,7 +112,7 @@ runs:
         azure-credentials: ${{ inputs.azure-credentials }}
 
     - name: Rollback Deployment
-      if: failure() && inputs.resource-group != ''
+      if: failure() && inputs.resource-group != '' && !env.ACT
       shell: bash
       run: |
         echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
@@ -151,7 +151,7 @@ runs:
         echo "✅ Rollback completed"
 
     - name: Verify Rollback - Health Check After Rollback
-      if: failure() && inputs.resource-group != ''
+      if: failure() && inputs.resource-group != '' && !env.ACT
       shell: bash
       run: |
         echo "🔍 Verifying previous image is healthy after rollback..."
@@ -209,3 +209,89 @@ runs:
           echo "Manual intervention may be required"
           exit 1
         fi
+
+    - name: Provide Debug Help (act environment)
+      if: failure() && env.ACT
+      shell: bash
+      run: |
+        echo "======================================================================"
+        echo "❌ HEALTH CHECK FAILED (act environment - NO ROLLBACK)"
+        echo "======================================================================"
+        echo ""
+        echo "🔍 DEBUGGING INFORMATION"
+        echo "======================================================================"
+        echo "App Name:     ${{ inputs.app-name }}"
+        echo "Endpoint:     ${{ inputs.endpoint-url }}"
+        echo "Environment:  act (local testing)"
+        echo ""
+        echo "📋 TROUBLESHOOTING STEPS"
+        echo "======================================================================"
+        echo ""
+        echo "1️⃣  CHECK API LOGS"
+        echo "   - View real-time logs: https://portal.azure.com"
+        echo "   - Navigate to: Resource Groups > [Your RG] > App Service > [App Name]"
+        echo "   - Go to: Monitoring > Log stream (live stream)"
+        echo "   - Or: Monitoring > App Service logs > Download"
+        echo ""
+        echo "2️⃣  TEST HEALTH ENDPOINT DIRECTLY"
+        echo "   curl -v https://${{ inputs.app-name }}.azurewebsites.net/health"
+        echo ""
+        echo "3️⃣  CHECK DEPLOYMENT STATUS IN AZURE"
+        echo "   - Portal: https://portal.azure.com"
+        echo "   - Search: App Services > ${{ inputs.app-name }}"
+        echo "   - Check 'Deployments' tab for status and logs"
+        echo ""
+        echo "4️⃣  COMMON CAUSES"
+        echo "   ❌ Database connectivity issues"
+        echo "      - Check SQL Server firewall rules"
+        echo "      - Verify connection string in application settings"
+        echo "      - Test with: az sql db list --resource-group [RG]"
+        echo ""
+        echo "   ❌ Missing environment variables"
+        echo "      - Check App Service Configuration"
+        echo "      - Portal > App Service > Settings > Configuration"
+        echo ""
+        echo "   ❌ Container image issues"
+        echo "      - Verify Docker image was pushed to ACR"
+        echo "      - Check ACR repository: https://portal.azure.com"
+        echo "      - Verify image digest: \${{ needs.build-and-deploy.outputs.api_app_name }}"
+        echo ""
+        echo "   ❌ Application startup errors"
+        echo "      - Check 'Diagnose and solve problems' > Application Crashes"
+        echo "      - Review .NET application logs in Log Stream"
+        echo ""
+        echo "5️⃣  EXAMINE DOCKER IMAGE LOCALLY"
+        echo "   docker run --rm -it [ACR_REGISTRY]/consilient-api:[TAG] /bin/bash"
+        echo "   # Inside container, check:"
+        echo "   env | grep -E '(AZURE|CONNECTION|DATABASE)'"
+        echo ""
+        echo "6️⃣  VALIDATE CONFIGURATION"
+        echo "   - Check if all required secrets are set"
+        echo "   - Verify app.settings.json in the Docker image"
+        echo "   - Ensure health check endpoint exists: /health"
+        echo ""
+        echo "📊 RESPONSE DETAILS"
+        echo "======================================================================"
+        HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" "${{ inputs.endpoint-url }}" 2>/dev/null || echo "Connection failed")
+        echo "$HEALTH_RESPONSE"
+        echo ""
+        echo "======================================================================"
+        echo "🔗 USEFUL AZURE PORTAL LINKS"
+        echo "======================================================================"
+        echo "App Service Overview:"
+        echo "  https://portal.azure.com/#@/resource/subscriptions/[SUBSCRIPTION]/resourceGroups/${{ inputs.resource_group || '[RESOURCE_GROUP]' }}/providers/Microsoft.Web/sites/${{ inputs.app-name }}/overview"
+        echo ""
+        echo "Logs & Monitoring:"
+        echo "  https://portal.azure.com/#@/resource/subscriptions/[SUBSCRIPTION]/resourceGroups/${{ inputs.resource_group || '[RESOURCE_GROUP]' }}/providers/Microsoft.Web/sites/${{ inputs.app-name }}/logStream"
+        echo ""
+        echo "Deployments:"
+        echo "  https://portal.azure.com/#@/resource/subscriptions/[SUBSCRIPTION]/resourceGroups/${{ inputs.resource_group || '[RESOURCE_GROUP]' }}/providers/Microsoft.Web/sites/${{ inputs.app-name }}/deployments"
+        echo ""
+        echo "📝 NEXT STEPS"
+        echo "======================================================================"
+        echo "1. Review the logs using the links above"
+        echo "2. Fix the underlying issue in the application code or configuration"
+        echo "3. Re-run the workflow with the fix in place"
+        echo "4. If database connectivity is the issue, check SQL Server firewall"
+        echo ""
+        exit 1

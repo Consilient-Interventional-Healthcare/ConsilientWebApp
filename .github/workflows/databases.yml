@@ -127,6 +127,13 @@ jobs:
 
           echo "::debug::Environment Variables - ENVIRONMENT: ${ENVIRONMENT}, DATABASE_BASE_NAME: ${DATABASE_BASE_NAME}, RECREATE_DB: ${RECREATE_DB}"
 
+      - name: Database connectivity health check
+        uses: ./.github/actions/health-check-database
+        with:
+          sql-server: ${{ env.SQL_SERVER }}
+          database-name: ${{ env.DATABASE_NAME }}
+          timeout: '30'
+
       - name: List SQL files to apply
         id: list-files
         run: |

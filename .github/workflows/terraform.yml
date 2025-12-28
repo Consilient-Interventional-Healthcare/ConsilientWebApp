@@ -16,12 +16,7 @@ on:
         type: boolean
         default: false
       enable-debug:
-        description: 'Enable verbose debug logging'
-        required: false
-        type: boolean
-        default: false
-      enable-debug-output:
-        description: 'Enable detailed workflow step output (shows all echo statements)'
+        description: 'Enable verbose debug logging and detailed workflow output'
         required: false
         type: boolean
         default: false
@@ -73,7 +68,7 @@ env:
 
 jobs:
   terraform:
-    name: "Terraform apply"
+    name: "Terraform"
     runs-on: ubuntu-latest
     container:
       image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'consilientwebapp-runner:latest' }}
@@ -129,8 +124,8 @@ jobs:
       # GitHub Actions debug mode controls workflow output verbosity
       # When ACTIONS_STEP_DEBUG=true: show all echo statements (verbose mode)
       # When ACTIONS_STEP_DEBUG=false: suppress informational echo statements (quiet mode)
-      # This is set by run-act.ps1 (-Verbose/-Quiet flags) or workflow input (enable-debug-output)
-      ACTIONS_STEP_DEBUG: ${{ inputs.enable-debug-output && 'true' || 'false' }}
+      # This is set by run-act.ps1 (-Verbose/-Quiet flags) or workflow input (enable-debug)
+      ACTIONS_STEP_DEBUG: ${{ inputs.enable-debug && 'true' || 'false' }}
 
     defaults:
       run:
@@ -310,6 +305,7 @@ jobs:
                 # Retry validate
                 if terraform validate; then
                   [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform validate succeeded after import"
+                  exit 0
                 else
                   echo "❌ Terraform validate still failing after import"
                   exit 1
@@ -324,6 +320,7 @@ jobs:
             fi
           else
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform validate succeeded (state is synced)"
+            exit 0
           fi
 
       - name: Terraform Plan
@@ -351,6 +348,7 @@ jobs:
                 # Retry plan
                 if terraform plan; then
                   [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform plan succeeded after import"
+                  exit 0
                 else
                   echo "❌ Terraform plan still failing after import"
                   exit 1
@@ -366,6 +364,7 @@ jobs:
             fi
           else
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform plan succeeded (state is synced)"
+            exit 0
           fi
 
       - name: Terraform Apply
@@ -392,6 +391,7 @@ jobs:
                 # Retry apply
                 if terraform apply -auto-approve; then
                   [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform apply succeeded after import"
+                  exit 0
                 else
                   echo "❌ Terraform apply still failing after import"
                   exit 1
@@ -407,6 +407,7 @@ jobs:
             fi
           else
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform apply succeeded (state is synced)"
+            exit 0
           fi
 
       - name: Capture Terraform Outputs

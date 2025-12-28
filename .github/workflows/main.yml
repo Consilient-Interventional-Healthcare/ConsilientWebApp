@@ -1,5 +1,3 @@
-name: "01 - Main Orchestrator"
-
 on:
   push:
     branches:
@@ -60,8 +58,8 @@ on:
         required: false
         type: boolean
         default: false
-      enable-debug-output:
-        description: 'Enable detailed workflow step output (equivalent to -Verbose flag)'
+      enable-debug:
+        description: 'Enable verbose debug logging and detailed workflow output'
         required: false
         type: boolean
         default: false
@@ -82,17 +80,12 @@ concurrency:
 
 jobs:
   validate-environment:
-    name: Validate Environment
+    name: Validate Env
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       environment: ${{ steps.setenv.outputs.environment }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
       - name: Validate environment input
         uses: ./.github/actions/validate-inputs
         with:
@@ -111,7 +104,7 @@ jobs:
           echo "environment=$ENVIRONMENT_INPUT" >> $GITHUB_OUTPUT
 
   terraform:
-    name: Terraform Infrastructure Deployment
+    name: Terraform
     needs: [validate-environment]
     if: ${{ !inputs.skip-terraform }}
     uses: ./.github/workflows/terraform.yml
@@ -119,7 +112,7 @@ jobs:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
       allow-local-firewall: ${{ inputs.allow-local-firewall }}
-      enable-debug-output: ${{ inputs.enable-debug-output }}
+      enable-debug: ${{ inputs.enable-debug }}
     secrets: inherit
 
   # ============================================================================
@@ -132,8 +125,8 @@ jobs:
   # ============================================================================
 
   discover-databases:
-    name: Discover Databases
-    needs: [validate-environment, terraform]
+    name: Discover DBs
+    needs: [validate-environment]
     if: ${{ !inputs.skip-databases }}
     runs-on: ubuntu-latest
     outputs:
@@ -155,13 +148,12 @@ jobs:
           require_config: 'false'
 
   deploy-databases:
-    name: Deploy Databases
-    needs: [validate-environment, terraform, discover-databases]
+    name: Deploy DBs
+    needs: [validate-environment, discover-databases]
     if: |
       !inputs.skip-databases &&
       always() &&
       needs.validate-environment.result == 'success' &&
-      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/databases.yml
@@ -172,7 +164,7 @@ jobs:
     secrets: inherit
 
   generate-db-docs:
-    name: Generate Database Documentation
+    name: DB Docs
     needs: [validate-environment, deploy-databases, discover-databases]
     if: |
       !inputs.skip-db-docs &&
@@ -191,7 +183,7 @@ jobs:
   # ============================================================================
 
   deploy-dotnet-apps:
-    name: Deploy .NET Apps
+    name: Deploy API
     needs: [validate-environment, terraform, deploy-databases]
     if: |
       !inputs.skip-api-deployment &&
@@ -209,7 +201,7 @@ jobs:
     secrets: inherit
 
   deploy-react-apps:
-    name: Deploy React Apps
+    name: Deploy React
     needs: [validate-environment, terraform, deploy-databases, deploy-dotnet-apps]
     if: |
       !inputs.skip-react-deployment &&
