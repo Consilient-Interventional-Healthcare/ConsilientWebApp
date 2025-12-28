@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-    Run GitHub Actions workflow locally using act with custom image.
+    Invoke GitHub Actions workflow locally using act with custom image.
 
 .DESCRIPTION
     Provides an interactive way to test the main GitHub Actions workflow locally
@@ -79,37 +79,37 @@
     Default: 'Verbose' (shows all output including docker operations)
 
 .EXAMPLE
-    .\run-act.ps1
+    .\Invoke-ActWorkflow.ps1
 
     Interactive mode (default). Prompts for all configuration options with sensible defaults.
 
 .EXAMPLE
-    .\run-act.ps1 -Environment dev
+    .\Invoke-ActWorkflow.ps1 -Environment dev
 
     Partially parameterized with environment - prompts for remaining deployment options.
 
 .EXAMPLE
-    .\run-act.ps1 -Environment dev -RunTerraform -RunDatabases -RecreateDatabase -RunApiDeployment -RunReactDeployment -NonInteractive
+    .\Invoke-ActWorkflow.ps1 -Environment dev -RunTerraform -RunDatabases -RecreateDatabase -RunApiDeployment -RunReactDeployment -NonInteractive
 
     Fully automated mode with all deployments enabled.
 
 .EXAMPLE
-    .\run-act.ps1 -Environment dev -RunTerraform:$false -RunDatabases:$false -NonInteractive
+    .\Invoke-ActWorkflow.ps1 -Environment dev -RunTerraform:$false -RunDatabases:$false -NonInteractive
 
     Fully automated mode - skip Terraform and database deployments, deploy apps only.
 
 .EXAMPLE
-    .\run-act.ps1 -RecreateImage -RecreateCache
+    .\Invoke-ActWorkflow.ps1 -RecreateImage -RecreateCache
 
     Interactive mode with fresh Docker image and actions cache rebuild.
 
 .EXAMPLE
-    .\run-act.ps1 -Verbose
+    .\Invoke-ActWorkflow.ps1 -Verbose
 
     Interactive mode with detailed verbose output.
 
 .EXAMPLE
-    .\run-act.ps1 -Environment dev -NonInteractive -Info
+    .\Invoke-ActWorkflow.ps1 -Environment dev -NonInteractive -Info
 
     Fully automated mode with info-level output (for testing).
 
@@ -129,10 +129,10 @@
     For AI assistants: This script is part of the local GitHub Actions testing system.
     Primary Documentation: docs/infra/components/local-testing.md
     GitHub Actions Overview: docs/infra/components/github-actions.md
-    Configuration Files: .env.act (secrets, git-ignored)
+    Configuration Files: .env.act (secrets, git-ignored), infra/act/ActConfig.ps1 (shared config)
     Related Workflows: .github/workflows/main.yml (orchestrator)
     Custom Runner: .github/workflows/runner/Dockerfile
-    Docker Build Logic: infra/act/Build-RunnerImage.ps1
+    Helper Scripts: infra/act/Build-RunnerImage.ps1, infra/act/Initialize-ActCache.ps1
 #>
 
 [CmdletBinding()]
@@ -174,19 +174,42 @@ param(
 $ErrorActionPreference = "Stop"
 $ScriptRoot = $PSScriptRoot
 $RepoRoot = Resolve-Path "$ScriptRoot\..\.."
+$script:AutoAcceptDefaults = $false
 
 # ==============================
-# OUTPUT HELPER FUNCTIONS
+# CONFIGURATION AND HELPERS
 # ==============================
+
+# Load shared configuration
+$ConfigPath = Join-Path $ScriptRoot "ActConfig.ps1"
+if (Test-Path $ConfigPath) {
+    . $ConfigPath
+}
+else {
+    Write-Host "Error: Shared configuration not found at: $ConfigPath" -ForegroundColor Red
+    exit 1
+}
 
 # Import shared Write-Message helper
-$WriteMessagePath = Join-Path $ScriptRoot "lib\Write-Message.ps1"
+$WriteMessagePath = Join-Path $ScriptRoot "Write-Message.ps1"
 if (Test-Path $WriteMessagePath) {
     . $WriteMessagePath
 }
 else {
     Write-Host "Error: Write-Message helper not found at: $WriteMessagePath" -ForegroundColor Red
     exit 1
+}
+
+function Write-SectionHeader {
+    <#
+    .SYNOPSIS
+        Display a section header with consistent formatting.
+    .PARAMETER Title
+        The title of the section to display.
+    #>
+    param([string]$Title)
+    Write-Host ""
+    Write-Host $Title -ForegroundColor Cyan
 }
 
 function ConvertTo-ActBooleanString {
@@ -205,17 +228,17 @@ function ConvertTo-ActBooleanString {
 
 # Configuration constants
 # For AI: Main workflow orchestrator file - see docs/infra/components/github-actions.md
-$WorkflowFile = ".github\workflows\main.yml"
+$WorkflowFile = $ActWorkflowConfig.WorkflowFile
 
 # For AI: .env.act contains all secrets and credentials (git-ignored)
 # See docs/infra/components/local-testing.md#secrets-management
 $ActSecretFile = Join-Path $ScriptRoot ".env.act"
 
-# Docker image configuration (also defined in Build-RunnerImage.ps1)
+# Docker image configuration (from ActConfig.ps1)
 # For AI: Custom runner image with pre-installed tools (Azure CLI, sqlcmd, Terraform, etc.)
 # See docs/infra/components/github-actions.md#custom-runner-image
-$LocalImageName = "consilientwebapp-runner"
-$LocalImageTag = "latest"
+$LocalImageName = $ActDockerConfig.LocalImageName
+$LocalImageTag = $ActDockerConfig.LocalImageTag
 $LocalImageFull = "${LocalImageName}:${LocalImageTag}"
 
 # ==============================
@@ -277,12 +300,23 @@ function Get-ValidatedInput {
 
     .PARAMETER AllowedValues
         Array of allowed values for validation.
+
+    .DESCRIPTION
+        Supports asterisk (*) shortcut: entering '*' enables auto-accept mode for all remaining prompts.
     #>
     param(
         [string]$Prompt,
         [string]$Default = $null,
         [string[]]$AllowedValues = $null
     )
+
+    # If auto-accept mode is enabled, immediately return default without prompting
+    if ($script:AutoAcceptDefaults) {
+        if ($Default) {
+            Write-Host ($Prompt + " [" + $Default + "]: " + $Default)
+            return $Default
+        }
+    }
 
     while ($true) {
         if ($Default) {
@@ -307,6 +341,19 @@ function Get-ValidatedInput {
             else {
                 $userInput += $key.Character
                 Write-Host -NoNewline $key.Character
+            }
+        }
+
+        # Check for asterisk shortcut
+        if ($userInput -eq "*") {
+            $script:AutoAcceptDefaults = $true
+            Write-Host ""
+            if ($Default) {
+                return $Default
+            }
+            else {
+                Write-Host "Input is required." -ForegroundColor Red
+                continue
             }
         }
 
@@ -384,7 +431,7 @@ function Invoke-ActExecution {
         [string[]]$ActArgs
     )
 
-    Write-Message -LogLevel $LogLevel -Level Step -Message "Running act with custom image ($LocalImageFull)..."
+    Write-Message -LogLevel $LogLevel -Level Debug -Message "Running act with custom image ($LocalImageFull)..."
 
     try {
         & act $ActArgs 2>&1
@@ -475,8 +522,7 @@ try {
     # ==============================
     # PREREQUISITE CHECKS
     # ==============================
-    Write-Message -LogLevel $LogLevel -Level Info -Message "🔍 Checking prerequisites..."
-    Write-Host ""
+    Write-SectionHeader "Checking prerequisites..."
 
     if (-not (Test-ActInstalled)) {
         Show-ActNotInstalledError
@@ -494,7 +540,7 @@ try {
     }
 
     $buildParams = @{
-        Force = $RebuildImage
+        Force = $RecreateImage
         LogLevel = $LogLevel
     }
     if ($VerbosePreference -eq 'Continue') {
@@ -543,32 +589,36 @@ try {
 
     # Interactive mode: Prompt for missing values
     if (-not $NonInteractive) {
+        Write-SectionHeader "User Input"
+        Write-Host "Tip: Enter '*' at any prompt to accept all remaining defaults" -ForegroundColor Gray
+        Write-Host ""
+
         if (-not $EnvInput) {
-            $EnvInput = Get-ValidatedInput "Enter environment (dev/prod)" "dev" @("dev", "prod")
+            $EnvInput = Get-ValidatedInput "- Enter environment (dev/prod)" "dev" @("dev", "prod")
         }
         # 0. Docker operations (destructive - defaults = no)
-        $RecreateImageResponse = Get-ValidatedInput "Recreate Docker Image? (y/n)" "n" @("y", "n")
+        $RecreateImageResponse = Get-ValidatedInput "- Recreate Docker Image? (y/n)" "n" @("y", "n")
         $RecreateImage = $RecreateImageResponse -eq "y"
-        $RecreateCacheResponse = Get-ValidatedInput "Recreate Actions Cache? (y/n)" "n" @("y", "n")
+        $RecreateCacheResponse = Get-ValidatedInput "- Recreate Actions Cache? (y/n)" "n" @("y", "n")
         $RecreateCache = $RecreateCacheResponse -eq "y"
 
         # 1. Terraform deployment
-        $RunTerraformResponse = Get-ValidatedInput "Run Terraform deployment? (y/n)" "y" @("y", "n")
+        $RunTerraformResponse = Get-ValidatedInput "- Run Terraform deployment? (y/n)" "y" @("y", "n")
         $RunTerraform = $RunTerraformResponse -eq "y"
         if ($RunTerraform) {
-            $AddFirewallRuleResponse = Get-ValidatedInput "  Add Firewall rule? (y/n)" "y" @("y", "n")
+            $AddFirewallRuleResponse = Get-ValidatedInput "  -- Add Firewall rule? (y/n)" "y" @("y", "n")
             $AddFirewallRule = $AddFirewallRuleResponse -eq "y"
         } else {
             $AddFirewallRule = $false
         }
 
         # 2. Database deployment
-        $RunDatabaseResponse = Get-ValidatedInput "Run Database deployment? (y/n)" "y" @("y", "n")
+        $RunDatabaseResponse = Get-ValidatedInput "- Run Database deployment? (y/n)" "y" @("y", "n")
         $RunDatabases = $RunDatabaseResponse -eq "y"
         if ($RunDatabases) {
-            $RecreateDbResponse = Get-ValidatedInput "  Recreate Database? (y/n)" "y" @("y", "n")
+            $RecreateDbResponse = Get-ValidatedInput "  -- Recreate Database? (y/n)" "y" @("y", "n")
             $RecreateDatabase = $RecreateDbResponse -eq "y"
-            $RunDbDocsResponse = Get-ValidatedInput "  Run DB Docs? (y/n)" "y" @("y", "n")
+            $RunDbDocsResponse = Get-ValidatedInput "  -- Run DB Docs? (y/n)" "y" @("y", "n")
             $RunDbDocs = $RunDbDocsResponse -eq "y"
         } else {
             $RecreateDatabase = $false
@@ -576,16 +626,16 @@ try {
         }
 
         # 3. .NET App deployment
-        $RunApiResponse = Get-ValidatedInput "Run .NET App deployment? (y/n)" "y" @("y", "n")
+        $RunApiResponse = Get-ValidatedInput "- Run .NET App deployment? (y/n)" "y" @("y", "n")
         $RunApiDeployment = $RunApiResponse -eq "y"
 
         # 4. React deployment
-        $RunReactResponse = Get-ValidatedInput "Run React deployment? (y/n)" "y" @("y", "n")
+        $RunReactResponse = Get-ValidatedInput "- Run React deployment? (y/n)" "y" @("y", "n")
         $RunReactDeployment = $RunReactResponse -eq "y"
 
         # 5. Health Checks (conditional - only if deploying apps)
         if ($RunApiDeployment -or $RunReactDeployment) {
-            $RunHealthChecksResponse = Get-ValidatedInput "Run Health Checks? (y/n)" "y" @("y", "n")
+            $RunHealthChecksResponse = Get-ValidatedInput "- Run Health Checks? (y/n)" "y" @("y", "n")
             $RunHealthChecks = $RunHealthChecksResponse -eq "y"
         } else {
             $RunHealthChecks = $false
@@ -630,12 +680,12 @@ try {
 
     # Call the cache utility script to initialize act cache with pre-baked actions
     # The utility script handles extraction and flattening of Docker image actions
-    $cacheUtilScript = Join-Path $PSScriptRoot "lib\Initialize-ActCache.ps1"
+    $cacheUtilScript = Join-Path $PSScriptRoot "Initialize-ActCache.ps1"
     $ActCachePath = Join-Path $env:USERPROFILE ".cache\act"
 
     if (Test-Path $cacheUtilScript) {
         Write-Verbose "Calling cache utility script: $cacheUtilScript"
-        & $cacheUtilScript -ImageName $LocalImageFull -Verbose:($VerbosePreference -eq 'Continue')
+        & $cacheUtilScript -ImageName $LocalImageFull -LogLevel $LogLevel
     } else {
         Write-Warning "Cache utility script not found: $cacheUtilScript"
         Write-Warning "Act may need to clone actions from GitHub (slower, requires network)"
@@ -727,6 +777,8 @@ try {
     # EXECUTE ACT
     # ==============================
 
+    Write-SectionHeader "Running workflow (main.yml)"
+
     Invoke-ActExecution $ActArgs
 
     Write-Host ""
@@ -756,4 +808,3 @@ catch {
 finally {
     Pop-Location -ErrorAction SilentlyContinue
 }
-

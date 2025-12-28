@@ -64,6 +64,15 @@ $ErrorActionPreference = "Stop"
 $ScriptRoot = $PSScriptRoot
 $RepoRoot = Resolve-Path "$ScriptRoot\..\.."
 
+# Load shared configuration
+$ConfigPath = Join-Path $ScriptRoot "ActConfig.ps1"
+if (Test-Path $ConfigPath) {
+    . $ConfigPath
+}
+else {
+    throw "Shared configuration not found at: $ConfigPath"
+}
+
 # Import shared Write-Message helper
 $WriteMessagePath = Join-Path $ScriptRoot "Write-Message.ps1"
 if (Test-Path $WriteMessagePath) {
@@ -76,8 +85,8 @@ else {
 # Docker image configuration
 # For AI: Custom runner image with pre-installed tools (Azure CLI, sqlcmd, Terraform, etc.)
 # See docs/infra/components/github-actions.md#custom-runner-image
-$LocalImageName = "consilientwebapp-runner"
-$LocalImageTag = "latest"
+$LocalImageName = $ActDockerConfig.LocalImageName
+$LocalImageTag = $ActDockerConfig.LocalImageTag
 $LocalImageFull = "${LocalImageName}:${LocalImageTag}"
 $DockerfilePath = Join-Path $RepoRoot ".github\workflows\runner\Dockerfile"
 $DockerContextPath = Join-Path $RepoRoot ".github\workflows\runner"

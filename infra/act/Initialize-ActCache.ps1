@@ -48,7 +48,7 @@ $AllExist = $true
 foreach ($action in $ExpectedActions) {
     if (-not (Test-Path (Join-Path $CachePath $action))) {
         $AllExist = $false
-        Write-Message -LogLevel $LogLevel -Level Warning -Message "Missing: $action"
+        Write-Message -LogLevel $LogLevel -Level Info -Message "Missing: $action"
         break
     }
 }
@@ -58,7 +58,7 @@ if ($AllExist) {
     return
 }
 
-Write-Message -LogLevel $LogLevel -Level Debug -Message "📦 Extracting pre-baked actions from Docker image..."
+Write-Message -LogLevel $LogLevel -Level Step -Message "📦 Extracting pre-baked actions from Docker image..."
 # Ensure cache directory exists
 if (-not (Test-Path $CachePath)) {
     New-Item -ItemType Directory -Path $CachePath -Force | Out-Null
@@ -129,7 +129,7 @@ foreach ($owner in $ownerDirs) {
     }
 }
 
-Write-Message -LogLevel $LogLevel -Level Debug -Message "✅ Extracted and flattened $flattenedCount actions"
+Write-Message -LogLevel $LogLevel -Level Info -Message "Extracted and flattened $flattenedCount actions"
 
 # Verify
 $verifiedCount = 0
@@ -140,7 +140,7 @@ foreach ($action in $ExpectedActions) {
 }
 
 if ($verifiedCount -eq $ExpectedActions.Count) {
-    Write-Message -LogLevel $LogLevel -Level Debug -Message "✅ All $verifiedCount expected actions verified in cache"
+    Write-Message -LogLevel $LogLevel -Level Success -Message "✅ All $verifiedCount expected actions verified in cache"
 } else {
     Write-Message -LogLevel $LogLevel -Level Warning -Message "⚠️  Only $verifiedCount of $($ExpectedActions.Count) actions verified"
 }
