@@ -158,18 +158,18 @@ namespace Consilient.Api
                 // This prevents preflight (OPTIONS) being redirected which browsers disallow.
                 app.UseCors(Init.ConfigureCorsServiceCollectionExtensions.DefaultCorsPolicyName); // Must be before UseAuthentication/UseAuthorization and before HTTPS redirect
 
-                if (app.Environment.IsProduction())
-                {
-                    // In production, the container listens directly on HTTPS/443
-                    // so we can enable HTTPS redirection (HTTP->HTTPS) and HSTS
-                    app.UseHttpsRedirection();
-                    app.UseHsts();
-                }
-                else
+                if (!app.Environment.IsProduction())
                 {
                     // In development, enable HTTPS redirection for local testing
                     // (from http://localhost:8090 to https://localhost:8091)
                     app.UseHttpsRedirection();
+                }
+                else
+                {
+                    // In production (Azure App Service), HTTPS/TLS is handled at the platform level.
+                    // The container listens on HTTP/80, and App Service manages TLS termination.
+                    // HSTS headers are added but HTTPS redirection is not needed.
+                    app.UseHsts();
                 }
 
                 // Rate limiting middleware (applies GlobalLimiter by default)
