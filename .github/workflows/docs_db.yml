@@ -25,8 +25,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: generate-db-docs
@@ -107,6 +105,13 @@ jobs:
     if: needs.extract-databases.outputs.databases != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     strategy:
       matrix:
         database: ${{ fromJson(needs.extract-databases.outputs.databases) }}
@@ -850,64 +855,13 @@ jobs:
           retention-days: ${{ steps.artifact-meta.outputs.retention }}
           if-no-files-found: error
 
-  deploy-db-docs:
-    name: Deploy Documentation to GitHub Pages
-    needs: generate-db-docs
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: needs.generate-db-docs.result == 'success' && github.event_name != 'pull_request'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./artifacts
-          pattern: database-documentation-*
-
-      - name: Prepare docs for GitHub Pages
-        run: |
-          set -e
-
-          echo "📦 Preparing documentation for GitHub Pages deployment..."
-
-          # Create root docs directory
-          mkdir -p docs
-
-          # Extract all downloaded artifacts into docs directory
-          for artifact_dir in artifacts/database-documentation-*; do
-            if [ -d "$artifact_dir" ]; then
-              echo "📄 Processing artifact: $(basename "$artifact_dir")"
-              # Copy docs content from each artifact into the docs directory
-              if [ -d "$artifact_dir/docs" ]; then
-                # If docs subdirectory exists in the artifact, use it
-                cp -r "$artifact_dir/docs"/* docs/ 2>/dev/null || true
-              else
-                # Otherwise, assume the content is directly in the artifact
-                cp -r "$artifact_dir"/* docs/ 2>/dev/null || true
-              fi
-            fi
-          done
-
-          # Verify docs directory has content
-          if [ ! -f "docs/index.html" ]; then
-            echo "⚠️  Warning: docs/index.html not found"
-            echo "Directory structure:"
-            ls -la docs/ 2>/dev/null || echo "docs directory is empty"
-          else
-            echo "✅ Documentation prepared successfully"
-            ls -la docs/
-          fi
-
-      - name: Upload artifact to GitHub Pages
+      - name: Upload to GitHub Pages
+        if: steps.schema-doc.outcome == 'success' && !env.ACT
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
 
       - name: Deploy to GitHub Pages
         id: deployment
+        if: steps.schema-doc.outcome == 'success' && !env.ACT && github.event_name != 'pull_request'
         uses: actions/deploy-pages@v4
