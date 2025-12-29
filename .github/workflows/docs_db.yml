@@ -217,7 +217,8 @@ jobs:
           auth-type: 'sql-auth'
           sql-username: ${{ secrets.SQL_ADMIN_USERNAME }}
           sql-password: ${{ secrets.SQL_ADMIN_PASSWORD }}
-
+        continue-on-error: true
+        
       - name: Handle health check failure
         if: steps.health-check.outcome == 'failure'
         run: |
@@ -255,12 +256,13 @@ jobs:
             exit 1
           fi
 
-          # Execute query using sqlcmd with Azure AD authentication
+          # Execute query using sqlcmd with SQL Server authentication
           # Use marker to distinguish between successful empty output and command failure
           DISCOVERED_SCHEMAS=$(timeout ${{ env.SCHEMA_DISCOVERY_TIMEOUT_SECONDS }} sqlcmd \
             -S "${{ env.SQL_SERVER }}" \
             -d "$ACTUAL_DB_NAME" \
-            -G \
+            -U "${{ secrets.SQL_ADMIN_USERNAME }}" \
+            -P "${{ secrets.SQL_ADMIN_PASSWORD }}" \
             -i "$DISCOVERY_SQL" \
             -h -1 \
             -W \
@@ -438,33 +440,18 @@ jobs:
 
           ACTUAL_DB_NAME="${{ steps.parse-config.outputs.database-name }}"
 
-          # Determine authentication method based on environment
-          # For act (local testing), use SQL authentication; for GitHub Actions, use Azure AD
-          if [ -n "${{ env.ACT }}" ]; then
-            # Using SQL Server authentication for local testing with act
-            SCHEMASPY_COMMON="-t mssql17 \
-              -dp /opt/schemaspy/mssql-jdbc.jar \
-              -host ${{ env.SQL_SERVER }} \
-              -db $ACTUAL_DB_NAME \
-              -u ${{ secrets.SQL_ADMIN_USERNAME }} \
-              -p ${{ secrets.SQL_ADMIN_PASSWORD }} \
-              -connprops \"encrypt\\=true;trustServerCertificate\\=false\" \
-              -norows \
-              -vizjs \
-              -imageformat svg \
-              -noimplied"
-          else
-            # Using Azure AD authentication for GitHub Actions
-            SCHEMASPY_COMMON="-t mssql17 \
-              -dp /opt/schemaspy/mssql-jdbc.jar \
-              -host ${{ env.SQL_SERVER }} \
-              -db $ACTUAL_DB_NAME \
-              -connprops \"authenticationScheme\\=ActiveDirectoryDefault;encrypt\\=true;trustServerCertificate\\=false;userName\\=CloudSA\" \
-              -norows \
-              -vizjs \
-              -imageformat svg \
-              -noimplied"
-          fi
+          # Using SQL Server authentication for all environments
+          SCHEMASPY_COMMON="-t mssql17 \
+            -dp /opt/schemaspy/mssql-jdbc.jar \
+            -host ${{ env.SQL_SERVER }} \
+            -db $ACTUAL_DB_NAME \
+            -u ${{ secrets.SQL_ADMIN_USERNAME }} \
+            -p ${{ secrets.SQL_ADMIN_PASSWORD }} \
+            -connprops \"encrypt\\=true;trustServerCertificate\\=false\" \
+            -norows \
+            -vizjs \
+            -imageformat svg \
+            -noimplied"
 
           # Create output directories dynamically
           DIRS_TO_CREATE=""
