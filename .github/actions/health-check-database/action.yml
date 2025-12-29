@@ -1,5 +1,5 @@
 name: 'Database Connectivity Health Check'
-description: 'Verify database is reachable using either Azure AD or SQL Server authentication'
+description: 'Verify database is reachable using Azure AD authentication'
 
 inputs:
   sql-server:
@@ -12,18 +12,6 @@ inputs:
     description: 'Connection timeout in seconds'
     required: false
     default: '30'
-  auth-type:
-    description: 'Authentication type: azure-ad or sql-auth'
-    required: false
-    default: 'azure-ad'
-  sql-username:
-    description: 'SQL Server authentication username (required if auth-type is sql-auth)'
-    required: false
-    default: ''
-  sql-password:
-    description: 'SQL Server authentication password (required if auth-type is sql-auth)'
-    required: false
-    default: ''
 
 outputs:
   status:
@@ -45,50 +33,25 @@ runs:
         SQL_SERVER="${{ inputs.sql-server }}"
         DATABASE_NAME="${{ inputs.database-name }}"
         TIMEOUT="${{ inputs.timeout }}"
-        AUTH_TYPE="${{ inputs.auth-type }}"
 
         echo "================================================"
         echo "🔍 Database Connectivity Health Check"
         echo "================================================"
         echo "Server: ${SQL_SERVER}"
         echo "Database: ${DATABASE_NAME}"
+        echo "Auth: Azure AD Authentication"
+        echo ""
 
-        # Build sqlcmd command based on auth type
-        if [ "$AUTH_TYPE" = "sql-auth" ]; then
-          SQL_USERNAME="${{ inputs.sql-username }}"
-          SQL_PASSWORD="${{ inputs.sql-password }}"
-
-          # Validate credentials are provided for SQL auth
-          if [ -z "$SQL_USERNAME" ] || [ -z "$SQL_PASSWORD" ]; then
-            echo "❌ ERROR: sql-username and sql-password are required for sql-auth"
-            echo "status=failed" >> $GITHUB_OUTPUT
-            echo "database-name=" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-
-          echo "Auth: SQL Server Authentication (user: $SQL_USERNAME)"
-          echo ""
-
-          RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
-            -d "$DATABASE_NAME" \
-            -U "$SQL_USERNAME" \
-            -P "$SQL_PASSWORD" \
-            -i "${{ github.workspace }}/infra/db/health_check.sql" \
-            -h -1 \
-            -W \
-            -b)
-        else
-          echo "Auth: Azure AD Authentication"
-          echo ""
-
-          RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
-            -d "$DATABASE_NAME" \
-            -G \
-            -i "${{ github.workspace }}/infra/db/health_check.sql" \
-            -h -1 \
-            -W \
-            -b)
-        fi
+        RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
+          -d "$DATABASE_NAME" \
+          -G \
+          -Q "SELECT DB_NAME() AS DatabaseName;" \
+          -h -1 \
+          -W \
+          -b \
+          -C \
+          -N \
+          -l 10 2>&1)
 
         EXIT_CODE=$?
 
@@ -113,12 +76,20 @@ runs:
         elif [ $EXIT_CODE -eq 124 ]; then
           echo "❌ Database connectivity check FAILED"
           echo "   Error: Connection timed out after $TIMEOUT seconds"
+          echo ""
+          echo "🔍 Debug output from sqlcmd:"
+          echo "$RESULT"
+          echo ""
           echo "status=failed" >> $GITHUB_OUTPUT
           echo "database-name=" >> $GITHUB_OUTPUT
           exit 1
         else
           echo "❌ Database connectivity check FAILED"
           echo "   Error: sqlcmd exited with code $EXIT_CODE"
+          echo ""
+          echo "🔍 Debug output from sqlcmd:"
+          echo "$RESULT"
+          echo ""
           echo "status=failed" >> $GITHUB_OUTPUT
           echo "database-name=" >> $GITHUB_OUTPUT
           exit 1

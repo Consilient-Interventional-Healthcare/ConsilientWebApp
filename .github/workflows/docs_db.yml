@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: generate-db-docs
@@ -214,9 +215,6 @@ jobs:
           sql-server: ${{ env.SQL_SERVER }}
           database-name: ${{ steps.parse-config.outputs.database-name }}
           timeout: '30'
-          auth-type: 'sql-auth'
-          sql-username: ${{ secrets.SQL_ADMIN_USERNAME }}
-          sql-password: ${{ secrets.SQL_ADMIN_PASSWORD }}
         continue-on-error: true
         
       - name: Handle health check failure
@@ -227,9 +225,15 @@ jobs:
           echo ""
 
           # In act (local testing), allow workflow to continue for testing
-          if [ -f /.dockerenv ] || [ "$RUNNER_NAME" = "act" ]; then
-            echo "ℹ️  Running in act (local) environment - database may not be reachable"
-            echo "📝 Workflow will continue for documentation structure testing"
+          if [ "$RUNNER_NAME" = "act" ] || [ -f /.dockerenv ]; then
+            echo "ℹ️  Running in act (local) environment"
+            echo "📝 The database may not be reachable from the container."
+            echo "✅ Workflow will continue for documentation structure testing"
+            echo ""
+            echo "💡 To fix database connectivity in act:"
+            echo "   1. Ensure your machine can reach: ${{ env.SQL_SERVER }}"
+            echo "   2. Check firewall rules allow inbound from the docker bridge"
+            echo "   3. Run act with --network host flag for direct network access"
             echo ""
             exit 0
           else
@@ -256,13 +260,12 @@ jobs:
             exit 1
           fi
 
-          # Execute query using sqlcmd with SQL Server authentication
+          # Execute query using sqlcmd with Azure AD authentication
           # Use marker to distinguish between successful empty output and command failure
           DISCOVERED_SCHEMAS=$(timeout ${{ env.SCHEMA_DISCOVERY_TIMEOUT_SECONDS }} sqlcmd \
             -S "${{ env.SQL_SERVER }}" \
             -d "$ACTUAL_DB_NAME" \
-            -U "${{ secrets.SQL_ADMIN_USERNAME }}" \
-            -P "${{ secrets.SQL_ADMIN_PASSWORD }}" \
+            -G \
             -i "$DISCOVERY_SQL" \
             -h -1 \
             -W \
@@ -440,14 +443,12 @@ jobs:
 
           ACTUAL_DB_NAME="${{ steps.parse-config.outputs.database-name }}"
 
-          # Using SQL Server authentication for all environments
+          # Using Azure AD authentication for all environments (GitHub Actions and act)
           SCHEMASPY_COMMON="-t mssql17 \
             -dp /opt/schemaspy/mssql-jdbc.jar \
             -host ${{ env.SQL_SERVER }} \
             -db $ACTUAL_DB_NAME \
-            -u ${{ secrets.SQL_ADMIN_USERNAME }} \
-            -p ${{ secrets.SQL_ADMIN_PASSWORD }} \
-            -connprops \"encrypt\\=true;trustServerCertificate\\=false\" \
+            -connprops \"authenticationScheme\\=ActiveDirectoryDefault;encrypt\\=true;trustServerCertificate\\=false;userName\\=CloudSA\" \
             -norows \
             -vizjs \
             -imageformat svg \
