@@ -214,7 +214,6 @@ jobs:
           sql-server: ${{ env.SQL_SERVER }}
           database-name: ${{ steps.parse-config.outputs.database-name }}
           timeout: '30'
-          auth-type: 'sql-auth'
           sql-username: ${{ secrets.SQL_ADMIN_USERNAME }}
           sql-password: ${{ secrets.SQL_ADMIN_PASSWORD }}
         continue-on-error: true
