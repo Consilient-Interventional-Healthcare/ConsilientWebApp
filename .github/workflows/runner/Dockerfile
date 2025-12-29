@@ -8,7 +8,7 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
 LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
 LABEL org.opencontainers.image.version="2.1.0"
-LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17"
+LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.3,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17"
 
 # ============================================================
 # Available Tools in this Image:
@@ -30,6 +30,7 @@ LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.
 #   - Java 17 (OpenJDK JRE) - ADDED
 #   - SchemaSpy v6.2.4 - ADDED
 #   - MSSQL JDBC Driver v12.4.2.jre11 - ADDED
+#   - MSAL4J v1.16.3 (Azure AD auth for JDBC) - ADDED
 #
 # Note: Docker CLI requires /var/run/docker.sock to be mounted
 #       when running this container to access the host's Docker daemon
@@ -70,13 +71,16 @@ RUN sqlcmd --version
 # ============================================================
 ENV SCHEMASPY_VERSION=6.2.4
 ENV JDBC_VERSION=12.4.2
+ENV MSAL4J_VERSION=1.16.3
 ENV SCHEMASPY_PATH=/opt/schemaspy
 
 RUN mkdir -p ${SCHEMASPY_PATH} && \
     curl -L -o ${SCHEMASPY_PATH}/schemaspy.jar \
         "https://github.com/schemaspy/schemaspy/releases/download/v${SCHEMASPY_VERSION}/schemaspy-${SCHEMASPY_VERSION}.jar" && \
     curl -L -o ${SCHEMASPY_PATH}/mssql-jdbc.jar \
-        "https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/${JDBC_VERSION}.jre11/mssql-jdbc-${JDBC_VERSION}.jre11.jar"
+        "https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/${JDBC_VERSION}.jre11/mssql-jdbc-${JDBC_VERSION}.jre11.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/msal4j.jar \
+        "https://repo1.maven.org/maven2/com/microsoft/azure/msal4j/${MSAL4J_VERSION}/msal4j-${MSAL4J_VERSION}.jar"
 
 # Add SchemaSpy to PATH
 ENV PATH="${SCHEMASPY_PATH}:${PATH}"
