@@ -12,6 +12,11 @@ name: "05 - Generate DB Docs"
 on:
   workflow_call:
     inputs:
+      environment:
+        description: 'Target environment (dev or prod)'
+        required: false
+        type: string
+        default: 'dev'
       database-configs:
         description: 'JSON array of database config objects (from centralized discovery in main.yml)'
         required: false
@@ -20,9 +25,8 @@ on:
 
 permissions:
   contents: read
-  # Uncomment these when enabling GitHub Pages deployment
-  # pages: write
-  # id-token: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: generate-db-docs
@@ -49,14 +53,22 @@ jobs:
 
           CONFIGS='${{ inputs.database-configs }}'
 
+          # Handle empty or invalid configs
+          if [ -z "$CONFIGS" ] || [ "$CONFIGS" = "{}" ] || [ "$CONFIGS" = "[]" ]; then
+            echo "databases=[]" >> $GITHUB_OUTPUT
+            echo "✅ No databases to extract"
+            exit 0
+          fi
+
           # Extract database names (keys) from the config object
-          DB_NAMES=$(echo "$CONFIGS" | jq -c 'keys')
+          DB_NAMES=$(echo "$CONFIGS" | jq -c 'keys' 2>/dev/null || echo "[]")
           echo "databases=$DB_NAMES" >> $GITHUB_OUTPUT
 
           echo "✅ Extracted database names: $DB_NAMES"
 
   validate-prerequisites:
     name: Validate Workflow Prerequisites
+    needs: [extract-databases]
     runs-on: ubuntu-latest
     steps:
       - name: Validate configuration
@@ -92,6 +104,7 @@ jobs:
   generate-db-docs:
     name: Generate Docs for ${{ matrix.database }}
     needs: [extract-databases, validate-prerequisites]
+    if: needs.extract-databases.outputs.databases != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -131,6 +144,7 @@ jobs:
           echo "📋 Parsing configuration for ${{ matrix.database }}"
 
           SCHEMAS_TO_EXCLUDE=""
+          ACTUAL_DATABASE_NAME="${{ matrix.database }}"
 
           # Extract config file path for this database (from centralized discovery)
           CONFIG_DATA=$(echo '${{ inputs.database-configs }}' | jq -r '.["${{ matrix.database }}"]')
@@ -149,6 +163,13 @@ jobs:
                 sudo chmod +x /usr/local/bin/yq
               fi
 
+              # Check for environment-specific database name override
+              ENV_DB_NAME=$(yq eval ".database.environment_names.[\"${{ inputs.environment }}\"]" "$CONFIG_FILE" 2>/dev/null)
+              if [ "$ENV_DB_NAME" != "null" ] && [ -n "$ENV_DB_NAME" ]; then
+                ACTUAL_DATABASE_NAME="$ENV_DB_NAME"
+                echo "🔄 Using environment-specific database name: $ACTUAL_DATABASE_NAME (environment: ${{ inputs.environment }})"
+              fi
+
               # Parse schemas to exclude
               EXCLUDE_LIST=$(yq eval '.schemas.exclude // []' "$CONFIG_FILE" | yq eval '.[]' - 2>/dev/null | tr '\n' ',' | sed 's/,$//')
               if [ -n "$EXCLUDE_LIST" ]; then
@@ -162,10 +183,16 @@ jobs:
             echo "⚠️  No config data found for ${{ matrix.database }} - using defaults"
           fi
 
-          # Export exclusions for use in subsequent steps
+          # Export values for use in subsequent steps
           echo "SCHEMAS_TO_EXCLUDE=$SCHEMAS_TO_EXCLUDE" >> $GITHUB_ENV
+          echo "ACTUAL_DATABASE_NAME=$ACTUAL_DATABASE_NAME" >> $GITHUB_ENV
+
+          # Also export as step outputs for use in step conditions
+          echo "database-name=$ACTUAL_DATABASE_NAME" >> $GITHUB_OUTPUT
+          echo "schemas-exclude=$SCHEMAS_TO_EXCLUDE" >> $GITHUB_OUTPUT
 
           echo "✅ Configuration parsing complete"
+          echo "   Target database: $ACTUAL_DATABASE_NAME"
 
       - name: Login to Azure (OIDC + act fallback)
         uses: ./.github/actions/azure-login
@@ -175,13 +202,25 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
 
+      - name: Database connectivity health check
+        uses: ./.github/actions/health-check-database
+        with:
+          sql-server: ${{ env.SQL_SERVER }}
+          database-name: ${{ steps.parse-config.outputs.database-name }}
+          timeout: '30'
+          auth-type: 'sql-auth'
+          sql-username: ${{ secrets.SQL_ADMIN_USERNAME }}
+          sql-password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+        continue-on-error: true
+
       - name: Discover database schemas
         id: discover-schemas
         run: |
           set -e
           set -o pipefail
 
-          echo "🔍 Discovering schemas in ${{ env.DATABASE_NAME }}..."
+          ACTUAL_DB_NAME="${{ steps.parse-config.outputs.database-name }}"
+          echo "🔍 Discovering schemas in $ACTUAL_DB_NAME..."
 
           # Path to discovery SQL script
           DISCOVERY_SQL="infra/db/list_user_schemas.sql"
@@ -192,18 +231,35 @@ jobs:
           fi
 
           # Execute query using sqlcmd with Azure AD authentication
+          # Use marker to distinguish between successful empty output and command failure
           DISCOVERED_SCHEMAS=$(timeout ${{ env.SCHEMA_DISCOVERY_TIMEOUT_SECONDS }} sqlcmd \
             -S "${{ env.SQL_SERVER }}" \
-            -d "${{ env.DATABASE_NAME }}" \
+            -d "$ACTUAL_DB_NAME" \
             -G \
             -i "$DISCOVERY_SQL" \
             -h -1 \
             -W \
-            -b 2>schema_discovery_error.log || echo "")
+            -b 2>schema_discovery_error.log || echo "__SQLCMD_FAILED__")
 
           exit_code=$?
 
-          # Handle discovery failures
+          # Check for explicit failure marker
+          if echo "$DISCOVERED_SCHEMAS" | grep -q "__SQLCMD_FAILED__"; then
+            echo "❌ Schema discovery failed"
+            echo "--- Error output ---"
+            cat schema_discovery_error.log 2>/dev/null || echo "No error log available"
+            echo "-------------------"
+
+            # Check for specific error types
+            if grep -qi "login.*failed\|authentication.*failed" schema_discovery_error.log 2>/dev/null; then
+              echo "❌ Authentication failure detected"
+              echo "   This is expected when running locally with 'act'"
+              echo "   In GitHub Actions, Azure AD authentication should work correctly"
+            fi
+            exit 1
+          fi
+
+          # Check exit code
           if [ $exit_code -ne 0 ]; then
             echo "❌ Schema discovery failed with exit code $exit_code"
             echo "--- Error output ---"
@@ -212,12 +268,44 @@ jobs:
             exit 1
           fi
 
-          # Clean output (remove empty lines and trim whitespace)
-          DISCOVERED_SCHEMAS=$(echo "$DISCOVERED_SCHEMAS" | grep -v "^[[:space:]]*$" | xargs)
+          # Check for error keywords in output
+          if echo "$DISCOVERED_SCHEMAS" | grep -qiE "error:|failed|exception|login"; then
+            echo "❌ Error detected in schema discovery output"
+            echo "Output: $DISCOVERED_SCHEMAS"
+            echo "--- Error log ---"
+            cat schema_discovery_error.log 2>/dev/null || echo "No error log"
+            echo "-----------------"
+            exit 1
+          fi
+
+          # Clean output (remove empty lines, trim whitespace, and filter out SQL keywords/artifacts)
+          DISCOVERED_SCHEMAS=$(echo "$DISCOVERED_SCHEMAS" | \
+            grep -v "^[[:space:]]*$" | \
+            grep -vi "^rows$\|^row$\|^affected\|^error" | \
+            xargs)
+
+          # Validate schemas are valid SQL identifiers and not SQL keywords
+          VALID_SCHEMAS=""
+          for schema in $DISCOVERED_SCHEMAS; do
+            # Check if schema matches SQL identifier pattern: starts with letter or underscore, followed by alphanumeric or underscore
+            # Also exclude common SQL keywords and artifacts
+            if echo "$schema" | grep -qE '^[a-zA-Z_][a-zA-Z0-9_]*$'; then
+              # Skip SQL keywords and common artifacts
+              if ! echo "$schema" | grep -iqE '^(rows?|affected|error|warning|database|select|from|where|order|by)$'; then
+                VALID_SCHEMAS="$VALID_SCHEMAS $schema"
+              else
+                echo "⚠️  Skipping SQL keyword or artifact: '$schema'"
+              fi
+            else
+              echo "⚠️  Skipping invalid schema name: '$schema'"
+            fi
+          done
+
+          DISCOVERED_SCHEMAS=$(echo $VALID_SCHEMAS | xargs)
 
           # Validate at least one schema was found
           if [ -z "$DISCOVERED_SCHEMAS" ]; then
-            echo "⚠️  WARNING: No user schemas discovered in database ${{ env.DATABASE_NAME }}"
+            echo "⚠️  WARNING: No valid user schemas discovered in database $ACTUAL_DB_NAME"
             echo "This could indicate:"
             echo "  1. The database has no user-created schemas"
             echo "  2. Authentication/permission issues"
@@ -306,7 +394,7 @@ jobs:
           echo "SCHEMAS_TO_DOC=$SCHEMAS_TO_DOC" >> $GITHUB_ENV
 
           echo "✅ Configuration validated"
-          echo "Database: ${{ env.DATABASE_NAME }}"
+          echo "Database: ${{ steps.parse-config.outputs.database-name }}"
           echo "SQL Server: ${{ env.SQL_SERVER }}"
           echo "Schemas to document: $SCHEMAS_TO_DOC"
 
@@ -323,22 +411,35 @@ jobs:
           set -e
           set -o pipefail
 
-          # Common SchemaSpy parameters to reduce duplication
-          # -t: Database type (MSSQL 2017+)
-          # -norows: Skip row count (faster)
-          # -vizjs: Use viz.js for diagrams (no Graphviz needed)
-          # -imageformat svg: Use SVG for better quality
-          # -noimplied: Don't show implied relationships
-          SCHEMASPY_COMMON="-t mssql17 \
-            -dp /opt/schemaspy/mssql-jdbc.jar \
-            -host ${{ env.SQL_SERVER }} \
-            -db ${{ env.DATABASE_NAME }} \
-            -u unused \
-            -connprops \"authenticationScheme\\=ActiveDirectoryDefault;encrypt\\=true;trustServerCertificate\\=false\" \
-            -norows \
-            -vizjs \
-            -imageformat svg \
-            -noimplied"
+          ACTUAL_DB_NAME="${{ steps.parse-config.outputs.database-name }}"
+
+          # Determine authentication method based on environment
+          # For act (local testing), use SQL authentication; for GitHub Actions, use Azure AD
+          if [ -n "${{ env.ACT }}" ]; then
+            # Using SQL Server authentication for local testing with act
+            SCHEMASPY_COMMON="-t mssql17 \
+              -dp /opt/schemaspy/mssql-jdbc.jar \
+              -host ${{ env.SQL_SERVER }} \
+              -db $ACTUAL_DB_NAME \
+              -u ${{ secrets.SQL_ADMIN_USERNAME }} \
+              -p ${{ secrets.SQL_ADMIN_PASSWORD }} \
+              -connprops \"encrypt\\=true;trustServerCertificate\\=false\" \
+              -norows \
+              -vizjs \
+              -imageformat svg \
+              -noimplied"
+          else
+            # Using Azure AD authentication for GitHub Actions
+            SCHEMASPY_COMMON="-t mssql17 \
+              -dp /opt/schemaspy/mssql-jdbc.jar \
+              -host ${{ env.SQL_SERVER }} \
+              -db $ACTUAL_DB_NAME \
+              -connprops \"authenticationScheme\\=ActiveDirectoryDefault;encrypt\\=true;trustServerCertificate\\=false;userName\\=CloudSA\" \
+              -norows \
+              -vizjs \
+              -imageformat svg \
+              -noimplied"
+          fi
 
           # Create output directories dynamically
           DIRS_TO_CREATE=""
@@ -351,7 +452,7 @@ jobs:
 
           mkdir -p $DIRS_TO_CREATE
 
-          echo "🚀 Starting parallel schema documentation generation for ${{ env.DATABASE_NAME }}..."
+          echo "🚀 Starting parallel schema documentation generation for $ACTUAL_DB_NAME..."
           echo "Schemas to document: ${SCHEMAS_TO_DOC}"
 
           # Track PIDs for parallel execution
@@ -404,7 +505,7 @@ jobs:
           done
 
           echo ""
-          echo "🎉 All schema documentation generated successfully for ${{ env.DATABASE_NAME }}"
+          echo "🎉 All schema documentation generated successfully for $ACTUAL_DB_NAME"
 
       - name: Cleanup on failure
         if: failure() && steps.schema-doc.outcome == 'failure'
@@ -415,7 +516,7 @@ jobs:
           echo ""
           echo "### ❌ Schema Documentation Generation Failed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Database**: ${{ env.DATABASE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Database**: ${{ steps.parse-config.outputs.database-name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Reason**: One or more schemas failed to generate documentation." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -427,7 +528,7 @@ jobs:
       - name: Create enhanced index page
         if: steps.schema-doc.outcome == 'success'
         env:
-          DB_NAME: ${{ env.DATABASE_NAME }}
+          DB_NAME: ${{ steps.parse-config.outputs.database-name }}
         run: |
           set -e
           set -o pipefail
@@ -697,11 +798,19 @@ jobs:
           done
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Database Info" >> $GITHUB_STEP_SUMMARY
-          echo "- **Database**: ${{ env.DATABASE_NAME }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Documentation successfully generated and will be deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> 💡 **Tip**: Once GitHub Pages is enabled, uncomment the Pages deployment steps in this workflow" >> $GITHUB_STEP_SUMMARY
+          echo "### 📖 View Documentation" >> $GITHUB_STEP_SUMMARY
+          echo "Visit the deployed documentation at: [GitHub Pages](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/docs/)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Or download from artifacts:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to the **Summary** tab of this workflow run" >> $GITHUB_STEP_SUMMARY
+          echo "2. Download the **database-documentation** artifact" >> $GITHUB_STEP_SUMMARY
+          echo "3. Extract the ZIP file and open **index.html** in your browser" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Database Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Database**: ${{ steps.parse-config.outputs.database-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Deployed" >> $GITHUB_STEP_SUMMARY
 
       - name: Prepare artifact metadata
         id: artifact-meta
@@ -733,10 +842,72 @@ jobs:
           echo "Artifact suffix: $ARTIFACT_SUFFIX (retention: $RETENTION_DAYS days)"
 
       - name: Upload documentation as artifact
-        if: steps.schema-doc.outcome == 'success'
+        if: steps.schema-doc.outcome == 'success' && !env.ACT
         uses: actions/upload-artifact@v4
         with:
           name: database-documentation-${{ matrix.database }}-${{ steps.artifact-meta.outputs.suffix }}
           path: ./docs
           retention-days: ${{ steps.artifact-meta.outputs.retention }}
           if-no-files-found: error
+
+  deploy-db-docs:
+    name: Deploy Documentation to GitHub Pages
+    needs: generate-db-docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: needs.generate-db-docs.result == 'success' && github.event_name != 'pull_request' && !env.ACT
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          pattern: database-documentation-*
+
+      - name: Prepare docs for GitHub Pages
+        run: |
+          set -e
+
+          echo "📦 Preparing documentation for GitHub Pages deployment..."
+
+          # Create root docs directory
+          mkdir -p docs
+
+          # Extract all downloaded artifacts into docs directory
+          for artifact_dir in artifacts/database-documentation-*; do
+            if [ -d "$artifact_dir" ]; then
+              echo "📄 Processing artifact: $(basename "$artifact_dir")"
+              # Copy docs content from each artifact into the docs directory
+              if [ -d "$artifact_dir/docs" ]; then
+                # If docs subdirectory exists in the artifact, use it
+                cp -r "$artifact_dir/docs"/* docs/ 2>/dev/null || true
+              else
+                # Otherwise, assume the content is directly in the artifact
+                cp -r "$artifact_dir"/* docs/ 2>/dev/null || true
+              fi
+            fi
+          done
+
+          # Verify docs directory has content
+          if [ ! -f "docs/index.html" ]; then
+            echo "⚠️  Warning: docs/index.html not found"
+            echo "Directory structure:"
+            ls -la docs/ 2>/dev/null || echo "docs directory is empty"
+          else
+            echo "✅ Documentation prepared successfully"
+            ls -la docs/
+          fi
+
+      - name: Upload artifact to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
