@@ -208,6 +208,7 @@ jobs:
           azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
 
       - name: Database connectivity health check
+        id: health-check
         uses: ./.github/actions/health-check-database
         with:
           sql-server: ${{ env.SQL_SERVER }}
@@ -216,6 +217,26 @@ jobs:
           auth-type: 'sql-auth'
           sql-username: ${{ secrets.SQL_ADMIN_USERNAME }}
           sql-password: ${{ secrets.SQL_ADMIN_PASSWORD }}
+
+      - name: Handle health check failure
+        if: steps.health-check.outcome == 'failure'
+        run: |
+          echo ""
+          echo "⚠️  Database connectivity health check failed"
+          echo ""
+
+          # In act (local testing), allow workflow to continue for testing
+          if [ -f /.dockerenv ] || [ "$RUNNER_NAME" = "act" ]; then
+            echo "ℹ️  Running in act (local) environment - database may not be reachable"
+            echo "📝 Workflow will continue for documentation structure testing"
+            echo ""
+            exit 0
+          else
+            # In GitHub Actions, the database must be reachable - fail hard
+            echo "❌ In production environment, database must be reachable"
+            echo "🔗 Please verify Azure SQL Server connectivity"
+            exit 1
+          fi
 
       - name: Discover database schemas
         id: discover-schemas
