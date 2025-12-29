@@ -808,52 +808,9 @@ jobs:
           echo "### 📖 View Documentation" >> $GITHUB_STEP_SUMMARY
           echo "Visit the deployed documentation at: [GitHub Pages](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/docs/)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Or download from artifacts:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Go to the **Summary** tab of this workflow run" >> $GITHUB_STEP_SUMMARY
-          echo "2. Download the **database-documentation** artifact" >> $GITHUB_STEP_SUMMARY
-          echo "3. Extract the ZIP file and open **index.html** in your browser" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Database Info" >> $GITHUB_STEP_SUMMARY
           echo "- **Database**: ${{ steps.parse-config.outputs.database-name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: Deployed" >> $GITHUB_STEP_SUMMARY
-
-      - name: Prepare artifact metadata
-        id: artifact-meta
-        if: steps.schema-doc.outcome == 'success'
-        run: |
-          set -e
-
-          # Determine artifact suffix based on event type
-          ARTIFACT_SUFFIX="latest"
-          RETENTION_DAYS=30
-
-          case "${{ github.event_name }}" in
-            pull_request)
-              ARTIFACT_SUFFIX="pr-${{ github.event.pull_request.number }}"
-              RETENTION_DAYS=7
-              ;;
-            workflow_call)
-              ARTIFACT_SUFFIX="latest"
-              RETENTION_DAYS=30
-              ;;
-            workflow_dispatch)
-              ARTIFACT_SUFFIX="manual-$(date +%s)"
-              RETENTION_DAYS=30
-              ;;
-          esac
-
-          echo "suffix=$ARTIFACT_SUFFIX" >> $GITHUB_OUTPUT
-          echo "retention=$RETENTION_DAYS" >> $GITHUB_OUTPUT
-          echo "Artifact suffix: $ARTIFACT_SUFFIX (retention: $RETENTION_DAYS days)"
-
-      - name: Upload documentation as artifact
-        if: steps.schema-doc.outcome == 'success' && !env.ACT
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-documentation-${{ matrix.database }}-${{ steps.artifact-meta.outputs.suffix }}
-          path: ./docs
-          retention-days: ${{ steps.artifact-meta.outputs.retention }}
-          if-no-files-found: error
 
       - name: Upload to GitHub Pages
         if: steps.schema-doc.outcome == 'success' && !env.ACT
