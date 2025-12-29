@@ -444,11 +444,13 @@ jobs:
           ACTUAL_DB_NAME="${{ steps.parse-config.outputs.database-name }}"
 
           # Using Azure AD authentication for all environments (GitHub Actions and act)
+          # Note: -u is required by SchemaSpy but unused for Azure AD (auth happens via connprops)
           SCHEMASPY_COMMON="-t mssql17 \
             -dp /opt/schemaspy/mssql-jdbc.jar \
             -host ${{ env.SQL_SERVER }} \
             -db $ACTUAL_DB_NAME \
-            -connprops \"authenticationScheme\\=ActiveDirectoryDefault;encrypt\\=true;trustServerCertificate\\=false;userName\\=CloudSA\" \
+            -u CloudSA \
+            -connprops \"Authentication\\=ActiveDirectoryDefault;encrypt\\=true;trustServerCertificate\\=false\" \
             -norows \
             -vizjs \
             -imageformat svg \
