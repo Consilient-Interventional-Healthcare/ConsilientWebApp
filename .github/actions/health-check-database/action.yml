@@ -81,7 +81,7 @@ runs:
           -i "${{ github.workspace }}/infra/db/health_check.sql" \
           -h -1 \
           -W \
-          -b 2>health_check_error.log)
+          -b)
 
         EXIT_CODE=$?
 
@@ -106,30 +106,13 @@ runs:
         elif [ $EXIT_CODE -eq 124 ]; then
           echo "❌ Database connectivity check FAILED"
           echo "   Error: Connection timed out after $TIMEOUT seconds"
-
-          if [ -f health_check_error.log ]; then
-            echo "--- Error Details ---"
-            cat health_check_error.log
-            echo "--------------------"
-          fi
-
           echo "status=failed" >> $GITHUB_OUTPUT
           echo "database-name=" >> $GITHUB_OUTPUT
           exit 1
         else
           echo "❌ Database connectivity check FAILED"
           echo "   Error: sqlcmd exited with code $EXIT_CODE"
-
-          if [ -f health_check_error.log ]; then
-            echo "--- Error Details ---"
-            cat health_check_error.log
-            echo "--------------------"
-          fi
-
           echo "status=failed" >> $GITHUB_OUTPUT
           echo "database-name=" >> $GITHUB_OUTPUT
           exit 1
         fi
-
-        # Cleanup
-        rm -f health_check_error.log
