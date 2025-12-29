@@ -53,7 +53,7 @@ runs:
         echo "Server: ${SQL_SERVER}"
         echo "Database: ${DATABASE_NAME}"
 
-        # Build authentication flags based on auth-type
+        # Execute health check query with timeout based on auth-type
         if [ "$AUTH_TYPE" == "sql-auth" ]; then
           SQL_USERNAME="${{ inputs.sql-username }}"
           SQL_PASSWORD="${{ inputs.sql-password }}"
@@ -67,23 +67,32 @@ runs:
           fi
 
           echo "Auth: SQL Server Authentication (user: $SQL_USERNAME)"
-          AUTH_FLAGS="-U '$SQL_USERNAME' -P '$SQL_PASSWORD'"
+          echo ""
+
+          RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
+            -d "$DATABASE_NAME" \
+            -U "$SQL_USERNAME" \
+            -P "$SQL_PASSWORD" \
+            -i "${{ github.workspace }}/infra/db/health_check.sql" \
+            -h -1 \
+            -W \
+            -b)
+
+          EXIT_CODE=$?
         else
           echo "Auth: Azure AD (-G flag)"
-          AUTH_FLAGS="-G"
+          echo ""
+
+          RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
+            -d "$DATABASE_NAME" \
+            -G \
+            -i "${{ github.workspace }}/infra/db/health_check.sql" \
+            -h -1 \
+            -W \
+            -b)
+
+          EXIT_CODE=$?
         fi
-        echo ""
-
-        # Execute health check query with timeout
-        RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
-          -d "$DATABASE_NAME" \
-          $AUTH_FLAGS \
-          -i "${{ github.workspace }}/infra/db/health_check.sql" \
-          -h -1 \
-          -W \
-          -b)
-
-        EXIT_CODE=$?
 
         # Process result
         if [ $EXIT_CODE -eq 0 ]; then
