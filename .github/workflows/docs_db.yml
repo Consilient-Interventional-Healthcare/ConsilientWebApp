@@ -216,7 +216,6 @@ jobs:
           auth-type: 'sql-auth'
           sql-username: ${{ secrets.SQL_ADMIN_USERNAME }}
           sql-password: ${{ secrets.SQL_ADMIN_PASSWORD }}
-        continue-on-error: true
 
       - name: Discover database schemas
         id: discover-schemas

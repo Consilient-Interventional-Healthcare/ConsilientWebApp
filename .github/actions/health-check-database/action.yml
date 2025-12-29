@@ -12,6 +12,18 @@ inputs:
     description: 'Connection timeout in seconds'
     required: false
     default: '30'
+  auth-type:
+    description: 'Authentication type: azure-ad or sql-auth'
+    required: false
+    default: 'azure-ad'
+  sql-username:
+    description: 'SQL Server authentication username (required if auth-type is sql-auth)'
+    required: false
+    default: ''
+  sql-password:
+    description: 'SQL Server authentication password (required if auth-type is sql-auth)'
+    required: false
+    default: ''
 
 outputs:
   status:
@@ -33,19 +45,39 @@ runs:
         SQL_SERVER="${{ inputs.sql-server }}"
         DATABASE_NAME="${{ inputs.database-name }}"
         TIMEOUT="${{ inputs.timeout }}"
+        AUTH_TYPE="${{ inputs.auth-type }}"
 
         echo "================================================"
         echo "🔍 Database Connectivity Health Check"
         echo "================================================"
         echo "Server: ${SQL_SERVER}"
         echo "Database: ${DATABASE_NAME}"
-        echo "Auth: Azure AD (-G flag)"
+
+        # Build authentication flags based on auth-type
+        if [ "$AUTH_TYPE" == "sql-auth" ]; then
+          SQL_USERNAME="${{ inputs.sql-username }}"
+          SQL_PASSWORD="${{ inputs.sql-password }}"
+
+          # Validate credentials are provided
+          if [ -z "$SQL_USERNAME" ] || [ -z "$SQL_PASSWORD" ]; then
+            echo "❌ ERROR: sql-username and sql-password are required when auth-type is sql-auth"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "database-name=" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "Auth: SQL Server Authentication (user: $SQL_USERNAME)"
+          AUTH_FLAGS="-U '$SQL_USERNAME' -P '$SQL_PASSWORD'"
+        else
+          echo "Auth: Azure AD (-G flag)"
+          AUTH_FLAGS="-G"
+        fi
         echo ""
 
         # Execute health check query with timeout
         RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
           -d "$DATABASE_NAME" \
-          -G \
+          $AUTH_FLAGS \
           -i "${{ github.workspace }}/infra/db/health_check.sql" \
           -h -1 \
           -W \
