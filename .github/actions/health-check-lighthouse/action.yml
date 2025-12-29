@@ -54,6 +54,10 @@ inputs:
     description: 'Minimum SEO score (0-100)'
     required: false
     default: '0.7'
+  environment:
+    description: 'Deployment environment (dev/prod)'
+    required: false
+    default: 'prod'
 
 outputs:
   lighthouse-result:
@@ -94,7 +98,7 @@ runs:
         echo "  Minimum SEO Score: ${{ inputs.min-seo-score }}"
 
     - name: Login to Azure for Rollback (OIDC + act fallback)
-      if: failure() && inputs.resource-group != ''
+      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
       uses: ./../../.github/actions/azure-login
       with:
         client-id: ${{ inputs.client-id }}
@@ -103,7 +107,7 @@ runs:
         azure-credentials: ${{ inputs.azure-credentials }}
 
     - name: Rollback Deployment
-      if: failure() && inputs.resource-group != ''
+      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
@@ -141,7 +145,7 @@ runs:
         echo "✅ Rollback completed"
 
     - name: Verify Rollback - Quick Health Check After Rollback
-      if: failure() && inputs.resource-group != ''
+      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "🔍 Verifying previous image is accessible after rollback..."

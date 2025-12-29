@@ -127,7 +127,6 @@ jobs:
   discover-databases:
     name: Discover DBs
     needs: [validate-environment]
-    if: ${{ !inputs.skip-databases }}
     runs-on: ubuntu-latest
     outputs:
       database_directories: ${{ steps.discover.outputs.database_directories }}
@@ -165,16 +164,17 @@ jobs:
 
   generate-db-docs:
     name: DB Docs
-    needs: [validate-environment, deploy-databases, discover-databases]
+    needs: [validate-environment, discover-databases]
     if: |
       !inputs.skip-db-docs &&
-      github.event_name == 'pull_request' &&
+      (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
-      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
+      needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/docs_db.yml
     with:
+      environment: ${{ needs.validate-environment.outputs.environment }}
       database-configs: ${{ needs.discover-databases.outputs.database_configs }}
     secrets: inherit
 
@@ -197,7 +197,6 @@ jobs:
       api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
-      skip-health-checks: ${{ inputs.skip-health-checks || false }}
     secrets: inherit
 
   deploy-react-apps:
@@ -215,7 +214,57 @@ jobs:
       react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
-      skip-health-checks: ${{ inputs.skip-health-checks || false }}
+    secrets: inherit
+
+  health-check-api:
+    name: API Health Check
+    needs: [validate-environment, terraform, deploy-dotnet-apps]
+    if: |
+      !inputs.skip-health-checks &&
+      !inputs.skip-api-deployment &&
+      always() &&
+      needs.validate-environment.result == 'success' &&
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
+    uses: ./.github/workflows/healthchecks.yml
+    with:
+      check_type: 'api'
+      environment: ${{ needs.validate-environment.outputs.environment }}
+      app_name: ${{ needs.deploy-dotnet-apps.outputs.api_app_name }}
+      endpoint_url: https://${{ needs.deploy-dotnet-apps.outputs.api_app_name }}.azurewebsites.net/health
+      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      previous_image: ${{ needs.deploy-dotnet-apps.outputs.previous_image }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+      wait_seconds: '120'
+      max_attempts: '8'
+      retry_delay: '15s'
+    secrets: inherit
+
+  health-check-react:
+    name: React Health Check
+    needs: [validate-environment, terraform, deploy-react-apps]
+    if: |
+      !inputs.skip-health-checks &&
+      !inputs.skip-react-deployment &&
+      always() &&
+      needs.validate-environment.result == 'success' &&
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      (needs.deploy-react-apps.result == 'success' || needs.deploy-react-apps.result == 'skipped')
+    uses: ./.github/workflows/healthchecks.yml
+    with:
+      check_type: 'react'
+      environment: ${{ needs.validate-environment.outputs.environment }}
+      app_name: ${{ needs.deploy-react-apps.outputs.react_app_name }}
+      endpoint_url: https://${{ needs.deploy-react-apps.outputs.react_app_name }}.azurewebsites.net
+      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      previous_image: ${{ needs.deploy-react-apps.outputs.previous_image }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+      wait_seconds: '120'
+      runs: '3'
+      min_perf_score: '0.7'
+      min_a11y_score: '0.9'
+      min_bp_score: '0.7'
+      min_seo_score: '0.7'
     secrets: inherit
 
   # Determine what changed to optimize workflow execution

@@ -6,16 +6,33 @@
     Handles all Docker image operations for the act local testing environment:
     - Checks if Docker is running
     - Verifies if custom runner image exists
-    - Builds the image if missing or if rebuild is forced
+    - Builds the image if missing OR if rebuild is forced via -Force parameter
     - Returns success/failure status
+
+    IMAGE REBUILD BEHAVIOR:
+    The script performs a smart rebuild check:
+    - Rebuilds if the image doesn't exist locally (first-time setup)
+    - Rebuilds if the -Force parameter is used (e.g., after Dockerfile changes)
+    - Skips rebuilding if the image exists and -Force is not used (performance optimization)
+
+    NOTE: Dockerfile changes do NOT trigger automatic rebuilds. If you modify the
+    Dockerfile or want to update tools, you must use the -Force parameter to rebuild.
 
     This script is called by run-act.ps1 and can also be used independently
     for Docker image maintenance.
 
 .PARAMETER Force
     Force rebuild of the Docker image even if it already exists locally.
-    Useful when updating the Dockerfile or when tools need updating.
-    Default: false (only rebuild if missing)
+
+    Use this parameter when:
+    - You've modified the Dockerfile (e.g., updated tool versions)
+    - You want to pull the latest base image layer
+    - You need to ensure a clean build without Docker's layer cache
+
+    Note: Without this flag, the script skips rebuild if the image already exists,
+    improving performance for repeated runs.
+
+    Default: $false (only rebuild if missing)
 
 .PARAMETER NonInteractive
     Run without prompts (requires image to exist or Force rebuild).
@@ -30,20 +47,56 @@
 .EXAMPLE
     .\Build-RunnerImage.ps1
 
-    Build image if missing, interactive prompts enabled.
+    Standard run: checks if image exists, builds if missing, skips rebuild if it already exists.
+    Use this for regular local testing with act.
 
 .EXAMPLE
     .\Build-RunnerImage.ps1 -Force
 
-    Force rebuild with default verbose output.
+    Force rebuild even if the image already exists locally.
+    Use after modifying the Dockerfile or updating tools in the image.
 
 .EXAMPLE
     .\Build-RunnerImage.ps1 -Force -NonInteractive -LogLevel Normal
 
     Force rebuild in fully automated mode with minimal output.
+    Useful for CI/CD pipelines or scripts that need to ensure fresh builds.
+
+.EXAMPLE
+    # Typical workflow: Modify Dockerfile, then rebuild
+    # 1. Edit .github\workflows\runner\Dockerfile (e.g., add a new tool)
+    # 2. Run the build script with -Force to apply changes
+    .\Build-RunnerImage.ps1 -Force
+
+    The -Force flag ensures your Dockerfile changes are applied to the image.
 
 .NOTES
     Prerequisite: Docker Desktop (Windows/Mac) or Docker Engine (Linux)
+
+    REBUILD STRATEGY:
+    This script uses a conservative rebuild approach to balance correctness with performance:
+
+    1. Image Missing (First-time setup)
+       - Automatically builds the image
+       - Downloads base Ubuntu image (may take several minutes)
+
+    2. Image Exists, No -Force Flag
+       - Skips rebuild entirely
+       - Docker layer cache is used from previous builds
+       - Fast repeated runs without code changes
+
+    3. With -Force Flag
+       - Always rebuilds, even if image exists
+       - Recommended when: Dockerfile modified, tools updated, or clean build needed
+       - Still uses Docker layer cache (unless cache is invalidated by Dockerfile changes)
+
+    DOCKER LAYER CACHING:
+    Docker's build cache will automatically skip layers that haven't changed.
+    If only some lines in the Dockerfile changed, only those layers and subsequent
+    layers will be rebuilt. Earlier unchanged layers reuse cached results.
+
+    When -Force is used with unchanged Dockerfile, most layers will still use cache,
+    making rebuilds faster than the initial build.
 
 .LINK
     https://github.com/nektos/act
@@ -308,6 +361,13 @@ try {
         }
     }
     Write-Message -LogLevel $LogLevel -Level Debug -Message "✅ Docker image verification complete"
+
+    # Provide helpful tip when image exists and no rebuild was requested
+    if ($imageExists -and -not $Force) {
+        Write-Host ""
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "💡 Tip: If you've modified the Dockerfile and want to rebuild, use:"
+        Write-Message -LogLevel $LogLevel -Level Debug -Message "  .\Build-RunnerImage.ps1 -Force"
+    }
 }
 catch {
     if ($VerbosePreference -eq 'Continue') {

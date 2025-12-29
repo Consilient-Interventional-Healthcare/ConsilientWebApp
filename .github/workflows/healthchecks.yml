@@ -4,10 +4,7 @@ on:
       check_type:
         description: 'Type of health check to run (api or react)'
         required: true
-        type: choice
-        options:
-          - api
-          - react
+        type: string
       environment:
         description: 'Deployment environment'
         required: true

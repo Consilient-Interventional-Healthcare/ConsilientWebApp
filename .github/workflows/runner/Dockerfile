@@ -8,7 +8,7 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
 LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
 LABEL org.opencontainers.image.version="2.1.0"
-LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.3,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17"
+LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17"
 
 # ============================================================
 # Available Tools in this Image:
@@ -30,7 +30,7 @@ LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.
 #   - Java 17 (OpenJDK JRE) - ADDED
 #   - SchemaSpy v6.2.4 - ADDED
 #   - MSSQL JDBC Driver v12.4.2.jre11 - ADDED
-#   - MSAL4J v1.16.3 (Azure AD auth for JDBC) - ADDED
+#   - MSAL4J v1.16.2 (Azure AD auth for JDBC) with full dependency tree - ADDED
 #
 # Note: Docker CLI requires /var/run/docker.sock to be mounted
 #       when running this container to access the host's Docker daemon
@@ -67,23 +67,56 @@ RUN curl -L -o /tmp/sqlcmd.tar.bz2 \
 RUN sqlcmd --version
 
 # ============================================================
-# LAYER 3: SchemaSpy 6.2.4 + JDBC Driver 12.4.2
+# LAYER 3: SchemaSpy 6.2.4 + JDBC Driver 12.4.2 + Full MSAL4J Dependencies
 # ============================================================
 ENV SCHEMASPY_VERSION=6.2.4
 ENV JDBC_VERSION=12.4.2
-ENV MSAL4J_VERSION=1.16.3
+ENV MSAL4J_VERSION=1.16.2
 ENV SCHEMASPY_PATH=/opt/schemaspy
 
+# Maven Central Base URL for conciseness
+ENV MAVEN_REPO="https://repo1.maven.org/maven2"
+
 RUN mkdir -p ${SCHEMASPY_PATH} && \
+    # SchemaSpy
     curl -L -o ${SCHEMASPY_PATH}/schemaspy.jar \
         "https://github.com/schemaspy/schemaspy/releases/download/v${SCHEMASPY_VERSION}/schemaspy-${SCHEMASPY_VERSION}.jar" && \
+    # MSSQL JDBC Driver
     curl -L -o ${SCHEMASPY_PATH}/mssql-jdbc.jar \
-        "https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/${JDBC_VERSION}.jre11/mssql-jdbc-${JDBC_VERSION}.jre11.jar" && \
+        "${MAVEN_REPO}/com/microsoft/sqlserver/mssql-jdbc/${JDBC_VERSION}.jre11/mssql-jdbc-${JDBC_VERSION}.jre11.jar" && \
+    # MSAL4J + All Transitive Dependencies for Azure AD Authentication
     curl -L -o ${SCHEMASPY_PATH}/msal4j.jar \
-        "https://repo1.maven.org/maven2/com/microsoft/azure/msal4j/${MSAL4J_VERSION}/msal4j-${MSAL4J_VERSION}.jar"
+        "${MAVEN_REPO}/com/microsoft/azure/msal4j/${MSAL4J_VERSION}/msal4j-${MSAL4J_VERSION}.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/oauth2-oidc-sdk.jar \
+        "${MAVEN_REPO}/com/nimbusds/oauth2-oidc-sdk/11.9.1/oauth2-oidc-sdk-11.9.1.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/nimbus-jose-jwt.jar \
+        "${MAVEN_REPO}/com/nimbusds/nimbus-jose-jwt/9.37.3/nimbus-jose-jwt-9.37.3.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/content-type.jar \
+        "${MAVEN_REPO}/com/nimbusds/content-type/2.3/content-type-2.3.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/lang-tag.jar \
+        "${MAVEN_REPO}/com/nimbusds/lang-tag/1.7/lang-tag-1.7.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/json-smart.jar \
+        "${MAVEN_REPO}/net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/accessors-smart.jar \
+        "${MAVEN_REPO}/net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/asm.jar \
+        "${MAVEN_REPO}/org/ow2/asm/asm/9.3/asm-9.3.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/jackson-databind.jar \
+        "${MAVEN_REPO}/com/fasterxml/jackson/core/jackson-databind/2.13.4.2/jackson-databind-2.13.4.2.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/jackson-core.jar \
+        "${MAVEN_REPO}/com/fasterxml/jackson/core/jackson-core/2.13.4/jackson-core-2.13.4.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/jackson-annotations.jar \
+        "${MAVEN_REPO}/com/fasterxml/jackson/core/jackson-annotations/2.13.4/jackson-annotations-2.13.4.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/jcip-annotations.jar \
+        "${MAVEN_REPO}/com/github/stephenc/jcip/jcip-annotations/1.0-1/jcip-annotations-1.0-1.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/slf4j-api.jar \
+        "${MAVEN_REPO}/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar"
 
 # Add SchemaSpy to PATH
 ENV PATH="${SCHEMASPY_PATH}:${PATH}"
+
+# Set CLASSPATH to include MSAL4J and all its dependencies for Azure AD authentication
+ENV CLASSPATH="${SCHEMASPY_PATH}/msal4j.jar:${SCHEMASPY_PATH}/oauth2-oidc-sdk.jar:${SCHEMASPY_PATH}/nimbus-jose-jwt.jar:${SCHEMASPY_PATH}/content-type.jar:${SCHEMASPY_PATH}/lang-tag.jar:${SCHEMASPY_PATH}/json-smart.jar:${SCHEMASPY_PATH}/accessors-smart.jar:${SCHEMASPY_PATH}/asm.jar:${SCHEMASPY_PATH}/jackson-databind.jar:${SCHEMASPY_PATH}/jackson-core.jar:${SCHEMASPY_PATH}/jackson-annotations.jar:${SCHEMASPY_PATH}/jcip-annotations.jar:${SCHEMASPY_PATH}/slf4j-api.jar"
 
 # ============================================================
 # LAYER 3B: Bake GitHub Actions into the Image

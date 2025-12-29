@@ -22,6 +22,25 @@ on:
         required: false
         type: string
         default: '[]'
+    secrets:
+      SQL_ADMIN_USERNAME:
+        required: true
+        description: 'SQL Server admin username for SchemaSpy authentication'
+      SQL_ADMIN_PASSWORD:
+        required: true
+        description: 'SQL Server admin password for SchemaSpy authentication'
+      AZURE_CLIENT_ID:
+        required: false
+        description: 'Azure Service Principal Client ID for OIDC authentication (fallback if Azure login needed)'
+      AZURE_TENANT_ID:
+        required: false
+        description: 'Azure Tenant ID for OIDC authentication (fallback if Azure login needed)'
+      AZURE_SUBSCRIPTION_ID:
+        required: false
+        description: 'Azure Subscription ID for OIDC authentication (fallback if Azure login needed)'
+      AZURE_CREDENTIALS:
+        required: false
+        description: 'Azure credentials JSON for local testing with act (fallback)'
 
 permissions:
   contents: read
@@ -443,18 +462,20 @@ jobs:
 
           ACTUAL_DB_NAME="${{ steps.parse-config.outputs.database-name }}"
 
-          # Using Azure AD authentication for all environments (GitHub Actions and act)
-          # Note: -u is required by SchemaSpy but unused for Azure AD (auth happens via connprops)
+          # Using SQL authentication with username and password from .env.act
+          # These credentials are loaded from GitHub secrets/variables (or .env.act in act environment)
           SCHEMASPY_COMMON="-t mssql17 \
             -dp /opt/schemaspy/mssql-jdbc.jar \
             -host ${{ env.SQL_SERVER }} \
             -db $ACTUAL_DB_NAME \
-            -u CloudSA \
-            -connprops \"Authentication\\=ActiveDirectoryDefault;encrypt\\=true;trustServerCertificate\\=false\" \
+            -u ${{ secrets.SQL_ADMIN_USERNAME }} \
+            -p ${{ secrets.SQL_ADMIN_PASSWORD }} \
+            -connprops \"encrypt\\=true;trustServerCertificate\\=false\" \
             -norows \
             -vizjs \
             -imageformat svg \
-            -noimplied"
+            -noimplied \
+            -debug"
 
           # Create output directories dynamically
           DIRS_TO_CREATE=""
@@ -487,10 +508,9 @@ jobs:
             START_TIME=$(date +%s)
             CURRENT_TIME=$(date -u '+%H:%M:%S UTC')
             echo "📊 [$CURRENT_TIME] Starting $schema schema generation (timeout: ${{ env.SCHEMASPY_TIMEOUT_SECONDS }}s)..."
-            timeout ${{ env.SCHEMASPY_TIMEOUT_SECONDS }} java -jar /opt/schemaspy/schemaspy.jar $SCHEMASPY_COMMON \
-              -o docs/$schema_lower \
-              -s $schema \
-              -desc "$DESCRIPTION" &
+            # Note: Set CLASSPATH via bash to include all dependency JARs for Azure AD authentication
+            # This makes MSAL4J and all transitive dependencies available when java -jar loads the JARs
+            timeout ${{ env.SCHEMASPY_TIMEOUT_SECONDS }} bash -c 'export CLASSPATH=/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jcip-annotations.jar:/opt/schemaspy/slf4j-api.jar; java -jar /opt/schemaspy/schemaspy.jar '"$SCHEMASPY_COMMON"' -o docs/'"$schema_lower"' -s '"$schema"' -desc "'"$DESCRIPTION"'"' &
 
             PIDS+=($!)
             SCHEMA_NAMES+=("$schema")

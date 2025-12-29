@@ -88,3 +88,20 @@ variable "enable_https_only" {
   type        = bool
   default     = true
 }
+
+variable "health_check_path" {
+  description = "Path to the health check endpoint. If not set, health checks are disabled."
+  type        = string
+  default     = ""
+}
+
+variable "health_check_eviction_time_in_min" {
+  description = "Time in minutes after which an unhealthy instance is removed from the load balancer. Range: 2-10 minutes. Only used if health_check_path is set."
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.health_check_eviction_time_in_min >= 2 && var.health_check_eviction_time_in_min <= 10
+    error_message = "Health check eviction time must be between 2 and 10 minutes."
+  }
+}

@@ -10,9 +10,9 @@ database:
 
   # Optional: environment-specific database name overrides
   # If not specified, uses the name directly as provided to the workflow
-  # environment_names:
-  #   dev: "ConsilientDB_dev"
-  #   prod: "ConsilientDB_prod"
+  environment_names:
+    dev: "consilient_main_dev"
+    prod: "consilient_main"
 
 schemas:
   # List of schemas to exclude from documentation

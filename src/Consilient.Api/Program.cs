@@ -2,6 +2,7 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Consilient.Api.Configuration;
 using Consilient.Api.Hubs;
+using Consilient.Api.Infra;
 using Consilient.Api.Infra.Authentication;
 using Consilient.Api.Infra.ModelBinders;
 using Consilient.Api.Init;
@@ -25,6 +26,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
 
@@ -182,7 +184,10 @@ namespace Consilient.Api
                     app.UseAuthorization();
                 }
 
-                app.MapHealthChecks("/health");
+                app.MapHealthChecks("/health", new HealthCheckOptions
+                {
+                    ResponseWriter = HealthCheckResponseWriter.WriteJsonResponse
+                });
                 app.MapControllers();
                 app.MapHub<ProgressHub>("/hubs/import-progress");
                 app.Run();

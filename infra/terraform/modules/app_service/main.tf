@@ -26,6 +26,10 @@ resource "azurerm_linux_web_app" "this" {
     # Only set client_id if provided (must be a valid UUID)
     # When omitted/null, the provider uses the system-assigned identity automatically
     container_registry_managed_identity_client_id = var.container_registry_managed_identity_client_id != "" ? var.container_registry_managed_identity_client_id : null
+
+    # Health check configuration (only set if health_check_path is provided)
+    health_check_path                 = var.health_check_path != "" ? var.health_check_path : null
+    health_check_eviction_time_in_min = var.health_check_path != "" ? var.health_check_eviction_time_in_min : null
   }
 
   app_settings = var.app_settings
@@ -54,7 +58,7 @@ resource "azurerm_app_service_custom_hostname_binding" "custom_domain" {
 
 # Azure-managed SSL certificate for the custom domain
 resource "azurerm_app_service_managed_certificate" "custom_domain" {
-  count               = var.custom_domain_name != "" ? 1 : 0
+  count                      = var.custom_domain_name != "" ? 1 : 0
   custom_hostname_binding_id = azurerm_app_service_custom_hostname_binding.custom_domain[0].id
 }
 

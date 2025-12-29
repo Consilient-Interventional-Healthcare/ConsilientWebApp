@@ -20,6 +20,10 @@ module "api_app" {
   enable_https_only  = true
   custom_domain_name = var.api_custom_domain
 
+  # Health check configuration
+  health_check_path                 = local.api.health_check_path
+  health_check_eviction_time_in_min = local.api.health_check_eviction_time_in_min
+
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
     ASPNETCORE_ENVIRONMENT              = "Production"

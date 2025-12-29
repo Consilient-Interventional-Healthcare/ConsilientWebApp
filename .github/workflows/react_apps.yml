@@ -37,11 +37,6 @@ on:
         required: false
         type: string
         default: ''
-      skip-health-checks:
-        description: 'Skip health checks after deployment'
-        required: false
-        type: boolean
-        default: false
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -58,6 +53,13 @@ on:
       AZURE_WEBAPP_NAME:
         required: false
         description: 'Azure Web App name (legacy fallback, prefer workflow input)'
+    outputs:
+      react_app_name:
+        description: 'React App Service name'
+        value: ${{ jobs.build-and-deploy.outputs.react_app_name }}
+      previous_image:
+        description: 'Previous container image for rollback'
+        value: ${{ jobs.build-and-deploy.outputs.previous_image }}
 
 env:
   IMAGE_NAME: ${{ vars.REACT_IMAGE_NAME }}
@@ -170,38 +172,3 @@ jobs:
           app-name: ${{ env.REACT_APP_NAME }}
           images: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-  health-check-react:
-    name: Health Check React App
-    runs-on: ubuntu-latest
-    container:
-      image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'consilientwebapp-runner:latest' }}
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    needs: build-and-deploy
-    if: ${{ !inputs.skip-health-checks }}
-    environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Lighthouse Health Check with Rollback
-        uses: ./.github/actions/health-check-lighthouse
-        with:
-          app-url: https://${{ needs.build-and-deploy.outputs.react_app_name }}.azurewebsites.net
-          app-name: ${{ needs.build-and-deploy.outputs.react_app_name }}
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
-          resource-group: ${{ inputs.resource_group }}
-          previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
-          acr-registry: ${{ inputs.acr_registry || vars.ACR_REGISTRY_URL }}
-          wait-seconds: '120'
-          runs: '3'
-          min-perf-score: '0.7'
-          min-a11y-score: '0.9'
-          min-bp-score: '0.7'
-          min-seo-score: '0.7'

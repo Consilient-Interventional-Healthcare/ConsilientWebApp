@@ -86,6 +86,10 @@ locals {
     # Uses default_skus.app_service_plan for each environment
     # Override here if React needs different SKUs than default
     sku = local.default_skus[var.environment].app_service_plan
+
+    # TODO: Future enhancement - Add health check configuration when React app implements /health endpoint
+    # health_check_path                 = "/health"
+    # health_check_eviction_time_in_min = 5
   }
 
   # --------------------------------------------------------------------------

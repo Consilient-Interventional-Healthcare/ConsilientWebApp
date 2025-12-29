@@ -581,12 +581,13 @@ try {
         if ($RunDatabases) {
             $RecreateDbResponse = Get-ValidatedInput "  -- Recreate Database? (y/n)" "y" @("y", "n")
             $RecreateDatabase = $RecreateDbResponse -eq "y"
-            $RunDbDocsResponse = Get-ValidatedInput "  -- Run DB Docs? (y/n)" "y" @("y", "n")
-            $RunDbDocs = $RunDbDocsResponse -eq "y"
         } else {
             $RecreateDatabase = $false
-            $RunDbDocs = $false
         }
+
+        # 2b. Database documentation (independent of database deployment)
+        $RunDbDocsResponse = Get-ValidatedInput "- Run DB Docs? (y/n)" "n" @("y", "n")
+        $RunDbDocs = $RunDbDocsResponse -eq "y"
 
         # 3. .NET App deployment
         $RunApiResponse = Get-ValidatedInput "- Run .NET App deployment? (y/n)" "y" @("y", "n")
