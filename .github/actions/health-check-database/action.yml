@@ -1,5 +1,5 @@
 name: 'Database Connectivity Health Check'
-description: 'Verify database is reachable with Azure AD authentication before deployment'
+description: 'Verify database is reachable with SQL Server authentication before deployment'
 
 inputs:
   sql-server:
@@ -12,18 +12,12 @@ inputs:
     description: 'Connection timeout in seconds'
     required: false
     default: '30'
-  auth-type:
-    description: 'Authentication type: azure-ad or sql-auth'
-    required: false
-    default: 'azure-ad'
   sql-username:
-    description: 'SQL Server authentication username (required if auth-type is sql-auth)'
-    required: false
-    default: ''
+    description: 'SQL Server authentication username (required)'
+    required: true
   sql-password:
-    description: 'SQL Server authentication password (required if auth-type is sql-auth)'
-    required: false
-    default: ''
+    description: 'SQL Server authentication password (required)'
+    required: true
 
 outputs:
   status:
@@ -53,46 +47,31 @@ runs:
         echo "Server: ${SQL_SERVER}"
         echo "Database: ${DATABASE_NAME}"
 
-        # Execute health check query with timeout based on auth-type
-        if [ "$AUTH_TYPE" == "sql-auth" ]; then
-          SQL_USERNAME="${{ inputs.sql-username }}"
-          SQL_PASSWORD="${{ inputs.sql-password }}"
+        # Only support SQL Server authentication
+        SQL_USERNAME="${{ inputs.sql-username }}"
+        SQL_PASSWORD="${{ inputs.sql-password }}"
 
-          # Validate credentials are provided
-          if [ -z "$SQL_USERNAME" ] || [ -z "$SQL_PASSWORD" ]; then
-            echo "❌ ERROR: sql-username and sql-password are required when auth-type is sql-auth"
-            echo "status=failed" >> $GITHUB_OUTPUT
-            echo "database-name=" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-
-          echo "Auth: SQL Server Authentication (user: $SQL_USERNAME)"
-          echo ""
-
-          RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
-            -d "$DATABASE_NAME" \
-            -U "$SQL_USERNAME" \
-            -P "$SQL_PASSWORD" \
-            -i "${{ github.workspace }}/infra/db/health_check.sql" \
-            -h -1 \
-            -W \
-            -b)
-
-          EXIT_CODE=$?
-        else
-          echo "Auth: Azure AD (-G flag)"
-          echo ""
-
-          RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
-            -d "$DATABASE_NAME" \
-            -G \
-            -i "${{ github.workspace }}/infra/db/health_check.sql" \
-            -h -1 \
-            -W \
-            -b)
-
-          EXIT_CODE=$?
+        # Validate credentials are provided
+        if [ -z "$SQL_USERNAME" ] || [ -z "$SQL_PASSWORD" ]; then
+          echo "❌ ERROR: sql-username and sql-password are required"
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "database-name=" >> $GITHUB_OUTPUT
+          exit 1
         fi
+
+        echo "Auth: SQL Server Authentication (user: $SQL_USERNAME)"
+        echo ""
+
+        RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
+          -d "$DATABASE_NAME" \
+          -U "$SQL_USERNAME" \
+          -P "$SQL_PASSWORD" \
+          -i "${{ github.workspace }}/infra/db/health_check.sql" \
+          -h -1 \
+          -W \
+          -b)
+
+        EXIT_CODE=$?
 
         # Process result
         if [ $EXIT_CODE -eq 0 ]; then
