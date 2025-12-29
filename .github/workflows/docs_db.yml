@@ -805,7 +805,8 @@ jobs:
           echo "✅ Documentation successfully generated and will be deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📖 View Documentation" >> $GITHUB_STEP_SUMMARY
-          echo "Visit the deployed documentation at: [GitHub Pages](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/docs/)" >> $GITHUB_STEP_SUMMARY
+          REPO_NAME="${{ github.event.repository.name }}"
+          echo "Visit the deployed documentation at: [GitHub Pages](https://${{ github.repository_owner }}.github.io/${REPO_NAME}/docs/)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Database Info" >> $GITHUB_STEP_SUMMARY
           echo "- **Database**: ${{ steps.parse-config.outputs.database-name }}" >> $GITHUB_STEP_SUMMARY
