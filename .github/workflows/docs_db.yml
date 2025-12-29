@@ -855,7 +855,7 @@ jobs:
     needs: generate-db-docs
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: needs.generate-db-docs.result == 'success' && github.event_name != 'pull_request' && !env.ACT
+    if: needs.generate-db-docs.result == 'success' && github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
