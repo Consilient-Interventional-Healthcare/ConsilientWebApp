@@ -116,8 +116,8 @@ jobs:
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
       action: apply
-      allow-local-firewall: ${{ inputs.allow-local-firewall }}
-      enable-debug: ${{ inputs.enable-debug }}
+      allow-local-firewall: ${{ inputs.allow-local-firewall || false }}
+      enable-debug: ${{ inputs.enable-debug || false }}
     secrets: inherit
 
   # ============================================================================
