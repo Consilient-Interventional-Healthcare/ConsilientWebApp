@@ -1,5 +1,3 @@
-name: "05 - Generate DB Docs"
-
 # Runtime Dependencies
 # This workflow requires the following tools to be available in the runner environment:
 # - SchemaSpy JAR: /opt/schemaspy/schemaspy.jar (version controlled via SCHEMASPY_VERSION)
