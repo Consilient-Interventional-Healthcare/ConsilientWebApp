@@ -18,16 +18,16 @@ on:
         options:
           - dev
           - prod
-      skip-terraform:
-        description: 'Skip Terraform deployment'
+      run-terraform:
+        description: 'Run Terraform deployment'
         required: false
         type: boolean
-        default: false
-      skip-databases:
-        description: 'Skip database deployment'
+        default: true
+      run-databases:
+        description: 'Run database deployment'
         required: false
         type: boolean
-        default: false
+        default: true
       recreate-database-objects:
         description: 'Recreate all database objects (DELETE ALL DATA - dev only)'
         required: false
@@ -38,26 +38,26 @@ on:
         required: false
         type: boolean
         default: false
-      skip-health-checks:
-        description: 'Skip health checks after deployment'
+      run-health-checks:
+        description: 'Run health checks after deployment'
         required: false
         type: boolean
-        default: false
-      skip-db-docs:
-        description: 'Skip database documentation generation'
+        default: true
+      run-db-docs:
+        description: 'Run database documentation generation'
         required: false
         type: boolean
-        default: false
-      skip-api-deployment:
-        description: 'Skip .NET API deployment'
+        default: true
+      run-api-deployment:
+        description: 'Run .NET API deployment'
         required: false
         type: boolean
-        default: false
-      skip-react-deployment:
-        description: 'Skip React app deployment'
+        default: true
+      run-react-deployment:
+        description: 'Run React app deployment'
         required: false
         type: boolean
-        default: false
+        default: true
       enable-debug:
         description: 'Enable verbose debug logging and detailed workflow output'
         required: false
@@ -172,7 +172,7 @@ jobs:
     name: Terraform
     needs: [validate-environment, build-runner-image]
     if: |
-      !inputs.skip-terraform &&
+      inputs.run-terraform &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
     uses: ./.github/workflows/terraform.yml
@@ -218,7 +218,7 @@ jobs:
     name: Deploy DBs
     needs: [validate-environment, discover-databases]
     if: |
-      !inputs.skip-databases &&
+      inputs.run-databases &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
@@ -234,7 +234,7 @@ jobs:
     name: DB Docs
     needs: [validate-environment, discover-databases]
     if: |
-      !inputs.skip-db-docs &&
+      inputs.run-db-docs &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
       always() &&
       needs.validate-environment.result == 'success' &&
@@ -254,7 +254,7 @@ jobs:
     name: Deploy API
     needs: [validate-environment, terraform, deploy-databases]
     if: |
-      !inputs.skip-api-deployment &&
+      inputs.run-api-deployment &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
@@ -271,7 +271,7 @@ jobs:
     name: Deploy React
     needs: [validate-environment, terraform, deploy-databases, deploy-dotnet-apps, build-runner-image]
     if: |
-      !inputs.skip-react-deployment &&
+      inputs.run-react-deployment &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
@@ -289,8 +289,8 @@ jobs:
     name: API Health Check
     needs: [validate-environment, terraform, deploy-dotnet-apps]
     if: |
-      !inputs.skip-health-checks &&
-      !inputs.skip-api-deployment &&
+      inputs.run-health-checks &&
+      inputs.run-api-deployment &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
@@ -313,8 +313,8 @@ jobs:
     name: React Health Check
     needs: [validate-environment, terraform, deploy-react-apps, build-runner-image]
     if: |
-      !inputs.skip-health-checks &&
-      !inputs.skip-react-deployment &&
+      inputs.run-health-checks &&
+      inputs.run-react-deployment &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&

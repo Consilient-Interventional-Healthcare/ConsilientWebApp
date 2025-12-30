@@ -18,11 +18,6 @@ on:
           - dev
           - prod
         default: 'dev'
-      skip-db-docs:
-        description: 'Skip database documentation generation'
-        required: false
-        type: boolean
-        default: false
   workflow_call:
     inputs:
       environment:

@@ -32,6 +32,7 @@ runs:
   using: 'composite'
   steps:
     - name: Validate inputs
+      id: validate
       shell: bash
       run: |
         set -e
@@ -52,15 +53,13 @@ runs:
           echo "ℹ️  Proceeding with empty database discovery (no databases will be deployed)"
           echo ""
 
-          # Output empty results and continue
-          echo 'databases=[]' >> $GITHUB_OUTPUT
-          echo 'database_directories=[]' >> $GITHUB_OUTPUT
-          echo 'database_configs={}' >> $GITHUB_OUTPUT
-          echo 'count=0' >> $GITHUB_OUTPUT
+          # Mark path as invalid
+          echo "path_exists=false" >> $GITHUB_OUTPUT
           exit 0
         fi
 
         echo "✅ Scripts path validated"
+        echo "path_exists=true" >> $GITHUB_OUTPUT
 
     - name: Discover databases
       id: discover
@@ -69,19 +68,19 @@ runs:
         set -e
         set -o pipefail
 
+        # If path doesn't exist, output empty results and exit
+        if [ "${{ steps.validate.outputs.path_exists }}" != "true" ]; then
+          echo "databases=[]" >> $GITHUB_OUTPUT
+          echo "count=0" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
         SCRIPTS_PATH="${{ inputs.scripts_path }}"
         CONFIG_FILE="${{ inputs.config_file_name }}"
         REQUIRE_CONFIG="${{ inputs.require_config }}"
 
-        # Change to scripts path with error handling
-        if ! cd "$SCRIPTS_PATH" 2>&1; then
-          echo "❌ ERROR: Failed to change directory to $SCRIPTS_PATH"
-          echo "   This can occur if:"
-          echo "   1. The path does not exist"
-          echo "   2. The path is not accessible"
-          echo "   3. The path contains spaces or special characters not properly quoted"
-          exit 1
-        fi
+        # Change to scripts path
+        cd "$SCRIPTS_PATH"
 
         echo "📁 Scanning for database directories in: $SCRIPTS_PATH"
 
@@ -199,11 +198,27 @@ runs:
           echo "⚠️  No databases discovered"
         fi
 
+    - name: Set empty outputs if path missing
+      if: steps.validate.outputs.path_exists != 'true'
+      shell: bash
+      run: |
+        echo "databases=[]" >> $GITHUB_OUTPUT
+        echo "count=0" >> $GITHUB_OUTPUT
+      env:
+        GITHUB_OUTPUT: ${{ github.output }}
+
     - name: Transform data for downstream workflows
       id: transform
       shell: bash
       run: |
         set -e
+
+        # If path didn't exist, output empty results
+        if [ "${{ steps.validate.outputs.path_exists }}" != "true" ]; then
+          echo "database_directories=[]" >> $GITHUB_OUTPUT
+          echo "database_configs={}" >> $GITHUB_OUTPUT
+          exit 0
+        fi
 
         DATABASES='${{ steps.discover.outputs.databases }}'
 
