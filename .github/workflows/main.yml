@@ -230,7 +230,7 @@ jobs:
 
   generate-db-docs:
     name: DB Docs
-    needs: [discover-databases]
+    needs: [deploy-databases]
     if: |
       inputs.run-db-docs == true &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
