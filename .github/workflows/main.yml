@@ -67,6 +67,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  id-token: write
 
 concurrency:
   group: main-${{ github.ref }}
