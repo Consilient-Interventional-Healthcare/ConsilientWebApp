@@ -848,7 +848,7 @@ jobs:
           echo "✅ Added .nojekyll file to prevent Jekyll processing"
 
       - name: Upload to GitHub Pages
-        if: steps.schema-doc.outcome == 'success' && github.event_name != 'pull_request'
+        if: steps.schema-doc.outcome == 'success' && github.event_name != 'pull_request' && !env.ACT
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
@@ -857,9 +857,38 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        if: steps.schema-doc.outcome == 'success' && github.event_name != 'pull_request'
+        if: steps.schema-doc.outcome == 'success' && github.event_name != 'pull_request' && !env.ACT
         uses: actions/deploy-pages@v4
         continue-on-error: true
+
+      - name: GitHub Pages deployment skipped (act environment)
+        if: steps.schema-doc.outcome == 'success' && env.ACT
+        run: |
+          echo ""
+          echo "================================================"
+          echo "⚠️  GitHub Pages Deployment Skipped"
+          echo "================================================"
+          echo ""
+          echo "🏠 Running in local testing environment (act)"
+          echo ""
+          echo "The following steps were skipped:"
+          echo "  ❌ Upload to GitHub Pages"
+          echo "  ❌ Deploy to GitHub Pages"
+          echo ""
+          echo "Reason: GitHub Pages deployment requires:"
+          echo "  - ACTIONS_RUNTIME_TOKEN (for artifact upload)"
+          echo "  - ACTIONS_ID_TOKEN_REQUEST_URL (for OIDC authentication)"
+          echo "  These are only available in actual GitHub Actions runners."
+          echo ""
+          echo "✅ Your documentation was generated successfully!"
+          echo "   View it locally at: $(pwd)/docs/index.html"
+          echo ""
+          echo "💡 To deploy to GitHub Pages:"
+          echo "   1. Push your changes to GitHub"
+          echo "   2. Let GitHub Actions run this workflow"
+          echo "   3. Deployment will happen automatically"
+          echo ""
+          echo "================================================"
 
       - name: Summary - Documentation deployment
         if: steps.schema-doc.outcome == 'success'
