@@ -45,6 +45,11 @@ runs:
         # Validate scripts_path exists
         if [ ! -d "${{ inputs.scripts_path }}" ]; then
           echo "❌ ERROR: Scripts path not found: ${{ inputs.scripts_path }}"
+          echo ""
+          echo "ℹ️  Available paths in repository root:"
+          ls -la . | grep -E "^d" | awk '{print "   - " $NF}'
+          echo ""
+          echo "Please ensure the scripts_path input is correct and the directory exists."
           exit 1
         fi
 
@@ -61,12 +66,24 @@ runs:
         CONFIG_FILE="${{ inputs.config_file_name }}"
         REQUIRE_CONFIG="${{ inputs.require_config }}"
 
-        cd "$SCRIPTS_PATH"
+        # Change to scripts path with error handling
+        if ! cd "$SCRIPTS_PATH" 2>&1; then
+          echo "❌ ERROR: Failed to change directory to $SCRIPTS_PATH"
+          echo "   This can occur if:"
+          echo "   1. The path does not exist"
+          echo "   2. The path is not accessible"
+          echo "   3. The path contains spaces or special characters not properly quoted"
+          exit 1
+        fi
 
-        echo "📁 Scanning for database directories..."
+        echo "📁 Scanning for database directories in: $SCRIPTS_PATH"
 
         # Find all directories (depth 1)
-        ALL_DIRS=$(find . -mindepth 1 -maxdepth 1 -type d | sed 's|^\./||' | sort)
+        if ! ALL_DIRS=$(find . -mindepth 1 -maxdepth 1 -type d 2>&1 | sed 's|^\./||' | sort); then
+          echo "❌ ERROR: Failed to search for directories"
+          echo "   Permission denied or invalid path"
+          exit 1
+        fi
 
         if [ -z "$ALL_DIRS" ]; then
           echo "⚠️  No directories found in $SCRIPTS_PATH"
@@ -121,7 +138,11 @@ runs:
                   '{directory: $directory, name: $directory, config_path: $config_path, has_config: true}')
               fi
 
-              DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]')
+              if ! DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]' 2>&1); then
+                echo "❌ ERROR: Failed to add database object to array"
+                echo "   JSON: $DB_OBJ"
+                exit 1
+              fi
               COUNT=$((COUNT + 1))
             else
               if [ "$REQUIRE_CONFIG" = "true" ]; then
@@ -131,7 +152,11 @@ runs:
                 DB_OBJ=$(jq -n \
                   --arg directory "$dir" \
                   '{directory: $directory, name: $directory, has_config: false}')
-                DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]')
+                if ! DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]' 2>&1); then
+                  echo "❌ ERROR: Failed to add database object to array"
+                  echo "   JSON: $DB_OBJ"
+                  exit 1
+                fi
                 COUNT=$((COUNT + 1))
               fi
             fi
@@ -141,7 +166,11 @@ runs:
             DB_OBJ=$(jq -n \
               --arg directory "$dir" \
               '{directory: $directory, name: $directory, has_config: false}')
-            DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]')
+            if ! DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]' 2>&1); then
+              echo "❌ ERROR: Failed to add database object to array"
+              echo "   JSON: $DB_OBJ"
+              exit 1
+            fi
             COUNT=$((COUNT + 1))
           fi
         done <<< "$ALL_DIRS"
@@ -171,17 +200,44 @@ runs:
 
         DATABASES='${{ steps.discover.outputs.databases }}'
 
+        # Validate that DATABASES is valid JSON
+        if ! echo "$DATABASES" | jq empty 2>/dev/null; then
+          echo "❌ ERROR: Invalid JSON from discovery step"
+          echo "   Database JSON: $DATABASES"
+          exit 1
+        fi
+
         # Format 1: Array of full directory paths for databases.yml
-        DIRECTORIES=$(echo "$DATABASES" | jq -c '[.[] | .directory]')
+        if ! DIRECTORIES=$(echo "$DATABASES" | jq -c '[.[] | .directory]' 2>&1); then
+          echo "❌ ERROR: Failed to extract directory paths"
+          exit 1
+        fi
         echo "database_directories=$DIRECTORIES" >> $GITHUB_OUTPUT
 
         # Format 2: Object mapping names to config data for docs_db.yml
         # Important: Use -c flag to ensure compact JSON output on a single line
         CONFIGS="{}"
         while IFS= read -r db_entry; do
-          DB_NAME=$(echo "$db_entry" | jq -r '.name')
-          CONFIG_DATA=$(echo "$db_entry" | jq -c '{directory: .directory, config_path: .config_path}')
-          CONFIGS=$(echo "$CONFIGS" | jq -c --argjson data "$CONFIG_DATA" --arg name "$DB_NAME" '.[$name] = $data')
+          if [ -z "$db_entry" ]; then
+            continue
+          fi
+
+          if ! DB_NAME=$(echo "$db_entry" | jq -r '.name' 2>&1); then
+            echo "❌ ERROR: Failed to extract database name from entry: $db_entry"
+            exit 1
+          fi
+
+          if ! CONFIG_DATA=$(echo "$db_entry" | jq -c '{directory: .directory, config_path: .config_path}' 2>&1); then
+            echo "❌ ERROR: Failed to extract config data from entry: $db_entry"
+            exit 1
+          fi
+
+          if ! CONFIGS=$(echo "$CONFIGS" | jq -c --argjson data "$CONFIG_DATA" --arg name "$DB_NAME" '.[$name] = $data' 2>&1); then
+            echo "❌ ERROR: Failed to add config to output object"
+            echo "   Name: $DB_NAME"
+            echo "   Data: $CONFIG_DATA"
+            exit 1
+          fi
         done < <(echo "$DATABASES" | jq -c '.[]')
 
         echo "database_configs=$CONFIGS" >> $GITHUB_OUTPUT
