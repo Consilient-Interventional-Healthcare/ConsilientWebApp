@@ -215,7 +215,7 @@ jobs:
 
   deploy-databases:
     name: Deploy DBs
-    needs: [discover-databases]
+    needs: [discover-databases, terraform]
     if: |
       inputs.run-databases == true &&
       always() &&

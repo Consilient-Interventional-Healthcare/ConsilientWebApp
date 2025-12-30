@@ -92,44 +92,10 @@ jobs:
 
           echo "✅ Extracted database names: $DB_NAMES"
 
-  validate-prerequisites:
-    name: Validate Workflow Prerequisites
-    needs: [extract-databases]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Validate configuration
-        run: |
-          set -e
-
-          echo "🔍 Validating workflow prerequisites..."
-          echo ""
-
-          # Check SQL_SERVER is configured
-          if [ -z "${{ env.SQL_SERVER }}" ]; then
-            echo "❌ ERROR: AZURE_SQL_SERVER_FQDN variable not configured"
-            echo ""
-            echo "This variable must be set in your repository settings as a GitHub Variable."
-            echo "It should contain the FQDN of your Azure SQL Server (e.g., server.database.windows.net)"
-            exit 1
-          fi
-
-          # Check required CLI tools are available
-          REQUIRED_TOOLS=("sqlcmd" "jq" "java")
-          for tool in "${REQUIRED_TOOLS[@]}"; do
-            if ! command -v "$tool" &> /dev/null; then
-              echo "❌ ERROR: Required tool not found: $tool"
-              exit 1
-            fi
-          done
-
-          echo "✅ SQL Server configured: ${{ env.SQL_SERVER }}"
-          echo "✅ All required CLI tools available (sqlcmd, jq, java)"
-          echo ""
-          echo "🎯 Prerequisites validation passed"
 
   generate-db-docs:
     name: Generate Docs for ${{ matrix.database }}
-    needs: [extract-databases, validate-prerequisites]
+    needs: [extract-databases]
     if: needs.extract-databases.outputs.databases != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 25
