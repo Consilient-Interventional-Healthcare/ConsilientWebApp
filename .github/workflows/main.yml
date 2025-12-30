@@ -170,11 +170,12 @@ jobs:
 
   terraform:
     name: Terraform
-    needs: [validate-environment, build-runner-image]
+    needs: [validate-environment, ensure-runner-image, build-runner-image, discover-databases]
     if: |
-      inputs.run-terraform &&
+      inputs.run-terraform == true &&
       always() &&
-      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
+      (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped')
     uses: ./.github/workflows/terraform.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
@@ -206,22 +207,20 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Discover databases with configs
+      - name: Discover databases
         id: discover
         uses: ./.github/actions/discover-databases
         with:
           scripts_path: 'src/Databases'
-          config_file_name: 'db_docs.yml'
-          require_config: 'false'
 
   deploy-databases:
     name: Deploy DBs
     needs: [validate-environment, discover-databases]
     if: |
-      inputs.run-databases &&
+      inputs.run-databases == true &&
       always() &&
       needs.validate-environment.result == 'success' &&
-      (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
+      needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/databases.yml
     with:
@@ -234,11 +233,11 @@ jobs:
     name: DB Docs
     needs: [validate-environment, discover-databases]
     if: |
-      inputs.run-db-docs &&
+      inputs.run-db-docs == true &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
       always() &&
       needs.validate-environment.result == 'success' &&
-      (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
+      needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/docs_db.yml
     with:
@@ -252,26 +251,27 @@ jobs:
 
   deploy-dotnet-apps:
     name: Deploy API
-    needs: [validate-environment, terraform, deploy-databases]
+    needs: [validate-environment, ensure-runner-image, build-runner-image, terraform, deploy-databases]
     if: |
-      inputs.run-api-deployment &&
+      inputs.run-api-deployment == true &&
       always() &&
       needs.validate-environment.result == 'success' &&
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
     uses: ./.github/workflows/dotnet_apps.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
       api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.validate-environment.outputs.environment) }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
-      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
     secrets: inherit
 
   deploy-react-apps:
     name: Deploy React
-    needs: [validate-environment, terraform, deploy-databases, deploy-dotnet-apps, build-runner-image]
+    needs: [validate-environment, ensure-runner-image, terraform, deploy-databases, deploy-dotnet-apps, build-runner-image]
     if: |
-      inputs.run-react-deployment &&
+      inputs.run-react-deployment == true &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
@@ -281,16 +281,16 @@ jobs:
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
       react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.validate-environment.outputs.environment) }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
-      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
     secrets: inherit
 
   health-check-api:
     name: API Health Check
     needs: [validate-environment, terraform, deploy-dotnet-apps]
     if: |
-      inputs.run-health-checks &&
-      inputs.run-api-deployment &&
+      inputs.run-health-checks == true &&
+      inputs.run-api-deployment == true &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
@@ -301,9 +301,9 @@ jobs:
       environment: ${{ needs.validate-environment.outputs.environment }}
       app_name: ${{ needs.deploy-dotnet-apps.outputs.api_app_name }}
       endpoint_url: https://${{ needs.deploy-dotnet-apps.outputs.api_app_name }}.azurewebsites.net/health
-      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
       previous_image: ${{ needs.deploy-dotnet-apps.outputs.previous_image }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
       wait_seconds: '120'
       max_attempts: '8'
       retry_delay: '15s'
@@ -311,10 +311,10 @@ jobs:
 
   health-check-react:
     name: React Health Check
-    needs: [validate-environment, terraform, deploy-react-apps, build-runner-image]
+    needs: [validate-environment, ensure-runner-image, terraform, deploy-react-apps, build-runner-image]
     if: |
-      inputs.run-health-checks &&
-      inputs.run-react-deployment &&
+      inputs.run-health-checks == true &&
+      inputs.run-react-deployment == true &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
@@ -326,9 +326,9 @@ jobs:
       environment: ${{ needs.validate-environment.outputs.environment }}
       app_name: ${{ needs.deploy-react-apps.outputs.react_app_name }}
       endpoint_url: https://${{ needs.deploy-react-apps.outputs.react_app_name }}.azurewebsites.net
-      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
       previous_image: ${{ needs.deploy-react-apps.outputs.previous_image }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
       wait_seconds: '120'
       runs: '3'
       min_perf_score: '0.7'
