@@ -69,6 +69,7 @@ permissions:
   pull-requests: read
   id-token: write
   pages: write
+  packages: write
 
 concurrency:
   group: main-${{ github.ref }}
@@ -108,10 +109,72 @@ jobs:
 
           echo "environment=$ENVIRONMENT_INPUT" >> $GITHUB_OUTPUT
 
+  # ============================================================================
+  # RUNNER IMAGE VERIFICATION
+  # ============================================================================
+  # These jobs ensure the custom runner image exists before running workflows
+  # that depend on it (terraform, react_apps, healthchecks).
+  #
+  # Flow:
+  # 1. ensure-runner-image: Check if image exists in GHCR
+  # 2. build-runner-image: Build image if missing (conditional)
+  # 3. Dependent jobs: Wait for image availability before starting
+  # ============================================================================
+
+  ensure-runner-image:
+    name: Ensure Runner Image
+    needs: [validate-environment]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      image_exists: ${{ steps.check.outputs.exists }}
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if runner image exists
+        id: check
+        run: |
+          IMAGE_NAME="${{ vars.ACTIONS_RUNNER_IMAGE || format('ghcr.io/{0}/actions-runner:latest', github.repository) }}"
+
+          echo "Checking if image exists: ${IMAGE_NAME}"
+
+          if docker manifest inspect "${IMAGE_NAME}" > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "✅ Runner image exists: ${IMAGE_NAME}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Runner image not found: ${IMAGE_NAME}"
+            echo "Will trigger build workflow..."
+          fi
+
+  build-runner-image:
+    name: Build Runner Image
+    needs: [ensure-runner-image]
+    if: needs.ensure-runner-image.outputs.should_build == 'true'
+    uses: ./.github/workflows/build-runner-image.yml
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+
   terraform:
     name: Terraform
-    needs: [validate-environment]
-    if: ${{ !inputs.skip-terraform }}
+    needs: [validate-environment, build-runner-image]
+    if: |
+      !inputs.skip-terraform &&
+      always() &&
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
     uses: ./.github/workflows/terraform.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
@@ -206,13 +269,14 @@ jobs:
 
   deploy-react-apps:
     name: Deploy React
-    needs: [validate-environment, terraform, deploy-databases, deploy-dotnet-apps]
+    needs: [validate-environment, terraform, deploy-databases, deploy-dotnet-apps, build-runner-image]
     if: |
       !inputs.skip-react-deployment &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
+      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
     uses: ./.github/workflows/react_apps.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
@@ -247,14 +311,15 @@ jobs:
 
   health-check-react:
     name: React Health Check
-    needs: [validate-environment, terraform, deploy-react-apps]
+    needs: [validate-environment, terraform, deploy-react-apps, build-runner-image]
     if: |
       !inputs.skip-health-checks &&
       !inputs.skip-react-deployment &&
       always() &&
       needs.validate-environment.result == 'success' &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      (needs.deploy-react-apps.result == 'success' || needs.deploy-react-apps.result == 'skipped')
+      (needs.deploy-react-apps.result == 'success' || needs.deploy-react-apps.result == 'skipped') &&
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
     uses: ./.github/workflows/healthchecks.yml
     with:
       check_type: 'react'
