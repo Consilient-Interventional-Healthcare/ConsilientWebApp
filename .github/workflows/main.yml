@@ -170,7 +170,7 @@ jobs:
 
   terraform:
     name: Terraform
-    needs: [validate-environment, ensure-runner-image, build-runner-image, discover-databases]
+    needs: [build-runner-image, discover-databases]
     if: |
       inputs.run-terraform == true &&
       always() &&
@@ -215,11 +215,10 @@ jobs:
 
   deploy-databases:
     name: Deploy DBs
-    needs: [validate-environment, discover-databases]
+    needs: [discover-databases]
     if: |
       inputs.run-databases == true &&
       always() &&
-      needs.validate-environment.result == 'success' &&
       needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/databases.yml
@@ -231,7 +230,7 @@ jobs:
 
   generate-db-docs:
     name: DB Docs
-    needs: [validate-environment, discover-databases]
+    needs: [discover-databases]
     if: |
       inputs.run-db-docs == true &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
@@ -251,12 +250,10 @@ jobs:
 
   deploy-dotnet-apps:
     name: Deploy API
-    needs: [validate-environment, ensure-runner-image, build-runner-image, terraform, deploy-databases]
+    needs: [terraform, deploy-databases]
     if: |
       inputs.run-api-deployment == true &&
       always() &&
-      needs.validate-environment.result == 'success' &&
-      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
     uses: ./.github/workflows/dotnet_apps.yml
@@ -269,14 +266,11 @@ jobs:
 
   deploy-react-apps:
     name: Deploy React
-    needs: [validate-environment, ensure-runner-image, terraform, deploy-databases, deploy-dotnet-apps, build-runner-image]
+    needs: [deploy-dotnet-apps]
     if: |
       inputs.run-react-deployment == true &&
       always() &&
-      needs.validate-environment.result == 'success' &&
-      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
-      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
+      (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
     uses: ./.github/workflows/react_apps.yml
     with:
       environment: ${{ needs.validate-environment.outputs.environment }}
@@ -287,14 +281,12 @@ jobs:
 
   health-check-api:
     name: API Health Check
-    needs: [validate-environment, terraform, deploy-dotnet-apps]
+    needs: [deploy-dotnet-apps]
     if: |
       inputs.run-health-checks == true &&
       inputs.run-api-deployment == true &&
       always() &&
-      needs.validate-environment.result == 'success' &&
-      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
+      (needs.deploy-dotnet-apps.result == 'success')
     uses: ./.github/workflows/healthchecks.yml
     with:
       check_type: 'api'
@@ -311,15 +303,12 @@ jobs:
 
   health-check-react:
     name: React Health Check
-    needs: [validate-environment, ensure-runner-image, terraform, deploy-react-apps, build-runner-image]
+    needs: [deploy-react-apps]
     if: |
       inputs.run-health-checks == true &&
       inputs.run-react-deployment == true &&
       always() &&
-      needs.validate-environment.result == 'success' &&
-      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      (needs.deploy-react-apps.result == 'success' || needs.deploy-react-apps.result == 'skipped') &&
-      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
+      (needs.deploy-react-apps.result == 'success')
     uses: ./.github/workflows/healthchecks.yml
     with:
       check_type: 'react'
