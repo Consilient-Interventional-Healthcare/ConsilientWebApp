@@ -1,0 +1,47 @@
+name: 'Debug Environment Variables'
+description: 'Display environment variables and their sources for debugging'
+
+inputs:
+  variables:
+    description: 'JSON object of variables to display. Example: {"VAR_NAME": "value", "VAR2": "value2"}'
+    required: true
+  section-title:
+    description: 'Title for this debug section'
+    required: false
+    default: 'Environment Variables'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Display debug variables
+      shell: bash
+      run: |
+        echo "=== ${{ inputs.section-title }} ==="
+
+        VARS='${{ inputs.variables }}'
+
+        # Parse and display each variable
+        if [ "$VARS" != "{}" ]; then
+          while IFS= read -r var_name; do
+            VAR_VALUE=$(echo "$VARS" | jq -r ".$var_name")
+
+            # Mask sensitive values (passwords, secrets)
+            # Use shopt to handle case-insensitive matching
+            shopt -s nocasematch
+            if [[ "$var_name" =~ (password|secret|token|key|credential) ]]; then
+              DISPLAY_VALUE="***MASKED***"
+            else
+              # For URLs and IDs, show last 20 chars if long
+              if [ ${#VAR_VALUE} -gt 30 ]; then
+                DISPLAY_VALUE="...${VAR_VALUE: -20}"
+              else
+                DISPLAY_VALUE="$VAR_VALUE"
+              fi
+            fi
+            shopt -u nocasematch
+
+            echo "$var_name: $DISPLAY_VALUE"
+          done < <(echo "$VARS" | jq -r 'keys[]')
+        fi
+
+        echo ""

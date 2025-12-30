@@ -1,0 +1,96 @@
+name: 'Database Connectivity Health Check'
+description: 'Verify database is reachable using Azure AD authentication'
+
+inputs:
+  sql-server:
+    description: 'SQL Server FQDN (e.g., server.database.windows.net)'
+    required: true
+  database-name:
+    description: 'Database name to check connectivity'
+    required: true
+  timeout:
+    description: 'Connection timeout in seconds'
+    required: false
+    default: '30'
+
+outputs:
+  status:
+    description: 'Health check status (healthy/failed)'
+    value: ${{ steps.health-check.outputs.status }}
+  database-name:
+    description: 'Database name returned from DB_NAME() query'
+    value: ${{ steps.health-check.outputs.database-name }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Database Connectivity Health Check
+      id: health-check
+      shell: bash
+      run: |
+        set +e  # Don't exit immediately on error - we handle it ourselves
+
+        SQL_SERVER="${{ inputs.sql-server }}"
+        DATABASE_NAME="${{ inputs.database-name }}"
+        TIMEOUT="${{ inputs.timeout }}"
+
+        echo "================================================"
+        echo "🔍 Database Connectivity Health Check"
+        echo "================================================"
+        echo "Server: ${SQL_SERVER}"
+        echo "Database: ${DATABASE_NAME}"
+        echo "Auth: Azure AD Authentication"
+        echo ""
+
+        RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
+          -d "$DATABASE_NAME" \
+          -G \
+          -Q "SELECT DB_NAME() AS DatabaseName;" \
+          -h -1 \
+          -W \
+          -b \
+          -C \
+          -N \
+          -l 10 2>&1)
+
+        EXIT_CODE=$?
+
+        # Process result
+        if [ $EXIT_CODE -eq 0 ]; then
+          # Extract database name from result (remove whitespace)
+          DB_NAME=$(echo "$RESULT" | grep -v "^-" | grep -v "^DatabaseName" | tr -d '[:space:]')
+
+          if [ -n "$DB_NAME" ]; then
+            echo "✅ Database connectivity check PASSED"
+            echo "   Connected to: $DB_NAME"
+            echo "status=healthy" >> $GITHUB_OUTPUT
+            echo "database-name=$DB_NAME" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "❌ Database connectivity check FAILED"
+            echo "   Error: Query returned empty result"
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "database-name=" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+        elif [ $EXIT_CODE -eq 124 ]; then
+          echo "❌ Database connectivity check FAILED"
+          echo "   Error: Connection timed out after $TIMEOUT seconds"
+          echo ""
+          echo "🔍 Debug output from sqlcmd:"
+          echo "$RESULT"
+          echo ""
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "database-name=" >> $GITHUB_OUTPUT
+          exit 1
+        else
+          echo "❌ Database connectivity check FAILED"
+          echo "   Error: sqlcmd exited with code $EXIT_CODE"
+          echo ""
+          echo "🔍 Debug output from sqlcmd:"
+          echo "$RESULT"
+          echo ""
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "database-name=" >> $GITHUB_OUTPUT
+          exit 1
+        fi

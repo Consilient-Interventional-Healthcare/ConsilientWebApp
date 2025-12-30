@@ -1,0 +1,399 @@
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to (dev or prod)'
+        required: true
+        type: string
+      databases:
+        description: 'JSON array of database directory names (from centralized discovery)'
+        required: true
+        type: string
+      recreate-database-objects:
+        description: 'Recreate ALL database objects (DELETE ALL DATA - dev only)'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+        description: 'Azure Service Principal Client ID for OIDC authentication'
+      AZURE_TENANT_ID:
+        required: true
+        description: 'Azure Tenant ID for OIDC authentication'
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+        description: 'Azure Subscription ID for OIDC authentication'
+      AZURE_CREDENTIALS:
+        required: false
+        description: 'Azure credentials JSON for local testing with act (fallback)'
+    outputs:
+      deployment_status:
+        description: 'Overall deployment status (success, failure, skipped)'
+        value: ${{ jobs.notify.outputs.status }}
+      databases_deployed:
+        description: 'JSON array of deployed database names'
+        value: ${{ jobs.notify.outputs.databases }}
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: 'dev'
+      recreate-database-objects:
+        description: 'Recreate ALL database objects (DELETE ALL DATA - dev only)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+
+  validate-inputs:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Validate environment input
+        uses: ./.github/actions/validate-inputs
+        with:
+          environment: ${{ inputs.environment }}
+
+  deploy-database:
+    name: Deploy ${{ matrix.database }} (${{ inputs.environment }})
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: inputs.databases != '[]'
+    strategy:
+      matrix:
+        database: ${{ fromJson(inputs.databases) }}
+      fail-fast: false
+    concurrency:
+      group: deploy-database-${{ inputs.environment }}-${{ matrix.database }}
+      cancel-in-progress: false
+
+    env:
+      SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN }}
+      RECREATE_DB: ${{ inputs.recreate-database-objects || 'false' }}
+      ENVIRONMENT: ${{ inputs.environment }}
+      DATABASE_BASE_NAME: ${{ matrix.database }}
+      DATABASE_NAME: ${{ matrix.database }}_${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Login to Azure (OIDC + act fallback)
+        uses: ./.github/actions/azure-login
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
+
+      - name: Validate required secrets
+        run: |
+          echo "Validating required configuration..."
+
+          if [ -z "$SQL_SERVER" ]; then
+            echo "❌ Error: AZURE_SQL_SERVER secret is not set"
+            exit 1
+          fi
+
+          echo "✅ Using Azure AD Authentication"
+          echo "✅ SQL Server: ${SQL_SERVER}"
+          echo "✅ Database: ${DATABASE_NAME}"
+
+          echo "::debug::Environment Variables - ENVIRONMENT: ${ENVIRONMENT}, DATABASE_BASE_NAME: ${DATABASE_BASE_NAME}, RECREATE_DB: ${RECREATE_DB}"
+
+      - name: Database connectivity health check
+        uses: ./.github/actions/health-check-database
+        with:
+          sql-server: ${{ env.SQL_SERVER }}
+          database-name: ${{ env.DATABASE_NAME }}
+          timeout: '30'
+
+      - name: List SQL files to apply
+        id: list-files
+        run: |
+          set -e
+
+          echo "📄 SQL files in ${{ env.DATABASE_BASE_NAME }} directory:"
+          echo "   Target database: ${{ env.DATABASE_NAME }}"
+
+          # Use absolute path to database scripts directory
+          SCRIPTS_DIR="${{ github.workspace }}/src/Databases/${{ env.DATABASE_BASE_NAME }}"
+
+          echo "::debug::Script Directory - Full path: $SCRIPTS_DIR, Database: ${{ env.DATABASE_BASE_NAME }}"
+
+          # Verify directory exists
+          if [ ! -d "$SCRIPTS_DIR" ]; then
+            echo "❌ ERROR: Database directory not found: $SCRIPTS_DIR"
+            exit 1
+          fi
+
+          cd "$SCRIPTS_DIR"
+
+          echo "::debug::Directory contents:" && ls -lah 2>&1 | while IFS= read -r line; do echo "::debug::  $line"; done
+
+          echo "   Files to execute:"
+          SQL_FILES=$(find . -maxdepth 1 -type f -name "*.sql" | sed 's|^\./||' | sort)
+
+          # Filter out *seed.sql files if not recreating database objects
+          if [ "${{ env.RECREATE_DB }}" != "true" ]; then
+            SQL_FILES=$(echo "$SQL_FILES" | grep -v "seed\.sql$" || true)
+          fi
+
+          if [ -n "$SQL_FILES" ]; then
+            echo "$SQL_FILES" | sed 's/^/   - /'
+          else
+            echo "   No SQL files found (or all filtered out)"
+          fi
+          echo ""
+
+      - name: Prevent destructive actions in non-dev
+        run: |
+          if [ "$RECREATE_DB" = "true" ] && [ "$ENVIRONMENT" != "dev" ]; then
+            echo "❌ Recreate database is only allowed in the dev environment."
+            exit 1
+          fi
+
+      - name: Recreate all database objects (dev only)
+        if: env.RECREATE_DB == 'true' && env.ENVIRONMENT == 'dev'
+        uses: ./.github/actions/sqlcmd-execute
+        with:
+          sql-server: ${{ env.SQL_SERVER }}
+          database-name: ${{ env.DATABASE_NAME }}
+          script-file: "infra/db/drop_all_objects.sql"
+          timeout: '300'
+          fail-on-error: 'true'
+
+      - name: Apply SQL scripts
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          # Helper function to execute sqlcmd with Azure AD authentication
+          run_sqlcmd() {
+            local script_file="$1"
+            timeout 600 sqlcmd -S "${SQL_SERVER}" \
+              -d "${DATABASE_NAME}" \
+              -G \
+              -i "$script_file" \
+              -b 2>sqlcmd_error.log || return $?
+          }
+
+          # Use absolute path to database scripts directory
+          SCRIPTS_DIR="${{ github.workspace }}/src/Databases/${{ env.DATABASE_BASE_NAME }}"
+
+          # Verify directory exists
+          if [ ! -d "$SCRIPTS_DIR" ]; then
+            echo "❌ ERROR: Database directory not found: $SCRIPTS_DIR"
+            exit 1
+          fi
+
+          cd "$SCRIPTS_DIR"
+
+          # Get all .sql files sorted alphabetically (portable for both Alpine and Ubuntu)
+          SQL_FILES=$(find . -maxdepth 1 -type f -name "*.sql" | sed 's|^\./||' | sort)
+
+          # Filter out *seed.sql files if not recreating database objects
+          if [ "$RECREATE_DB" != "true" ]; then
+            SQL_FILES=$(echo "$SQL_FILES" | grep -v "seed\.sql$" || true)
+          fi
+
+          if [ -z "$SQL_FILES" ]; then
+            echo "⚠️  No SQL files found in ${{ env.DATABASE_BASE_NAME }} directory"
+            exit 0
+          fi
+
+          # Apply each SQL file in order
+          FILE_COUNT=$(echo "$SQL_FILES" | wc -l)
+          FILE_NUM=1
+
+          echo "🚀 Deploying $FILE_COUNT SQL script(s) to ${{ env.DATABASE_NAME }}"
+          echo ""
+
+          while IFS= read -r sql_file; do
+            [ -z "$sql_file" ] && continue
+
+            echo "================================================"
+            echo "📝 Applying [$FILE_NUM/$FILE_COUNT]: $sql_file"
+            echo "================================================"
+
+            echo "::debug::Execution details - Server: ${SQL_SERVER}, Database: ${DATABASE_NAME}, Script: $sql_file, Auth: Azure AD (-G flag), Timeout: 600 seconds"
+
+            run_sqlcmd "$sql_file"
+            exit_code=$?
+
+            if [ $exit_code -eq 0 ]; then
+              echo "✅ $sql_file completed successfully"
+            elif [ $exit_code -eq 124 ]; then
+              echo "❌ $sql_file timed out after 600 seconds"
+              echo "--- sqlcmd error output ---"
+              cat sqlcmd_error.log 2>/dev/null || echo "No error log available"
+              echo "--------------------------"
+              exit 1
+            else
+              echo "❌ $sql_file failed with exit code $exit_code"
+              echo "--- sqlcmd error output ---"
+              cat sqlcmd_error.log 2>/dev/null || echo "No error log available"
+              echo "--------------------------"
+              exit 1
+            fi
+
+            FILE_NUM=$((FILE_NUM + 1))
+            echo ""
+          done <<< "$SQL_FILES"
+
+          echo "================================================"
+          echo "✅ All SQL scripts deployed successfully"
+          echo "   Database: ${{ env.DATABASE_NAME }}"
+          echo "   Scripts: $FILE_COUNT"
+          echo "================================================"
+
+      - name: Verify database deployment
+        shell: bash
+        run: |
+          set -e
+
+          # Helper function to execute sqlcmd with Azure AD authentication
+          run_sqlcmd_verify() {
+            local script_file="$1"
+            timeout 60 sqlcmd -S "${SQL_SERVER}" -d "${DATABASE_NAME}" -G -i "$script_file" -b 2>/dev/null
+          }
+
+          echo ""
+          echo "================================================"
+          echo "Verifying database: ${{ env.DATABASE_NAME }}"
+          echo "================================================"
+
+          # Validate required SQL scripts exist and are executable
+          VERIFICATION_FAILED=false
+
+          if [ ! -f "infra/db/list_tables.sql" ]; then
+            echo "❌ ERROR: infra/db/list_tables.sql not found"
+            VERIFICATION_FAILED=true
+          else
+            echo "Tables in database:"
+            if run_sqlcmd_verify "infra/db/list_tables.sql"; then
+              echo "✅ Table listing completed"
+            else
+              echo "❌ ERROR: Could not list tables - database may be inaccessible or corrupt"
+              VERIFICATION_FAILED=true
+            fi
+          fi
+
+          echo ""
+          if [ ! -f "infra/db/table_count.sql" ]; then
+            echo "⚠️  Warning: infra/db/table_count.sql not found, skipping table count"
+          else
+            echo "Database size:"
+            if run_sqlcmd_verify "infra/db/table_count.sql"; then
+              echo "✅ Table count completed"
+            else
+              echo "⚠️  Could not get table count (optional check)"
+            fi
+          fi
+
+          echo ""
+          if [ "$VERIFICATION_FAILED" = "true" ]; then
+            echo "❌ DEPLOYMENT FAILED: Database verification failed"
+            exit 1
+          fi
+
+          echo "✅ Database ${{ env.DATABASE_NAME }} deployment completed successfully!"
+
+  notify:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [deploy-database]
+    if: always()
+    outputs:
+      status: ${{ steps.set-outputs.outputs.status }}
+      databases: ${{ steps.set-outputs.outputs.databases }}
+    steps:
+      - name: Determine deployment status
+        id: set-outputs
+        run: |
+          DATABASES='${{ inputs.databases }}'
+          DEPLOY_RESULT='${{ needs.deploy-database.result }}'
+
+          # Determine overall status
+          if [ "$DATABASES" == "[]" ]; then
+            STATUS="skipped"
+          elif [ "$DEPLOY_RESULT" == "success" ]; then
+            STATUS="success"
+          elif [ "$DEPLOY_RESULT" == "failure" ]; then
+            STATUS="failure"
+          else
+            STATUS="skipped"
+          fi
+
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "databases=$DATABASES" >> $GITHUB_OUTPUT
+
+      - name: Create deployment summary
+        run: |
+          ENVIRONMENT="${{ inputs.environment }}"
+          DATABASES='${{ inputs.databases }}'
+          DEPLOY_RESULT='${{ needs.deploy-database.result }}'
+
+          echo "### Database Deployment Summary 🗄️" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Recreate Database Objects**: ${{ inputs.recreate-database-objects || false }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Base Names**: $DATABASES" >> $GITHUB_STEP_SUMMARY
+          echo "- **SQL Script Deployment**: $DEPLOY_RESULT" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event_name }}" != "workflow_call" ]; then
+            echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Show actual database names created
+          echo "#### Databases Deployed:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$DATABASES" != "[]" ]; then
+            while IFS= read -r db; do
+              echo "- \`${db}_${ENVIRONMENT}\`" >> $GITHUB_STEP_SUMMARY
+            done < <(echo "$DATABASES" | jq -r '.[]')
+          else
+            echo "- None (no databases provided)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$DEPLOY_RESULT" == "success" ]; then
+            echo "✅ **All databases deployed successfully!**" >> $GITHUB_STEP_SUMMARY
+          elif [ "$DEPLOY_RESULT" == "failure" ]; then
+            echo "❌ **SQL script deployment failed for one or more databases.**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**To identify which databases failed:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Review the 'Deploy \${{ matrix.database }}' job logs above" >> $GITHUB_STEP_SUMMARY
+            echo "2. Search for '❌' or 'ERROR' in the step outputs" >> $GITHUB_STEP_SUMMARY
+            echo "3. Check the specific database deployment logs for error details" >> $GITHUB_STEP_SUMMARY
+          elif [ "$DATABASES" == "[]" ]; then
+            echo "⚠️  **No databases provided for deployment**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️  **Deployment status - Scripts: $DEPLOY_RESULT**" >> $GITHUB_STEP_SUMMARY
+          fi

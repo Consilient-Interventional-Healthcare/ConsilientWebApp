@@ -1,0 +1,149 @@
+name: "00 - Build Custom Runner Image"
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.github/workflows/runner/Dockerfile'
+      - '.github/workflows/build-runner-image.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/runner/Dockerfile'
+      - '.github/workflows/build-runner-image.yml'
+  workflow_dispatch:
+  schedule:
+    # Rebuild weekly on Sundays at 2 AM UTC to pick up latest Azure CLI
+    - cron: '0 2 * * 0'
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'ghcr.io' }}
+  IMAGE_NAME: ${{ github.repository }}/actions-runner
+
+jobs:
+  build-and-push:
+    name: Build and Push Runner Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix={{branch}}-,format=short
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=pr
+          labels: |
+            org.opencontainers.image.title=Consilient Actions Runner
+            org.opencontainers.image.description=Custom GitHub Actions runner with pre-installed tools
+            org.opencontainers.image.vendor=Consilient
+            org.opencontainers.image.version=${{ github.sha }}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .github/workflows/runner
+          file: .github/workflows/runner/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Generate build summary
+        run: |
+          echo "### Docker Image Build Summary :whale:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**: \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Digest**: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pushed**: ${{ github.event_name != 'pull_request' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  verify-image:
+    name: Verify Runner Image
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull and verify image
+        run: |
+          echo "Pulling image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+          echo ""
+          echo "=== Verifying installed tools ==="
+
+          echo "Testing Azure CLI..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bash -c "az --version | head -n 1"
+
+          echo "Testing sqlcmd..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bash -c "sqlcmd --version"
+
+          echo "Testing Java..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bash -c "java -version 2>&1 | head -n 1"
+
+          echo "Testing SchemaSpy..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bash -c "ls -lh /opt/schemaspy/"
+
+          echo ""
+          echo "✅ All tools verified successfully!"
+
+      - name: Generate verification summary
+        if: success()
+        run: |
+          echo "### Image Verification :white_check_mark:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All pre-installed tools are accessible and functional:" >> $GITHUB_STEP_SUMMARY
+          echo "- Azure CLI ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- sqlcmd ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Java (for SchemaSpy) ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- SchemaSpy JARs ✅" >> $GITHUB_STEP_SUMMARY

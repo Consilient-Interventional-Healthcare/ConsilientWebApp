@@ -1,0 +1,191 @@
+name: 'Lighthouse Health Check'
+description: 'Run Lighthouse performance checks on web app with automatic rollback on failure'
+
+inputs:
+  app-url:
+    description: 'Application URL to check (e.g., https://myapp.azurewebsites.net)'
+    required: true
+  app-name:
+    description: 'Azure Web App name'
+    required: true
+  client-id:
+    description: 'Azure Service Principal Client ID'
+    required: true
+  tenant-id:
+    description: 'Azure Tenant ID'
+    required: true
+  subscription-id:
+    description: 'Azure Subscription ID'
+    required: true
+  azure-credentials:
+    description: 'Azure credentials for local testing (act environment)'
+    required: false
+    default: '{}'
+  resource-group:
+    description: 'Azure Resource Group name (required for rollback)'
+    required: false
+  previous-image:
+    description: 'Previous container image for rollback'
+    required: false
+  acr-registry:
+    description: 'Azure Container Registry URL'
+    required: false
+  wait-seconds:
+    description: 'Seconds to wait for deployment to stabilize'
+    required: false
+    default: '45'
+  runs:
+    description: 'Number of Lighthouse runs'
+    required: false
+    default: '3'
+  min-perf-score:
+    description: 'Minimum performance score (0-100)'
+    required: false
+    default: '0.7'
+  min-a11y-score:
+    description: 'Minimum accessibility score (0-100)'
+    required: false
+    default: '0.9'
+  min-bp-score:
+    description: 'Minimum best practices score (0-100)'
+    required: false
+    default: '0.7'
+  min-seo-score:
+    description: 'Minimum SEO score (0-100)'
+    required: false
+    default: '0.7'
+  environment:
+    description: 'Deployment environment (dev/prod)'
+    required: false
+    default: 'prod'
+
+outputs:
+  lighthouse-result:
+    description: 'Lighthouse check result (passed/failed)'
+    value: ${{ steps.lighthouse.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Wait for Deployment
+      shell: bash
+      run: |
+        echo "⏳ Waiting ${{ inputs.wait-seconds }} seconds for deployment to stabilize..."
+        sleep ${{ inputs.wait-seconds }}
+
+    - name: Run Lighthouse CI
+      id: lighthouse
+      uses: treosh/lighthouse-ci-action@v10
+      with:
+        urls: |
+          ${{ inputs.app-url }}
+        temporaryPublicStorage: true
+        runs: ${{ inputs.runs }}
+      env:
+        LHCI_ASSERT__ASSERTIONS__CATEGORIES_PERFORMANCE: '["error", {"minScore": ${{ inputs.min-perf-score }}}]'
+        LHCI_ASSERT__ASSERTIONS__CATEGORIES_ACCESSIBILITY: '["error", {"minScore": ${{ inputs.min-a11y-score }}}]'
+        LHCI_ASSERT__ASSERTIONS__CATEGORIES_BEST_PRACTICES: '["warn", {"minScore": ${{ inputs.min-bp-score }}}]'
+        LHCI_ASSERT__ASSERTIONS__CATEGORIES_SEO: '["warn", {"minScore": ${{ inputs.min-seo-score }}}]'
+
+    - name: Verify Lighthouse Results
+      shell: bash
+      if: success()
+      run: |
+        echo "✅ Lighthouse checks passed"
+        echo "  Minimum Performance Score: ${{ inputs.min-perf-score }}"
+        echo "  Minimum Accessibility Score: ${{ inputs.min-a11y-score }}"
+        echo "  Minimum Best Practices Score: ${{ inputs.min-bp-score }}"
+        echo "  Minimum SEO Score: ${{ inputs.min-seo-score }}"
+
+    - name: Login to Azure for Rollback (OIDC + act fallback)
+      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      uses: ./../../.github/actions/azure-login
+      with:
+        client-id: ${{ inputs.client-id }}
+        tenant-id: ${{ inputs.tenant-id }}
+        subscription-id: ${{ inputs.subscription-id }}
+        azure-credentials: ${{ inputs.azure-credentials }}
+
+    - name: Rollback Deployment
+      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      shell: bash
+      run: |
+        echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
+        echo "Reason: Lighthouse checks failed"
+        echo "App Name: ${{ inputs.app-name }}"
+        echo "Resource Group: ${{ inputs.resource-group }}"
+        echo "Previous Image: ${{ inputs.previous-image }}"
+
+        if [ -z "${{ inputs.previous-image }}" ]; then
+          echo "⚠️  WARNING: No previous image found"
+          echo "This may be the first deployment - cannot rollback"
+          exit 1
+        fi
+
+        echo "🔄 Rolling back to previous image..."
+        az webapp config container set \
+          --name "${{ inputs.app-name }}" \
+          --resource-group "${{ inputs.resource-group }}" \
+          --docker-custom-image-name "${{ inputs.previous-image }}" \
+          --docker-registry-server-url "https://${{ inputs.acr-registry }}"
+
+        echo "🔄 Restarting application..."
+        az webapp restart \
+          --name "${{ inputs.app-name }}" \
+          --resource-group "${{ inputs.resource-group }}"
+
+        sleep 20
+
+        CURRENT_IMAGE=$(az webapp config container show \
+          --name "${{ inputs.app-name }}" \
+          --resource-group "${{ inputs.resource-group }}" \
+          --query '[0].value' -o tsv)
+
+        echo "Current Image: ${CURRENT_IMAGE}"
+        echo "✅ Rollback completed"
+
+    - name: Verify Rollback - Quick Health Check After Rollback
+      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      shell: bash
+      run: |
+        echo "🔍 Verifying previous image is accessible after rollback..."
+        echo ""
+        echo "⏳ Waiting 30 seconds for previous image to stabilize..."
+        sleep 30
+
+        # Quick health check with retries (max 3 attempts, 10s delay)
+        MAX_ATTEMPTS=3
+        ATTEMPT=1
+        SUCCESS=false
+
+        while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+          echo "📊 Accessibility check attempt $ATTEMPT/$MAX_ATTEMPTS..."
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ inputs.app-url }}" 2>/dev/null || echo "000")
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ HTTP 200 received - Previous image is accessible"
+            SUCCESS=true
+            break
+          else
+            echo "⚠️  HTTP $HTTP_CODE received"
+          fi
+
+          if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+            echo "⏳ Waiting 10 seconds before retry..."
+            sleep 10
+          fi
+
+          ATTEMPT=$((ATTEMPT + 1))
+        done
+
+        echo ""
+        if [ "$SUCCESS" = "true" ]; then
+          echo "✅ ROLLBACK VERIFIED: Previous image is accessible"
+          exit 0
+        else
+          echo "❌ ROLLBACK INCOMPLETE: Previous image is NOT responding"
+          echo "⚠️  WARNING: Deployment rolled back but previous version is also inaccessible"
+          echo "Manual intervention may be required"
+          exit 1
+        fi

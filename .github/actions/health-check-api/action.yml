@@ -1,0 +1,355 @@
+name: 'API Health Check'
+description: 'Verify API health and database connectivity with automatic rollback on failure'
+
+inputs:
+  app-name:
+    description: 'Azure Web App name'
+    required: true
+  endpoint-url:
+    description: 'Health check endpoint URL (e.g., https://myapp.azurewebsites.net/health)'
+    required: true
+  client-id:
+    description: 'Azure Service Principal Client ID'
+    required: true
+  tenant-id:
+    description: 'Azure Tenant ID'
+    required: true
+  subscription-id:
+    description: 'Azure Subscription ID'
+    required: true
+  azure-credentials:
+    description: 'Azure credentials for local testing (act environment)'
+    required: false
+    default: '{}'
+  resource-group:
+    description: 'Azure Resource Group name (required for rollback)'
+    required: false
+  previous-image:
+    description: 'Previous container image for rollback'
+    required: false
+  acr-registry:
+    description: 'Azure Container Registry URL'
+    required: false
+  wait-seconds:
+    description: 'Seconds to wait for deployment to stabilize'
+    required: false
+    default: '30'
+  max-attempts:
+    description: 'Maximum attempts for health check'
+    required: false
+    default: '5'
+  retry-delay:
+    description: 'Delay between retry attempts'
+    required: false
+    default: '10s'
+  environment:
+    description: 'Deployment environment (dev/prod)'
+    required: false
+    default: 'prod'
+
+outputs:
+  status:
+    description: 'Health check status (healthy/unhealthy)'
+    value: ${{ steps.health_check.outputs.status }}
+  response:
+    description: 'Health check response JSON'
+    value: ${{ steps.health_check.outputs.response }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Wait for Deployment
+      shell: bash
+      run: |
+        echo "⏳ Waiting ${{ inputs.wait-seconds }} seconds for deployment to stabilize..."
+        sleep ${{ inputs.wait-seconds }}
+
+    - name: Health Check with Retry
+      id: health_check
+      shell: bash
+      run: |
+        set -e
+        MAX_ATTEMPTS=${{ inputs.max-attempts }}
+        RETRY_DELAY=${{ inputs.retry-delay }}
+        ATTEMPT=1
+        SUCCESS=false
+
+        while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+          echo "🔍 Health check attempt $ATTEMPT/$MAX_ATTEMPTS..."
+
+          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" "${{ inputs.endpoint-url }}" 2>/dev/null || echo "")
+          HTTP_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$HEALTH_RESPONSE" | head -n-1)
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ HTTP 200 received"
+
+            # Verify JSON response
+            if echo "$RESPONSE_BODY" | jq empty 2>/dev/null; then
+              echo "$RESPONSE_BODY" > /tmp/health_response.json
+              echo "response=$(cat /tmp/health_response.json)" >> $GITHUB_OUTPUT
+              SUCCESS=true
+              break
+            else
+              echo "⚠️  Invalid JSON response"
+            fi
+          else
+            echo "⚠️  HTTP $HTTP_CODE received"
+          fi
+
+          if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+            echo "⏳ Waiting $RETRY_DELAY before retry..."
+            sleep "${RETRY_DELAY%s}"
+          fi
+
+          ATTEMPT=$((ATTEMPT + 1))
+        done
+
+        if [ "$SUCCESS" != "true" ]; then
+          echo "❌ Health check failed after $MAX_ATTEMPTS attempts"
+          exit 1
+        fi
+
+    - name: Verify Health Status
+      id: verify_health
+      shell: bash
+      run: |
+        echo "🔍 Verifying health check response..."
+        RESPONSE='${{ steps.health_check.outputs.response }}'
+
+        # Check if response is valid JSON
+        if ! echo "$RESPONSE" | jq empty 2>/dev/null; then
+          echo "❌ ERROR: Invalid JSON response"
+          echo "Response: $RESPONSE"
+          echo "health_verified=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        # Verify overall status
+        STATUS=$(echo "$RESPONSE" | jq -r '.status // .overall_status // "unknown"' 2>/dev/null)
+        if [ "$STATUS" != "Healthy" ] && [ "$STATUS" != "healthy" ]; then
+          echo "❌ ERROR: API health status is $STATUS"
+          echo "health_verified=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        # Verify database connectivity if available
+        DB_STATUS=$(echo "$RESPONSE" | jq -r '.checks[0].status // "N/A"' 2>/dev/null)
+        if [ "$DB_STATUS" != "N/A" ] && [ "$DB_STATUS" != "Healthy" ]; then
+          echo "❌ ERROR: Database connection status is $DB_STATUS"
+          echo "health_verified=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        echo "✅ SUCCESS: API is healthy"
+        echo "  Overall Status: $STATUS"
+        if [ "$DB_STATUS" != "N/A" ]; then
+          echo "  Database Status: $DB_STATUS"
+        fi
+        echo "health_verified=true" >> $GITHUB_OUTPUT
+
+    - name: Login to Azure for Rollback (OIDC + act fallback)
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      uses: ./.github/actions/azure-login
+      with:
+        client-id: ${{ inputs.client-id }}
+        tenant-id: ${{ inputs.tenant-id }}
+        subscription-id: ${{ inputs.subscription-id }}
+        azure-credentials: ${{ inputs.azure-credentials }}
+
+    - name: Rollback Deployment
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      shell: bash
+      run: |
+        echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
+        echo "Reason: Health check failed"
+        echo "App Name: ${{ inputs.app-name }}"
+        echo "Resource Group: ${{ inputs.resource-group }}"
+        echo "Previous Image: ${{ inputs.previous-image }}"
+
+        # Verify we have a previous image
+        if [ -z "${{ inputs.previous-image }}" ]; then
+          echo "⚠️  WARNING: No previous image found"
+          echo "This may be the first deployment - cannot rollback"
+          exit 1
+        fi
+
+        echo "🔄 Rolling back to previous image..."
+        az webapp config container set \
+          --name "${{ inputs.app-name }}" \
+          --resource-group "${{ inputs.resource-group }}" \
+          --docker-custom-image-name "${{ inputs.previous-image }}" \
+          --docker-registry-server-url "https://${{ inputs.acr-registry }}"
+
+        echo "🔄 Restarting application..."
+        az webapp restart \
+          --name "${{ inputs.app-name }}" \
+          --resource-group "${{ inputs.resource-group }}"
+
+        sleep 20
+
+        CURRENT_IMAGE=$(az webapp config container show \
+          --name "${{ inputs.app-name }}" \
+          --resource-group "${{ inputs.resource-group }}" \
+          --query '[0].value' -o tsv)
+
+        echo "Current Image: ${CURRENT_IMAGE}"
+        echo "✅ Rollback completed"
+
+    - name: Verify Rollback - Health Check After Rollback
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      shell: bash
+      run: |
+        echo "🔍 Verifying previous image is healthy after rollback..."
+        echo ""
+        echo "⏳ Waiting 45 seconds for previous image to stabilize..."
+        sleep 45
+
+        # Attempt health check with retries (max 5 attempts, 15s delay)
+        MAX_ATTEMPTS=5
+        ATTEMPT=1
+        SUCCESS=false
+
+        while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+          echo "📊 Health check attempt $ATTEMPT/$MAX_ATTEMPTS..."
+
+          HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" "${{ inputs.endpoint-url }}" 2>/dev/null || echo "")
+          HTTP_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
+          RESPONSE_BODY=$(echo "$HEALTH_RESPONSE" | head -n-1)
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ HTTP 200 received"
+
+            # Verify JSON response
+            if echo "$RESPONSE_BODY" | jq empty 2>/dev/null; then
+              STATUS=$(echo "$RESPONSE_BODY" | jq -r '.status // .overall_status // "unknown"' 2>/dev/null)
+              if [ "$STATUS" = "Healthy" ] || [ "$STATUS" = "healthy" ]; then
+                echo "✅ Previous image is HEALTHY"
+                SUCCESS=true
+                break
+              else
+                echo "⚠️  Unhealthy status: $STATUS"
+              fi
+            else
+              echo "⚠️  Invalid JSON response"
+            fi
+          else
+            echo "⚠️  HTTP $HTTP_CODE received"
+          fi
+
+          if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+            echo "⏳ Waiting 15 seconds before retry..."
+            sleep 15
+          fi
+
+          ATTEMPT=$((ATTEMPT + 1))
+        done
+
+        echo ""
+        if [ "$SUCCESS" = "true" ]; then
+          echo "✅ ROLLBACK VERIFIED: Previous image is healthy and responding"
+          exit 0
+        else
+          echo "❌ ROLLBACK INCOMPLETE: Previous image is NOT healthy"
+          echo "⚠️  WARNING: Deployment rolled back but previous version is also failing"
+          echo "Manual intervention may be required"
+          exit 1
+        fi
+
+    - name: Exit successfully if health checks passed
+      shell: bash
+      run: |
+        HEALTH_VERIFIED='${{ steps.verify_health.outputs.health_verified }}'
+        if [ "$HEALTH_VERIFIED" = "true" ]; then
+          echo "✅ All health checks passed - exiting successfully"
+          exit 0
+        fi
+        # If we reach here, health check failed but we're not in a rollback scenario
+        echo "Health verification did not complete successfully"
+        exit 1
+
+    - name: Provide Debug Help (act environment)
+      if: failure() && ${{ env.ACT }}
+      shell: bash
+      run: |
+        echo "======================================================================"
+        echo "❌ HEALTH CHECK FAILED (act environment - NO ROLLBACK)"
+        echo "======================================================================"
+        echo ""
+        echo "🔍 DEBUGGING INFORMATION"
+        echo "======================================================================"
+        echo "App Name:     ${{ inputs.app-name }}"
+        echo "Endpoint:     ${{ inputs.endpoint-url }}"
+        echo "Environment:  act (local testing)"
+        echo ""
+        echo "📋 TROUBLESHOOTING STEPS"
+        echo "======================================================================"
+        echo ""
+        echo "1️⃣  CHECK API LOGS"
+        echo "   - View real-time logs: https://portal.azure.com"
+        echo "   - Navigate to: Resource Groups > [Your RG] > App Service > [App Name]"
+        echo "   - Go to: Monitoring > Log stream (live stream)"
+        echo "   - Or: Monitoring > App Service logs > Download"
+        echo ""
+        echo "2️⃣  TEST HEALTH ENDPOINT DIRECTLY"
+        echo "   curl -v https://${{ inputs.app-name }}.azurewebsites.net/health"
+        echo ""
+        echo "3️⃣  CHECK DEPLOYMENT STATUS IN AZURE"
+        echo "   - Portal: https://portal.azure.com"
+        echo "   - Search: App Services > ${{ inputs.app-name }}"
+        echo "   - Check 'Deployments' tab for status and logs"
+        echo ""
+        echo "4️⃣  COMMON CAUSES"
+        echo "   ❌ Database connectivity issues"
+        echo "      - Check SQL Server firewall rules"
+        echo "      - Verify connection string in application settings"
+        echo "      - Test with: az sql db list --resource-group [RG]"
+        echo ""
+        echo "   ❌ Missing environment variables"
+        echo "      - Check App Service Configuration"
+        echo "      - Portal > App Service > Settings > Configuration"
+        echo ""
+        echo "   ❌ Container image issues"
+        echo "      - Verify Docker image was pushed to ACR"
+        echo "      - Check ACR repository: https://portal.azure.com"
+        echo "      - Verify image was successfully built and tagged"
+        echo ""
+        echo "   ❌ Application startup errors"
+        echo "      - Check 'Diagnose and solve problems' > Application Crashes"
+        echo "      - Review .NET application logs in Log Stream"
+        echo ""
+        echo "5️⃣  EXAMINE DOCKER IMAGE LOCALLY"
+        echo "   docker run --rm -it [ACR_REGISTRY]/consilient-api:[TAG] /bin/bash"
+        echo "   # Inside container, check:"
+        echo "   env | grep -E '(AZURE|CONNECTION|DATABASE)'"
+        echo ""
+        echo "6️⃣  VALIDATE CONFIGURATION"
+        echo "   - Check if all required secrets are set"
+        echo "   - Verify app.settings.json in the Docker image"
+        echo "   - Ensure health check endpoint exists: /health"
+        echo ""
+        echo "📊 RESPONSE DETAILS"
+        echo "======================================================================"
+        HEALTH_RESPONSE=$(curl -s -w "\n%{http_code}" "${{ inputs.endpoint-url }}" 2>/dev/null || echo "Connection failed")
+        echo "$HEALTH_RESPONSE"
+        echo ""
+        echo "======================================================================"
+        echo "🔗 USEFUL AZURE PORTAL LINKS"
+        echo "======================================================================"
+        echo "App Service Overview:"
+        echo "  https://portal.azure.com/#@/resource/subscriptions/[SUBSCRIPTION]/resourceGroups/${{ inputs.resource_group || '[RESOURCE_GROUP]' }}/providers/Microsoft.Web/sites/${{ inputs.app-name }}/overview"
+        echo ""
+        echo "Logs & Monitoring:"
+        echo "  https://portal.azure.com/#@/resource/subscriptions/[SUBSCRIPTION]/resourceGroups/${{ inputs.resource_group || '[RESOURCE_GROUP]' }}/providers/Microsoft.Web/sites/${{ inputs.app-name }}/logStream"
+        echo ""
+        echo "Deployments:"
+        echo "  https://portal.azure.com/#@/resource/subscriptions/[SUBSCRIPTION]/resourceGroups/${{ inputs.resource_group || '[RESOURCE_GROUP]' }}/providers/Microsoft.Web/sites/${{ inputs.app-name }}/deployments"
+        echo ""
+        echo "📝 NEXT STEPS"
+        echo "======================================================================"
+        echo "1. Review the logs using the links above"
+        echo "2. Fix the underlying issue in the application code or configuration"
+        echo "3. Re-run the workflow with the fix in place"
+        echo "4. If database connectivity is the issue, check SQL Server firewall"
+        echo ""
+        exit 1

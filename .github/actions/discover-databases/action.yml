@@ -1,0 +1,187 @@
+name: 'Discover Databases with Configuration'
+description: 'Scan directory for databases with optional configuration file filtering'
+
+inputs:
+  scripts_path:
+    description: 'Root path to database scripts (e.g., src/Databases)'
+    required: true
+  config_file_name:
+    description: 'Name of configuration file to look for (optional - if empty, discovers all directories)'
+    required: false
+    default: ''
+  require_config:
+    description: 'If true, only include directories with config file. If false, include all directories.'
+    required: false
+    default: 'false'
+
+outputs:
+  databases:
+    description: 'JSON array of discovered databases with all metadata'
+    value: ${{ steps.discover.outputs.databases }}
+  database_directories:
+    description: 'JSON array of database directory names (for databases.yml)'
+    value: ${{ steps.transform.outputs.database_directories }}
+  database_configs:
+    description: 'JSON object mapping database names to config data (for docs_db.yml)'
+    value: ${{ steps.transform.outputs.database_configs }}
+  count:
+    description: 'Number of databases discovered'
+    value: ${{ steps.discover.outputs.count }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        set -e
+
+        echo "🔍 Database Discovery Configuration"
+        echo "   Scripts path: ${{ inputs.scripts_path }}"
+        echo "   Config file: ${{ inputs.config_file_name || '(none - discover all)' }}"
+        echo "   Require config: ${{ inputs.require_config }}"
+        echo ""
+
+        # Validate scripts_path exists
+        if [ ! -d "${{ inputs.scripts_path }}" ]; then
+          echo "❌ ERROR: Scripts path not found: ${{ inputs.scripts_path }}"
+          exit 1
+        fi
+
+        echo "✅ Scripts path validated"
+
+    - name: Discover databases
+      id: discover
+      shell: bash
+      run: |
+        set -e
+        set -o pipefail
+
+        SCRIPTS_PATH="${{ inputs.scripts_path }}"
+        CONFIG_FILE="${{ inputs.config_file_name }}"
+        REQUIRE_CONFIG="${{ inputs.require_config }}"
+
+        cd "$SCRIPTS_PATH"
+
+        echo "📁 Scanning for database directories..."
+
+        # Find all directories (depth 1)
+        ALL_DIRS=$(find . -mindepth 1 -maxdepth 1 -type d | sed 's|^\./||' | sort)
+
+        if [ -z "$ALL_DIRS" ]; then
+          echo "⚠️  No directories found in $SCRIPTS_PATH"
+          echo 'databases=[]' >> $GITHUB_OUTPUT
+          echo 'count=0' >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        echo "   Found $(echo "$ALL_DIRS" | wc -l) director(ies)"
+
+        # Build JSON array with metadata
+        DB_ARRAY="[]"
+        COUNT=0
+
+        while IFS= read -r dir; do
+          [ -z "$dir" ] && continue
+
+          CONFIG_PATH="$dir/$CONFIG_FILE"
+
+          # If config file specified, check for its existence
+          if [ -n "$CONFIG_FILE" ]; then
+            if [ -f "$CONFIG_PATH" ]; then
+              echo "✅ $dir - config found: $CONFIG_FILE"
+
+              # Parse config and build metadata object
+              # Note: This uses yq if available, falls back to simple parsing
+              if command -v yq &> /dev/null; then
+                # Extract metadata using yq
+                DB_NAME=$(yq eval '.database.name // "'"$dir"'"' "$CONFIG_PATH" 2>/dev/null || echo "$dir")
+                GENERATE_DOCS=$(yq eval '.database.generate_docs // true' "$CONFIG_PATH" 2>/dev/null || echo "true")
+
+                # Skip if generate_docs is false
+                if [ "$GENERATE_DOCS" = "false" ]; then
+                  echo "   ⏭️  Skipping $dir - generate_docs: false"
+                  continue
+                fi
+
+                # Create database object with metadata
+                FULL_CONFIG_PATH="$SCRIPTS_PATH/$CONFIG_PATH"
+                DB_OBJ=$(jq -n \
+                  --arg directory "$dir" \
+                  --arg name "$DB_NAME" \
+                  --arg config_path "$FULL_CONFIG_PATH" \
+                  '{directory: $directory, name: $name, config_path: $config_path, has_config: true}')
+              else
+                # Fallback without yq - just use directory name
+                echo "   ⚠️  yq not available - using basic parsing"
+                FULL_CONFIG_PATH="$SCRIPTS_PATH/$CONFIG_PATH"
+                DB_OBJ=$(jq -n \
+                  --arg directory "$dir" \
+                  --arg config_path "$FULL_CONFIG_PATH" \
+                  '{directory: $directory, name: $directory, config_path: $config_path, has_config: true}')
+              fi
+
+              DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]')
+              COUNT=$((COUNT + 1))
+            else
+              if [ "$REQUIRE_CONFIG" = "true" ]; then
+                echo "⏭️  Skipping $dir - no config file: $CONFIG_FILE"
+              else
+                echo "⚠️  $dir - no config, including anyway (require_config: false)"
+                DB_OBJ=$(jq -n \
+                  --arg directory "$dir" \
+                  '{directory: $directory, name: $directory, has_config: false}')
+                DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]')
+                COUNT=$((COUNT + 1))
+              fi
+            fi
+          else
+            # No config file specified - include all directories
+            echo "✅ $dir - included (no config filter)"
+            DB_OBJ=$(jq -n \
+              --arg directory "$dir" \
+              '{directory: $directory, name: $directory, has_config: false}')
+            DB_ARRAY=$(echo "$DB_ARRAY" | jq --argjson obj "$DB_OBJ" '. += [$obj]')
+            COUNT=$((COUNT + 1))
+          fi
+        done <<< "$ALL_DIRS"
+
+        echo ""
+        echo "📊 Discovery Summary:"
+        echo "   Total directories: $(echo "$ALL_DIRS" | wc -l)"
+        echo "   Databases to process: $COUNT"
+        echo ""
+
+        # Output results (use -c flag to ensure compact JSON on a single line for GitHub Actions compatibility)
+        echo "databases=$(echo "$DB_ARRAY" | jq -c .)" >> $GITHUB_OUTPUT
+        echo "count=$COUNT" >> $GITHUB_OUTPUT
+
+        if [ "$COUNT" -gt 0 ]; then
+          echo "✅ Discovered databases:"
+          echo "$DB_ARRAY" | jq -r '.[] | "   - \(.directory) (\(.name))"'
+        else
+          echo "⚠️  No databases discovered"
+        fi
+
+    - name: Transform data for downstream workflows
+      id: transform
+      shell: bash
+      run: |
+        set -e
+
+        DATABASES='${{ steps.discover.outputs.databases }}'
+
+        # Format 1: Array of full directory paths for databases.yml
+        DIRECTORIES=$(echo "$DATABASES" | jq -c '[.[] | .directory]')
+        echo "database_directories=$DIRECTORIES" >> $GITHUB_OUTPUT
+
+        # Format 2: Object mapping names to config data for docs_db.yml
+        # Important: Use -c flag to ensure compact JSON output on a single line
+        CONFIGS="{}"
+        while IFS= read -r db_entry; do
+          DB_NAME=$(echo "$db_entry" | jq -r '.name')
+          CONFIG_DATA=$(echo "$db_entry" | jq -c '{directory: .directory, config_path: .config_path}')
+          CONFIGS=$(echo "$CONFIGS" | jq -c --argjson data "$CONFIG_DATA" --arg name "$DB_NAME" '.[$name] = $data')
+        done < <(echo "$DATABASES" | jq -c '.[]')
+
+        echo "database_configs=$CONFIGS" >> $GITHUB_OUTPUT

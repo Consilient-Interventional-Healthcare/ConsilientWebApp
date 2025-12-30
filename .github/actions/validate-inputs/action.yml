@@ -1,0 +1,94 @@
+name: 'Validate Workflow Inputs'
+description: 'Centralized validation for workflow inputs - SINGLE SOURCE OF TRUTH for environment and action validation'
+
+inputs:
+  environment:
+    description: 'Environment value to validate (dev, prod, etc.)'
+    required: false
+  action:
+    description: 'Action value to validate (plan, apply, destroy, etc.)'
+    required: false
+  required-fields:
+    description: 'JSON object of field names and values that must be set. Example: {"field1": "value1", "field2": "value2"}'
+    required: false
+    default: '{}'
+  scripts-path:
+    description: 'Path to verify exists (for database workflows)'
+    required: false
+
+outputs:
+  validation-passed:
+    description: 'Whether validation passed (true/false)'
+    value: ${{ steps.validate.outputs.passed }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate inputs
+      id: validate
+      shell: bash
+      run: |
+        set -e
+        PASSED=true
+
+        echo "=== Input Validation ==="
+
+        # Validate environment
+        # IMPORTANT: This is the SINGLE SOURCE OF TRUTH for valid environment values
+        # If you need to add/remove environments, update the regex here and nowhere else
+        if [ -n "${{ inputs.environment }}" ]; then
+          if [[ ! "${{ inputs.environment }}" =~ ^(dev|prod)$ ]]; then
+            echo "❌ ERROR: Invalid environment '${{ inputs.environment }}'"
+            echo "   Valid values are: dev, prod"
+            PASSED=false
+          else
+            echo "✅ Environment: ${{ inputs.environment }}"
+          fi
+        fi
+
+        # Validate action
+        if [ -n "${{ inputs.action }}" ]; then
+          if [[ ! "${{ inputs.action }}" =~ ^(plan|apply|destroy)$ ]]; then
+            echo "❌ ERROR: Invalid action '${{ inputs.action }}'"
+            echo "   Valid actions are: plan, apply, destroy"
+            PASSED=false
+          else
+            echo "✅ Action: ${{ inputs.action }}"
+          fi
+        fi
+
+        # Validate scripts path
+        if [ -n "${{ inputs.scripts-path }}" ]; then
+          if [ ! -d "${{ inputs.scripts-path }}" ]; then
+            echo "❌ ERROR: Scripts path not found: ${{ inputs.scripts-path }}"
+            PASSED=false
+          else
+            echo "✅ Scripts path exists: ${{ inputs.scripts-path }}"
+          fi
+        fi
+
+        # Validate required fields
+        REQUIRED='${{ inputs.required-fields }}'
+        if [ "$REQUIRED" != "{}" ]; then
+          echo ""
+          echo "Validating required fields..."
+          while IFS= read -r field; do
+            FIELD_VALUE=$(echo "$REQUIRED" | jq -r ".$field")
+            if [ -z "$FIELD_VALUE" ] || [ "$FIELD_VALUE" = "null" ]; then
+              echo "❌ ERROR: Required field '$field' is not set"
+              PASSED=false
+            else
+              echo "✅ $field is set"
+            fi
+          done < <(echo "$REQUIRED" | jq -r 'keys[]')
+        fi
+
+        echo ""
+        if [ "$PASSED" = "true" ]; then
+          echo "✅ All validations passed"
+          echo "passed=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Validation failed"
+          echo "passed=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
