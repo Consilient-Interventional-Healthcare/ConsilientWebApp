@@ -162,6 +162,7 @@ jobs:
 
       - name: Validate Required Secrets
         shell: bash
+        working-directory: .
         run: |
           # CRITICAL: Bash runs with -e -o pipefail in GitHub Actions workflows.
           # This means: (1) any command returning non-zero exits the script, and
