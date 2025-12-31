@@ -118,7 +118,12 @@ jobs:
           REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           RUNNER_IMAGE="${{ vars.CONTAINER_REGISTRY }}/${REPO_LOWERCASE}/actions-runner:latest"
           echo "runner_image=${RUNNER_IMAGE}" >> $GITHUB_OUTPUT
-          echo "Runner image: ${RUNNER_IMAGE}"
+
+          echo "Runner Image Configuration:"
+          echo "  Repository: ${{ github.repository }}"
+          echo "  Lowercase: ${REPO_LOWERCASE}"
+          echo "  Registry: ${{ vars.CONTAINER_REGISTRY }}"
+          echo "  Full Image: ${RUNNER_IMAGE}"
 
   # ============================================================================
   # RUNNER IMAGE MANAGEMENT
