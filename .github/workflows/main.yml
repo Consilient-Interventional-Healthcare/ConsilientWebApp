@@ -130,7 +130,7 @@ jobs:
     name: Terraform
     needs: [build-runner-image, discover-databases]
     if: |
-      (inputs.run-terraform != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-terraform != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped')
