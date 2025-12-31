@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         default: '[]'
+      azure-sql-server-fqdn:
+        description: 'Azure SQL Server FQDN (fully qualified domain name)'
+        required: true
+        type: string
     secrets:
       SQL_ADMIN_USERNAME:
         required: true
@@ -49,9 +53,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN }}
-  SCHEMASPY_VERSION: ${{ vars.SCHEMASPY_VERSION || '6.2.4' }}
-  JDBC_VERSION: ${{ vars.JDBC_DRIVER_VERSION || '12.4.2.jre11' }}
+  SQL_SERVER: ${{ inputs.azure-sql-server-fqdn }}
+  SCHEMASPY_VERSION: '6.2.4'
+  JDBC_VERSION: '12.4.2.jre11'
   SCHEMASPY_TIMEOUT_SECONDS: 600
   SCHEMA_DISCOVERY_TIMEOUT_SECONDS: 60
 
@@ -816,7 +820,6 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
-          retention-days: 1
         continue-on-error: true
 
       - name: Deploy to GitHub Pages
