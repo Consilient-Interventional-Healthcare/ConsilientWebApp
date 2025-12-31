@@ -8,16 +8,6 @@
 # Note: These are typically pre-installed in GitHub Actions Ubuntu runners
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Target environment (dev or prod)'
-        required: false
-        type: choice
-        options:
-          - dev
-          - prod
-        default: 'dev'
   workflow_call:
     inputs:
       environment:

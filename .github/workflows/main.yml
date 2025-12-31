@@ -80,6 +80,8 @@ concurrency:
 # - AZURE_REGION
 # - AZURE_RESOURCE_GROUP
 # - DB_SCRIPTS_PATH # This is now less critical for workflow_dispatch, as it's an input
+# - CONTAINER_REGISTRY
+
 
 jobs:
   validate-environment:
@@ -140,6 +142,7 @@ jobs:
       action: apply
       allow-local-firewall: ${{ inputs.allow-local-firewall || false }}
       enable-debug: ${{ inputs.enable-debug || false }}
+      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
     secrets: inherit
 
   # ============================================================================
@@ -220,6 +223,7 @@ jobs:
       api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
+      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
     secrets: inherit
 
   deploy-react-apps:
@@ -235,6 +239,7 @@ jobs:
       react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.validate-environment.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
+      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
     secrets: inherit
 
   health-check-api:
@@ -257,6 +262,7 @@ jobs:
       wait_seconds: '120'
       max_attempts: '8'
       retry_delay: '15s'
+      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
     secrets: inherit
 
   health-check-react:
@@ -282,6 +288,7 @@ jobs:
       min_a11y_score: '0.9'
       min_bp_score: '0.7'
       min_seo_score: '0.7'
+      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution

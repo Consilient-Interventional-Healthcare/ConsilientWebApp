@@ -1,21 +1,4 @@
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths:
-      - 'src/Consilient.Api/**'
-      - '.github/workflows/dotnet_apps.yml'
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        type: choice
-        options:
-          - dev
-          - prod
-        default: 'dev'
   workflow_call:
     inputs:
       environment:
@@ -37,6 +20,10 @@ on:
         required: false
         type: string
         default: ''
+      runner_image:
+        description: 'Docker image for the deployment container'
+        required: true
+        type: string
     secrets:
       AZURE_CLIENT_ID:
         required: true
