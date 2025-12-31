@@ -130,7 +130,7 @@ jobs:
     name: Terraform
     needs: [build-runner-image, discover-databases]
     if: |
-      inputs.run-terraform == true &&
+      (inputs.run-terraform != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped')
@@ -175,7 +175,7 @@ jobs:
     name: Deploy DBs
     needs: [discover-databases, terraform]
     if: |
-      inputs.run-databases == true &&
+      (inputs.run-databases != false) &&
       always() &&
       needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
@@ -190,7 +190,7 @@ jobs:
     name: DB Docs
     needs: [deploy-databases]
     if: |
-      inputs.run-db-docs == true &&
+      (inputs.run-db-docs != false) &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
       always() &&
       needs.validate-environment.result == 'success' &&
@@ -210,7 +210,7 @@ jobs:
     name: Deploy API
     needs: [terraform, deploy-databases]
     if: |
-      inputs.run-api-deployment == true &&
+      (inputs.run-api-deployment != false) &&
       always() &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
@@ -226,7 +226,7 @@ jobs:
     name: Deploy React
     needs: [deploy-dotnet-apps]
     if: |
-      inputs.run-react-deployment == true &&
+      (inputs.run-react-deployment != false) &&
       always() &&
       (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
     uses: ./.github/workflows/react_apps.yml
@@ -241,8 +241,8 @@ jobs:
     name: API Health Check
     needs: [deploy-dotnet-apps]
     if: |
-      inputs.run-health-checks == true &&
-      inputs.run-api-deployment == true &&
+      (inputs.run-health-checks != false) &&
+      (inputs.run-api-deployment != false) &&
       always() &&
       (needs.deploy-dotnet-apps.result == 'success')
     uses: ./.github/workflows/healthchecks.yml
@@ -263,8 +263,8 @@ jobs:
     name: React Health Check
     needs: [deploy-react-apps]
     if: |
-      inputs.run-health-checks == true &&
-      inputs.run-react-deployment == true &&
+      (inputs.run-health-checks != false) &&
+      (inputs.run-react-deployment != false) &&
       always() &&
       (needs.deploy-react-apps.result == 'success')
     uses: ./.github/workflows/healthchecks.yml
