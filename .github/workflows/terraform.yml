@@ -77,7 +77,7 @@ jobs:
     name: "Terraform"
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.ACTIONS_RUNNER_IMAGE || format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY || 'ghcr.io', github.repository_owner) }}
+      image: ${{ vars.ACTIONS_RUNNER_IMAGE || format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY || 'ghcr.io', github.repository) }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
