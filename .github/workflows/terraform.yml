@@ -20,6 +20,10 @@ on:
         required: false
         type: boolean
         default: false
+      runner_image:
+        description: 'Docker image for the Terraform container'
+        required: true
+        type: string
     outputs:
       api_app_name:
         description: "The name of the API App Service"
@@ -77,10 +81,11 @@ jobs:
     name: "Terraform"
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'consilientwebapp-runner:latest' }}
+      image: ${{ inputs.runner_image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    environment: ${{ inputs.environment }}
     timeout-minutes: 60
 
     outputs:

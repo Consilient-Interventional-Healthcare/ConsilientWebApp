@@ -1,21 +1,4 @@
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths:
-      - 'src/Consilient.WebApp2/**'
-      - '.github/workflows/react_apps.yml'
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Deployment environment'
-        required: true
-        type: choice
-        options:
-          - dev
-          - prod
-        default: 'dev'
   workflow_call:
     inputs:
       environment:
@@ -37,6 +20,10 @@ on:
         required: false
         type: string
         default: ''
+      runner_image:
+        description: 'Docker image for the deployment container'
+        required: true
+        type: string
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -82,10 +69,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     container:
-      image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'consilientwebapp-runner:latest' }}
+      image: ${{ inputs.runner_image }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+    environment: ${{ inputs.environment }}
     outputs:
       react_app_name: ${{ env.REACT_APP_NAME }}
       previous_image: ${{ steps.capture_previous.outputs.image }}
