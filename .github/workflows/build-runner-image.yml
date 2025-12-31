@@ -11,7 +11,7 @@ env:
 
 jobs:
   build-and-verify:
-    name: Build and Verify Runner Image
+    name: Build Image if it doesn't exist
     runs-on: ubuntu-latest
     timeout-minutes: 60
     if: github.event_name != 'pull_request'
