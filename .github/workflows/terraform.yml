@@ -107,6 +107,13 @@ jobs:
       group: terraform-${{ inputs.environment }}
       cancel-in-progress: false
 
+    # NOTE: Removed `environment: ${{ inputs.environment }}` due to OIDC subject claim mismatch
+    # GitHub Actions environments automatically add `:environment:<name>` to OIDC subject claims,
+    # which changed from `:ref:refs/heads/main` to `:environment:dev`. This broke Azure OIDC auth.
+    # Either: (1) Update Azure federated identity credentials to accept environment-based claims, or
+    # (2) Remove this line (current approach) - less secure as it loses environment isolation in OIDC tokens.
+    # TODO: Migrate to Option 1 (federated identity per environment) for better security.
+
     env:
       # OIDC Authentication secrets (for azure-login action and validation)
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
