@@ -118,7 +118,7 @@ jobs:
   # ============================================================================
 
   build-runner-image:
-    name: Build Image if it doesn't exist
+    name: Image Runner
     needs: [validate-environment]
     uses: ./.github/workflows/build-runner-image.yml
     permissions:
