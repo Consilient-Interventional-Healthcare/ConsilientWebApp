@@ -1,5 +1,3 @@
-name: "00 - Build Custom Runner Image"
-
 on:
   push:
     branches:
@@ -13,6 +11,7 @@ on:
       - '.github/workflows/runner/Dockerfile'
       - '.github/workflows/build-runner-image.yml'
   workflow_dispatch:
+  workflow_call:
   schedule:
     # Rebuild weekly on Sundays at 2 AM UTC to pick up latest Azure CLI
     - cron: '0 2 * * 0'
