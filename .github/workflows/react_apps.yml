@@ -86,7 +86,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
     outputs:
       react_app_name: ${{ env.REACT_APP_NAME }}
       previous_image: ${{ steps.capture_previous.outputs.image }}

@@ -81,7 +81,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
     outputs:
       api_app_name: ${{ env.API_APP_NAME }}
       previous_image: ${{ steps.capture_previous.outputs.image }}
