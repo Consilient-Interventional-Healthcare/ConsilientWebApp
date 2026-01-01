@@ -20,19 +20,19 @@ set -o pipefail
 #------------------------------------------------------------------------------
 
 log_info() {
-  echo "ℹ️  $*"
+  echo "??  $*"
 }
 
 log_success() {
-  echo "✅ $*"
+  echo "? $*"
 }
 
 log_warning() {
-  echo "⚠️  $*"
+  echo "??  $*"
 }
 
 log_error() {
-  echo "❌ ERROR: $*" >&2
+  echo "? ERROR: $*" >&2
 }
 
 log_section() {
@@ -45,7 +45,7 @@ log_section() {
 #------------------------------------------------------------------------------
 
 validate_inputs() {
-  log_section "🔍 Database Discovery Configuration"
+  log_section "?? Database Discovery Configuration"
   log_info "Scripts path: ${SCRIPTS_PATH}"
 
   if [ -z "$SCRIPTS_PATH" ]; then
@@ -89,15 +89,15 @@ print_outputs() {
   local databases="$1"
   local count="$2"
 
-  log_section "📊 Output Formats (for comparison):"
+  log_section "?? Output Formats (for comparison):"
   echo ""
-  echo "1️⃣  databases (full metadata array):"
+  echo "1??  databases (full metadata array):"
   echo "$databases" | jq -c .
   echo ""
-  echo "2️⃣  database_directories (simple array of names):"
+  echo "2??  database_directories (simple array of names):"
   echo "$databases" | jq -c '[.[] | .directory]'
   echo ""
-  echo "3️⃣  database_configs (object mapping names to config):"
+  echo "3??  database_configs (object mapping names to config):"
 
   # Build configs object
   local configs="{}"
@@ -112,7 +112,7 @@ print_outputs() {
 
   echo "$configs" | jq -c .
   echo ""
-  echo "4️⃣  count (number of databases):"
+  echo "4??  count (number of databases):"
   echo "$count"
   echo ""
 }
@@ -121,7 +121,7 @@ write_outputs() {
   local databases="$1"
   local count="$2"
 
-  log_section "📝 Writing outputs to GITHUB_OUTPUT"
+  log_section "?? Writing outputs to GITHUB_OUTPUT"
 
   # Output 1: Full database array
   echo "databases=$(echo "$databases" | jq -c .)" >> "$GITHUB_OUTPUT"
@@ -157,7 +157,7 @@ write_outputs() {
 discover_directories() {
   local scripts_path="$1"
 
-  log_section "📁 Scanning for database directories in: $scripts_path"
+  log_section "?? Scanning for database directories in: $scripts_path"
 
   # Change to scripts path for relative path discovery
   cd "$scripts_path" || return 1
@@ -244,7 +244,7 @@ main() {
   local count="${result##*|}"
 
   # Summary
-  log_section "📊 Discovery Summary"
+  log_section "?? Discovery Summary"
   log_info "Total directories: $(echo "$all_dirs" | wc -l)"
   log_info "Databases to process: $count"
   echo ""

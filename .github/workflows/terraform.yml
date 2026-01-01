@@ -20,10 +20,6 @@ on:
         required: false
         type: boolean
         default: false
-      runner_image:
-        description: 'Docker image for the Terraform container'
-        required: true
-        type: string
     outputs:
       api_app_name:
         description: "The name of the API App Service"
@@ -37,9 +33,6 @@ on:
       resource_group_name:
         description: "The name of the Azure Resource Group"
         value: ${{ jobs.terraform.outputs.resource_group_name }}
-      sql_server_fqdn:
-        description: "The fully qualified domain name of the Azure SQL Server"
-        value: ${{ jobs.terraform.outputs.sql_server_fqdn }}
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -84,11 +77,10 @@ jobs:
     name: "Terraform"
     runs-on: ubuntu-latest
     container:
-      image: ${{ inputs.runner_image }}
+      image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'consilientwebapp-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    environment: ${{ inputs.environment }}
     timeout-minutes: 60
 
     outputs:
@@ -96,23 +88,14 @@ jobs:
       react_app_name: ${{ steps.outputs.outputs.react_app_name }}
       acr_registry_url: ${{ steps.outputs.outputs.acr_registry_url }}
       resource_group_name: ${{ steps.outputs.outputs.resource_group_name }}
-      sql_server_fqdn: ${{ steps.outputs.outputs.sql_server_fqdn }}
 
     permissions:
       contents: read
       id-token: write
-      packages: read
 
     concurrency:
       group: terraform-${{ inputs.environment }}
       cancel-in-progress: false
-
-    # NOTE: Removed `environment: ${{ inputs.environment }}` due to OIDC subject claim mismatch
-    # GitHub Actions environments automatically add `:environment:<name>` to OIDC subject claims,
-    # which changed from `:ref:refs/heads/main` to `:environment:dev`. This broke Azure OIDC auth.
-    # Either: (1) Update Azure federated identity credentials to accept environment-based claims, or
-    # (2) Remove this line (current approach) - less secure as it loses environment isolation in OIDC tokens.
-    # TODO: Migrate to Option 1 (federated identity per environment) for better security.
 
     env:
       # OIDC Authentication secrets (for azure-login action and validation)
@@ -174,7 +157,6 @@ jobs:
 
       - name: Validate Required Secrets
         shell: bash
-        working-directory: .
         run: |
           # CRITICAL: Bash runs with -e -o pipefail in GitHub Actions workflows.
           # This means: (1) any command returning non-zero exits the script, and
@@ -223,7 +205,6 @@ jobs:
 
       - name: Terraform Format Check
         id: fmt
-        working-directory: .
         # Runs in ./infra/terraform (job default)
         run: |
           if ! terraform fmt -check -recursive; then
@@ -444,7 +425,6 @@ jobs:
         id: outputs
         if: inputs.action == 'apply'
         shell: bash
-        working-directory: .
         run: |
           API_APP_NAME=$(terraform output -raw api_app_service_name 2>/dev/null || echo "")
           REACT_APP_NAME=$(terraform output -raw react_app_service_name 2>/dev/null || echo "")

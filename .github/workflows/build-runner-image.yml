@@ -1,5 +1,20 @@
 on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.github/workflows/runner/Dockerfile'
+      - '.github/workflows/build-runner-image.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/runner/Dockerfile'
+      - '.github/workflows/build-runner-image.yml'
+  workflow_dispatch:
   workflow_call:
+  schedule:
+    # Rebuild weekly on Sundays at 2 AM UTC to pick up latest Azure CLI
+    - cron: '0 2 * * 0'
 
 permissions:
   contents: read
@@ -7,23 +22,18 @@ permissions:
 
 env:
   REGISTRY: ${{ vars.CONTAINER_REGISTRY || 'ghcr.io' }}
+  IMAGE_NAME: ${{ github.repository }}/actions-runner
 
 jobs:
-  build-and-verify:
-    name: Verify existence and Build
+  build-and-push:
+    name: Build and Push Runner Image
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    if: github.event_name != 'pull_request'
+    timeout-minutes: 45
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
 
     steps:
-      - name: Set lowercase image name
-        id: image-name
-        run: |
-          # Convert repository name to lowercase (Docker requirement)
-          IMAGE_NAME=$(echo "${{ github.repository }}/actions-runner" | tr '[:upper:]' '[:lower:]')
-          echo "value=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-          echo "Using image name: ${IMAGE_NAME}"
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -43,7 +53,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=sha,prefix={{branch}}-,format=short
             type=schedule,pattern={{date 'YYYYMMDD'}}
@@ -56,100 +66,83 @@ jobs:
             org.opencontainers.image.vendor=Consilient
             org.opencontainers.image.version=${{ github.sha }}
 
-      - name: Check if image exists
-        id: check-image
-        run: |
-          # Extract the SHA-based tag from metadata output (format: registry/image:branch-sha)
-          TAGS="${{ steps.meta.outputs.tags }}"
-          IMAGE_NAME="${{ steps.image-name.outputs.value }}"
-          SHA_TAG=$(echo "$TAGS" | grep -oP "${IMAGE_NAME}:[^[:space:]]+-[a-f0-9]{7}" | head -n 1)
-
-          if [ -z "$SHA_TAG" ]; then
-            # Fallback: construct SHA tag manually if grep fails
-            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            SHA_TAG="${IMAGE_NAME}:${{ github.ref_name }}-${SHORT_SHA}"
-          fi
-
-          # Ensure full registry path
-          if [[ ! "$SHA_TAG" =~ ^${{ env.REGISTRY }} ]]; then
-            SHA_TAG="${{ env.REGISTRY }}/${SHA_TAG}"
-          fi
-
-          echo "Checking for image: ${SHA_TAG}"
-
-          if docker manifest inspect "${SHA_TAG}" > /dev/null 2>&1; then
-            echo "✅ Image already exists: ${SHA_TAG}"
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
-
-            # Generate summary for existing image
-            echo "### Docker Image Exists :recycle:" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Status:** ✅ Image already exists in registry" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Image**: ${IMAGE_NAME}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Tag**: \`${SHA_TAG}\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Skipping build - using existing image." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "#### Pull Command" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "docker pull ${SHA_TAG}" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-            # Exit successfully - skip all remaining steps
-            exit 0
-          else
-            echo "⚠️  Image not found, will build: ${SHA_TAG}"
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build and push Docker image
         id: build
-        if: steps.check-image.outputs.exists == 'false'
         uses: docker/build-push-action@v5
         with:
           context: .github/workflows/runner
           file: .github/workflows/runner/Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
-      - name: Verify push success
-        if: steps.check-image.outputs.exists == 'false'
-        run: |
-          SHA_TAG="${{ steps.check-image.outputs.sha_tag }}"
-
-          echo "Verifying image was pushed successfully: ${SHA_TAG}"
-
-          if docker manifest inspect "${SHA_TAG}" > /dev/null 2>&1; then
-            echo "✅ Image successfully pushed to registry: ${SHA_TAG}"
-          else
-            echo "❌ Failed to verify image in registry: ${SHA_TAG}"
-            exit 1
-          fi
-
       - name: Generate build summary
-        if: steps.check-image.outputs.exists == 'false'
         run: |
-          SHA_TAG="${{ steps.check-image.outputs.sha_tag }}"
-
-          echo "### Docker Image Built Successfully :whale:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ✅ Built and pushed to registry" >> $GITHUB_STEP_SUMMARY
+          echo "### Docker Image Build Summary :whale:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: ${{ steps.image-name.outputs.value }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag**: \`${SHA_TAG}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **All Tags**: \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags**: \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Digest**: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pushed**: ${{ github.event_name != 'pull_request' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### Pull Command" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${SHA_TAG}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  verify-image:
+    name: Verify Runner Image
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull and verify image
+        run: |
+          echo "Pulling image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+          echo ""
+          echo "=== Verifying installed tools ==="
+
+          echo "Testing Azure CLI..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bash -c "az --version | head -n 1"
+
+          echo "Testing sqlcmd..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bash -c "sqlcmd --version"
+
+          echo "Testing Java..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bash -c "java -version 2>&1 | head -n 1"
+
+          echo "Testing SchemaSpy..."
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bash -c "ls -lh /opt/schemaspy/"
+
+          echo ""
+          echo "✅ All tools verified successfully!"
+
+      - name: Generate verification summary
+        if: success()
+        run: |
+          echo "### Image Verification :white_check_mark:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All pre-installed tools are accessible and functional:" >> $GITHUB_STEP_SUMMARY
+          echo "- Azure CLI ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- sqlcmd ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Java (for SchemaSpy) ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- SchemaSpy JARs ✅" >> $GITHUB_STEP_SUMMARY

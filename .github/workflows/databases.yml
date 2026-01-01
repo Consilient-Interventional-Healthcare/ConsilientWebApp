@@ -14,10 +14,6 @@ on:
         required: false
         type: boolean
         default: false
-      azure-sql-server-fqdn:
-        description: 'Azure SQL Server FQDN (fully qualified domain name)'
-        required: true
-        type: string
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -91,7 +87,7 @@ jobs:
       cancel-in-progress: false
 
     env:
-      SQL_SERVER: ${{ inputs.azure-sql-server-fqdn }}
+      SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN }}
       RECREATE_DB: ${{ inputs.recreate-database-objects || 'false' }}
       ENVIRONMENT: ${{ inputs.environment }}
       DATABASE_BASE_NAME: ${{ matrix.database }}
@@ -325,79 +321,79 @@ jobs:
 
           echo "✅ Database ${{ env.DATABASE_NAME }} deployment completed successfully!"
 
-  notify:
-    name: Deployment Summary
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [deploy-database]
-    if: always()
-    outputs:
-      status: ${{ steps.set-outputs.outputs.status }}
-      databases: ${{ steps.set-outputs.outputs.databases }}
-    steps:
-      - name: Determine deployment status
-        id: set-outputs
-        run: |
-          DATABASES='${{ inputs.databases }}'
-          DEPLOY_RESULT='${{ needs.deploy-database.result }}'
+  # notify:
+  #   name: Deployment Summary
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 5
+  #   needs: [deploy-database]
+  #   if: always()
+  #   outputs:
+  #     status: ${{ steps.set-outputs.outputs.status }}
+  #     databases: ${{ steps.set-outputs.outputs.databases }}
+  #   steps:
+  #     - name: Determine deployment status
+  #       id: set-outputs
+  #       run: |
+  #         DATABASES='${{ inputs.databases }}'
+  #         DEPLOY_RESULT='${{ needs.deploy-database.result }}'
 
-          # Determine overall status
-          if [ "$DATABASES" == "[]" ]; then
-            STATUS="skipped"
-          elif [ "$DEPLOY_RESULT" == "success" ]; then
-            STATUS="success"
-          elif [ "$DEPLOY_RESULT" == "failure" ]; then
-            STATUS="failure"
-          else
-            STATUS="skipped"
-          fi
+  #         # Determine overall status
+  #         if [ "$DATABASES" == "[]" ]; then
+  #           STATUS="skipped"
+  #         elif [ "$DEPLOY_RESULT" == "success" ]; then
+  #           STATUS="success"
+  #         elif [ "$DEPLOY_RESULT" == "failure" ]; then
+  #           STATUS="failure"
+  #         else
+  #           STATUS="skipped"
+  #         fi
 
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-          echo "databases=$DATABASES" >> $GITHUB_OUTPUT
+  #         echo "status=$STATUS" >> $GITHUB_OUTPUT
+  #         echo "databases=$DATABASES" >> $GITHUB_OUTPUT
 
-      - name: Create deployment summary
-        run: |
-          ENVIRONMENT="${{ inputs.environment }}"
-          DATABASES='${{ inputs.databases }}'
-          DEPLOY_RESULT='${{ needs.deploy-database.result }}'
+  #     - name: Create deployment summary
+  #       run: |
+  #         ENVIRONMENT="${{ inputs.environment }}"
+  #         DATABASES='${{ inputs.databases }}'
+  #         DEPLOY_RESULT='${{ needs.deploy-database.result }}'
 
-          echo "### Database Deployment Summary 🗄️" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
-          echo "- **Recreate Database Objects**: ${{ inputs.recreate-database-objects || false }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Base Names**: $DATABASES" >> $GITHUB_STEP_SUMMARY
-          echo "- **SQL Script Deployment**: $DEPLOY_RESULT" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ github.event_name }}" != "workflow_call" ]; then
-            echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "### Database Deployment Summary 🗄️" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Environment**: $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Recreate Database Objects**: ${{ inputs.recreate-database-objects || false }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Base Names**: $DATABASES" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **SQL Script Deployment**: $DEPLOY_RESULT" >> $GITHUB_STEP_SUMMARY
+  #         if [ "${{ github.event_name }}" != "workflow_call" ]; then
+  #           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+  #           echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+  #         fi
+  #         echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Show actual database names created
-          echo "#### Databases Deployed:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+  #         # Show actual database names created
+  #         echo "#### Databases Deployed:" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "$DATABASES" != "[]" ]; then
-            while IFS= read -r db; do
-              echo "- \`${db}_${ENVIRONMENT}\`" >> $GITHUB_STEP_SUMMARY
-            done < <(echo "$DATABASES" | jq -r '.[]')
-          else
-            echo "- None (no databases provided)" >> $GITHUB_STEP_SUMMARY
-          fi
+  #         if [ "$DATABASES" != "[]" ]; then
+  #           while IFS= read -r db; do
+  #             echo "- \`${db}_${ENVIRONMENT}\`" >> $GITHUB_STEP_SUMMARY
+  #           done < <(echo "$DATABASES" | jq -r '.[]')
+  #         else
+  #           echo "- None (no databases provided)" >> $GITHUB_STEP_SUMMARY
+  #         fi
 
-          echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "$DEPLOY_RESULT" == "success" ]; then
-            echo "✅ **All databases deployed successfully!**" >> $GITHUB_STEP_SUMMARY
-          elif [ "$DEPLOY_RESULT" == "failure" ]; then
-            echo "❌ **SQL script deployment failed for one or more databases.**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**To identify which databases failed:**" >> $GITHUB_STEP_SUMMARY
-            echo "1. Review the 'Deploy \${{ matrix.database }}' job logs above" >> $GITHUB_STEP_SUMMARY
-            echo "2. Search for '❌' or 'ERROR' in the step outputs" >> $GITHUB_STEP_SUMMARY
-            echo "3. Check the specific database deployment logs for error details" >> $GITHUB_STEP_SUMMARY
-          elif [ "$DATABASES" == "[]" ]; then
-            echo "⚠️  **No databases provided for deployment**" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "⚠️  **Deployment status - Scripts: $DEPLOY_RESULT**" >> $GITHUB_STEP_SUMMARY
-          fi
+  #         if [ "$DEPLOY_RESULT" == "success" ]; then
+  #           echo "✅ **All databases deployed successfully!**" >> $GITHUB_STEP_SUMMARY
+  #         elif [ "$DEPLOY_RESULT" == "failure" ]; then
+  #           echo "❌ **SQL script deployment failed for one or more databases.**" >> $GITHUB_STEP_SUMMARY
+  #           echo "" >> $GITHUB_STEP_SUMMARY
+  #           echo "**To identify which databases failed:**" >> $GITHUB_STEP_SUMMARY
+  #           echo "1. Review the 'Deploy \${{ matrix.database }}' job logs above" >> $GITHUB_STEP_SUMMARY
+  #           echo "2. Search for '❌' or 'ERROR' in the step outputs" >> $GITHUB_STEP_SUMMARY
+  #           echo "3. Check the specific database deployment logs for error details" >> $GITHUB_STEP_SUMMARY
+  #         elif [ "$DATABASES" == "[]" ]; then
+  #           echo "⚠️  **No databases provided for deployment**" >> $GITHUB_STEP_SUMMARY
+  #         else
+  #           echo "⚠️  **Deployment status - Scripts: $DEPLOY_RESULT**" >> $GITHUB_STEP_SUMMARY
+  #         fi

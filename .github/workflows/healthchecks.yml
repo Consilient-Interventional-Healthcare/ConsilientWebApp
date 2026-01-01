@@ -69,10 +69,6 @@ on:
         required: false
         type: string
         default: '0.7'
-      runner_image:
-        description: 'Docker image for the health check container'
-        required: true
-        type: string
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -86,7 +82,6 @@ on:
 permissions:
   contents: read
   id-token: write
-  packages: read
 
 jobs:
   health-check-api:
@@ -123,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.check_type == 'react' }}
     container:
-      image: ${{ inputs.runner_image }}
+      image: ${{ vars.ACTIONS_RUNNER_IMAGE || 'consilientwebapp-runner:latest' }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

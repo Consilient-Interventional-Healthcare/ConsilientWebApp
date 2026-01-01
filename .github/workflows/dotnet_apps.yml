@@ -1,4 +1,21 @@
 on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/Consilient.Api/**'
+      - '.github/workflows/dotnet_apps.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: 'dev'
   workflow_call:
     inputs:
       environment:
@@ -20,10 +37,6 @@ on:
         required: false
         type: string
         default: ''
-      runner_image:
-        description: 'Docker image for the deployment container'
-        required: true
-        type: string
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -53,13 +66,12 @@ env:
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
   # Fallback: input > variable
   API_APP_NAME: ${{ inputs.api_app_name || secrets.AZURE_API_WEBAPP_NAME }}
-  ACR_REGISTRY: ${{ inputs.acr_registry }}
+  ACR_REGISTRY: ${{ inputs.acr_registry || vars.ACR_REGISTRY_URL }}
   RESOURCE_GROUP: ${{ inputs.resource_group }}
 
 permissions:
   contents: read
   id-token: write
-  packages: read
 
 concurrency:
   group: deploy-api-${{ inputs.environment || github.event.inputs.environment || 'dev' }}
@@ -69,7 +81,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
     outputs:
       api_app_name: ${{ env.API_APP_NAME }}
       previous_image: ${{ steps.capture_previous.outputs.image }}
