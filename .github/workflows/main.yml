@@ -5,6 +5,7 @@ on:
       - develop
       - 'feature/**'
       - 'hotfix/**'
+      - terraform
   pull_request:
     branches:
       - main
