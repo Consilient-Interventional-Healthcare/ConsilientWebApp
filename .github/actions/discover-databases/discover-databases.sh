@@ -191,7 +191,7 @@ build_database_objects() {
   while IFS= read -r dir; do
     [ -z "$dir" ] && continue
 
-    log_success "$dir - included"
+    log_success "$dir - included" >&2
 
     # Build database object (simplified - no config file parsing)
     local db_obj
@@ -199,7 +199,7 @@ build_database_objects() {
       --arg directory "$dir" \
       '{directory: $directory, name: $directory, has_config: false, config_path: null}')
 
-    if ! db_array=$(echo "$db_array" | jq --argjson obj "$db_obj" '. += [$obj]' 2>&1); then
+    if ! db_array=$(echo "$db_array" | jq --argjson obj "$db_obj" '. += [$obj]'); then
       log_error "Failed to add database object to array"
       log_error "   JSON: $db_obj"
       return 1
