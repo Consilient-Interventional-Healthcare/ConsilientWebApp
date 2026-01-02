@@ -52,8 +52,8 @@ env:
   IMAGE_NAME: ${{ vars.API_IMAGE_NAME }}
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
   # Fallback: input > variable
-  API_APP_NAME: ${{ inputs.api_app_name || secrets.AZURE_API_WEBAPP_NAME }}
-  ACR_REGISTRY: ${{ inputs.acr_registry || vars.ACR_REGISTRY_URL }}
+  API_APP_NAME: ${{ inputs.api_app_name }}
+  ACR_REGISTRY: ${{ inputs.acr_registry }}
   RESOURCE_GROUP: ${{ inputs.resource_group }}
 
 permissions:

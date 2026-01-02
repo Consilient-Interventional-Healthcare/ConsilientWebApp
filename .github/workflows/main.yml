@@ -129,7 +129,7 @@ jobs:
 
   terraform:
     name: Terraform
-    needs: [build-runner-image, discover-databases]
+    needs: [initialize-workflow, build-runner-image, discover-databases]
     # Run on push events, or when explicitly enabled in workflow_dispatch
     # Logic: (NOT manual trigger) OR (manual AND not disabled)
     if: |
@@ -177,7 +177,7 @@ jobs:
 
   deploy-databases:
     name: Deploy DBs
-    needs: [discover-databases, terraform]
+    needs: [initialize-workflow, discover-databases, terraform]
     if: |
       (inputs.run-databases != false) &&
       always() &&
@@ -192,7 +192,7 @@ jobs:
 
   generate-db-docs:
     name: DB Docs
-    needs: [deploy-databases]
+    needs: [initialize-workflow, discover-databases, deploy-databases]
     if: |
       (inputs.run-db-docs != false) &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
@@ -212,7 +212,7 @@ jobs:
 
   deploy-dotnet-apps:
     name: Deploy API
-    needs: [terraform, deploy-databases]
+    needs: [initialize-workflow, terraform, deploy-databases]
     if: |
       (inputs.run-api-deployment != false) &&
       always() &&
@@ -222,14 +222,14 @@ jobs:
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.initialize-workflow.outputs.environment) }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
-      resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   deploy-react-apps:
     name: Deploy React
-    needs: [deploy-dotnet-apps]
+    needs: [initialize-workflow, terraform, deploy-dotnet-apps]
     if: |
       (inputs.run-react-deployment != false) &&
       always() &&
@@ -238,14 +238,14 @@ jobs:
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.initialize-workflow.outputs.environment) }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
-      resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   health-check-api:
     name: API Health Check
-    needs: [deploy-dotnet-apps]
+    needs: [initialize-workflow, terraform, deploy-dotnet-apps]
     if: |
       (inputs.run-health-checks != false) &&
       (inputs.run-api-deployment != false) &&
@@ -257,9 +257,9 @@ jobs:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       app_name: ${{ needs.deploy-dotnet-apps.outputs.api_app_name }}
       endpoint_url: https://${{ needs.deploy-dotnet-apps.outputs.api_app_name }}.azurewebsites.net/health
-      resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       previous_image: ${{ needs.deploy-dotnet-apps.outputs.previous_image }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       wait_seconds: '120'
       max_attempts: '8'
       retry_delay: '15s'
@@ -268,7 +268,7 @@ jobs:
 
   health-check-react:
     name: React Health Check
-    needs: [deploy-react-apps]
+    needs: [initialize-workflow, terraform, deploy-react-apps]
     if: |
       (inputs.run-health-checks != false) &&
       (inputs.run-react-deployment != false) &&
@@ -280,9 +280,9 @@ jobs:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       app_name: ${{ needs.deploy-react-apps.outputs.react_app_name }}
       endpoint_url: https://${{ needs.deploy-react-apps.outputs.react_app_name }}.azurewebsites.net
-      resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
+      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       previous_image: ${{ needs.deploy-react-apps.outputs.previous_image }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
+      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       wait_seconds: '120'
       runs: '3'
       min_perf_score: '0.7'

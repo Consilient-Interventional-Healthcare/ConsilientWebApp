@@ -7,7 +7,7 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 # Metadata labels
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
 LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
-LABEL org.opencontainers.image.version="2.1.0"
+LABEL org.opencontainers.image.version="2.1.1"
 LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17"
 
 # ============================================================
@@ -171,6 +171,7 @@ ENV TERRAFORM_PLUGIN_CACHE_DIR=/terraform-plugins
 
 RUN curl -OsL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip && \
     unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip -d /usr/local/bin && \
+    chmod +x /usr/local/bin/terraform && \
     rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 
 # Pre-cache Terraform providers to avoid downloading during terraform init
