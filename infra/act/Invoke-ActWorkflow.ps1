@@ -65,6 +65,11 @@
     Destructive operation - default is NO. Use to clear cached actions for clean rebuild.
     Default: No (false) - preserve existing cache.
 
+.PARAMETER DebugForceOidc
+    Force OIDC authentication even in act (local testing).
+    Useful for debugging OIDC configuration issues without using service principal fallback.
+    Default: No (false) - use service principal fallback in act.
+
 .PARAMETER NonInteractive
     Run without prompts (requires all parameters).
     Useful for scripting/automation.
@@ -159,6 +164,8 @@ param(
     [switch]$RecreateImage,
 
     [switch]$RecreateCache,
+
+    [switch]$DebugForceOidc,
 
     [switch]$NonInteractive,
 
@@ -564,6 +571,8 @@ try {
         $RecreateImage = $RecreateImageResponse -eq "y"
         $RecreateCacheResponse = Get-ValidatedInput "- Recreate Actions Cache? (y/n)" "n" @("y", "n")
         $RecreateCache = $RecreateCacheResponse -eq "y"
+        $DebugForceOidcResponse = Get-ValidatedInput "- Force OIDC authentication? (y/n)" "n" @("y", "n")
+        $DebugForceOidc = $DebugForceOidcResponse -eq "y"
 
         # 1. Terraform deployment
         $RunTerraformResponse = Get-ValidatedInput "- Run Terraform deployment? (y/n)" "y" @("y", "n")
@@ -635,6 +644,7 @@ try {
     $SkipApiDeploymentStr = ConvertTo-ActBooleanString (-not $RunApiDeployment)
     $SkipReactDeploymentStr = ConvertTo-ActBooleanString (-not $RunReactDeployment)
     $SkipHealthChecksStr = ConvertTo-ActBooleanString (-not $RunHealthChecks)
+    $DebugForceOidcStr = ConvertTo-ActBooleanString $DebugForceOidc
 
     # ==============================
     # INITIALIZE ACT ACTION CACHE
@@ -688,6 +698,7 @@ try {
         "--input", "skip-db-docs=$SkipDbDocsStr",
         "--input", "skip-api-deployment=$SkipApiDeploymentStr",
         "--input", "skip-react-deployment=$SkipReactDeploymentStr",
+        "--input", "debug-force-oidc=$DebugForceOidcStr",
         "-W", $WorkflowFile,
         "-P", "ubuntu-latest=$LocalImageFull"  # Use custom runner image for ubuntu-latest
         #"--log-prefix-job-id"   # Show job name in log headers
