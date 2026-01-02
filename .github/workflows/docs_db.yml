@@ -31,18 +31,18 @@ on:
       SQL_ADMIN_PASSWORD:
         required: true
         description: 'SQL Server admin password for SchemaSpy authentication'
-      AZURE_CLIENT_ID:
+      ARM_CLIENT_ID:
         required: false
         description: 'Azure Service Principal Client ID for OIDC authentication (fallback if Azure login needed)'
-      AZURE_TENANT_ID:
+      ARM_TENANT_ID:
         required: false
         description: 'Azure Tenant ID for OIDC authentication (fallback if Azure login needed)'
       AZURE_SUBSCRIPTION_ID:
         required: false
         description: 'Azure Subscription ID for OIDC authentication (fallback if Azure login needed)'
-      AZURE_CREDENTIALS:
+      ARM_CLIENT_SECRET:
         required: false
-        description: 'Azure credentials JSON for local testing with act (fallback)'
+        description: 'Azure Client Secret for local testing with act (fallback)'
 
 permissions:
   contents: read
@@ -136,7 +136,6 @@ jobs:
 
           echo "📋 Parsing configuration for ${{ matrix.database }}"
 
-          SCHEMAS_TO_EXCLUDE=""
           ACTUAL_DATABASE_NAME="${{ matrix.database }}"
 
           # Extract config file path for this database (from centralized discovery)
@@ -163,12 +162,6 @@ jobs:
                 echo "🔄 Using environment-specific database name: $ACTUAL_DATABASE_NAME (environment: ${{ inputs.environment }})"
               fi
 
-              # Parse schemas to exclude
-              EXCLUDE_LIST=$(yq eval '.schemas.exclude // []' "$CONFIG_FILE" | yq eval '.[]' - 2>/dev/null | tr '\n' ',' | sed 's/,$//')
-              if [ -n "$EXCLUDE_LIST" ]; then
-                SCHEMAS_TO_EXCLUDE="$EXCLUDE_LIST"
-                echo "🚫 Schemas to exclude: $SCHEMAS_TO_EXCLUDE"
-              fi
             else
               echo "⚠️  Config file not found: $CONFIG_FILE - using defaults"
             fi
@@ -177,12 +170,10 @@ jobs:
           fi
 
           # Export values for use in subsequent steps
-          echo "SCHEMAS_TO_EXCLUDE=$SCHEMAS_TO_EXCLUDE" >> $GITHUB_ENV
           echo "ACTUAL_DATABASE_NAME=$ACTUAL_DATABASE_NAME" >> $GITHUB_ENV
 
           # Also export as step outputs for use in step conditions
           echo "database-name=$ACTUAL_DATABASE_NAME" >> $GITHUB_OUTPUT
-          echo "schemas-exclude=$SCHEMAS_TO_EXCLUDE" >> $GITHUB_OUTPUT
 
           echo "✅ Configuration parsing complete"
           echo "   Target database: $ACTUAL_DATABASE_NAME"
@@ -190,10 +181,10 @@ jobs:
       - name: Login to Azure (OIDC + act fallback)
         uses: ./.github/actions/azure-login
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
 
       - name: Database connectivity health check
         id: health-check
@@ -344,67 +335,11 @@ jobs:
         run: |
           set -e
 
-          # Check if documentation should be skipped
-          if [ "${{ env.SKIP_DOCUMENTATION }}" = "true" ]; then
-            echo "⏭️  Skipping documentation - no schemas to document"
-            exit 0
-          fi
-
-          # Use discovered schemas from previous step
-          SCHEMAS_TO_DOC="${{ env.DISCOVERED_SCHEMAS }}"
-
           # Validate we have schemas to document
           if [ -z "$SCHEMAS_TO_DOC" ]; then
             echo "❌ ERROR: No schemas available for documentation"
             echo "This is unexpected - the discovery step should have caught this."
             exit 1
-          fi
-
-          # Filter out excluded schemas if provided
-          if [ -n "${{ env.SCHEMAS_TO_EXCLUDE }}" ]; then
-            echo "📋 Applying schema exclusions: ${{ env.SCHEMAS_TO_EXCLUDE }}"
-
-            # Convert comma-separated exclusions to array
-            IFS=',' read -ra EXCLUDE_ARRAY <<< "${{ env.SCHEMAS_TO_EXCLUDE }}"
-
-            # Build exclusion pattern
-            EXCLUDE_PATTERN=""
-            for exclude_schema in "${EXCLUDE_ARRAY[@]}"; do
-              exclude_schema=$(echo "$exclude_schema" | xargs)
-              [ -z "$exclude_schema" ] && continue
-              EXCLUDE_PATTERN="$EXCLUDE_PATTERN|$exclude_schema"
-            done
-
-            # Remove leading pipe
-            EXCLUDE_PATTERN="${EXCLUDE_PATTERN#|}"
-
-            # Filter schemas (case-insensitive) only if pattern is not empty
-            if [ -n "$EXCLUDE_PATTERN" ]; then
-              FILTERED_SCHEMAS=""
-              for schema in $SCHEMAS_TO_DOC; do
-                if ! echo "$schema" | grep -iE "^($EXCLUDE_PATTERN)$" > /dev/null; then
-                  FILTERED_SCHEMAS="$FILTERED_SCHEMAS $schema"
-                else
-                  echo "🚫 Excluding schema: $schema"
-                fi
-              done
-            else
-              # No patterns to exclude, keep all schemas
-              FILTERED_SCHEMAS="$SCHEMAS_TO_DOC"
-            fi
-
-            SCHEMAS_TO_DOC="$(echo $FILTERED_SCHEMAS | xargs)"
-
-            # Check if all schemas were excluded
-            if [ -z "$SCHEMAS_TO_DOC" ]; then
-              echo "⚠️  WARNING: All discovered schemas were excluded"
-              echo "Discovered: ${{ env.DISCOVERED_SCHEMAS }}"
-              echo "Excluded: ${{ env.SCHEMAS_TO_EXCLUDE }}"
-              echo "SKIP_DOCUMENTATION=true" >> $GITHUB_ENV
-              exit 0
-            fi
-
-            echo "✅ Filtered schemas: $SCHEMAS_TO_DOC"
           fi
 
           # Export for use in subsequent steps
@@ -423,7 +358,6 @@ jobs:
 
       - name: Generate schema documentation (parallel)
         id: schema-doc
-        if: env.SKIP_DOCUMENTATION != 'true'
         run: |
           set -e
           set -o pipefail

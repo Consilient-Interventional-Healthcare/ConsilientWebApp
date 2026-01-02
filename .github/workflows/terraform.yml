@@ -41,15 +41,6 @@ on:
         description: "The fully qualified domain name of the Azure SQL Server"
         value: ${{ jobs.terraform.outputs.sql_server_fqdn }}
     secrets:
-      AZURE_CLIENT_ID:
-        required: true
-        description: 'Azure Client ID for OIDC authentication'
-      AZURE_TENANT_ID:
-        required: true
-        description: 'Azure Tenant ID for OIDC authentication'
-      AZURE_SUBSCRIPTION_ID:
-        required: true
-        description: 'Azure Subscription ID'
       ARM_CLIENT_ID:
         required: true
         description: 'Service Principal Client ID for Terraform'
@@ -71,9 +62,6 @@ on:
       OAUTH_CLIENT_SECRET:
         required: false
         description: 'OAuth provider client secret (optional, set to empty string if not used)'
-      AZURE_CREDENTIALS:
-        required: false
-        description: 'JSON credentials for service principal (used only with act) - optional'
 
 
 env:
@@ -109,15 +97,10 @@ jobs:
 
     env:
       # OIDC Authentication secrets (for azure-login action and validation)
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      # ARM_* variables are for Terraform Azure provider service principal authentication
-      # These must be available to all steps for Terraform to work
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       # SQL Admin credentials for Terraform
       SQL_ADMIN_USERNAME: ${{ secrets.SQL_ADMIN_USERNAME }}
       SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
@@ -134,17 +117,17 @@ jobs:
       TF_VAR_enable_local_firewall: ${{ inputs.allow-local-firewall }}
       # Non-sensitive configuration variables (from GitHub Variables)
       # Environment-specific (from GitHub Environment Variables)
-      TF_VAR_region: ${{ vars.AZURE_REGION || 'canadacentral' }}
-      TF_VAR_resource_group_name: ${{ vars.AZURE_RESOURCE_GROUP_NAME || 'consilient-resource-group' }}
+      TF_VAR_region: ${{ vars.AZURE_REGION }}
+      TF_VAR_resource_group_name: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
       # Container App Environment configuration (from GitHub Repository Variables)
       TF_VAR_create_container_app_environment: ${{ vars.CAE_CREATE_NEW || 'false' }}
       TF_VAR_use_shared_container_environment: ${{ vars.CAE_USE_SHARED || 'true' }}
       TF_VAR_shared_container_environment_name: ${{ vars.CAE_SHARED_NAME || 'consilient-env' }}
       TF_VAR_container_app_environment_name_template: ${{ vars.CAE_NAME_TEMPLATE || 'consilient-cae-{environment}' }}
+      # Terraform State Backend (from GitHub Repository Variables)
+      TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
+      TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER || 'tfstate' }}
       # GitHub Actions debug mode controls workflow output verbosity
-      # When ACTIONS_STEP_DEBUG=true: show all echo statements (verbose mode)
-      # When ACTIONS_STEP_DEBUG=false: suppress informational echo statements (quiet mode)
-      # This is set by run-act.ps1 (-Verbose/-Quiet flags) or workflow input (enable-debug)
       ACTIONS_STEP_DEBUG: ${{ inputs.enable-debug && 'true' || 'false' }}
 
     defaults:
@@ -180,8 +163,6 @@ jobs:
           # In GitHub Actions: injected from repository secrets via job env:
           # In act: loaded from .env.act via PowerShell --secret flags and job env:
 
-          [ -z "${AZURE_CLIENT_ID}" ] && MISSING_SECRETS+=("AZURE_CLIENT_ID (OIDC authentication)")
-          [ -z "${AZURE_TENANT_ID}" ] && MISSING_SECRETS+=("AZURE_TENANT_ID (OIDC authentication)")
           [ -z "${AZURE_SUBSCRIPTION_ID}" ] && MISSING_SECRETS+=("AZURE_SUBSCRIPTION_ID (Azure subscription)")
           [ -z "${ARM_CLIENT_ID}" ] && MISSING_SECRETS+=("ARM_CLIENT_ID (Terraform provider auth)")
           [ -z "${ARM_CLIENT_SECRET}" ] && MISSING_SECRETS+=("ARM_CLIENT_SECRET (Terraform provider auth)")
@@ -209,10 +190,10 @@ jobs:
         # ARM_CLIENT_ID (from secrets) is used by Terraform for service principal auth
         uses: ./.github/actions/azure-login
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
 
       - name: Terraform Format Check
         id: fmt
@@ -264,13 +245,27 @@ jobs:
       - name: Setup Terraform (if needed for non-container environments)
         if: false  # Currently uses container image with Terraform pre-installed
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ vars.TERRAFORM_VERSION || '1.6.0' }}
 
       - name: Terraform Init
         id: init
+        shell: bash
         # Runs in ./infra/terraform (job default)
-        run: terraform init
+        run: |
+          # Conditional backend configuration based on environment
+          if [ -z "$ACT" ]; then
+            # GitHub Actions: Use Azure Storage backend with OIDC
+            echo "ℹ️  Initializing with Azure Storage backend (OIDC authentication)"
+            terraform init \
+              -backend-config="resource_group_name=${TF_VAR_resource_group_name}" \
+              -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
+              -backend-config="container_name=${TF_STATE_CONTAINER}" \
+              -backend-config="key=${TF_VAR_environment}.terraform.tfstate" \
+              -backend-config="use_oidc=true"
+          else
+            # Local (act): Use local backend, ignore remote backend configuration
+            echo "ℹ️  Initializing with local backend (act testing)"
+            terraform init -reconfigure -backend=false
+          fi
 
       - name: Build Resource Group ID
         shell: bash
@@ -295,12 +290,14 @@ jobs:
           # Fast Mode: Skip import step initially, run import on-demand if Terraform operations fail
           # This saves ~17 seconds on happy path (state is synced)
 
-          # Check if state file exists
-          if [ ! -f "terraform.tfstate" ] && [ ! -f ".terraform/terraform.tfstate" ]; then
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  No Terraform state file found - fresh deployment detected"
+          # Check if state exists using terraform state list (works with any backend)
+          STATE_RESOURCES=$(terraform state list 2>/dev/null || echo "")
+
+          if [ -z "$STATE_RESOURCES" ]; then
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  No Terraform state found - fresh deployment detected"
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import skipped (will create all resources from scratch)"
           else
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Terraform state file found - assuming state is synced with Azure"
+            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Terraform state found with $(echo "$STATE_RESOURCES" | wc -l) resources - assuming state is synced with Azure"
             [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import skipped (will run on-demand if Terraform operations fail)"
           fi
 

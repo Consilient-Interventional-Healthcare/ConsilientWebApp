@@ -229,6 +229,7 @@ jobs:
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+      api_image_name: 'consilient-api'
     secrets: inherit
 
   deploy-react-apps:
@@ -245,6 +246,7 @@ jobs:
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+      react_image_name: 'consilient-react'
     secrets: inherit
 
   health-check-api:

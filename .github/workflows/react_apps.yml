@@ -24,19 +24,24 @@ on:
         description: 'Docker image for the deployment container'
         required: true
         type: string
+      react_image_name:
+        description: 'Docker image name for React app'
+        required: false
+        type: string
+        default: 'consilient-react'
     secrets:
-      AZURE_CLIENT_ID:
+      ARM_CLIENT_ID:
         required: true
         description: 'Azure Service Principal Client ID for OIDC authentication'
-      AZURE_TENANT_ID:
+      ARM_TENANT_ID:
         required: true
         description: 'Azure Tenant ID for OIDC authentication'
       AZURE_SUBSCRIPTION_ID:
         required: true
         description: 'Azure Subscription ID for OIDC authentication'
-      AZURE_CREDENTIALS:
+      ARM_CLIENT_SECRET:
         required: false
-        description: 'Azure credentials JSON for local testing with act (fallback)'
+        description: 'Azure Client Secret for local testing with act (fallback)'
       AZURE_WEBAPP_NAME:
         required: false
         description: 'Azure Web App name (legacy fallback, prefer workflow input)'
@@ -49,7 +54,7 @@ on:
         value: ${{ jobs.build-and-deploy.outputs.previous_image }}
 
 env:
-  IMAGE_NAME: ${{ vars.REACT_IMAGE_NAME }}
+  IMAGE_NAME: ${{ inputs.react_image_name }}
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
   # Fallback: input > variable
   REACT_APP_NAME: ${{ inputs.react_app_name || secrets.AZURE_WEBAPP_NAME }}
@@ -118,10 +123,10 @@ jobs:
       - name: Login to Azure (OIDC + act fallback)
         uses: ./.github/actions/azure-login
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
 
       - name: Log in to ACR (via Azure CLI)
         run: |

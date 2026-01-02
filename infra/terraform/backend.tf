@@ -1,10 +1,9 @@
-# Example provider configuration for remote state (optional)
-# Uncomment and configure if you want to use remote state
-# terraform {
-#   backend "azurerm" {
-#     resource_group_name  = "<state-rg>"
-#     storage_account_name = "<state-storage>"
-#     container_name       = "tfstate"
-#     key                  = "${var.environment}.terraform.tfstate"
-#   }
-# }
+# Remote backend configuration for GitHub Actions
+# For local testing (act), backend config is omitted via -reconfigure flag
+terraform {
+  backend "azurerm" {
+    # Configuration provided via CLI flags in workflow
+    # This allows conditional backend based on environment (GitHub Actions vs act)
+    use_oidc = true  # Use OIDC authentication instead of service principal
+  }
+}

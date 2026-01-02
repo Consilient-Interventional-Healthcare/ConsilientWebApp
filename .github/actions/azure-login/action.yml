@@ -11,8 +11,8 @@ inputs:
   subscription-id:
     description: 'Azure Subscription ID for OIDC'
     required: true
-  azure-credentials:
-    description: 'JSON credentials for service principal (used only with act)'
+  client-secret:
+    description: 'Azure Client Secret for service principal (used only with act)'
     required: false
 
 runs:
@@ -32,42 +32,18 @@ runs:
       run: |
         set -e
 
-        # Parse AZURE_CREDENTIALS JSON and login (for local testing with act)
-        CREDS='${{ inputs.azure-credentials }}'
-
-        # Check if AZURE_CREDENTIALS is provided
-        if [ -z "$CREDS" ] || [ "$CREDS" = "{}" ]; then
-          echo "⚠️  Warning: Running with 'act' but AZURE_CREDENTIALS not provided"
-          echo "⚠️  Azure login will be skipped for local testing"
-          echo ""
-          echo "ℹ️  To enable authentication in act, set AZURE_CREDENTIALS secret with:"
-          echo '    {"clientId": "...", "clientSecret": "...", "tenantId": "..."}'
-          echo ""
-          echo "ℹ️  This is optional - workflows function without it (no Azure operations will be available)"
-          exit 0  # Don't fail, just skip authentication
-        fi
-
-        # Validate JSON format
-        if ! echo "$CREDS" | jq empty 2>/dev/null; then
-          echo "❌ ERROR: AZURE_CREDENTIALS is not valid JSON"
-          exit 1
-        fi
-
-        # Extract values from JSON
-        CLIENT_ID=$(echo "$CREDS" | jq -r '.clientId')
-        CLIENT_SECRET=$(echo "$CREDS" | jq -r '.clientSecret')
-        TENANT_ID=$(echo "$CREDS" | jq -r '.tenantId')
-
-        if [ -z "$CLIENT_ID" ] || [ -z "$CLIENT_SECRET" ] || [ -z "$TENANT_ID" ]; then
-          echo "❌ ERROR: AZURE_CREDENTIALS missing required fields (clientId, clientSecret, tenantId)"
-          exit 1
+        # Check if credentials are provided for local testing
+        if [ -z "${{ inputs.client-id }}" ] || [ -z "${{ inputs.client-secret }}" ] || [ -z "${{ inputs.tenant-id }}" ]; then
+          echo "⚠️  Warning: Azure credentials not fully provided for local testing"
+          echo "⚠️  Azure login will be skipped (set ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID)"
+          exit 0
         fi
 
         # Login to Azure using service principal
         az login --service-principal \
-          -u "$CLIENT_ID" \
-          -p "$CLIENT_SECRET" \
-          --tenant "$TENANT_ID" > /dev/null 2>&1
+          -u "${{ inputs.client-id }}" \
+          -p "${{ inputs.client-secret }}" \
+          --tenant "${{ inputs.tenant-id }}" > /dev/null 2>&1
 
         # Set subscription
         az account set --subscription "${{ inputs.subscription-id }}" > /dev/null 2>&1

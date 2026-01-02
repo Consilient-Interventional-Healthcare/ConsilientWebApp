@@ -74,13 +74,13 @@ on:
         required: true
         type: string
     secrets:
-      AZURE_CLIENT_ID:
+      ARM_CLIENT_ID:
         required: true
-      AZURE_TENANT_ID:
+      ARM_TENANT_ID:
         required: true
       AZURE_SUBSCRIPTION_ID:
         required: true
-      AZURE_CREDENTIALS:
+      ARM_CLIENT_SECRET:
         required: false
 
 permissions:
@@ -106,10 +106,10 @@ jobs:
         with:
           app-name: ${{ inputs.app_name }}
           endpoint-url: ${{ inputs.endpoint_url }}
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
           resource-group: ${{ inputs.resource_group }}
           previous-image: ${{ inputs.previous_image }}
           acr-registry: ${{ inputs.acr_registry }}
@@ -140,10 +140,10 @@ jobs:
         with:
           app-url: ${{ inputs.endpoint_url }}
           app-name: ${{ inputs.app_name }}
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          azure-credentials: ${{ secrets.AZURE_CREDENTIALS || '{}' }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
           resource-group: ${{ inputs.resource_group }}
           previous-image: ${{ inputs.previous_image }}
           acr-registry: ${{ inputs.acr_registry }}

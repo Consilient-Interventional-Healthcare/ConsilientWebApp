@@ -17,10 +17,10 @@ inputs:
   subscription-id:
     description: 'Azure Subscription ID'
     required: true
-  azure-credentials:
-    description: 'Azure credentials for local testing (act environment)'
+  client-secret:
+    description: 'Azure Client Secret for local testing (act environment)'
     required: false
-    default: '{}'
+    default: ''
   resource-group:
     description: 'Azure Resource Group name (required for rollback)'
     required: false
@@ -104,7 +104,7 @@ runs:
         client-id: ${{ inputs.client-id }}
         tenant-id: ${{ inputs.tenant-id }}
         subscription-id: ${{ inputs.subscription-id }}
-        azure-credentials: ${{ inputs.azure-credentials }}
+        client-secret: ${{ inputs.client-secret }}
 
     - name: Rollback Deployment
       if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'

@@ -15,12 +15,16 @@ if [ -n "$GITHUB_ACTIONS" ] || [ -n "$GITHUB_WORKSPACE" ]; then
   ACTIONS_STEP_DEBUG=true  # Force verbose output in GitHub Actions
 fi
 
-# Check if state file exists - skip imports if this is a fresh deployment
-if [ ! -f "terraform.tfstate" ] && [ ! -f ".terraform/terraform.tfstate" ]; then
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  No Terraform state file found - this appears to be a fresh deployment"
+# Check if state exists using terraform state list (works with any backend)
+STATE_RESOURCES=$(terraform state list 2>/dev/null || echo "")
+
+if [ -z "$STATE_RESOURCES" ]; then
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  No Terraform state found - this appears to be a fresh deployment"
   [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Skipping resource import step (will create all resources from scratch)"
   exit 0
 fi
+
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Found existing state with $(echo "$STATE_RESOURCES" | wc -l) resources"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Step 1: Reading CAE Configuration from Environment Variables ==="
 
