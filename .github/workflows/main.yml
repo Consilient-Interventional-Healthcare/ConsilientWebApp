@@ -85,12 +85,13 @@ concurrency:
 
 
 jobs:
-  validate-environment:
-    name: Validate Env
+  initialize-workflow:
+    name: Initialize Workflow
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       environment: ${{ steps.setenv.outputs.environment }}
+      runner_image: ${{ steps.runner-image.outputs.runner_image }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -112,26 +113,37 @@ jobs:
 
           echo "environment=$ENVIRONMENT_INPUT" >> $GITHUB_OUTPUT
 
+      - name: Compute runner image path
+        id: runner-image
+        run: |
+          # Convert repository to lowercase (Docker requirement)
+          REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          RUNNER_IMAGE="${{ vars.CONTAINER_REGISTRY }}/${REPO_LOWERCASE}/actions-runner:latest"
+          echo "runner_image=${RUNNER_IMAGE}" >> $GITHUB_OUTPUT
+          echo "Runner image: ${RUNNER_IMAGE}"
+
   build-runner-image:
     name: Build Runner Image
-    needs: [validate-environment]
+    needs: [initialize-workflow]
     uses: ./.github/workflows/build-runner-image.yml
 
   terraform:
     name: Terraform
     needs: [build-runner-image, discover-databases]
+    # Run on push events, or when explicitly enabled in workflow_dispatch
+    # Logic: (NOT manual trigger) OR (manual AND not disabled)
     if: |
-      inputs.run-terraform == true &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-terraform != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped')
     uses: ./.github/workflows/terraform.yml
     with:
-      environment: ${{ needs.validate-environment.outputs.environment }}
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
       action: apply
       allow-local-firewall: ${{ inputs.allow-local-firewall || false }}
       enable-debug: ${{ inputs.enable-debug || false }}
-      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
+      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   # ============================================================================
@@ -145,7 +157,7 @@ jobs:
 
   discover-databases:
     name: Discover DBs
-    needs: [validate-environment]
+    needs: [initialize-workflow]
     runs-on: ubuntu-latest
     outputs:
       database_directories: ${{ steps.discover.outputs.database_directories }}
@@ -167,13 +179,13 @@ jobs:
     name: Deploy DBs
     needs: [discover-databases, terraform]
     if: |
-      inputs.run-databases == true &&
+      (inputs.run-databases != false) &&
       always() &&
       needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/databases.yml
     with:
-      environment: ${{ needs.validate-environment.outputs.environment }}
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
       databases: ${{ needs.discover-databases.outputs.database_directories }}
       recreate-database-objects: ${{ inputs.recreate-database-objects || false }}
     secrets: inherit
@@ -182,15 +194,15 @@ jobs:
     name: DB Docs
     needs: [deploy-databases]
     if: |
-      inputs.run-db-docs == true &&
+      (inputs.run-db-docs != false) &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
       always() &&
-      needs.validate-environment.result == 'success' &&
+      needs.initialize-workflow.result == 'success' &&
       needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/docs_db.yml
     with:
-      environment: ${{ needs.validate-environment.outputs.environment }}
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
       database-configs: ${{ needs.discover-databases.outputs.database_configs }}
     secrets: inherit
 
@@ -202,47 +214,47 @@ jobs:
     name: Deploy API
     needs: [terraform, deploy-databases]
     if: |
-      inputs.run-api-deployment == true &&
+      (inputs.run-api-deployment != false) &&
       always() &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
     uses: ./.github/workflows/dotnet_apps.yml
     with:
-      environment: ${{ needs.validate-environment.outputs.environment }}
-      api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.validate-environment.outputs.environment) }}
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
+      api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.initialize-workflow.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
-      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
+      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   deploy-react-apps:
     name: Deploy React
     needs: [deploy-dotnet-apps]
     if: |
-      inputs.run-react-deployment == true &&
+      (inputs.run-react-deployment != false) &&
       always() &&
       (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
     uses: ./.github/workflows/react_apps.yml
     with:
-      environment: ${{ needs.validate-environment.outputs.environment }}
-      react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.validate-environment.outputs.environment) }}
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
+      react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.initialize-workflow.outputs.environment) }}
       acr_registry: ${{ needs.terraform.outputs.acr_registry_url || vars.ACR_REGISTRY_URL }}
       resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
-      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
+      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   health-check-api:
     name: API Health Check
     needs: [deploy-dotnet-apps]
     if: |
-      inputs.run-health-checks == true &&
-      inputs.run-api-deployment == true &&
+      (inputs.run-health-checks != false) &&
+      (inputs.run-api-deployment != false) &&
       always() &&
       (needs.deploy-dotnet-apps.result == 'success')
     uses: ./.github/workflows/healthchecks.yml
     with:
       check_type: 'api'
-      environment: ${{ needs.validate-environment.outputs.environment }}
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
       app_name: ${{ needs.deploy-dotnet-apps.outputs.api_app_name }}
       endpoint_url: https://${{ needs.deploy-dotnet-apps.outputs.api_app_name }}.azurewebsites.net/health
       resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
@@ -251,21 +263,21 @@ jobs:
       wait_seconds: '120'
       max_attempts: '8'
       retry_delay: '15s'
-      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
+      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   health-check-react:
     name: React Health Check
     needs: [deploy-react-apps]
     if: |
-      inputs.run-health-checks == true &&
-      inputs.run-react-deployment == true &&
+      (inputs.run-health-checks != false) &&
+      (inputs.run-react-deployment != false) &&
       always() &&
       (needs.deploy-react-apps.result == 'success')
     uses: ./.github/workflows/healthchecks.yml
     with:
       check_type: 'react'
-      environment: ${{ needs.validate-environment.outputs.environment }}
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
       app_name: ${{ needs.deploy-react-apps.outputs.react_app_name }}
       endpoint_url: https://${{ needs.deploy-react-apps.outputs.react_app_name }}.azurewebsites.net
       resource_group: ${{ needs.terraform.outputs.resource_group_name || vars.AZURE_RESOURCE_GROUP_NAME }}
@@ -277,7 +289,7 @@ jobs:
       min_a11y_score: '0.9'
       min_bp_score: '0.7'
       min_seo_score: '0.7'
-      runner_image: ${{ format('{0}/{1}/actions-runner:latest', vars.CONTAINER_REGISTRY, github.repository) }}
+      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution
