@@ -45,8 +45,8 @@ log_section() {
 #------------------------------------------------------------------------------
 
 validate_inputs() {
-  log_section "?? Database Discovery Configuration"
-  log_info "Scripts path: ${SCRIPTS_PATH}"
+  log_section "?? Database Discovery Configuration" >&2
+  log_info "Scripts path: ${SCRIPTS_PATH}" >&2
 
   if [ -z "$SCRIPTS_PATH" ]; then
     log_error "SCRIPTS_PATH environment variable is not set"
@@ -63,14 +63,14 @@ validate_tools() {
 
 validate_path() {
   if [ ! -d "$SCRIPTS_PATH" ]; then
-    log_warning "Scripts path not found: $SCRIPTS_PATH"
-    log_info "Available paths in repository root:"
+    log_warning "Scripts path not found: $SCRIPTS_PATH" >&2
+    log_info "Available paths in repository root:" >&2
     ls -la . | grep -E "^d" | awk '{print "   - " $NF}' || true
-    log_info "Proceeding with empty database discovery"
+    log_info "Proceeding with empty database discovery" >&2
     return 1
   fi
 
-  log_success "Scripts path validated"
+  log_success "Scripts path validated" >&2
   return 0
 }
 
@@ -89,15 +89,15 @@ print_outputs() {
   local databases="$1"
   local count="$2"
 
-  log_section "?? Output Formats (for comparison):"
-  echo ""
-  echo "1??  databases (full metadata array):"
-  echo "$databases" | jq -c .
-  echo ""
-  echo "2??  database_directories (simple array of names):"
-  echo "$databases" | jq -c '[.[] | .directory]'
-  echo ""
-  echo "3??  database_configs (object mapping names to config):"
+  log_section "?? Output Formats (for comparison):" >&2
+  echo "" >&2
+  echo "1??  databases (full metadata array):" >&2
+  echo "$databases" | jq -c . >&2
+  echo "" >&2
+  echo "2??  database_directories (simple array of names):" >&2
+  echo "$databases" | jq -c '[.[] | .directory]' >&2
+  echo "" >&2
+  echo "3??  database_configs (object mapping names to config):" >&2
 
   # Build configs object
   local configs="{}"
@@ -110,18 +110,18 @@ print_outputs() {
     configs=$(echo "$configs" | jq -c --argjson data "$config_data" --arg name "$db_name" '.[$name] = $data')
   done < <(echo "$databases" | jq -c '.[]')
 
-  echo "$configs" | jq -c .
-  echo ""
-  echo "4??  count (number of databases):"
-  echo "$count"
-  echo ""
+  echo "$configs" | jq -c . >&2
+  echo "" >&2
+  echo "4??  count (number of databases):" >&2
+  echo "$count" >&2
+  echo "" >&2
 }
 
 write_outputs() {
   local databases="$1"
   local count="$2"
 
-  log_section "?? Writing outputs to GITHUB_OUTPUT"
+  log_section "?? Writing outputs to GITHUB_OUTPUT" >&2
 
   # Output 1: Full database array
   echo "databases=$(echo "$databases" | jq -c .)" >> "$GITHUB_OUTPUT"
@@ -147,7 +147,7 @@ write_outputs() {
   # Output 4: Count
   echo "count=$count" >> "$GITHUB_OUTPUT"
 
-  log_success "All outputs written to GITHUB_OUTPUT"
+  log_success "All outputs written to GITHUB_OUTPUT" >&2
 }
 
 #------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ write_outputs() {
 discover_directories() {
   local scripts_path="$1"
 
-  log_section "?? Scanning for database directories in: $scripts_path"
+  log_section "?? Scanning for database directories in: $scripts_path" >&2
 
   # Change to scripts path for relative path discovery
   cd "$scripts_path" || return 1
@@ -169,11 +169,11 @@ discover_directories() {
   fi
 
   if [ -z "$all_dirs" ]; then
-    log_warning "No directories found in $scripts_path"
+    log_warning "No directories found in $scripts_path" >&2
     return 1
   fi
 
-  log_info "Found $(echo "$all_dirs" | wc -l) director(ies)"
+  log_info "Found $(echo "$all_dirs" | wc -l) director(ies)" >&2
 
   # Return to original directory
   cd - > /dev/null
@@ -191,7 +191,7 @@ build_database_objects() {
   while IFS= read -r dir; do
     [ -z "$dir" ] && continue
 
-    log_success "$dir - included"
+    log_success "$dir - included" >&2
 
     # Build database object (simplified - no config file parsing)
     local db_obj
@@ -244,16 +244,16 @@ main() {
   local count="${result##*|}"
 
   # Summary
-  log_section "?? Discovery Summary"
-  log_info "Total directories: $(echo "$all_dirs" | wc -l)"
-  log_info "Databases to process: $count"
-  echo ""
+  log_section "?? Discovery Summary" >&2
+  log_info "Total directories: $(echo "$all_dirs" | wc -l)" >&2
+  log_info "Databases to process: $count" >&2
+  echo "" >&2
 
   if [ "$count" -gt 0 ]; then
-    log_success "Discovered databases:"
-    echo "$db_array" | jq -r '.[] | "   - \(.directory)"'
+    log_success "Discovered databases:" >&2
+    echo "$db_array" | jq -r '.[] | "   - \(.directory)"' >&2
   else
-    log_warning "No databases discovered"
+    log_warning "No databases discovered" >&2
   fi
 
   # Print outputs for comparison
@@ -262,7 +262,7 @@ main() {
   # Write outputs to GITHUB_OUTPUT
   write_outputs "$db_array" "$count"
 
-  log_success "Database discovery completed"
+  log_success "Database discovery completed" >&2
 }
 
 # Execute main function
