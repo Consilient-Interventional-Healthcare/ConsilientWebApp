@@ -37,6 +37,9 @@ on:
       resource_group_name:
         description: "The name of the Azure Resource Group"
         value: ${{ jobs.terraform.outputs.resource_group_name }}
+      sql_server_fqdn:
+        description: "The fully qualified domain name of the Azure SQL Server"
+        value: ${{ jobs.terraform.outputs.sql_server_fqdn }}
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -93,10 +96,12 @@ jobs:
       react_app_name: ${{ steps.outputs.outputs.react_app_name }}
       acr_registry_url: ${{ steps.outputs.outputs.acr_registry_url }}
       resource_group_name: ${{ steps.outputs.outputs.resource_group_name }}
+      sql_server_fqdn: ${{ steps.outputs.outputs.sql_server_fqdn }}
 
     permissions:
       contents: read
       id-token: write
+      packages: read
 
     concurrency:
       group: terraform-${{ inputs.environment }}
@@ -162,6 +167,7 @@ jobs:
 
       - name: Validate Required Secrets
         shell: bash
+        working-directory: .
         run: |
           # CRITICAL: Bash runs with -e -o pipefail in GitHub Actions workflows.
           # This means: (1) any command returning non-zero exits the script, and
@@ -210,6 +216,7 @@ jobs:
 
       - name: Terraform Format Check
         id: fmt
+        working-directory: .
         # Runs in ./infra/terraform (job default)
         run: |
           if ! terraform fmt -check -recursive; then
@@ -430,6 +437,7 @@ jobs:
         id: outputs
         if: inputs.action == 'apply'
         shell: bash
+        working-directory: .
         run: |
           API_APP_NAME=$(terraform output -raw api_app_service_name 2>/dev/null || echo "")
           REACT_APP_NAME=$(terraform output -raw react_app_service_name 2>/dev/null || echo "")

@@ -14,6 +14,10 @@ on:
         required: false
         type: boolean
         default: false
+      azure-sql-server-fqdn:
+        description: 'Azure SQL Server FQDN (fully qualified domain name)'
+        required: true
+        type: string
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -87,7 +91,7 @@ jobs:
       cancel-in-progress: false
 
     env:
-      SQL_SERVER: ${{ vars.AZURE_SQL_SERVER_FQDN }}
+      SQL_SERVER: ${{ inputs.azure-sql-server-fqdn }}
       RECREATE_DB: ${{ inputs.recreate-database-objects || 'false' }}
       ENVIRONMENT: ${{ inputs.environment }}
       DATABASE_BASE_NAME: ${{ matrix.database }}

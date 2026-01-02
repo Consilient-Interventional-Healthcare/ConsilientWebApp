@@ -5,7 +5,6 @@ on:
       - develop
       - 'feature/**'
       - 'hotfix/**'
-      - terraform
   pull_request:
     branches:
       - main
@@ -80,7 +79,6 @@ concurrency:
 # To customize these values, set them as repository/organization variables in GitHub:
 # - AZURE_REGION
 # - AZURE_RESOURCE_GROUP
-# - DB_SCRIPTS_PATH # This is now less critical for workflow_dispatch, as it's an input
 # - CONTAINER_REGISTRY
 
 
@@ -123,9 +121,13 @@ jobs:
           echo "Runner image: ${RUNNER_IMAGE}"
 
   build-runner-image:
-    name: Build Runner Image
+    name: Image Runner
     needs: [initialize-workflow]
     uses: ./.github/workflows/build-runner-image.yml
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
 
   terraform:
     name: Terraform
@@ -188,11 +190,12 @@ jobs:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       databases: ${{ needs.discover-databases.outputs.database_directories }}
       recreate-database-objects: ${{ inputs.recreate-database-objects || false }}
+      azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
     secrets: inherit
 
   generate-db-docs:
     name: DB Docs
-    needs: [initialize-workflow, discover-databases, deploy-databases]
+    needs: [initialize-workflow, discover-databases, deploy-databases, terraform]
     if: |
       (inputs.run-db-docs != false) &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
@@ -204,6 +207,7 @@ jobs:
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       database-configs: ${{ needs.discover-databases.outputs.database_configs }}
+      azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
     secrets: inherit
 
   # ============================================================================
