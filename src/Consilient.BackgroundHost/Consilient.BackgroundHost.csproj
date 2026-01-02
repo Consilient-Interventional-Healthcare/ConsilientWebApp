@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Config\**" />
+    <EmbeddedResource Remove="Config\**" />
+    <None Remove="Config\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Startup.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
+    <PackageReference Include="Hangfire.SqlServer" Version="1.8.22" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.3">
+      <TreatAsUsed>true</TreatAsUsed>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4">
+      <TreatAsUsed>true</TreatAsUsed>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Consilient.Background.Workers\Consilient.Background.Workers.csproj" />
+    <ProjectReference Include="..\Consilient.Constants\Consilient.Constants.csproj" />
+    <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
+    <ProjectReference Include="..\Consilient.Employees.Services\Consilient.Employees.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.EmailMonitor\Consilient.Infrastructure.EmailMonitor.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.Injection\Consilient.Infrastructure.Injection.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.Logging\Consilient.Infrastructure.Logging.csproj" />
+    <ProjectReference Include="..\Consilient.Insurances.Services\Consilient.Insurances.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Patients.Services\Consilient.Patients.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Shared.Services\Consilient.Shared.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Visits.Service\Consilient.Visits.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,397 @@
+﻿@using Consilient.Patients.Contracts.Dtos
+@using Consilient.WebApp.ViewModels
+@model Consilient.WebApp.ViewModels.PatientVisitsStagingIndexViewModel
+
+@{
+    ViewData["Title"] = "Patient Encounter Staging";
+    var placeholder = new PatientVisitsStagingViewModel();
+    var firstItem = Model.PatientVisitsStaging.FirstOrDefault() ?? placeholder;
+}
+
+<div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+        <h1 class="text-base font-semibold text-gray-900">@ViewData["Title"]</h1>
+        <p class="mt-2 text-sm text-gray-700">Filter, review, and approve staged encounters before pushing them to the live system.</p>
+    </div>
+</div>
+
+<!-- Create / Push / Approve Selected (moved above filters) -->
+<div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900">Create New Record</h3>
+                <p class="mt-1 text-sm text-gray-600">Add a staged encounter manually.</p>
+            </div>
+            <a asp-action="Create"
+               class="inline-flex items-center rounded-md border border-brand-blue px-3 py-2 text-sm font-semibold text-brand-blue hover:bg-brand-blue-light/10 cursor-pointer">
+                Create
+            </a>
+        </div>
+    </div>
+
+    @if (User.IsInRole("Administrator") || User.IsInRole("CanApproveVisits"))
+    {
+        @if (User.IsInRole("Administrator"))
+        {
+            <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900">Push Approved Records</h3>
+                        <p class="mt-1 text-sm text-gray-600">Only rows marked as approved will be pushed.</p>
+                    </div>
+                    <form asp-action="PushApprovedPatientVisits" method="post">
+                        <button type="submit"
+                                class="inline-flex items-center rounded-md cursor-pointer bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+                            Push
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900">Approved Selected Visits</h3>
+                    <p class="mt-1 text-sm text-gray-600">Submit selected approvals to save.</p>
+                </div>
+                <!-- Submit the table form from here -->
+                <button type="submit" form="save-approvals-form"
+                        class="inline-flex items-center rounded-md cursor-pointer bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+                    Approve
+                </button>
+            </div>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900">Approve All By Day</h3>
+                    <p class="mt-1 text-sm text-gray-600">Approve all encounters for @Model.SelectedDate.ToString("MM/dd/yyyy").</p>
+                </div>
+                <a asp- asp-action="ApproveAllByDay" asp-route-selectedDate="@Model.SelectedDate" class="inline-flex items-center rounded-md cursor-pointer bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+                    Approve All
+                </a>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Filters -->
+<form asp-action="Index" method="get" class="mt-6">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-5 sm:items-end">
+        <!-- Date -->
+        <div>
+            <label for="selectedDate" class="block text-sm font-medium text-gray-700">Select Date</label>
+            <input type="date" id="selectedDate" name="selectedDate"
+                   class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 sm:text-sm/6 focus:outline-brand-blue"
+                   value="@(ViewBag.SelectedDate != null ? ((DateOnly)ViewBag.SelectedDate).ToString("yyyy-MM-dd") : "")" />
+        </div>
+
+        <!-- Facility -->
+        <div>
+            <label asp-for="SelectedFacilityId" class="block text-sm font-medium text-gray-700">Facility</label>
+            <select asp-for="SelectedFacilityId" asp-items="Model.FacilitiesSelectList"
+                    class="block w-full rounded-md bg-white px-3 py-2 text-sm text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-blue"></select>
+        </div>
+
+        <!-- Provider -->
+        <div>
+            <label asp-for="SelectedProviderId" class="block text-sm font-medium text-gray-700">Provider</label>
+            <select asp-for="SelectedProviderId" asp-items="Model.ProvidersSelectList"
+                    class="block w-full rounded-md bg-white px-3 py-2 text-sm text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-blue"></select>
+        </div>
+
+        <!-- Submit -->
+        <div class="sm:justify-self-start">
+            <button type="submit"
+                    class="inline-flex w-full items-center justify-center rounded-md cursor-pointer bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+                Filter
+            </button>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex items-center justify-end">
+            <div class="flex flex-col gap-1 text-xs text-gray-700 bg-white rounded-md border border-gray-200 p-2 shadow-sm w-max">
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-4 h-4 rounded border border-gray-300 bg-white"></span>
+                    No approvals
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-4 h-4 rounded border border-green-200 bg-green-50"></span>
+                    Some Approved
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-4 h-4 rounded border border-green-600 bg-green-400"></span>
+                    All Approved
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-4 h-4 rounded border border-yellow-400 bg-yellow-200"></span>
+                    Flagged
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<form asp-action="SaveApprovals" method="post" class="mt-6" id="save-approvals-form">
+    <!-- removed top Approve button; now in the card above -->
+
+    <div class="mt-4 grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <!-- Table / Cards -->
+        <div class="lg:col-span-12">
+            <!-- full width now -->
+            <!-- Desktop table -->
+            <div class="hidden md:block overflow-x-auto">
+                <div class="block w-full py-2 align-middle">
+                    <table class="w-full table-fixed divide-y divide-gray-300">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0">Date Serviced</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Patient.PatientMrn)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Patient.PatientFullName)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.AdmissionNumber)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.Facility)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.ServiceType)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.PhysicianEmployee)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.NursePractitionerEmployee)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.ScribeEmployee)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.CosigningPhysicianEmployee)</th>
+                                <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.PhysicianApproved)</th>
+                                <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">@Html.DisplayNameFor(_ => firstItem.NursePractitionerApproved)</th>
+                                <th scope="col" class="py-3.5 pr-4 pl-3 text-right text-sm font-semibold text-gray-900 sm:pr-0"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            @for (var i = 0; i < Model.PatientVisitsStaging.Count; i++)
+                            {
+                                var row = Model.PatientVisitsStaging[i];
+
+                                <tr class="">
+
+                                    @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
+                                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-900 sm:pl-0">
+                                        @row.DateServiced.ToString("yyyy-MM-dd")
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.Patient.PatientMrn</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.Patient.PatientFullName</td>
+                                    @* <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.AdmissionNumber</td> *@
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.Facility.FacilityAbbreviation</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.ServiceType.Cptcode</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.PhysicianEmployee?.LastName</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.NursePractitionerEmployee?.LastName</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.ScribeEmployee?.FirstName</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-700">@row.CosigningPhysicianEmployee?.LastName</td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                        <div class="flex justify-center">
+                                            <input asp-for="@Model.PatientVisitsStaging[i].PhysicianApproved"
+                                                   type="checkbox"
+                                                   class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                        <div class="flex justify-center">
+                                            @if (Model.PatientVisitsStaging[i].NursePractitionerEmployeeId != null)
+                                            {
+                                                <input asp-for="@Model.PatientVisitsStaging[i].NursePractitionerApproved"
+                                                       type="checkbox"
+                                                       class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0 space-x-3">
+                                        <a asp-action="Edit" asp-route-id="@row.PatientVisitStagingId" class="text-brand-blue hover:text-brand-blue-dark cursor-pointer">Edit</a>
+                                        <a asp-action="Details" asp-route-id="@row.PatientVisitStagingId" class="text-brand-blue hover:text-brand-blue-dark cursor-pointer">Details</a>
+                                        <a asp-action="Delete" asp-route-id="@row.PatientVisitStagingId" class="text-red-600 hover:text-red-700 cursor-pointer">Delete</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mobile cards -->
+            <div class="md:hidden space-y-4">
+                @for (var i = 0; i < Model.PatientVisitsStaging.Count; i++)
+                {
+                    var row = Model.PatientVisitsStaging[i];
+                    <div class="rounded-xl border border-gray-200 p-4 shadow-sm @row.GetClass()">
+                        @Html.HiddenFor(_ => Model.PatientVisitsStaging[i].PatientVisitStagingId)
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">@row.Patient.PatientFullName</h3>
+                                <p class="text-sm text-gray-600"><span class="font-medium">MRN:</span> @row.Patient!.PatientMrn</p>
+                            </div>
+                            <div class="text-sm text-gray-700">@row.DateServiced.ToString("yyyy-MM-dd")</div>
+                        </div>
+
+                        <dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <dt class="font-medium text-gray-700">Admission #</dt>
+                                <dd class="text-gray-700">@row.AdmissionNumber</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-gray-700">Facility</dt>
+                                <dd class="text-gray-700">@row.Facility.FacilityAbbreviation</dd>
+                            </div>
+                            <div class="col-span-2">
+                                <dt class="font-medium text-gray-700">Service Type</dt>
+                                <dd class="text-gray-700">@row.ServiceType.CodeAndDescription</dd>
+                            </div>
+                            <div class="col-span-2">
+                                <dt class="font-medium text-gray-700">Team</dt>
+                                <dd class="mt-1 space-y-1">
+                                    @if (row.PhysicianEmployee != null)
+                                    {
+                                        <div class="text-gray-800">@row.PhysicianEmployee.FullName</div>
+                                    }
+                                    @if (row.NursePractitionerEmployee != null)
+                                    {
+                                        <div class="text-gray-800">@row.NursePractitionerEmployee.FullName</div>
+                                    }
+                                    @if (row.ScribeEmployee != null)
+                                    {
+                                        <div class="text-gray-800">@row.ScribeEmployee.FullName</div>
+                                    }
+                                    @if (row.CosigningPhysicianEmployee != null)
+                                    {
+                                        <div class="text-gray-800">@row.CosigningPhysicianEmployee.FullName</div>
+                                    }
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <div class="mt-4 flex items-center justify-between">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-800">
+                                @* <input asp-for="@Model.PatientVisitsStaging[i].PhysicianApproved"
+                                       type="checkbox"
+                                       class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" />
+                                <input asp-for="@Model.PatientVisitsStaging[i].NursePractitionerApproved"
+                                       type="checkbox"
+                                       class="h-4 w-4 rounded border-gray-300 text-brand-blue focus:ring-brand-blue" /> *@
+                                Approve
+                            </label>
+                            <div class="space-x-4">
+                                <a asp-action="Edit" asp-route-id="@row.PatientVisitStagingId" class="text-sm font-medium text-brand-blue hover:text-brand-blue-dark cursor-pointer">Edit</a>
+                                <a asp-action="Details" asp-route-id="@row.PatientVisitStagingId" class="text-sm font-medium text-brand-blue hover:text-brand-blue-dark cursor-pointer">Details</a>
+                                <a asp-action="Delete" asp-route-id="@row.PatientVisitStagingId" class="text-sm font-medium text-red-600 hover:text-red-700 cursor-pointer">Delete</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Summary {
+    <div class="space-y-6">
+
+        <!-- Physicians -->
+        <section>
+            <h2 class="text-sm font-semibold text-gray-900">Physicians</h2>
+            <ul role="list" class="mt-3 divide-y divide-gray-200">
+                @foreach (var physician in Model.PhysicianSummaries)
+                {
+                    var name = physician.Key.Trim();
+                    var initial = string.IsNullOrEmpty(name) ? "?" : name[0].ToString().ToUpper();
+                    var count = physician.Value;
+
+                    <li class="py-4">
+                        <div class="flex items-center gap-x-3">
+                            <span class="size-7 flex-none rounded-full bg-brand-blue-light text-white flex items-center justify-center text-xs font-semibold">
+                                @initial
+                            </span>
+                            <h3 class="flex-auto truncate text-sm font-semibold text-gray-900">@name</h3>
+                            <span class="flex-none text-xs font-semibold text-gray-700">@count</span>
+                        </div>
+                        <p class="mt-2 truncate text-sm text-gray-500">
+                            @count @(count == 1 ? "visit" : "visits")
+                        </p>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        <!-- Nurse Practitioners -->
+        <section>
+            <h2 class="text-sm font-semibold text-gray-900">Nurse Practitioners</h2>
+            <ul role="list" class="mt-3 divide-y divide-gray-200">
+                @foreach (var np in Model.NursePractitionerSummaries)
+                {
+                    var name = np.Key.Trim();
+                    var initial = string.IsNullOrEmpty(name) ? "?" : name[0].ToString().ToUpper();
+                    var count = np.Value;
+
+                    <li class="py-4">
+                        <div class="flex items-center gap-x-3">
+                            <span class="size-7 flex-none rounded-full bg-brand-yellow text-gray-800 flex items-center justify-center text-xs font-semibold">
+                                @initial
+                            </span>
+                            <h3 class="flex-auto truncate text-sm font-semibold text-gray-900">@name</h3>
+                            <span class="flex-none text-xs font-semibold text-gray-700">@count</span>
+                        </div>
+                        <p class="mt-2 truncate text-sm text-gray-500">
+                            @count @(count == 1 ? "visit" : "visits")
+                        </p>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        <!-- Scribes -->
+        <section>
+            <h2 class="text-sm font-semibold text-gray-900">Scribes</h2>
+            <ul role="list" class="mt-3 divide-y divide-gray-200">
+                @foreach (var s in Model.ScribeSummaries)
+                {
+                    var name = s.Key.Trim();
+                    var initial = string.IsNullOrEmpty(name) ? "?" : name[0].ToString().ToUpper();
+                    var count = s.Value;
+
+                    <li class="py-4">
+                        <div class="flex items-center gap-x-3">
+                            <span class="size-7 flex-none rounded-full bg-brand-blue/10 text-brand-blue flex items-center justify-center text-xs font-semibold ring-1 ring-inset ring-brand-blue/30">
+                                @initial
+                            </span>
+                            <h3 class="flex-auto truncate text-sm font-semibold text-gray-900">@name</h3>
+                            <span class="flex-none text-xs font-semibold text-gray-700">@count</span>
+                        </div>
+                        <p class="mt-2 truncate text-sm text-gray-500">
+                            @count @(count == 1 ? "visit" : "visits")
+                        </p>
+                    </li>
+                }
+            </ul>
+        </section>
+
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Optional: click to sort by the first column (date) on desktop
+        (function () {
+            const table = document.querySelector('table');
+            if (!table) return;
+            const header = table.querySelector('thead th');
+            if (!header) return;
+            let desc = true;
+            header.style.cursor = 'pointer';
+            header.title = 'Sort by date';
+            header.addEventListener('click', () => {
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                rows.sort((a, b) => {
+                    const ad = a.cells[0].innerText.trim();
+                    const bd = b.cells[0].innerText.trim();
+                    return desc ? (bd.localeCompare(ad)) : (ad.localeCompare(bd));
+                });
+                rows.forEach(r => tbody.appendChild(r));
+                desc = !desc;
+            });
+        })();
+    </script>
+}

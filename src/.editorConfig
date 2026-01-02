@@ -1,0 +1,65 @@
+# root = true indicates that this is the top-most .editorconfig file
+root = true
+
+[*] # Apply to all files by default
+end_of_line = crlf # Default to Windows-style line endings
+
+[*.sh] # Apply to shell scripts
+end_of_line = lf # Use Unix-style line endings for shell scripts
+
+[*.py] # Apply to Python files
+end_of_line = lf
+
+[*.cs]
+# C# naming rule: private fields must begin with underscore and use camelCase (e.g. _myField)
+resharper_arrange_namespace_body_highlighting=none
+resharper_class_never_instantiated_global_highlighting=none
+dotnet_style_prefer_collection_expression = true:suggestion
+
+# Apply to all C# files
+[*.cs]
+
+# Private fields should be _camelCase
+dotnet_naming_rule.private_fields_should_be_camelcase.severity = warning
+dotnet_naming_rule.private_fields_should_be_camelcase.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_camelcase.style = camelcase_with_underscore
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers = 
+
+dotnet_naming_style.camelcase_with_underscore.capitalization = camel_case
+dotnet_naming_style.camelcase_with_underscore.required_prefix = _
+
+# Constants should be PascalCase (no underscore, no ALL_CAPS)
+dotnet_naming_rule.constants_should_be_pascalcase.severity = warning
+dotnet_naming_rule.constants_should_be_pascalcase.symbols = constants
+dotnet_naming_rule.constants_should_be_pascalcase.style = pascalcase
+
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_style.pascalcase.capitalization = pascal_case
+
+# Public members should be PascalCase
+dotnet_naming_rule.public_members_should_be_pascalcase.severity = warning
+dotnet_naming_rule.public_members_should_be_pascalcase.symbols = public_members
+dotnet_naming_rule.public_members_should_be_pascalcase.style = pascalcase
+
+dotnet_naming_symbols.public_members.applicable_accessibilities = public
+dotnet_naming_symbols.public_members.applicable_kinds = property, method, field, event
+
+
+# Symbol group: private fields
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_symbols.private_fields.required_modifiers =
+
+# Naming style: underscore prefix + camelCase
+dotnet_naming_style.underscore_prefix.required_prefix = _
+dotnet_naming_style.underscore_prefix.capitalization = camel_case
+
+# Rule: apply the style to the symbol group, severity can be suggestion/warning/error
+dotnet_naming_rule.private_fields_must_start_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_must_start_with_underscore.style = underscore_prefix
+dotnet_naming_rule.private_fields_must_start_with_underscore.severity = suggestion

@@ -1,0 +1,42 @@
+﻿@model Consilient.WebApp.ViewModels.FacilityViewModel
+
+@{
+    ViewData["Title"] = "Facility Details";
+}
+
+<div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+        <h1 class="text-base font-semibold text-gray-900">@ViewData["Title"]</h1>
+        <p class="mt-2 text-sm text-gray-700">View information about this facility.</p>
+    </div>
+</div>
+
+<div class="mt-6 border-t border-gray-100">
+    <dl class="divide-y divide-gray-100">
+        <!-- Facility Name -->
+        <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+            <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.FacilityName)</dt>
+            <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">@Html.DisplayFor(m => m.FacilityName)</dd>
+        </div>
+
+        <!-- Facility Abbreviation -->
+        <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+            <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.FacilityAbbreviation)</dt>
+            <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                <span class="inline-flex items-center rounded-full bg-gray-100 ring-1 ring-inset ring-gray-500 px-2 py-0.5 text-xs font-medium text-gray-700">
+                    @Html.DisplayFor(m => m.FacilityAbbreviation)
+                </span>
+            </dd>
+        </div>
+    </dl>
+</div>
+
+<div class="mt-6 flex items-center gap-x-4">
+    <a asp-action="Edit" asp-route-id="@Model.FacilityId"
+       class="inline-flex justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-blue-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+        Edit
+    </a>
+    <a asp-action="Index" class="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700">
+        Back to List
+    </a>
+</div>

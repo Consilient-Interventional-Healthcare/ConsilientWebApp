@@ -1,0 +1,119 @@
+﻿@model Consilient.WebApp.ViewModels.PatientVisitsStagingViewModel
+
+@{
+    ViewData["Title"] = "Patient Encounter Submission Details";
+}
+
+<div>
+    <div class="px-4 sm:px-0">
+        <h3 class="text-base/7 font-semibold text-gray-900">Patient Encounter Submission Details</h3>
+        <p class="mt-1 max-w-2xl text-sm/6 text-gray-500">Read-only view of this staged visit.</p>
+    </div>
+
+    <div class="mt-6 border-t border-gray-100">
+        <dl class="divide-y divide-gray-100">
+            <!-- Visit Date -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.DateServiced)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.DateServiced)
+                </dd>
+            </div>
+
+            <!-- Admission Number -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.AdmissionNumber)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0 break-words">
+                    @Html.DisplayFor(m => m.AdmissionNumber)
+                </dd>
+            </div>
+
+            <!-- Patient MRN -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientMrn)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0 break-words">
+                    @Html.DisplayFor(m => m.Patient.PatientMrn)
+                </dd>
+            </div>
+
+            <!-- Patient Full Name -->
+@*             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientFullName)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Patient.PatientFullName)
+                </dd>
+            </div> *@
+
+            <!-- Patient Birth Date -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientBirthDate)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Patient.PatientBirthDate)
+                </dd>
+            </div>
+
+            <!-- Facility -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Facility)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Facility.FacilityName)
+                </dd>
+            </div>
+
+            <!-- Service Type -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.ServiceType)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.ServiceType.CodeAndDescription)
+                </dd>
+            </div>
+
+            <!-- Physician -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.PhysicianEmployee)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.PhysicianEmployee.FullName)
+                </dd>
+            </div>
+
+            <!-- Nurse Practitioner -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.NursePractitionerEmployee)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.NursePractitionerEmployee.FullName)
+                </dd>
+            </div>
+
+            <!-- Cosigning Physician -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.CosigningPhysicianEmployee)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.CosigningPhysicianEmployee.FullName)
+                </dd>
+            </div>
+
+            <!-- Scribe -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.ScribeEmployee)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.ScribeEmployee.FullName)
+                </dd>
+            </div>
+        </dl>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+        <a asp-action="Index"
+           asp-route-selectedDate="@TempData["SelectedDate"]"
+           class="text-sm/6 font-semibold text-gray-900 cursor-pointer">
+            Back to List
+        </a>
+
+        <a asp-action="Edit"
+           asp-route-id="@Model.PatientVisitStagingId"
+           class="inline-flex items-center justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue cursor-pointer">
+            Edit
+        </a>
+    </div>
+</div>

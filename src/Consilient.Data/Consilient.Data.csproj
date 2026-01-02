@@ -1,0 +1,62 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Factories\**" />
+    <EmbeddedResource Remove="Factories\**" />
+    <None Remove="Factories\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Configurations\VwPatientVisitConfiguration.cs" />
+    <Compile Remove="Configurations\VwPatientVisitsCompareToLiveConfiguration.cs" />
+    <Compile Remove="Configurations\VwPatientVisitsStagingConfiguration.cs" />
+    <Compile Remove="Contract.cs" />
+    <Compile Remove="Entities\Contract.cs" />
+    <Compile Remove="Entities\FacilityPay.cs" />
+    <Compile Remove="Entities\PayrollDatum.cs" />
+    <Compile Remove="Entities\PayrollPeriod.cs" />
+    <Compile Remove="Entities\ProviderPay.cs" />
+    <Compile Remove="Entities\VwPatientVisit.cs" />
+    <Compile Remove="Entities\VwPatientVisitsCompareToLive.cs" />
+    <Compile Remove="Entities\VwPatientVisitsStaging.cs" />
+    <Compile Remove="FacilityPay.cs" />
+    <Compile Remove="Configurations\ContractConfiguration.cs" />
+    <Compile Remove="Configurations\FacilityPayConfiguration.cs" />
+    <Compile Remove="Configurations\PayrollDatumConfiguration.cs" />
+    <Compile Remove="Configurations\PayrollPeriodConfiguration.cs" />
+    <Compile Remove="Configurations\ProviderPayConfiguration.cs" />
+    <Compile Remove="PayrollDatum.cs" />
+    <Compile Remove="PayrollPeriod.cs" />
+    <Compile Remove="ProviderContract.cs" />
+    <Compile Remove="ProviderPay.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Consilient.Data.Migrations</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Consilient.Common\Consilient.Common.csproj" />
+  </ItemGroup>
+</Project>

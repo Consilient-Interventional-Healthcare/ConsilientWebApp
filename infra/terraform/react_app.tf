@@ -1,0 +1,35 @@
+# Azure App Service Plan and React App Service (Docker, Public)
+
+module "react_app" {
+  source                 = "./modules/app_service"
+  plan_name              = local.react.service_plan_name
+  plan_tier              = local.react.sku
+  plan_size              = local.react.sku
+  app_name               = local.react.service_name
+  location               = azurerm_resource_group.main.location
+  resource_group_name    = azurerm_resource_group.main.name
+  linux_fx_version       = "DOCKER|<acr-login-server>/<react-image>:<tag>"
+  vnet_route_all_enabled = false
+
+  # Enable managed identity for ACR authentication
+  # Uses the system-assigned managed identity (client_id left empty)
+  container_registry_use_managed_identity       = true
+  container_registry_managed_identity_client_id = ""
+
+  # HTTPS configuration
+  enable_https_only  = true
+  custom_domain_name = var.react_custom_domain
+
+  app_settings = {
+    WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
+  }
+  tags     = local.tags
+  sku_name = local.react.sku
+}
+
+# Grant React App Service permission to pull images from ACR
+resource "azurerm_role_assignment" "react_acr_pull" {
+  scope                = azurerm_container_registry.main.id
+  role_definition_name = "AcrPull"
+  principal_id         = module.react_app.app_service_principal_id
+}

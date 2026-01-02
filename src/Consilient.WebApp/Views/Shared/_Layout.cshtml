@@ -1,0 +1,376 @@
+﻿@{
+    // Helper to mark a sidebar link "active" based on controller + (optional) action
+    bool IsActive(string controller, string? action = null)
+    {
+        var routeData = ViewContext.RouteData.Values;
+        var currentController = (string?)(routeData["controller"] ?? "");
+        var currentAction = (string?)(routeData["action"] ?? "");
+        var ctrlMatch = string.Equals(controller, currentController, StringComparison.OrdinalIgnoreCase);
+        var actMatch = action == null || string.Equals(action, currentAction, StringComparison.OrdinalIgnoreCase);
+        return ctrlMatch && actMatch;
+    }
+
+    // Utility to combine classes
+    string C(bool condition, string whenTrue, string whenFalse) => condition ? whenTrue : whenFalse;
+}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-white">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Consilient Interventional Healthcare Web App</title>
+
+    <!-- DataTables (if needed) -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <!-- Your Tailwind build with brand colors (e.g., text-brand-blue, etc.) -->
+    <link rel="stylesheet" href="~/css/tailwind.css" asp-append-version="true" />
+
+    <!-- Tailwind Plus Elements (no npm; URL-encoded) -->
+    @Html.Raw("<script src=\"https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1\" type=\"module\"></script>")
+
+
+ 
+</head>
+<body class="h-full flex min-h-screen flex-col">
+
+    <!-- =================== Mobile off-canvas sidebar (Tailwind Plus) =================== -->
+    <el-dialog>
+      <dialog id="sidebar" class="backdrop:bg-transparent lg:hidden">
+        <el-dialog-backdrop class="fixed inset-0 bg-gray-900/80 transition-opacity duration-300 ease-linear data-closed:opacity-0"></el-dialog-backdrop>
+        <div tabindex="0" class="fixed inset-0 flex focus:outline-none">
+          <el-dialog-panel class="group/dialog-panel relative mr-16 flex w-full max-w-xs flex-1 transform transition duration-300 ease-in-out data-closed:-translate-x-full">
+            <div class="absolute top-0 left-full flex w-16 justify-center pt-5 duration-300 ease-in-out group-data-closed/dialog-panel:opacity-0">
+              <button type="button" command="close" commandfor="sidebar" class="-m-2.5 p-2.5">
+                <span class="sr-only">Close sidebar</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 text-white">
+                  <path d="M6 18 18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- MOBILE SIDEBAR CONTENT -->
+            <div class="relative flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-2">
+              <div class="relative flex h-16 shrink-0 items-center">
+                <img src="/consilientlogo.PNG" alt="Consilient IVH" class="h-8 w-auto" />
+              </div>
+
+              <nav class="relative flex flex-1 flex-col">
+                <ul role="list" class="flex flex-1 flex-col gap-y-7">
+                  <li>
+                    <ul role="list" class="-mx-2 space-y-1">
+                      <!-- Dashboard/Home -->
+                      @{
+                        var activeHome = IsActive("Home", "Index");
+                      }
+                      <li>
+                        <a asp-area="" asp-controller="Home" asp-action="Index"
+                           class="@C(activeHome,
+                             "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                             "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"
+                               class="@C(activeHome, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
+                            <path d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          Dashboard
+                        </a>
+                      </li>
+
+                      <!-- Patient Visits -->
+                      @{
+                        var activePv = IsActive("PatientVisits");
+                      }
+                      <li>
+                        <a asp-area="" asp-controller="PatientVisits" asp-action="Index"
+                                               class="@C(activePv,
+                             "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                             "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"
+                                                     class="@C(activePv, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
+                            <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Z" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          Patient Encounters
+                        </a>
+                      </li>
+
+                      <!-- Submissions -->
+                      @{
+                        var activeSub = IsActive("PatientVisitsStaging");
+                      }
+                      <li>
+                        <a asp-area="" asp-controller="PatientVisitsStaging" asp-action="Index"
+                           class="@C(activeSub,
+                             "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                             "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"
+                               class="@C(activeSub, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
+                            <path d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                          Submissions
+                        </a>
+                      </li>
+                    </ul>
+                  </li>
+
+                  @* Admin group *@
+                  @if (User.IsInRole("Administrator"))
+                  {
+                    <li>
+                      <div class="text-xs/6 font-semibold text-gray-400">Administration</div>
+                      <ul role="list" class="-mx-2 mt-2 space-y-1">
+                        @{
+                          var aEmp = IsActive("Employees");
+                          var aSrv = IsActive("ServiceTypes");
+                          var aFac = IsActive("Facilities");
+                        }
+                        <li>
+                          <a asp-area="" asp-controller="Employees" asp-action="Index"
+                             class="@C(aEmp,
+                               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                            <span class="@C(aEmp, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">E</span>
+                            Employees
+                          </a>
+                        </li>
+                        <li>
+                          <a asp-area="" asp-controller="ServiceTypes" asp-action="Index"
+                             class="@C(aSrv,
+                               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                            <span class="@C(aSrv, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">S</span>
+                            Service Types
+                          </a>
+                        </li>
+                        <li>
+                          <a asp-area="" asp-controller="Facilities" asp-action="Index"
+                             class="@C(aFac,
+                               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                               "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                            <span class="@C(aFac, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">F</span>
+                            Facilities
+                          </a>
+                        </li>
+                      </ul>
+                    </li>
+                  }
+
+                  <!-- User pinned bottom -->
+                  <li class="mt-auto -mx-6">
+                    <div class="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-brand-blue border-t border-gray-200">
+                                        <img src="~/images/default.jpg"
+                                             alt="User avatar"
+                                             class="h-8 w-8 rounded-full object-cover aspect-square bg-gray-50 outline -outline-offset-1 outline-black/5" />
+
+
+                      <div class="min-w-0">
+                        <div class="truncate">
+                          @(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Guest")
+                        </div>
+                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Administrator"))
+                        {
+                          <div class="text-xs text-brand-yellow">Administrator</div>
+                        }
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </el-dialog-panel>
+        </div>
+      </dialog>
+    </el-dialog>
+    <!-- =================== /Mobile off-canvas =================== -->
+
+    <!-- =================== Top navbar (logo only) =================== -->
+    <header class="sticky top-0 z-40 bg-white border-b border-brand-blue shadow-sm">
+        <nav class="container mx-auto px-4 py-3 grid grid-cols-3 items-center">
+            <!-- LEFT: mobile hamburger -->
+            <div class="flex items-center">
+                <button type="button"
+                        command="show-modal"
+                        commandfor="sidebar"
+                        class="md:hidden inline-flex items-center justify-center rounded-md p-2 text-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]"
+                        aria-label="Open sidebar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6">
+                        <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- CENTER: logo (home link) -->
+            <div class="flex justify-center">
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="flex items-center gap-2">
+                    <img src="/consilientlogo.PNG" alt="Consilient IVH logo" class="h-10 w-auto" />
+                    <span class="sr-only">Consilient Interventional Healthcare</span>
+                </a>
+            </div>
+
+            <!-- RIGHT: empty (keeps logo centered) -->
+            <div></div>
+        </nav>
+    </header>
+    <!-- =================== /Top navbar =================== -->
+
+    <!-- =================== Static desktop sidebar =================== -->
+    <div class="hidden lg:fixed lg:inset-y-0 lg:z-30 lg:flex lg:w-72 lg:flex-col">
+      <div class="relative flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
+        <div class="relative flex h-16 shrink-0 items-center">
+          <img src="/consilientlogo.PNG" alt="Consilient IVH" class="h-8 w-auto" />
+        </div>
+
+        <!-- DESKTOP SIDEBAR CONTENT (same items/logic as mobile) -->
+        <nav class="relative flex flex-1 flex-col">
+          <ul role="list" class="flex flex-1 flex-col gap-y-7">
+            <li>
+              <ul role="list" class="-mx-2 space-y-1">
+                @{
+                  var dHome = IsActive("Home", "Index");
+                  var dPv = IsActive("PatientVisits");
+                  var dSub = IsActive("PatientVisitsStaging");
+                }
+                <li>
+                  <a asp-area="" asp-controller="Home" asp-action="Index"
+                     class="@C(dHome,
+                       "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                       "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"
+                         class="@C(dHome, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
+                      <path d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Dashboard
+                  </a>
+                </li>
+                <li>
+                  <a asp-area="" asp-controller="PatientVisits" asp-action="Index"
+                                   class="@C(dPv,
+                       "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                       "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"
+                                         class="@C(dPv, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
+                      <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Z" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Patient Encounters
+                  </a>
+                </li>
+                <li>
+                  <a asp-area="" asp-controller="PatientVisitsStaging" asp-action="Index"
+                     class="@C(dSub,
+                       "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                       "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"
+                         class="@C(dSub, "size-6 shrink-0 text-brand-blue-dark", "size-6 shrink-0 text-gray-400 group-hover:text-brand-blue")">
+                      <path d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    Submissions
+                  </a>
+                </li>
+              </ul>
+            </li>
+
+            @if (User.IsInRole("Administrator"))
+            {
+              var dEmp = IsActive("Employees");
+              var dSrv = IsActive("ServiceTypes");
+              var dFac = IsActive("Facilities");
+              <li>
+                <div class="text-xs/6 font-semibold text-gray-400">Administration</div>
+                <ul role="list" class="-mx-2 mt-2 space-y-1">
+                  <li>
+                    <a asp-area="" asp-controller="Employees" asp-action="Index"
+                       class="@C(dEmp,
+                         "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                         "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                      <span class="@C(dEmp, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">E</span>
+                      Employees
+                    </a>
+                  </li>
+                  <li>
+                    <a asp-area="" asp-controller="ServiceTypes" asp-action="Index"
+                       class="@C(dSrv,
+                         "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                         "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                      <span class="@C(dSrv, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">S</span>
+                      Service Types
+                    </a>
+                  </li>
+                  <li>
+                    <a asp-area="" asp-controller="Facilities" asp-action="Index"
+                       class="@C(dFac,
+                         "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold bg-brand-blue-light/10 text-brand-blue-dark",
+                         "group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold text-gray-700 hover:bg-brand-blue-light/10 hover:text-brand-blue")">
+                      <span class="@C(dFac, "flex size-6 shrink-0 items-center justify-center rounded-lg border border-brand-blue bg-white text-[0.625rem] font-medium text-brand-blue-dark", "flex size-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-[0.625rem] font-medium text-gray-400 group-hover:border-brand-blue group-hover:text-brand-blue")">F</span>
+                      Facilities
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            }
+
+            <li class="mt-auto -mx-6">
+              <div class="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-brand-blue border-t border-gray-200">
+                @{
+                    var displayName = User.Identity?.IsAuthenticated == true ? User.Identity.Name : "0";
+                    var initial = string.IsNullOrEmpty(displayName) ? "?" : displayName[0].ToString().ToUpper();
+                }
+
+                <!-- Avatar as initial circle -->
+                <span class="flex size-8 items-center justify-center rounded-full bg-brand-blue/10 text-brand-blue font-semibold">
+                    @initial
+                </span>
+                <div class="min-w-0">
+                  <div class="truncate">
+                    @(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Guest")
+                  </div>
+                  @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Administrator"))
+                  {
+                    <div class="text-xs text-brand-yellow">Administrator</div>
+                  }
+                </div>
+              </div>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+    <!-- =================== /Static desktop sidebar =================== -->
+
+    <!-- =================== Main + Summary columns =================== -->
+    <main role="main" class="flex-grow lg:pl-72">
+      <div class="xl:pr-96">
+        <div class="px-4 py-10 sm:px-6 lg:px-8 lg:py-6">
+          @await Html.PartialAsync("_Alerts")
+          @RenderBody()
+        </div>
+      </div>
+    </main>
+
+    <aside class="block w-full
+              overflow-visible
+              xl:fixed xl:inset-y-0 xl:right-0 xl:w-96
+              xl:overflow-y-auto xl:max-h-screen
+              border-t xl:border-t-0 xl:border-l border-gray-200
+              px-4 py-10 sm:px-6 lg:px-8 lg:py-20">
+        @RenderSection("Summary", required: false)
+    </aside>
+
+
+
+    <!-- =================== /Main + Summary =================== -->
+
+    @* <footer class="bg-neutral-100 border-t mt-1" role="contentinfo">
+      <div class="container mx-auto px-4 py-8 flex items-center justify-between">
+        <p class="text-neutral-700 text-sm">
+          &copy; @DateTime.Now.Year Consilient Interventional Healthcare Web App. All rights reserved.
+        </p>
+      </div>
+    </footer> *@
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/navBar.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

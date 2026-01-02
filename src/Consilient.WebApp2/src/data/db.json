@@ -1,0 +1,324 @@
+{
+  "hospitalizationStatuses": [
+    {
+      "id": 1,
+      "code": "DTS",
+      "name": "Acute",
+      "billingCode": "99233",
+      "color": "#64ffda",
+      "order": 1,
+      "type": "state",
+      "iconName": "fa-procedures"
+    },
+    {
+      "id": 2,
+      "code": "DTO",
+      "name": "Acute",
+      "billingCode": "99233",
+      "color": "#64ffda",
+      "order": 2,
+      "type": "state",
+      "iconName": "fa-procedures"
+    },
+    {
+      "id": 3,
+      "code": "GD",
+      "name": "Acute",
+      "billingCode": "99233",
+      "color": "#64ffda",
+      "order": 3,
+      "type": "state",
+      "iconName": "fa-procedures"
+    },
+    {
+      "id": 4,
+      "code": "SND",
+      "name": "Status Next Day",
+      "billingCode": "99232",
+      "color": "#ffd180",
+      "order": 4,
+      "type": "state",
+      "iconName": "fa-procedures"
+    },
+    {
+      "id": 5,
+      "code": "DC",
+      "name": "Discharge Summary",
+      "billingCode": "99239",
+      "color": "#bbdefb",
+      "order": 5,
+      "type": "event",
+      "iconName": "fa-file-medical"
+    },
+    {
+      "id": 6,
+      "code": "PP",
+      "name": "Pending Placement",
+      "color": "#e0e0e0",
+      "order": 6,
+      "type": "state",
+      "iconName": "fa-procedures"
+    },
+    {
+      "id": 7,
+      "code": "TCON-PP",
+      "name": "TCON-PP",
+      "color": "#bdbdbd",
+      "order": 7,
+      "type": "state",
+      "iconName": "fa-procedures"
+    },
+    {
+      "id": 8,
+      "code": "PE",
+      "name": "Psychiatric Evaluation",
+      "billingCode": "90792",
+      "color": "#fff176",
+      "order": 8,
+      "type": "event",
+      "iconName": "fa-hospital-user"
+    }
+  ],
+  "users": [
+    {
+      "id": 100,
+      "email": "administrator@local",
+      "firstName": "Administrator",
+      "lastName": "Local",
+      "role": "administrator",
+      "emailConfirmed": true,
+      "password": "Hernan",
+      "externalProviders" : []
+    },
+    {
+      "id": 101,
+      "email": "nurse@local",
+      "firstName": "Nurse",
+      "lastName": "Local",
+      "role": "nurse",
+      "emailConfirmed": true,
+      "password": "Hernan",
+      "externalProviders" : []
+    },
+    {
+      "id": 102,
+      "email": "provider@local",
+      "firstName": "Provider",
+      "lastName": "Local",
+      "role": "provider",
+      "emailConfirmed": true,
+      "password": "Hernan",
+      "externalProviders" : []
+    }
+  ],
+  "patients": [
+    {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Doe",
+      "dateOfBirth": "1980-01-01",
+      "gender": "male",
+      "mrn": "384920"
+    },
+    {
+      "id": 2,
+      "firstName": "Jane",
+      "lastName": "Roe",
+      "dateOfBirth": "1975-05-15",
+      "gender": "female",
+      "mrn": "295184"
+    },
+    {
+      "id": 3,
+      "firstName": "Sam",
+      "lastName": "Green",
+      "dateOfBirth": "1990-03-22",
+      "gender": "other",
+      "mrn": "671203"
+    }
+  ],
+  "hospitalizations": [
+    {
+      "id": 1,
+      "patientId": 1,
+      "admissionDate": "2025-11-01",
+      "hospitalizationStatusId": 1,
+      "facilityId": 1,
+      "caseId": 3847,
+      "psychEvaluation": false,
+      "dischargeDate": null
+    },
+    {
+      "id": 2,
+      "patientId": 2,
+      "admissionDate": "2025-10-20",
+      "hospitalizationStatusId": 4,
+      "facilityId": 1,
+      "caseId": 7219,
+      "psychEvaluation": false,
+      "dischargeDate": null
+    },
+    {
+      "id": 3,
+      "patientId": 3,
+      "admissionDate": "2025-11-10",
+      "hospitalizationStatusId": 5,
+      "facilityId": 2,
+      "caseId": 5632,
+      "psychEvaluation": false,
+      "dischargeDate": null
+    }
+  ],
+  "visits": [
+    {
+      "id": 1,
+      "patientId": 1,
+      "hospitalizationId": 1,
+      "date": "2025-11-01",
+      "room": "401A"
+    },
+    {
+      "id": 2,
+      "patientId": 2,
+      "hospitalizationId": 2,
+      "date": "2025-10-20",
+      "room": "205B"
+    },
+    {
+      "id": 3,
+      "patientId": 3,
+      "hospitalizationId": 3,
+      "date": "2025-11-10",
+      "room": "703A"
+    }
+  ],
+  "assignedProfessionals": [
+    { "visitId": 1, "providerId": 1 },
+    { "visitId": 1, "providerId": 2 },
+    { "visitId": 2, "providerId": 1 },
+    { "visitId": 3, "providerId": 2 }
+  ],
+  "providers": [
+    { "id": 1, "firstName": "Alice", "lastName": "Smith", "role": "Physician" },
+    { "id": 2, "firstName": "Bob", "lastName": "Lee", "role": "Nurse" }
+  ],
+  "visitEvents": [
+    {
+      "id": 1,
+      "eventOccurredAt": "2025-11-15T07:30:00Z",
+      "visitId": 1,
+      "providerId": 2,
+      "enteredByUserId": 2,
+      "description": "Patient rested overnight, no incidents reported.",
+      "eventTypeId": 1
+    },
+    {
+      "id": 2,
+      "eventOccurredAt": "2025-11-15T08:15:00Z",
+      "visitId": 1,
+      "providerId": 2,
+      "enteredByUserId": 2,
+      "description": "Patient requested water at 6am, no other events.",
+      "eventTypeId": 1
+    },
+    {
+      "id": 3,
+      "eventOccurredAt": "2025-11-15T14:00:00Z",
+      "visitId": 1,
+      "providerId": 1,
+      "enteredByUserId": 1,
+      "description": "Interviewed patient, discussed mood and sleep. Patient reports feeling better today.",
+      "eventTypeId": 2
+    },
+    {
+      "id": 4,
+      "eventOccurredAt": "2025-11-15T17:30:00Z",
+      "visitId": 1,
+      "providerId": 1,
+      "enteredByUserId": 1,
+      "description": "Plan: Continue current medication, encourage group therapy participation.",
+      "eventTypeId": 3
+    },
+    {
+      "id": 5,
+      "eventOccurredAt": "2025-10-20T07:45:00Z",
+      "visitId": 2,
+      "providerId": 2,
+      "enteredByUserId": 2,
+      "description": "Patient had difficulty sleeping, nurse checked at 3am.",
+      "eventTypeId": 1
+    },
+    {
+      "id": 6,
+      "eventOccurredAt": "2025-10-20T08:30:00Z",
+      "visitId": 2,
+      "providerId": 2,
+      "enteredByUserId": 2,
+      "description": "No incidents overnight, patient calm in the morning.",
+      "eventTypeId": 1
+    },
+    {
+      "id": 7,
+      "eventOccurredAt": "2025-10-20T15:00:00Z",
+      "visitId": 2,
+      "providerId": 1,
+      "enteredByUserId": 1,
+      "description": "Interview: Patient reports anxiety, discussed coping strategies.",
+      "eventTypeId": 2
+    },
+    {
+      "id": 9,
+      "eventOccurredAt": "2025-11-10T07:20:00Z",
+      "visitId": 3,
+      "providerId": 2,
+      "enteredByUserId": 2,
+      "description": "Patient woke up early, no issues overnight.",
+      "eventTypeId": 1
+    },
+    {
+      "id": 10,
+      "eventOccurredAt": "2025-11-10T08:10:00Z",
+      "visitId": 3,
+      "providerId": 2,
+      "enteredByUserId": 2,
+      "description": "Patient had breakfast, nurse noted positive mood.",
+      "eventTypeId": 1
+    },
+    {
+      "id": 11,
+      "eventOccurredAt": "2025-11-10T13:45:00Z",
+      "visitId": 3,
+      "providerId": 1,
+      "enteredByUserId": 1,
+      "description": "Interview: Patient discussed family visit, expressed happiness.",
+      "eventTypeId": 2
+    }
+  ],
+  "visitEventTypes": [
+    { "id": 1, "label": "Interval", "value": "interval", "icon": "fa-bed", "color": "#1976d2" },
+    { "id": 2, "label": "Interview", "value": "interview", "icon": "fa-user-md", "color": "#43a047" },
+    { "id": 3, "label": "Plan", "value": "plan", "icon": "fa-notes-medical", "color": "#fbc02d" }
+  ],
+  "statusChanges": [
+    {
+      "hospitalizationId": 1,
+      "date": "2025-10-05",
+      "hospitalizationStatusId": 8
+    },
+    {
+      "hospitalizationId": 1,
+      "date": "2025-10-05",
+      "hospitalizationStatusId": 1
+    },
+        {
+      "hospitalizationId": 1,
+      "date": "2025-10-10",
+      "hospitalizationStatusId": 6
+    },
+    {
+      "hospitalizationId": 1,
+      "date": "2025-10-23",
+      "hospitalizationStatusId": 5
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+﻿@model Consilient.WebApp.ViewModels.PatientVisitViewModel
+
+@{
+    ViewData["Title"] = "Patient Encounter Details";
+}
+
+<div>
+    <!-- Header -->
+    <div class="px-4 sm:px-0">
+        <h3 class="text-base/7 font-semibold text-gray-900">@ViewData["Title"]</h3>
+        <p class="mt-1 max-w-2xl text-sm/6 text-gray-500">Summary of this patient encounter.</p>
+    </div>
+
+    <!-- Details -->
+    <div class="mt-6 border-t border-gray-100">
+        <dl class="divide-y divide-gray-100">
+
+            <!-- Date Serviced -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.DateServiced)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.DateServiced)
+                </dd>
+            </div>
+
+            <!-- Patient MRN -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient!.PatientMrn)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0 break-words">
+                    @Html.DisplayFor(m => m.Patient!.PatientMrn)
+                </dd>
+            </div>
+
+            <!-- Patient Name -->
+@*             <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient.PatientFullName)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Patient.PatientFullName)
+                </dd>
+            </div> *@
+
+            <!-- Birth Date -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Patient!.PatientBirthDate)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Patient!.PatientBirthDate)
+                </dd>
+            </div>
+
+            <!-- Admission Number -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.AdmissionNumber)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0 break-words">
+                    @Html.DisplayFor(m => m.AdmissionNumber)
+                </dd>
+            </div>
+
+            <!-- Insurance -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Insurance!.CodeAndDescription)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Insurance!.CodeAndDescription)
+                </dd>
+            </div>
+
+            <!-- Facility -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.Facility!.FacilityName)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.Facility!.FacilityName)
+                </dd>
+            </div>
+
+            <!-- Service Type -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">@Html.DisplayNameFor(m => m.ServiceType!.CodeAndDescription)</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Html.DisplayFor(m => m.ServiceType!.CodeAndDescription)
+                </dd>
+            </div>
+
+            <!-- Physician -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Physician</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.PhysicianEmployee!.FullName
+                </dd>
+            </div>
+
+            <!-- Nurse Practitioner -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Nurse Practitioner</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.NursePractitionerEmployee!.FullName
+                </dd>
+            </div>
+
+            <!-- Cosigning Physician -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Cosigning Physician</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.CosigningPhysicianEmployee!.FullName
+                </dd>
+            </div>
+
+            <!-- Scribe -->
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Scribe</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.ScribeEmployee.FullName
+                </dd>
+            </div>
+
+            <div class="px-4 py-6 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-0">
+                <dt class="text-sm/6 font-medium text-gray-900">Is Scribe Service Only</dt>
+                <dd class="mt-1 text-sm/6 text-gray-700 sm:col-span-2 sm:mt-0">
+                    @Model.IsScribeServiceOnly
+                </dd>
+            </div>
+        </dl>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+        <a asp-action="Index" class="text-sm/6 font-semibold text-gray-900">
+            ← Back to List
+        </a>
+
+        @* Optional edit if you have a route *@
+        <a asp-action="Edit"
+           asp-route-id="@Model.Id"
+           class="inline-flex items-center justify-center rounded-md bg-brand-blue px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-blue-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue">
+            Edit
+        </a>
+    </div>
+</div>

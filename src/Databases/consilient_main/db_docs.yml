@@ -1,0 +1,24 @@
+# Database Documentation Configuration for ConsilientDB
+# This file controls how database documentation is generated
+
+database:
+  # Base database name (will be combined with environment)
+  name: "consilient_main"
+
+  # Whether to generate documentation for this database
+  generate_docs: true
+
+  # Optional: environment-specific database name overrides
+  # If not specified, uses the name directly as provided to the workflow
+  environment_names:
+    dev: "consilient_main_dev"
+    prod: "consilient_main"
+
+schemas:
+  # List of schemas to exclude from documentation
+  # These schemas will be discovered but not included in the generated docs
+  exclude: []
+  # Example:
+  # exclude:
+  #   - "TempSchema"
+  #   - "TestSchema"

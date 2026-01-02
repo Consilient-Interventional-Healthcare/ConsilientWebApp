@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="IPatientVisitService.cs" />
+    <Compile Remove="IStagingPatientVisitService.cs" />
+    <Compile Remove="Models\Requests\CreatePatientVisitRequest.cs" />
+    <Compile Remove="Models\Requests\CreateStagingPatientVisitRequest.cs" />
+    <Compile Remove="Models\Requests\UpdatePatientVisitRequest.cs" />
+    <Compile Remove="Models\Requests\UpdateStagingPatientVisitRequest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Consilient.Common\Consilient.Common.csproj" />
+  </ItemGroup>
+
+</Project>
