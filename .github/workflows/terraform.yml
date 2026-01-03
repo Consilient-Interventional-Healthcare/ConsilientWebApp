@@ -127,6 +127,7 @@ jobs:
       # Terraform State Backend (from GitHub Repository Variables)
       TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
       TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER || 'tfstate' }}
+      TF_STATE_RESOURCE_GROUP: ${{ vars.TF_STATE_RESOURCE_GROUP || 'consilient-terraform' }}
       # GitHub Actions debug mode controls workflow output verbosity
       ACTIONS_STEP_DEBUG: ${{ inputs.enable-debug && 'true' || 'false' }}
 
@@ -256,7 +257,7 @@ jobs:
             # GitHub Actions: Use Azure Storage backend with OIDC
             echo "ℹ️  Initializing with Azure Storage backend (OIDC authentication)"
             terraform init \
-              -backend-config="resource_group_name=${TF_VAR_resource_group_name}" \
+              -backend-config="resource_group_name=${TF_STATE_RESOURCE_GROUP}" \
               -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
               -backend-config="container_name=${TF_STATE_CONTAINER}" \
               -backend-config="key=${TF_VAR_environment}.terraform.tfstate" \
