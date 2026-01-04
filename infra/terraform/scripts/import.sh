@@ -128,8 +128,8 @@ import_resource "azurerm_container_registry.main" "${ACR_ID}" "Container Registr
 SQL_SUFFIX=$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)
 SQL_SERVER_NAME="${TF_VAR_project_name}-sqlsrv-${TF_VAR_environment}-${SQL_SUFFIX}"
 SQL_SERVER_ID="${RG_ID}/providers/Microsoft.Sql/servers/${SQL_SERVER_NAME}"
-MAIN_DB_ID="${SQL_SERVER_ID}/databases/consilient_main_${TF_VAR_environment}"
-HANGFIRE_DB_ID="${SQL_SERVER_ID}/databases/consilient_hangfire_${TF_VAR_environment}"
+MAIN_DB_ID="${SQL_SERVER_ID}/databases/${TF_VAR_project_name}_main_${TF_VAR_environment}"
+HANGFIRE_DB_ID="${SQL_SERVER_ID}/databases/${TF_VAR_project_name}_hangfire_${TF_VAR_environment}"
 import_resource "azurerm_mssql_server.main" "${SQL_SERVER_ID}" "SQL Server" "critical"
 import_resource "module.main_db.azurerm_mssql_database.this" "${MAIN_DB_ID}" "Main Database" "critical"
 import_resource "module.hangfire_db.azurerm_mssql_database.this" "${HANGFIRE_DB_ID}" "Hangfire Database" "critical"

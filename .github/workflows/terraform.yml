@@ -116,6 +116,7 @@ jobs:
       TF_VAR_oauth_client_secret: ${{ secrets.OAUTH_CLIENT_SECRET || '' }}
       TF_VAR_enable_local_firewall: ${{ inputs.allow-local-firewall }}
       # Non-sensitive configuration variables (from GitHub Variables)
+      TF_VAR_project_name: ${{ vars.PROJECT_NAME || 'consilient' }}
       # Environment-specific (from GitHub Environment Variables)
       TF_VAR_region: ${{ vars.AZURE_REGION }}
       TF_VAR_resource_group_name: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
