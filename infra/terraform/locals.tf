@@ -65,7 +65,12 @@ locals {
   # --------------------------------------------------------------------------
   api = {
     service_plan_name = "${var.project_name}-asp-api-${var.environment}"
-    service_name      = "${var.project_name}-api-${var.environment}"
+    # Add unique suffix if enabled to avoid global hostname conflicts
+    service_name = var.enable_unique_app_names ? (
+      "${var.project_name}-api-${var.environment}-${local.unique_suffix}"
+    ) : (
+      "${var.project_name}-api-${var.environment}"
+    )
 
     # Uses default_skus.app_service_plan for each environment
     # Override here if API needs different SKUs than default
@@ -81,7 +86,12 @@ locals {
   # --------------------------------------------------------------------------
   react = {
     service_plan_name = "${var.project_name}-asp-react-${var.environment}"
-    service_name      = "${var.project_name}-react-${var.environment}"
+    # Add unique suffix if enabled to avoid global hostname conflicts
+    service_name = var.enable_unique_app_names ? (
+      "${var.project_name}-react-${var.environment}-${local.unique_suffix}"
+    ) : (
+      "${var.project_name}-react-${var.environment}"
+    )
 
     # Uses default_skus.app_service_plan for each environment
     # Override here if React needs different SKUs than default

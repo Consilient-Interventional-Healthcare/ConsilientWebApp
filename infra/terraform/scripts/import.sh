@@ -106,6 +106,121 @@ import_resource() {
   fi
 }
 
+# Function to check if an Azure webapp resource exists
+# Returns 0 if exists, 1 if not found
+check_azure_resource_exists() {
+  local resource_name="$1"
+  local resource_group="$2"
+
+  if az webapp show --name "${resource_name}" --resource-group "${resource_group}" &>/dev/null; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Function to detect hostname conflicts (resource doesn't exist but name is reserved globally)
+# Returns: "exists", "hostname_conflict", or "available"
+detect_hostname_conflict() {
+  local resource_name="$1"
+  local resource_group="$2"
+
+  # Check if resource exists in our subscription
+  if check_azure_resource_exists "${resource_name}" "${resource_group}"; then
+    # Resource exists - this is a legitimate import case
+    echo "exists"
+    return 0
+  else
+    # Resource doesn't exist in our subscription
+    # Try to resolve the hostname via DNS to detect global reservation
+    local hostname="${resource_name}.azurewebsites.net"
+    if nslookup "${hostname}" &>/dev/null 2>&1 || host "${hostname}" &>/dev/null 2>&1; then
+      # Hostname resolves in DNS - likely reserved by another subscription or pending deletion
+      echo "hostname_conflict"
+      return 1
+    else
+      # Hostname doesn't resolve - safe to create
+      echo "available"
+      return 0
+    fi
+  fi
+}
+
+# Enhanced import function specifically for App Services
+# Validates resource existence before attempting import
+import_app_service() {
+  local tf_address="$1"
+  local resource_id="$2"
+  local resource_name="$3"
+  local app_name="$4"  # Just the app name (e.g., "consilient-react-dev")
+  local is_critical="${5:-false}"
+
+  # Check if already in state
+  if terraform state list | grep -q "^${tf_address}\$"; then
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ✅ Already in state: ${resource_name}"
+    return 0
+  fi
+
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  🔍 Validating resource existence: ${app_name}"
+
+  # Pre-validate: Check if resource actually exists in Azure
+  if check_azure_resource_exists "${app_name}" "${TF_VAR_resource_group_name}"; then
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ✅ Resource exists in Azure - proceeding with import"
+
+    # Resource exists - safe to import
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  📥 Importing: ${resource_name}"
+    local import_output
+    if import_output=$(terraform import "${tf_address}" "${resource_id}" 2>&1); then
+      [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ✅ Imported successfully: ${resource_name}"
+      return 0
+    else
+      # Import failed even though resource exists
+      echo "  ⚠️  Import failed for existing resource: ${resource_name}"
+      echo "$import_output" | grep -i "error" | head -3
+      ((failed_imports++))
+
+      if [ "$is_critical" = "critical" ]; then
+        ((failed_critical_imports++))
+        failed_critical_import_list+=("${resource_name}")
+      else
+        failed_import_list+=("${resource_name}")
+      fi
+      return 1
+    fi
+  else
+    # Resource doesn't exist - check for hostname conflict
+    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  Resource does not exist in Azure subscription"
+
+    local conflict_status=$(detect_hostname_conflict "${app_name}" "${TF_VAR_resource_group_name}")
+
+    if [ "$conflict_status" = "hostname_conflict" ]; then
+      echo "  ⚠️  HOSTNAME CONFLICT DETECTED: ${resource_name}"
+      echo "     The hostname '${app_name}.azurewebsites.net' is globally reserved but the resource doesn't exist in your subscription."
+      echo "     This could mean:"
+      echo "       1. The hostname was recently deleted and DNS hasn't cleared (wait 24-48 hours)"
+      echo "       2. Another Azure subscription owns this hostname"
+      echo "       3. The resource is in a different resource group"
+      echo ""
+      echo "     RECOMMENDED ACTIONS:"
+      echo "       - Option 1: Wait 24-48 hours for hostname to be released"
+      echo "       - Option 2: Choose a different name by modifying TF_VAR_project_name or adding a unique suffix"
+      echo "       - Option 3: Check if resource exists in a different resource group and delete it"
+      echo ""
+
+      # This is a critical blocker - cannot create or import
+      if [ "$is_critical" = "critical" ]; then
+        ((failed_critical_imports++))
+        failed_critical_import_list+=("${resource_name} (HOSTNAME CONFLICT)")
+      fi
+      return 1
+    else
+      # Hostname is available - Terraform can create it
+      [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ✅ Resource doesn't exist and hostname is available - Terraform will create it"
+      return 0
+    fi
+  fi
+}
+
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "1. Resource Group"
 RG_ID="/subscriptions/${TF_VAR_subscription_id}/resourceGroups/${TF_VAR_resource_group_name}"
 import_resource "azurerm_resource_group.main" "${RG_ID}" "Resource Group"
@@ -239,10 +354,18 @@ import_resource "module.api_app.azurerm_service_plan.this" "${ASP_API_ID}" "API 
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "12. App Services"
-APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/${TF_VAR_project_name}-react-${TF_VAR_environment}"
-APP_API_ID="${RG_ID}/providers/Microsoft.Web/sites/${TF_VAR_project_name}-api-${TF_VAR_environment}"
-import_resource "module.react_app.azurerm_linux_web_app.this" "${APP_REACT_ID}" "React App Service" "critical"
-import_resource "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API App Service" "critical"
+
+# Extract app names for validation
+REACT_APP_NAME="${TF_VAR_project_name}-react-${TF_VAR_environment}"
+API_APP_NAME="${TF_VAR_project_name}-api-${TF_VAR_environment}"
+
+# Construct resource IDs
+APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/${REACT_APP_NAME}"
+APP_API_ID="${RG_ID}/providers/Microsoft.Web/sites/${API_APP_NAME}"
+
+# Use enhanced import function with resource validation
+import_app_service "module.react_app.azurerm_linux_web_app.this" "${APP_REACT_ID}" "React App Service" "${REACT_APP_NAME}" "critical"
+import_app_service "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API App Service" "${API_APP_NAME}" "critical"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "13. ACR Pull Role Assignments"
@@ -328,12 +451,41 @@ if [ -n "$GITHUB_STEP_SUMMARY" ]; then
       echo "- \`${resource}\`" >> $GITHUB_STEP_SUMMARY
     done
     echo "" >> $GITHUB_STEP_SUMMARY
-    echo "**Action Required**: These resources are essential to the infrastructure and must be resolvable by Terraform." >> $GITHUB_STEP_SUMMARY
-    echo "- Check if the resources actually exist in Azure under the correct resource group" >> $GITHUB_STEP_SUMMARY
-    echo "- Verify the resource naming conventions match the Terraform configuration" >> $GITHUB_STEP_SUMMARY
-    echo "- Ensure proper Azure credentials and permissions to list resources" >> $GITHUB_STEP_SUMMARY
-    echo "- If resources don't exist yet, remove them from tfstate or use \`terraform apply\` to create them" >> $GITHUB_STEP_SUMMARY
-    echo "" >> $GITHUB_STEP_SUMMARY
+
+    # Check if any hostname conflicts were detected
+    if echo "${failed_critical_import_list[@]}" | grep -q "HOSTNAME CONFLICT"; then
+      echo "### 🔴 Hostname Conflict Detected" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+      echo "One or more Azure App Service hostnames are globally reserved but don't exist in your subscription." >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+      echo "**Root Cause:** Azure App Service hostnames (*.azurewebsites.net) are globally unique across ALL subscriptions." >> $GITHUB_STEP_SUMMARY
+      echo "The hostname may be:" >> $GITHUB_STEP_SUMMARY
+      echo "- Recently deleted (DNS takes 24-48 hours to clear)" >> $GITHUB_STEP_SUMMARY
+      echo "- Owned by another Azure subscription" >> $GITHUB_STEP_SUMMARY
+      echo "- Located in a different resource group" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+      echo "**Resolution Options:**" >> $GITHUB_STEP_SUMMARY
+      echo "1. **Wait**: If recently deleted, wait 24-48 hours for DNS to clear" >> $GITHUB_STEP_SUMMARY
+      echo "2. **Rename**: Change \\\`TF_VAR_project_name\\\` or add a unique suffix in GitHub Variables" >> $GITHUB_STEP_SUMMARY
+      echo "3. **Cleanup**: Check other resource groups/subscriptions for orphaned resources" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+      echo "**Example Fix (Option 2):**" >> $GITHUB_STEP_SUMMARY
+      echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+      echo "# Set a new project name in GitHub Variables:" >> $GITHUB_STEP_SUMMARY
+      echo "TF_VAR_project_name=\"consilient-v2\"" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+      echo "# Or check for orphaned resources:" >> $GITHUB_STEP_SUMMARY
+      echo "az webapp list --query \"[?name=='consilient-react-dev' || name=='consilient-api-dev'].{name:name,resourceGroup:resourceGroup}\" -o table" >> $GITHUB_STEP_SUMMARY
+      echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+    else
+      echo "**Action Required**: These resources are essential to the infrastructure and must be resolvable by Terraform." >> $GITHUB_STEP_SUMMARY
+      echo "- Check if the resources actually exist in Azure under the correct resource group" >> $GITHUB_STEP_SUMMARY
+      echo "- Verify the resource naming conventions match the Terraform configuration" >> $GITHUB_STEP_SUMMARY
+      echo "- Ensure proper Azure credentials and permissions to list resources" >> $GITHUB_STEP_SUMMARY
+      echo "- If resources don't exist yet, remove them from tfstate or use \`terraform apply\` to create them" >> $GITHUB_STEP_SUMMARY
+      echo "" >> $GITHUB_STEP_SUMMARY
+    fi
   fi
 
   if [ $failed_imports -gt 0 ] && [ $failed_critical_imports -eq 0 ]; then

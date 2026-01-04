@@ -196,3 +196,14 @@ EOT
   type        = string
   default     = ""
 }
+
+variable "enable_unique_app_names" {
+  description = <<EOT
+Enable unique suffixes for App Service names to avoid global hostname conflicts.
+When true, adds a 6-character unique suffix to app service names (e.g., consilient-api-dev-a1b2c3).
+This prevents conflicts when hostname is globally reserved.
+Set to false to use standard names (consilient-api-dev).
+EOT
+  type        = bool
+  default     = false
+}

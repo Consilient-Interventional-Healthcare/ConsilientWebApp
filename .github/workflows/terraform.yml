@@ -399,13 +399,36 @@ jobs:
           # Try apply - if it fails with state errors, run import and retry
           if ! terraform apply -auto-approve; then
             echo ""
-            echo "⚠️  Terraform apply failed - checking for state drift..."
+            echo "⚠️  Terraform apply failed - analyzing error..."
 
-            # Capture apply output to check for state-related errors
+            # Capture apply output to check error type
             APPLY_OUTPUT=$(terraform apply -auto-approve 2>&1 || true)
 
-            # Check if error is state-related
-            if echo "$APPLY_OUTPUT" | grep -qE "(resource doesn't exist|already exists|Cannot import|state|no matching)"; then
+            # Check for hostname conflict specifically (includes "already exists")
+            if echo "$APPLY_OUTPUT" | grep -qiE "(hostname.*already exists|name.*already exists.*Web/sites)"; then
+              echo "🔍 Detected potential hostname conflict - running diagnostics via import script..."
+
+              # Run import script which now includes hostname validation
+              if bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/import.sh"; then
+                echo "✅ Import diagnostics completed - retrying terraform apply..."
+
+                # Retry apply
+                if terraform apply -auto-approve; then
+                  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform apply succeeded after import"
+                  exit 0
+                else
+                  echo "❌ Terraform apply still failing after import"
+                  echo "This may indicate a hostname conflict that requires manual intervention."
+                  exit 1
+                fi
+              else
+                echo "❌ Import diagnostics failed"
+                echo "Check the import output above for hostname conflict details."
+                exit 1
+              fi
+
+            # Check for other state-related issues
+            elif echo "$APPLY_OUTPUT" | grep -qE "(resource doesn't exist|Cannot import|state|no matching)"; then
               [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  State drift detected - running import script..."
 
               # Run import script
@@ -425,7 +448,7 @@ jobs:
                 exit 1
               fi
             else
-              echo "❌ Terraform apply failed (not a state issue)"
+              echo "❌ Terraform apply failed (not a state or hostname issue)"
               echo "$APPLY_OUTPUT" | head -20
               exit 1
             fi
