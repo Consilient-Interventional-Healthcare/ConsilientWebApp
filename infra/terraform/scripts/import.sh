@@ -112,21 +112,21 @@ import_resource "azurerm_resource_group.main" "${RG_ID}" "Resource Group"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "2. Networking Resources"
-VNET_ID="${RG_ID}/providers/Microsoft.Network/virtualNetworks/consilient-vnet-${TF_VAR_environment}"
-SUBNET_ID="${VNET_ID}/subnets/consilient-subnet-${TF_VAR_environment}"
+VNET_ID="${RG_ID}/providers/Microsoft.Network/virtualNetworks/${TF_VAR_project_name}-vnet-${TF_VAR_environment}"
+SUBNET_ID="${VNET_ID}/subnets/${TF_VAR_project_name}-subnet-${TF_VAR_environment}"
 import_resource "azurerm_virtual_network.main" "${VNET_ID}" "Virtual Network"
 import_resource "azurerm_subnet.main" "${SUBNET_ID}" "Subnet"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "3. Container Registry"
-ACR_NAME=$(terraform output -raw acr_name 2>/dev/null || echo "consilientacr${TF_VAR_environment}$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
+ACR_NAME=$(terraform output -raw acr_name 2>/dev/null || echo "${TF_VAR_project_name}acr${TF_VAR_environment}$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
 ACR_ID="${RG_ID}/providers/Microsoft.ContainerRegistry/registries/${ACR_NAME}"
 import_resource "azurerm_container_registry.main" "${ACR_ID}" "Container Registry" "critical"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "4. SQL Server and Databases"
 SQL_SUFFIX=$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)
-SQL_SERVER_NAME="consilient-sqlsrv-${TF_VAR_environment}-${SQL_SUFFIX}"
+SQL_SERVER_NAME="${TF_VAR_project_name}-sqlsrv-${TF_VAR_environment}-${SQL_SUFFIX}"
 SQL_SERVER_ID="${RG_ID}/providers/Microsoft.Sql/servers/${SQL_SERVER_NAME}"
 MAIN_DB_ID="${SQL_SERVER_ID}/databases/consilient_main_${TF_VAR_environment}"
 HANGFIRE_DB_ID="${SQL_SERVER_ID}/databases/consilient_hangfire_${TF_VAR_environment}"
@@ -143,17 +143,17 @@ fi
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "5. Storage Account and Container"
-STORAGE_NAME="consilientloki${TF_VAR_environment}${SQL_SUFFIX}"
+STORAGE_NAME="${TF_VAR_project_name}loki${TF_VAR_environment}${SQL_SUFFIX}"
 STORAGE_ID="${RG_ID}/providers/Microsoft.Storage/storageAccounts/${STORAGE_NAME}"
 STORAGE_CONTAINER_ID="${STORAGE_ID}/blobServices/default/containers/loki-data"
-PRIVATE_ENDPOINT_ID="${RG_ID}/providers/Microsoft.Network/privateEndpoints/consilient-pe-loki-storage-${TF_VAR_environment}"
+PRIVATE_ENDPOINT_ID="${RG_ID}/providers/Microsoft.Network/privateEndpoints/${TF_VAR_project_name}-pe-loki-storage-${TF_VAR_environment}"
 import_resource "azurerm_storage_account.loki" "${STORAGE_ID}" "Loki Storage Account"
 import_resource "azurerm_storage_container.loki" "${STORAGE_CONTAINER_ID}" "Loki Storage Container"
 import_resource "azurerm_private_endpoint.loki_storage" "${PRIVATE_ENDPOINT_ID}" "Loki Storage Private Endpoint"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "6. Managed Identity"
-IDENTITY_ID="${RG_ID}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/consilient-loki-identity-${TF_VAR_environment}"
+IDENTITY_ID="${RG_ID}/providers/Microsoft.ManagedIdentity/userAssignedIdentities/${TF_VAR_project_name}-loki-identity-${TF_VAR_environment}"
 import_resource "azurerm_user_assigned_identity.loki" "${IDENTITY_ID}" "Loki Managed Identity"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
@@ -222,25 +222,25 @@ fi
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "9. Container App (Loki)"
-CONTAINER_APP_ID="${RG_ID}/providers/Microsoft.App/containerApps/consilient-loki-${TF_VAR_environment}"
+CONTAINER_APP_ID="${RG_ID}/providers/Microsoft.App/containerApps/${TF_VAR_project_name}-loki-${TF_VAR_environment}"
 import_resource "azurerm_container_app.loki" "${CONTAINER_APP_ID}" "Loki Container App"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "10. Grafana"
-GRAFANA_ID="${RG_ID}/providers/Microsoft.Dashboard/grafana/consilient-grafana-${TF_VAR_environment}"
+GRAFANA_ID="${RG_ID}/providers/Microsoft.Dashboard/grafana/${TF_VAR_project_name}-grafana-${TF_VAR_environment}"
 import_resource "azurerm_dashboard_grafana.main" "${GRAFANA_ID}" "Grafana Dashboard"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "11. App Service Plans"
-ASP_REACT_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/consilient-asp-react-${TF_VAR_environment}"
-ASP_API_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/consilient-asp-api-${TF_VAR_environment}"
+ASP_REACT_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/${TF_VAR_project_name}-asp-react-${TF_VAR_environment}"
+ASP_API_ID="${RG_ID}/providers/Microsoft.Web/serverFarms/${TF_VAR_project_name}-asp-api-${TF_VAR_environment}"
 import_resource "module.react_app.azurerm_service_plan.this" "${ASP_REACT_ID}" "React App Service Plan" "critical"
 import_resource "module.api_app.azurerm_service_plan.this" "${ASP_API_ID}" "API App Service Plan" "critical"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "12. App Services"
-APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-react-${TF_VAR_environment}"
-APP_API_ID="${RG_ID}/providers/Microsoft.Web/sites/consilient-api-${TF_VAR_environment}"
+APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/${TF_VAR_project_name}-react-${TF_VAR_environment}"
+APP_API_ID="${RG_ID}/providers/Microsoft.Web/sites/${TF_VAR_project_name}-api-${TF_VAR_environment}"
 import_resource "module.react_app.azurerm_linux_web_app.this" "${APP_REACT_ID}" "React App Service" "critical"
 import_resource "module.api_app.azurerm_linux_web_app.this" "${APP_API_ID}" "API App Service" "critical"
 
@@ -284,16 +284,16 @@ fi
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "14. Key Vault"
-KV_NAME=$(terraform output -raw key_vault_name 2>/dev/null || echo "consilient-kv-${TF_VAR_environment}-$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
+KV_NAME=$(terraform output -raw key_vault_name 2>/dev/null || echo "${TF_VAR_project_name}-kv-${TF_VAR_environment}-$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
 KV_ID="${RG_ID}/providers/Microsoft.KeyVault/vaults/${KV_NAME}"
 import_resource "azurerm_key_vault.main" "${KV_ID}" "Key Vault" "critical"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "15. Key Vault Secrets"
-import_resource "azurerm_key_vault_secret.sql_connection_main" "${KV_ID}/secrets/sql-connection-string-main" "SQL Main Connection Secret"
-import_resource "azurerm_key_vault_secret.sql_connection_hangfire" "${KV_ID}/secrets/sql-connection-string-hangfire" "SQL Hangfire Connection Secret"
-import_resource "azurerm_key_vault_secret.jwt_signing_secret" "${KV_ID}/secrets/jwt-signing-secret" "JWT Signing Secret"
-import_resource "azurerm_key_vault_secret.grafana_loki_url" "${KV_ID}/secrets/grafana-loki-url" "Grafana Loki URL Secret"
+import_resource "azurerm_key_vault_secret.sql_connection_main" "https://${KV_NAME}.vault.azure.net/secrets/sql-connection-string-main" "SQL Main Connection Secret"
+import_resource "azurerm_key_vault_secret.sql_connection_hangfire" "https://${KV_NAME}.vault.azure.net/secrets/sql-connection-string-hangfire" "SQL Hangfire Connection Secret"
+import_resource "azurerm_key_vault_secret.jwt_signing_secret" "https://${KV_NAME}.vault.azure.net/secrets/jwt-signing-secret" "JWT Signing Secret"
+import_resource "azurerm_key_vault_secret.grafana_loki_url" "https://${KV_NAME}.vault.azure.net/secrets/grafana-loki-url" "Grafana Loki URL Secret"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "16. Key Vault Role Assignments"
