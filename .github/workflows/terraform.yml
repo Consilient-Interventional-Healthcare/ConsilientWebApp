@@ -495,17 +495,20 @@ jobs:
           REACT_APP_NAME=$(terraform output -raw react_app_service_name 2>/dev/null || echo "")
           ACR_REGISTRY_URL=$(terraform output -raw acr_registry_url 2>/dev/null || echo "")
           RESOURCE_GROUP_NAME=$(terraform output -raw resource_group_name 2>/dev/null || echo "")
+          SQL_SERVER_FQDN=$(terraform output -raw sql_server_fqdn 2>/dev/null || echo "")
 
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Captured Terraform Outputs:"
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  API App Name: ${API_APP_NAME}"
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  React App Name: ${REACT_APP_NAME}"
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ACR Registry URL: ${ACR_REGISTRY_URL}"
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Resource Group Name: ${RESOURCE_GROUP_NAME}"
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  SQL Server FQDN: ${SQL_SERVER_FQDN}"
 
           echo "api_app_name=${API_APP_NAME}" >> $GITHUB_OUTPUT
           echo "react_app_name=${REACT_APP_NAME}" >> $GITHUB_OUTPUT
           echo "acr_registry_url=${ACR_REGISTRY_URL}" >> $GITHUB_OUTPUT
           echo "resource_group_name=${RESOURCE_GROUP_NAME}" >> $GITHUB_OUTPUT
+          echo "sql_server_fqdn=${SQL_SERVER_FQDN}" >> $GITHUB_OUTPUT
 
       - name: Terraform Destroy
         if: inputs.action == 'destroy'
