@@ -14,7 +14,40 @@ locals {
   # --------------------------------------------------------------------------
   # UNIQUE IDENTIFIERS
   # --------------------------------------------------------------------------
+
+  # Multi-Tier Hostname Naming Strategy
+  # ====================================
+  # Azure App Service hostnames are globally unique. To handle conflicts, we use
+  # a three-tier fallback strategy:
+  #
+  # Tier 0 (Standard): consilient-api-dev
+  #   - Preferred naming convention
+  #   - Clean, simple, follows Azure best practices
+  #
+  # Tier 1 (Region Suffix): consilient-api-dev-eastus
+  #   - Adds region identifier
+  #   - Helps when deploying to multiple regions
+  #   - Still human-readable
+  #
+  # Tier 2 (Random Suffix): consilient-api-dev-ab12
+  #   - Deterministic 4-letter suffix from subscription/RG hash
+  #   - Guarantees uniqueness
+  #   - Last resort fallback
+  #
+  # The tier is automatically selected by the hostname-precheck.sh script before
+  # Terraform runs. It checks DNS availability and picks the first available tier.
+  # Existing deployments are preserved (no renaming).
+
+  # Backward compatibility: If enable_unique_app_names is true, force tier 2
+  effective_naming_tier = var.enable_unique_app_names ? 2 : var.hostname_naming_tier
+
+  # Existing MD5 suffix (keep unchanged for backward compatibility)
   unique_suffix = substr(md5("${var.subscription_id}-${var.resource_group_name}"), 0, 6)
+
+  # New suffixes for multi-tier naming
+  region_suffix       = lower(replace(var.region, " ", ""))
+  random_suffix_api   = substr(md5("${var.subscription_id}-${var.resource_group_name}-api-${var.environment}"), 6, 4)
+  random_suffix_react = substr(md5("${var.subscription_id}-${var.resource_group_name}-react-${var.environment}"), 6, 4)
 
   # --------------------------------------------------------------------------
   # DEFAULT SKU OPTIONS PER ENVIRONMENT
@@ -65,11 +98,12 @@ locals {
   # --------------------------------------------------------------------------
   api = {
     service_plan_name = "${var.project_name}-asp-api-${var.environment}"
-    # Add unique suffix if enabled to avoid global hostname conflicts
-    service_name = var.enable_unique_app_names ? (
-      "${var.project_name}-api-${var.environment}-${local.unique_suffix}"
-      ) : (
-      "${var.project_name}-api-${var.environment}"
+
+    # Multi-tier hostname naming strategy
+    service_name = (
+      local.effective_naming_tier == 0 ? "${var.project_name}-api-${var.environment}" :
+      local.effective_naming_tier == 1 ? "${var.project_name}-api-${var.environment}-${local.region_suffix}" :
+      "${var.project_name}-api-${var.environment}-${local.random_suffix_api}"
     )
 
     # Uses default_skus.app_service_plan for each environment
@@ -86,11 +120,12 @@ locals {
   # --------------------------------------------------------------------------
   react = {
     service_plan_name = "${var.project_name}-asp-react-${var.environment}"
-    # Add unique suffix if enabled to avoid global hostname conflicts
-    service_name = var.enable_unique_app_names ? (
-      "${var.project_name}-react-${var.environment}-${local.unique_suffix}"
-      ) : (
-      "${var.project_name}-react-${var.environment}"
+
+    # Multi-tier hostname naming strategy
+    service_name = (
+      local.effective_naming_tier == 0 ? "${var.project_name}-react-${var.environment}" :
+      local.effective_naming_tier == 1 ? "${var.project_name}-react-${var.environment}-${local.region_suffix}" :
+      "${var.project_name}-react-${var.environment}-${local.random_suffix_react}"
     )
 
     # Uses default_skus.app_service_plan for each environment

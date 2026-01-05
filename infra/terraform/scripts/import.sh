@@ -355,9 +355,29 @@ import_resource "module.api_app.azurerm_service_plan.this" "${ASP_API_ID}" "API 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "12. App Services"
 
-# Extract app names for validation
-REACT_APP_NAME="${TF_VAR_project_name}-react-${TF_VAR_environment}"
-API_APP_NAME="${TF_VAR_project_name}-api-${TF_VAR_environment}"
+# Detect active naming tier and generate app names accordingly
+# This ensures import.sh uses the same naming logic as Terraform's locals.tf
+NAMING_TIER="${TF_VAR_hostname_naming_tier:-0}"
+
+if [ "$NAMING_TIER" -eq 2 ] || [ "${TF_VAR_enable_unique_app_names}" = "true" ]; then
+  # Tier 2: Random suffix (4-character deterministic hash)
+  RANDOM_SUFFIX_API=$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}-api-${TF_VAR_environment}" | md5sum | cut -c7-10)
+  RANDOM_SUFFIX_REACT=$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}-react-${TF_VAR_environment}" | md5sum | cut -c7-10)
+  REACT_APP_NAME="${TF_VAR_project_name}-react-${TF_VAR_environment}-${RANDOM_SUFFIX_REACT}"
+  API_APP_NAME="${TF_VAR_project_name}-api-${TF_VAR_environment}-${RANDOM_SUFFIX_API}"
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Using Tier 2 naming (random suffix)"
+elif [ "$NAMING_TIER" -eq 1 ]; then
+  # Tier 1: Region suffix
+  REGION_SUFFIX=$(echo "${TF_VAR_region}" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+  REACT_APP_NAME="${TF_VAR_project_name}-react-${TF_VAR_environment}-${REGION_SUFFIX}"
+  API_APP_NAME="${TF_VAR_project_name}-api-${TF_VAR_environment}-${REGION_SUFFIX}"
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Using Tier 1 naming (region suffix: $REGION_SUFFIX)"
+else
+  # Tier 0: Standard naming
+  REACT_APP_NAME="${TF_VAR_project_name}-react-${TF_VAR_environment}"
+  API_APP_NAME="${TF_VAR_project_name}-api-${TF_VAR_environment}"
+  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Using Tier 0 naming (standard)"
+fi
 
 # Construct resource IDs
 APP_REACT_ID="${RG_ID}/providers/Microsoft.Web/sites/${REACT_APP_NAME}"

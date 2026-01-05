@@ -199,11 +199,27 @@ EOT
 
 variable "enable_unique_app_names" {
   description = <<EOT
+DEPRECATED: Use hostname_naming_tier instead.
 Enable unique suffixes for App Service names to avoid global hostname conflicts.
-When true, adds a 6-character unique suffix to app service names (e.g., consilient-api-dev-a1b2c3).
-This prevents conflicts when hostname is globally reserved.
-Set to false to use standard names (consilient-api-dev).
+When true, forces hostname_naming_tier=2 (random suffix).
 EOT
   type        = bool
   default     = false
+}
+
+variable "hostname_naming_tier" {
+  description = <<EOT
+Hostname naming tier for App Services (fallback strategy for global namespace conflicts).
+  0 = Standard names (e.g., consilient-api-dev)
+  1 = Region suffix (e.g., consilient-api-dev-eastus)
+  2 = Random 4-letter suffix (e.g., consilient-api-dev-ab12)
+Automatically determined by hostname-precheck.sh script before Terraform runs.
+EOT
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = contains([0, 1, 2], var.hostname_naming_tier)
+    error_message = "hostname_naming_tier must be 0 (standard), 1 (region), or 2 (random)."
+  }
 }

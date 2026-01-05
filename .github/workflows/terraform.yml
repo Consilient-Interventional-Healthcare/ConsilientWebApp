@@ -287,6 +287,25 @@ jobs:
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Resource Group ID: ${RG_ID}"
           echo "RG_ID=${RG_ID}" >> $GITHUB_ENV
 
+      - name: Hostname Availability Pre-Check
+        id: hostname_precheck
+        shell: bash
+        run: |
+          echo "🔍 Running hostname availability pre-check..."
+
+          # Run pre-check script and capture output
+          PRECHECK_OUTPUT=$(bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/hostname-precheck.sh")
+
+          # Extract naming_tier from output (format: "naming_tier=N")
+          NAMING_TIER=$(echo "$PRECHECK_OUTPUT" | grep "naming_tier=" | cut -d= -f2)
+
+          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Selected naming tier: $NAMING_TIER"
+
+          # Set as environment variable for Terraform
+          echo "TF_VAR_hostname_naming_tier=${NAMING_TIER}" >> $GITHUB_ENV
+
+          echo "✅ Pre-check complete - using tier ${NAMING_TIER}"
+
       - name: Detect and Import Existing Resources (Fast Mode)
         id: import
         shell: bash
