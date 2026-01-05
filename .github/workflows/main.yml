@@ -183,6 +183,7 @@ jobs:
     if: |
       (inputs.run-databases != false) &&
       always() &&
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/databases.yml
