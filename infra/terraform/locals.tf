@@ -68,7 +68,7 @@ locals {
     # Add unique suffix if enabled to avoid global hostname conflicts
     service_name = var.enable_unique_app_names ? (
       "${var.project_name}-api-${var.environment}-${local.unique_suffix}"
-    ) : (
+      ) : (
       "${var.project_name}-api-${var.environment}"
     )
 
@@ -89,7 +89,7 @@ locals {
     # Add unique suffix if enabled to avoid global hostname conflicts
     service_name = var.enable_unique_app_names ? (
       "${var.project_name}-react-${var.environment}-${local.unique_suffix}"
-    ) : (
+      ) : (
       "${var.project_name}-react-${var.environment}"
     )
 
