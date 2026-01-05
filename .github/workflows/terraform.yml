@@ -489,7 +489,7 @@ jobs:
         id: outputs
         if: inputs.action == 'apply'
         shell: bash
-        working-directory: .
+        working-directory: ./infra/terraform
         run: |
           API_APP_NAME=$(terraform output -raw api_app_service_name 2>/dev/null || echo "")
           REACT_APP_NAME=$(terraform output -raw react_app_service_name 2>/dev/null || echo "")
