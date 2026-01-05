@@ -181,7 +181,7 @@ jobs:
     name: Deploy DBs
     needs: [initialize-workflow, discover-databases, terraform]
     if: |
-      (inputs.run-databases != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-databases != false) &&
       always() &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       needs.discover-databases.result == 'success' &&
@@ -198,7 +198,7 @@ jobs:
     name: DB Docs
     needs: [initialize-workflow, discover-databases, deploy-databases, terraform]
     if: |
-      (inputs.run-db-docs != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-db-docs != false) &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
       always() &&
       needs.initialize-workflow.result == 'success' &&
@@ -219,7 +219,7 @@ jobs:
     name: Deploy API
     needs: [initialize-workflow, terraform, deploy-databases]
     if: |
-      (inputs.run-api-deployment != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
       always() &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
@@ -237,7 +237,7 @@ jobs:
     name: Deploy React
     needs: [initialize-workflow, terraform, deploy-dotnet-apps]
     if: |
-      (inputs.run-react-deployment != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
       (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
     uses: ./.github/workflows/react_apps.yml
@@ -254,8 +254,8 @@ jobs:
     name: API Health Check
     needs: [initialize-workflow, terraform, deploy-dotnet-apps]
     if: |
-      (inputs.run-health-checks != false) &&
-      (inputs.run-api-deployment != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-health-checks != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
       always() &&
       (needs.deploy-dotnet-apps.result == 'success')
     uses: ./.github/workflows/healthchecks.yml
@@ -277,8 +277,8 @@ jobs:
     name: React Health Check
     needs: [initialize-workflow, terraform, deploy-react-apps]
     if: |
-      (inputs.run-health-checks != false) &&
-      (inputs.run-react-deployment != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-health-checks != false) &&
+      (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
       (needs.deploy-react-apps.result == 'success')
     uses: ./.github/workflows/healthchecks.yml
