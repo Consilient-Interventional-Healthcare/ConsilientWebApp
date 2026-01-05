@@ -293,11 +293,20 @@ jobs:
         run: |
           echo "🔍 Running hostname availability pre-check..."
 
-          # Run pre-check script and capture output
-          PRECHECK_OUTPUT=$(bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/hostname-precheck.sh")
+          # Run pre-check script and capture all output (stdout and stderr)
+          PRECHECK_OUTPUT=$(bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/hostname-precheck.sh" 2>&1)
+          PRECHECK_EXIT=$?
+
+          # Show all output from pre-check script
+          echo "$PRECHECK_OUTPUT"
 
           # Extract naming_tier from output (format: "naming_tier=N")
-          NAMING_TIER=$(echo "$PRECHECK_OUTPUT" | grep "naming_tier=" | cut -d= -f2)
+          NAMING_TIER=$(echo "$PRECHECK_OUTPUT" | grep "naming_tier=" | cut -d= -f2 | tail -1)
+
+          if [ -z "$NAMING_TIER" ]; then
+            echo "❌ Pre-check script failed to determine naming tier"
+            exit $PRECHECK_EXIT
+          fi
 
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Selected naming tier: $NAMING_TIER"
 

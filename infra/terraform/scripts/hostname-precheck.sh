@@ -36,11 +36,13 @@ check_azure_resource_exists() {
   local resource_name="$1"
   local resource_group="$2"
 
-  if az webapp show --name "${resource_name}" --resource-group "${resource_group}" &>/dev/null 2>&1; then
-    return 0
-  else
-    return 1
-  fi
+  # Try to get the webapp - suppress errors but check exit code
+  local output
+  output=$(az webapp show --name "${resource_name}" --resource-group "${resource_group}" 2>&1)
+  local exit_code=$?
+
+  # Exit code 0 = found, non-zero = not found (could be auth error, but assume not found)
+  [ $exit_code -eq 0 ] && return 0 || return 1
 }
 
 # Helper: Check if hostname is available via DNS
@@ -49,8 +51,10 @@ check_hostname_via_dns() {
   local app_name="$1"
   local hostname="${app_name}.azurewebsites.net"
 
-  # Try nslookup first, then host command as fallback
-  if nslookup "${hostname}" &>/dev/null 2>&1; then
+  # Try curl first (most reliable for Azure), then nslookup as fallback
+  if curl -s -I "https://${hostname}" &>/dev/null 2>&1; then
+    return 0  # Hostname accessible = taken
+  elif nslookup "${hostname}" &>/dev/null 2>&1; then
     return 0  # Hostname resolves = taken
   elif host "${hostname}" &>/dev/null 2>&1; then
     return 0  # Hostname resolves = taken
@@ -111,42 +115,43 @@ check_tier_availability() {
   debug_echo "API name: $api_name"
   debug_echo "React name: $react_name"
 
-  # Check if apps already exist in our subscription (preserve existing names)
-  local api_exists=1
-  local react_exists=1
+  # FIRST: Try Azure CLI check (quick if auth is available, non-blocking if not)
+  # If resources exist in our subscription, use this tier (preserve existing)
+  local api_in_subscription=1
+  local react_in_subscription=1
 
   if check_azure_resource_exists "$api_name" "$resource_group"; then
-    api_exists=0
+    api_in_subscription=0
     debug_echo "API app exists in subscription (will preserve)"
   fi
 
   if check_azure_resource_exists "$react_name" "$resource_group"; then
-    react_exists=0
+    react_in_subscription=0
     debug_echo "React app exists in subscription (will preserve)"
   fi
 
   # If either app exists in our subscription, we should use this tier (preserve existing)
-  if [ "$api_exists" -eq 0 ] || [ "$react_exists" -eq 0 ]; then
+  if [ "$api_in_subscription" -eq 0 ] || [ "$react_in_subscription" -eq 0 ]; then
     debug_echo "✅ Resources exist in subscription - preserving existing names"
     return 0  # Available (preserve existing)
   fi
 
-  # Check DNS availability (only if resources don't exist in our subscription)
+  # SECOND: Check DNS availability (most important for hostname conflicts)
   local api_available=1
   local react_available=1
 
   if ! check_hostname_via_dns "$api_name"; then
     api_available=0
-    debug_echo "API hostname available"
+    debug_echo "✅ API hostname available (DNS check passed)"
   else
-    debug_echo "API hostname taken (DNS conflict)"
+    debug_echo "❌ API hostname taken (DNS found existing)"
   fi
 
   if ! check_hostname_via_dns "$react_name"; then
     react_available=0
-    debug_echo "React hostname available"
+    debug_echo "✅ React hostname available (DNS check passed)"
   else
-    debug_echo "React hostname taken (DNS conflict)"
+    debug_echo "❌ React hostname taken (DNS found existing)"
   fi
 
   # Both must be available for tier to pass
@@ -154,7 +159,7 @@ check_tier_availability() {
     debug_echo "✅ Both hostnames available"
     return 0  # Available
   else
-    debug_echo "⚠️  Hostname conflict detected"
+    debug_echo "⚠️  At least one hostname conflict detected"
     return 1  # Conflict
   fi
 }
@@ -178,6 +183,11 @@ determine_naming_tier() {
   if [ -z "$environment" ] || [ -z "$region" ] || [ -z "$subscription_id" ] || [ -z "$resource_group" ]; then
     echo "❌ ERROR: Missing required environment variables" >&2
     echo "   Required: TF_VAR_environment, TF_VAR_region, TF_VAR_subscription_id, TF_VAR_resource_group_name" >&2
+    echo "   Got:"
+    echo "     TF_VAR_environment: ${environment:-MISSING}"
+    echo "     TF_VAR_region: ${region:-MISSING}"
+    echo "     TF_VAR_subscription_id: ${subscription_id:-MISSING}"
+    echo "     TF_VAR_resource_group_name: ${resource_group:-MISSING}"
     exit 1
   fi
 
