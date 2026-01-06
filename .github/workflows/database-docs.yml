@@ -357,19 +357,19 @@ jobs:
           set -e
 
           # Validate we have schemas to document
-          if [ -z "$SCHEMAS_TO_DOC" ]; then
+          if [ -z "$DISCOVERED_SCHEMAS" ]; then
             echo "❌ ERROR: No schemas available for documentation"
             echo "This is unexpected - the discovery step should have caught this."
             exit 1
           fi
 
           # Export for use in subsequent steps
-          echo "SCHEMAS_TO_DOC=$SCHEMAS_TO_DOC" >> $GITHUB_ENV
+          echo "SCHEMAS_TO_DOC=$DISCOVERED_SCHEMAS" >> $GITHUB_ENV
 
           echo "✅ Configuration validated"
           echo "Database: ${{ steps.parse-config.outputs.database-name }}"
           echo "SQL Server: ${{ env.SQL_SERVER }}"
-          echo "Schemas to document: $SCHEMAS_TO_DOC"
+          echo "Schemas to document: $DISCOVERED_SCHEMAS"
 
       - name: Set up Java
         uses: actions/setup-java@v4
