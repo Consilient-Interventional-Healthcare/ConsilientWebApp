@@ -75,6 +75,15 @@ jobs:
         with:
           environment: ${{ inputs.environment }}
 
+      - name: Summary
+        run: |
+          echo "### Input Validation Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Databases Count:** \`$(echo '${{ inputs.databases }}' | jq -r 'length' 2>/dev/null || echo 'N/A')\`" >> $GITHUB_STEP_SUMMARY
+          echo "**SQL Server:** \`${{ inputs.azure-sql-server-fqdn }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Recreate Objects:** \`${{ inputs.recreate-database-objects }}\`" >> $GITHUB_STEP_SUMMARY
+
   deploy-database:
     name: Deploy ${{ matrix.database }} (${{ inputs.environment }})
     needs: validate-inputs
