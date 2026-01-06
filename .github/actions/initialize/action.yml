@@ -6,6 +6,9 @@ inputs:
     description: 'Target environment (dev/prod/etc)'
     required: false
     default: ''
+  container_registry:
+    description: 'Container registry URL'
+    required: true
 
 outputs:
   environment:
@@ -55,7 +58,7 @@ runs:
         # Convert repository to lowercase (Docker requirement)
         REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
         DOCKERFILE_HASH="${{ steps.dockerfile-hash.outputs.hash }}"
-        RUNNER_IMAGE="${{ vars.CONTAINER_REGISTRY }}/${REPO_LOWERCASE}/actions-runner:dockerfile-${DOCKERFILE_HASH}"
+        RUNNER_IMAGE="${{ inputs.container_registry }}/${REPO_LOWERCASE}/actions-runner:dockerfile-${DOCKERFILE_HASH}"
         echo "runner_image=${RUNNER_IMAGE}" >> $GITHUB_OUTPUT
         echo "Runner image: ${RUNNER_IMAGE}"
 

@@ -103,6 +103,7 @@ jobs:
         uses: ./.github/actions/initialize
         with:
           environment: ${{ github.event.inputs.environment || 'dev' }}
+          container_registry: ${{ vars.CONTAINER_REGISTRY }}
 
   build-runner-image:
     name: Image Runner
