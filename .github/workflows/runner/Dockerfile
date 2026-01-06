@@ -7,8 +7,8 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 # Metadata labels
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
 LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
-LABEL org.opencontainers.image.version="2.1.1"
-LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17"
+LABEL org.opencontainers.image.version="2.2.0"
+LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17,chrome=latest"
 
 # ============================================================
 # Available Tools in this Image:
@@ -32,6 +32,9 @@ LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.
 #   - MSSQL JDBC Driver v12.4.2.jre11 - ADDED
 #   - MSAL4J v1.16.2 (Azure AD auth for JDBC) with full dependency tree - ADDED
 #
+# Browser Automation & Testing:
+#   - Google Chrome (latest stable from official repo) - ADDED
+#
 # Note: Docker CLI requires /var/run/docker.sock to be mounted
 #       when running this container to access the host's Docker daemon
 # ============================================================
@@ -44,6 +47,56 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y openjdk-17-jre-headless && \
     rm -rf /var/lib/apt/lists/*
+
+# ============================================================
+# LAYER 0: Chrome (required for Lighthouse CI)
+# ============================================================
+# Install Google Chrome from official repository and dependencies for headless browser operation
+RUN apt-get update && \
+    apt-get install -y wget ca-certificates gnupg lsb-release && \
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y \
+        google-chrome-stable \
+        fonts-liberation \
+        libappindicator3-1 \
+        libasound2 \
+        libatk-bridge2.0-0 \
+        libatk1.0-0 \
+        libcairo2 \
+        libcups2 \
+        libdbus-1-3 \
+        libexpat1 \
+        libfontconfig1 \
+        libgbm1 \
+        libgcc1 \
+        libglib2.0-0 \
+        libgtk-3-0 \
+        libnspr4 \
+        libnss3 \
+        libpango-1.0-0 \
+        libpangocairo-1.0-0 \
+        libstdc++6 \
+        libx11-6 \
+        libx11-xcb1 \
+        libxcb1 \
+        libxcomposite1 \
+        libxcursor1 \
+        libxdamage1 \
+        libxext6 \
+        libxfixes3 \
+        libxi6 \
+        libxrandr2 \
+        libxrender1 \
+        libxss1 \
+        libxtst6 \
+        xdg-utils && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /etc/apt/sources.list.d/google-chrome.list
+
+# Set Chrome path for Lighthouse CI
+ENV CHROME_PATH=/usr/bin/google-chrome-stable
 
 # ============================================================
 # LAYER 1: Azure CLI (Latest Stable)
@@ -223,6 +276,7 @@ RUN echo "=== Tool Verification ===" && \
     echo "Terraform: $(terraform --version | head -n 1)" && \
     echo "Docker CLI: $(docker --version)" && \
     echo "Java: $(java -version 2>&1 | head -n 1)" && \
+    echo "Chrome: $(google-chrome-stable --version)" && \
     echo "Node.js: $(node --version)" && \
     echo "npm: $(npm --version)" && \
     echo "SchemaSpy: $(ls -lh ${SCHEMASPY_PATH})" && \
@@ -234,7 +288,7 @@ RUN echo "=== Tool Verification ===" && \
 WORKDIR /github/workspace
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD az --version && sqlcmd --version && terraform --version && docker --version && java -version && node --version
+    CMD az --version && sqlcmd --version && terraform --version && docker --version && java -version && google-chrome-stable --version && node --version
 
 # ============================================================
 # Configuration
