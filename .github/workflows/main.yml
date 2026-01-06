@@ -199,19 +199,6 @@ jobs:
         with:
           scripts_path: 'src/Databases'
 
-      - name: Summary
-        run: |
-          echo "### Database Discovery Complete ✅" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Databases Found:** \`${{ steps.discover.outputs.count }}\`" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.discover.outputs.count }}" != "0" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Database Directories:**" >> $GITHUB_STEP_SUMMARY
-            echo "${{ steps.discover.outputs.database_directories }}" | while read -r dir; do
-              [ -n "$dir" ] && echo "- \`$dir\`" >> $GITHUB_STEP_SUMMARY
-            done
-          fi
-
   deploy-databases:
     name: Deploy Databases
     needs: [initialize-workflow, discover-databases, terraform, build-runner-image, warm-docker-cache]

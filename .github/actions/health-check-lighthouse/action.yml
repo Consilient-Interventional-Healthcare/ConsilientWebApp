@@ -119,8 +119,8 @@ runs:
           ${{ inputs.app-url }}
         temporaryPublicStorage: true
         runs: ${{ inputs.runs }}
-        configPath: './.github/actions/health-check-lighthouse/.lighthouserc.json'
       env:
+        LHCI_COLLECT__SETTINGS__CHROME_FLAGS: "--no-sandbox --disable-setuid-sandbox --disable-gpu --disable-dev-shm-usage --headless"
         LHCI_ASSERT__ASSERTIONS__CATEGORIES_PERFORMANCE: '["error", {"minScore": ${{ inputs.min-perf-score }}}]'
         LHCI_ASSERT__ASSERTIONS__CATEGORIES_ACCESSIBILITY: '["error", {"minScore": ${{ inputs.min-a11y-score }}}]'
         LHCI_ASSERT__ASSERTIONS__CATEGORIES_BEST_PRACTICES: '["warn", {"minScore": ${{ inputs.min-bp-score }}}]'
