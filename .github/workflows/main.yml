@@ -120,6 +120,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
@@ -127,10 +130,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull Docker image for cache
+      - name: Pull Docker image with layer caching
         run: |
-          echo "🐳 Pre-pulling Docker image to warm cache for subsequent jobs..."
-          docker pull ${{ needs.initialize-workflow.outputs.runner_image }}
+          echo "🐳 Pre-pulling Docker image with layer caching..."
+          echo "Image: ${{ needs.initialize-workflow.outputs.runner_image }}"
+
+          # Use docker buildx with caching to pull and cache layers locally
+          docker buildx build --load --cache-from=type=gha --cache-to=type=gha,mode=max \
+            --build-arg BASE_IMAGE="${{ needs.initialize-workflow.outputs.runner_image }}" \
+            -f - . <<'EOF'
+          ARG BASE_IMAGE
+          FROM ${BASE_IMAGE}
+          EOF
+
           echo "✅ Docker image cached successfully"
 
       - name: Summary
@@ -138,6 +150,7 @@ jobs:
           echo "### Docker Cache Warming Complete ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** \`${{ needs.initialize-workflow.outputs.runner_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Cache Status:** ✅ Layer caching enabled (GHA)" >> $GITHUB_STEP_SUMMARY
 
   terraform:
     name: Terraform

@@ -166,8 +166,8 @@ jobs:
           tags: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           build-args: |
             BUILD_CONFIGURATION=Release
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,type=registry
+          cache-to: type=gha,mode=max,image-manifest=true,oci-mediatypes=true
 
       - name: Deploy image to Azure Web App for Containers
         uses: azure/webapps-deploy@v3
@@ -209,7 +209,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Lighthouse Health Check with Rollback
+      - name: Check Health with Rollback
         uses: ./.github/actions/health-check-lighthouse
         with:
           app-url: https://${{ needs.build-and-deploy.outputs.react_app_name }}.azurewebsites.net

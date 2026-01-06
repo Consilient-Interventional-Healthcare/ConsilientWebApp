@@ -21,10 +21,24 @@ permissions:
 jobs:
   # Job 1: Initialize (get runner image, set environment)
   initialize-workflow:
-    name: Initialize
-    uses: ./.github/workflows/initialize.yml
-    with:
-      environment: ${{ inputs.environment }}
+    name: Initialize Workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      environment: ${{ steps.initialize.outputs.environment }}
+      runner_image: ${{ steps.initialize.outputs.runner_image }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Initialize configuration
+        id: initialize
+        uses: ./.github/actions/initialize
+        with:
+          environment: ${{ inputs.environment }}
+          container_registry: ${{ vars.CONTAINER_REGISTRY }}
 
   # Job 2: Discover databases
   discover-databases:
