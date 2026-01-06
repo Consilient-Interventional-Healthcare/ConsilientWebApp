@@ -479,7 +479,7 @@ Then regenerate: Go to GitHub Actions → Re-run workflow
 
 **Option 2: Increase Timeout**
 
-Edit `.github/workflows/docs_db.yml` (temporary fix):
+Edit `.github/workflows/database-docs.yml` (temporary fix):
 ```yaml
 env:
   SCHEMASPY_TIMEOUT_SECONDS: 900  # 15 minutes instead of 10

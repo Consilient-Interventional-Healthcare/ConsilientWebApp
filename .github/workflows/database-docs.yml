@@ -7,6 +7,8 @@
 # - jq: JSON query tool (for parsing JSON input)
 # Note: These are typically pre-installed in GitHub Actions Ubuntu runners
 
+name: Generate Database Documentation
+
 on:
   workflow_call:
     inputs:

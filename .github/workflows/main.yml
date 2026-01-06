@@ -1,3 +1,5 @@
+name: Consilient Deployment Pipeline
+
 on:
   push:
     branches:
@@ -126,7 +128,7 @@ jobs:
   # ============================================================================
 
   discover-databases:
-    name: Discover DBs
+    name: Discover Databases
     needs: [initialize-workflow]
     runs-on: ubuntu-latest
     outputs:
@@ -146,7 +148,7 @@ jobs:
           scripts_path: 'src/Databases'
 
   deploy-databases:
-    name: Deploy DBs
+    name: Deploy Databases
     needs: [initialize-workflow, discover-databases, terraform]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-databases != false) &&
@@ -164,7 +166,7 @@ jobs:
     secrets: inherit
 
   generate-db-docs:
-    name: DB Docs
+    name: Database Documentation
     needs: [initialize-workflow, discover-databases, deploy-databases, terraform]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-db-docs != false) &&
@@ -173,7 +175,7 @@ jobs:
       needs.initialize-workflow.result == 'success' &&
       needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
-    uses: ./.github/workflows/docs_db.yml
+    uses: ./.github/workflows/database-docs.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       database-configs: ${{ needs.discover-databases.outputs.database_configs }}
@@ -193,7 +195,7 @@ jobs:
       always() &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
-    uses: ./.github/workflows/dotnet_apps.yml
+    uses: ./.github/workflows/dotnet-apps.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.initialize-workflow.outputs.environment) }}
@@ -210,7 +212,7 @@ jobs:
       (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
       (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
-    uses: ./.github/workflows/react_apps.yml
+    uses: ./.github/workflows/react-apps.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.initialize-workflow.outputs.environment) }}

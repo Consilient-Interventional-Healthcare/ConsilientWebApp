@@ -30,3 +30,20 @@ runs:
       run: ${{ github.action_path }}/discover-databases.sh
       env:
         SCRIPTS_PATH: ${{ inputs.scripts_path }}
+
+    - name: Summary
+      shell: bash
+      run: |
+        echo "### Database Discovery Complete 🔍" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Databases Found:** ${{ steps.discover.outputs.count }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ steps.discover.outputs.count }}" -gt "0" ]; then
+          echo "**Discovered Databases:**" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo '${{ steps.discover.outputs.database_directories }}' | jq -r '.[]' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "_No databases found in \`${{ inputs.scripts_path }}\`_" >> $GITHUB_STEP_SUMMARY
+        fi

@@ -17,8 +17,8 @@ High-level system design, component relationships, and data flow diagrams.
          │
          ├──► terraform.yml      ─────┐
          ├──► databases.yml      ─────┤
-         ├──► dotnet_apps.yml    ─────┤
-         └──► react_apps.yml     ─────┤
+         ├──► dotnet-apps.yml    ─────┤
+         └──► react-apps.yml     ─────┤
                                       │
                                       ▼
                         ┌─────────────────────────┐
@@ -68,13 +68,13 @@ main.yml (Orchestrator Workflow)
     │   └─ Verify: table counts, schema validation
     │
     ├─ deploy-dotnet-apps job (depends on: deploy-databases)
-    │   ├─ dotnet_apps.yml
+    │   ├─ dotnet-apps.yml
     │   ├─ Steps: Docker build → ACR push → Azure deploy
     │   ├─ Health check: API /health endpoint
     │   └─ Automatic rollback on failure
     │
     └─ deploy-react-apps job (depends on: deploy-databases)
-        ├─ react_apps.yml
+        ├─ react-apps.yml
         ├─ Steps: Docker build → ACR push → Azure deploy
         ├─ Health check: Lighthouse CI quality gates
         └─ Automatic rollback on failure
@@ -222,7 +222,7 @@ discover-databases Action
 
               ▼
 
-docs_db.yml Workflow (Called from main.yml on PR)
+database-docs.yml Workflow (Called from main.yml on PR)
 
 1. extract-databases job
    └─ Extract database names from config object
@@ -303,7 +303,7 @@ locals.tf (Configuration)
     │
     ├─ acr.tf
     │  └─ azurerm_container_registry
-    │     └─ Used by: dotnet_apps.yml, react_apps.yml
+    │     └─ Used by: dotnet-apps.yml, react-apps.yml
     │
     ├─ sql.tf
     │  └─ azurerm_sql_server

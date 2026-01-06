@@ -82,25 +82,6 @@ jobs:
             echo "✅ Image already exists: ${SHA_TAG}"
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
-
-            # Generate summary for existing image
-            echo "### Docker Image Exists :recycle:" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Status:** ✅ Image already exists in registry" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Image**: ${IMAGE_NAME}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Tag**: \`${SHA_TAG}\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Skipping build - using existing image." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "#### Pull Command" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "docker pull ${SHA_TAG}" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-            # Exit successfully - skip all remaining steps
-            exit 0
           else
             echo "⚠️  Image not found, will build: ${SHA_TAG}"
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -135,20 +116,38 @@ jobs:
             exit 1
           fi
 
-      - name: Generate build summary
-        if: steps.check-image.outputs.exists == 'false'
+      - name: Summary
+        if: always()
         run: |
           SHA_TAG="${{ steps.check-image.outputs.sha_tag }}"
+          IMAGE_EXISTS="${{ steps.check-image.outputs.exists }}"
+          IMAGE_NAME="${{ steps.image-name.outputs.value }}"
 
-          echo "### Docker Image Built Successfully :whale:" >> $GITHUB_STEP_SUMMARY
+          if [ "$IMAGE_EXISTS" = "true" ]; then
+            # Image already existed
+            echo "### Runner Image Ready ♻️" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** ✅ Using existing image from registry" >> $GITHUB_STEP_SUMMARY
+            echo "**Action:** Build skipped (image already exists)" >> $GITHUB_STEP_SUMMARY
+          else
+            # Image was built
+            echo "### Runner Image Built 🐳" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Status:** ✅ Newly built and pushed to registry" >> $GITHUB_STEP_SUMMARY
+            echo "**Action:** Image recreated for this commit" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Build Details:**" >> $GITHUB_STEP_SUMMARY
+            echo "- **Digest**: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **All Tags**: \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Status:** ✅ Built and pushed to registry" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Information:**" >> $GITHUB_STEP_SUMMARY
           echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: ${{ steps.image-name.outputs.value }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag**: \`${SHA_TAG}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **All Tags**: \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Digest**: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: ${IMAGE_NAME}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Primary Tag**: \`${SHA_TAG}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### Pull Command" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY

@@ -244,7 +244,7 @@ cp src/Databases/db_docs.yml.template src/Databases/{DatabaseName}/db_docs.yml
 #### Step 2: Trigger Documentation Generation
 
 **Option A: Automatic (Recommended)**
-Push your changes to main - `main.yml` calls `docs_db.yml` automatically on pull requests.
+Push your changes to main - `main.yml` calls `database-docs.yml` automatically on pull requests.
 
 **Option B: Manual Trigger**
 1. Go to GitHub → Repository → Actions

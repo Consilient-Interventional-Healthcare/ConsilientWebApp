@@ -1,3 +1,5 @@
+name: Initialize Workflow Configuration
+
 on:
   workflow_call:
     inputs:

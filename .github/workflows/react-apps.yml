@@ -1,3 +1,5 @@
+name: Deploy React Application
+
 on:
   workflow_call:
     inputs:
@@ -72,6 +74,7 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    name: Build and Deploy React Application
     runs-on: ubuntu-latest
     timeout-minutes: 45
     container:
