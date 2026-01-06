@@ -24,6 +24,10 @@ on:
         description: 'Azure SQL Server FQDN (fully qualified domain name)'
         required: true
         type: string
+      runner_image:
+        description: 'Custom runner container image with sqlcmd and other tools pre-installed'
+        required: true
+        type: string
     secrets:
       SQL_ADMIN_USERNAME:
         required: true
@@ -92,11 +96,17 @@ jobs:
     needs: [extract-databases]
     if: needs.extract-databases.outputs.databases != '[]'
     runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.runner_image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     timeout-minutes: 25
     permissions:
       contents: read
       pages: write
       id-token: write
+      packages: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -192,6 +192,7 @@ jobs:
       databases: ${{ needs.discover-databases.outputs.database_directories }}
       recreate-database-objects: ${{ inputs.recreate-database-objects || false }}
       azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
+      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   generate-db-docs:
@@ -209,6 +210,7 @@ jobs:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       database-configs: ${{ needs.discover-databases.outputs.database_configs }}
       azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
+      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   # ============================================================================
