@@ -133,6 +133,12 @@ jobs:
           docker pull ${{ needs.initialize-workflow.outputs.runner_image }}
           echo "✅ Docker image cached successfully"
 
+      - name: Summary
+        run: |
+          echo "### Docker Cache Warming Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ needs.initialize-workflow.outputs.runner_image }}\`" >> $GITHUB_STEP_SUMMARY
+
   terraform:
     name: Terraform
     needs: [initialize-workflow, build-runner-image, discover-databases, warm-docker-cache]
