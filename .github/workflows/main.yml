@@ -149,10 +149,11 @@ jobs:
 
   deploy-databases:
     name: Deploy Databases
-    needs: [initialize-workflow, discover-databases, terraform]
+    needs: [initialize-workflow, discover-databases, terraform, build-runner-image]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-databases != false) &&
       always() &&
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'

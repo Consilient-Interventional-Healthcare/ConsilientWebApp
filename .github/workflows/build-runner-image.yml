@@ -30,6 +30,14 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Compute Dockerfile hash
+        id: dockerfile-hash
+        run: |
+          # Compute SHA256 hash of Dockerfile and take first 12 characters
+          HASH=$(sha256sum .github/workflows/runner/Dockerfile | cut -d' ' -f1 | cut -c1-12)
+          echo "hash=${HASH}" >> $GITHUB_OUTPUT
+          echo "Dockerfile hash: ${HASH}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -46,8 +54,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}
           tags: |
-            type=sha,prefix={{branch}}-,format=short
-            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=raw,value=dockerfile-${{ steps.dockerfile-hash.outputs.hash }}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
             type=ref,event=pr
@@ -60,32 +67,21 @@ jobs:
       - name: Check if image exists
         id: check-image
         run: |
-          # Extract the SHA-based tag from metadata output (format: registry/image:branch-sha)
-          TAGS="${{ steps.meta.outputs.tags }}"
+          # Use hash-based tag instead of SHA-based tag for content-aware caching
           IMAGE_NAME="${{ steps.image-name.outputs.value }}"
-          SHA_TAG=$(echo "$TAGS" | grep -oP "${IMAGE_NAME}:[^[:space:]]+-[a-f0-9]{7}" | head -n 1)
+          DOCKERFILE_HASH="${{ steps.dockerfile-hash.outputs.hash }}"
+          HASH_TAG="${{ env.REGISTRY }}/${IMAGE_NAME}:dockerfile-${DOCKERFILE_HASH}"
 
-          if [ -z "$SHA_TAG" ]; then
-            # Fallback: construct SHA tag manually if grep fails
-            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-            SHA_TAG="${IMAGE_NAME}:${{ github.ref_name }}-${SHORT_SHA}"
-          fi
+          echo "Checking for image: ${HASH_TAG}"
 
-          # Ensure full registry path
-          if [[ ! "$SHA_TAG" =~ ^${{ env.REGISTRY }} ]]; then
-            SHA_TAG="${{ env.REGISTRY }}/${SHA_TAG}"
-          fi
-
-          echo "Checking for image: ${SHA_TAG}"
-
-          if docker manifest inspect "${SHA_TAG}" > /dev/null 2>&1; then
-            echo "✅ Image already exists: ${SHA_TAG}"
+          if docker manifest inspect "${HASH_TAG}" > /dev/null 2>&1; then
+            echo "✅ Image already exists: ${HASH_TAG}"
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
+            echo "hash_tag=${HASH_TAG}" >> $GITHUB_OUTPUT
           else
-            echo "⚠️  Image not found, will build: ${SHA_TAG}"
+            echo "⚠️  Image not found, will build: ${HASH_TAG}"
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "sha_tag=${SHA_TAG}" >> $GITHUB_OUTPUT
+            echo "hash_tag=${HASH_TAG}" >> $GITHUB_OUTPUT
           fi
 
       - name: Build and push Docker image
@@ -105,7 +101,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          SHA_TAG="${{ steps.check-image.outputs.sha_tag }}"
+          HASH_TAG="${{ steps.check-image.outputs.hash_tag }}"
           IMAGE_EXISTS="${{ steps.check-image.outputs.exists }}"
           IMAGE_NAME="${{ steps.image-name.outputs.value }}"
 
@@ -120,7 +116,7 @@ jobs:
             echo "### Runner Image Built 🐳" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Status:** ✅ Newly built and pushed to registry" >> $GITHUB_STEP_SUMMARY
-            echo "**Action:** Image recreated for this commit" >> $GITHUB_STEP_SUMMARY
+            echo "**Action:** Image recreated for Dockerfile changes" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Build Details:**" >> $GITHUB_STEP_SUMMARY
             echo "- **Digest**: \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
@@ -131,11 +127,17 @@ jobs:
           echo "**Image Information:**" >> $GITHUB_STEP_SUMMARY
           echo "- **Registry**: ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Image**: ${IMAGE_NAME}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Primary Tag**: \`${SHA_TAG}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Hash Tag**: \`${HASH_TAG}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dockerfile Hash**: \`${{ steps.dockerfile-hash.outputs.hash }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### Pull Command" >> $GITHUB_STEP_SUMMARY
+          echo "#### Pull Command (Latest)" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${SHA_TAG}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${IMAGE_NAME}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Pull Command (Specific Dockerfile)" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${HASH_TAG}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

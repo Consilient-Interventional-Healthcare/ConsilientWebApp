@@ -54,8 +54,10 @@ RUN apt-get update && \
 # Install Google Chrome from official repository and dependencies for headless browser operation
 RUN apt-get update && \
     apt-get install -y wget ca-certificates gnupg lsb-release && \
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list && \
+    mkdir -p /etc/apt/keyrings && \
+    wget -q -O /etc/apt/keyrings/google-chrome-archive-keyring.gpg https://dl-ssl.google.com/linux/linux_signing_key.pub && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome-archive-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
     apt-get install -y \
         google-chrome-stable \
         fonts-liberation \
@@ -91,8 +93,7 @@ RUN apt-get update && \
         libxss1 \
         libxtst6 \
         xdg-utils && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /etc/apt/sources.list.d/google-chrome.list
+    rm -rf /var/lib/apt/lists/*
 
 # Set Chrome path for Lighthouse CI
 ENV CHROME_PATH=/usr/bin/google-chrome-stable
