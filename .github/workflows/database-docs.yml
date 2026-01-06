@@ -178,14 +178,16 @@ jobs:
 
             else
               echo "⚠️  Config file not found: $CONFIG_PATH - using default naming convention"
-              # Fallback: append environment code to database name
-              ACTUAL_DATABASE_NAME="${{ matrix.database }}-${ENVIRONMENT}"
+              # Fallback: append environment code to database name (convert underscores to dashes)
+              DB_NAME_NORMALIZED=$(echo "${{ matrix.database }}" | tr '_' '-')
+              ACTUAL_DATABASE_NAME="${DB_NAME_NORMALIZED}-${ENVIRONMENT}"
               echo "🔄 Using default naming: $ACTUAL_DATABASE_NAME (database-environment)"
             fi
           else
             echo "⚠️  No config data found for ${{ matrix.database }} - using default naming convention"
-            # Fallback: append environment code to database name
-            ACTUAL_DATABASE_NAME="${{ matrix.database }}-${ENVIRONMENT}"
+            # Fallback: append environment code to database name (convert underscores to dashes)
+            DB_NAME_NORMALIZED=$(echo "${{ matrix.database }}" | tr '_' '-')
+            ACTUAL_DATABASE_NAME="${DB_NAME_NORMALIZED}-${ENVIRONMENT}"
             echo "🔄 Using default naming: $ACTUAL_DATABASE_NAME (database-environment)"
           fi
 
