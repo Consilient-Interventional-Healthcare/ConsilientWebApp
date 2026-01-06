@@ -148,7 +148,7 @@ jobs:
       - name: Validate Inputs
         uses: ./.github/actions/validate-inputs
         with:
-          # environment: ${{ inputs.environment }}
+          environment: ${{ inputs.environment }}
           action: ${{ inputs.action }}
 
       - name: Validate Required Secrets

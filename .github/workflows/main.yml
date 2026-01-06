@@ -100,9 +100,21 @@ jobs:
       packages: write
     secrets: inherit
 
+  warm-docker-cache:
+    name: Warm Docker Cache
+    needs: [initialize-workflow, build-runner-image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Pull Docker image for cache
+        run: |
+          echo "🐳 Pre-pulling Docker image to warm cache for subsequent jobs..."
+          docker pull ${{ needs.initialize-workflow.outputs.runner_image }}
+          echo "✅ Docker image cached successfully"
+
   terraform:
     name: Terraform
-    needs: [initialize-workflow, build-runner-image, discover-databases]
+    needs: [initialize-workflow, build-runner-image, discover-databases, warm-docker-cache]
     # Run on push events, or when explicitly enabled in workflow_dispatch
     # Logic: (NOT manual trigger) OR (manual AND not disabled)
     if: |
@@ -149,7 +161,7 @@ jobs:
 
   deploy-databases:
     name: Deploy Databases
-    needs: [initialize-workflow, discover-databases, terraform, build-runner-image]
+    needs: [initialize-workflow, discover-databases, terraform, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-databases != false) &&
       always() &&
@@ -168,7 +180,7 @@ jobs:
 
   generate-db-docs:
     name: Database Documentation
-    needs: [initialize-workflow, discover-databases, deploy-databases, terraform]
+    needs: [initialize-workflow, discover-databases, deploy-databases, terraform, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-db-docs != false) &&
       (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
@@ -190,7 +202,7 @@ jobs:
 
   deploy-dotnet-apps:
     name: Deploy API
-    needs: [initialize-workflow, terraform, deploy-databases, build-runner-image]
+    needs: [initialize-workflow, terraform, deploy-databases, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
       always() &&
@@ -209,7 +221,7 @@ jobs:
 
   deploy-react-apps:
     name: Deploy React
-    needs: [initialize-workflow, terraform, deploy-databases, build-runner-image]
+    needs: [initialize-workflow, terraform, deploy-databases, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
