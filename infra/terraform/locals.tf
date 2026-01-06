@@ -135,6 +135,27 @@ locals {
     # TODO: Future enhancement - Add health check configuration when React app implements /health endpoint
     # health_check_path                 = "/health"
     # health_check_eviction_time_in_min = 5
+
+    # Environment-specific application settings for runtime configuration
+    app_env = {
+      dev  = "development"
+      prod = "production"
+    }
+
+    enable_debug_mode = {
+      dev  = true
+      prod = false
+    }
+
+    use_mock_services = {
+      dev  = false
+      prod = false
+    }
+
+    enable_remote_logging = {
+      dev  = false
+      prod = true
+    }
   }
 
   # --------------------------------------------------------------------------

@@ -28,6 +28,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Compute Dockerfile hash
+        id: dockerfile-hash
+        run: |
+          # Compute SHA256 hash of Dockerfile and take first 12 characters
+          HASH=$(sha256sum .github/workflows/runner/Dockerfile | cut -d' ' -f1 | cut -c1-12)
+          echo "hash=${HASH}" >> $GITHUB_OUTPUT
+          echo "Dockerfile hash: ${HASH}"
+
       - name: Validate environment input
         uses: ./.github/actions/validate-inputs
         with:
@@ -50,7 +58,8 @@ jobs:
         run: |
           # Convert repository to lowercase (Docker requirement)
           REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          RUNNER_IMAGE="${{ vars.CONTAINER_REGISTRY }}/${REPO_LOWERCASE}/actions-runner:latest"
+          DOCKERFILE_HASH="${{ steps.dockerfile-hash.outputs.hash }}"
+          RUNNER_IMAGE="${{ vars.CONTAINER_REGISTRY }}/${REPO_LOWERCASE}/actions-runner:dockerfile-${DOCKERFILE_HASH}"
           echo "runner_image=${RUNNER_IMAGE}" >> $GITHUB_OUTPUT
           echo "Runner image: ${RUNNER_IMAGE}"
 
@@ -60,3 +69,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** \`${{ steps.setenv.outputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Runner Image:** \`${{ steps.runner-image.outputs.runner_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Dockerfile Hash:** \`${{ steps.dockerfile-hash.outputs.hash }}\`" >> $GITHUB_STEP_SUMMARY

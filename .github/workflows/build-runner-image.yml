@@ -38,31 +38,12 @@ jobs:
           echo "hash=${HASH}" >> $GITHUB_OUTPUT
           echo "Dockerfile hash: ${HASH}"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}
-          tags: |
-            type=raw,value=dockerfile-${{ steps.dockerfile-hash.outputs.hash }}
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=branch
-            type=ref,event=pr
-          labels: |
-            org.opencontainers.image.title=Consilient Actions Runner
-            org.opencontainers.image.description=Custom GitHub Actions runner with pre-installed tools
-            org.opencontainers.image.vendor=Consilient
-            org.opencontainers.image.version=${{ github.sha }}
 
       - name: Check if image exists
         id: check-image
@@ -83,6 +64,26 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
             echo "hash_tag=${HASH_TAG}" >> $GITHUB_OUTPUT
           fi
+
+      - name: Set up Docker Buildx
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}
+          tags: |
+            type=raw,value=dockerfile-${{ steps.dockerfile-hash.outputs.hash }}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=pr
+          labels: |
+            org.opencontainers.image.title=Consilient Actions Runner
+            org.opencontainers.image.description=Custom GitHub Actions runner with pre-installed tools
+            org.opencontainers.image.vendor=Consilient
+            org.opencontainers.image.version=${{ github.sha }}
 
       - name: Build and push Docker image
         id: build
