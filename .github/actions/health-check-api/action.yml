@@ -149,7 +149,7 @@ runs:
         echo "health_verified=true" >> $GITHUB_OUTPUT
 
     - name: Login to Azure for Rollback (OIDC + act fallback)
-      if: steps.verify_health.outputs.health_verified != 'true' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
       uses: ./.github/actions/azure-login
       with:
         client-id: ${{ inputs.client-id }}
@@ -158,7 +158,7 @@ runs:
         client-secret: ${{ inputs.client-secret }}
 
     - name: Rollback Deployment
-      if: steps.verify_health.outputs.health_verified != 'true' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
@@ -167,27 +167,10 @@ runs:
         echo "Resource Group: ${{ inputs.resource-group }}"
         echo "Previous Image: ${{ inputs.previous-image }}"
 
-        # Verify we have a valid previous image
-        PREVIOUS_IMAGE="${{ inputs.previous-image }}"
-
-        if [ -z "$PREVIOUS_IMAGE" ] || [ "$PREVIOUS_IMAGE" = "false" ] || [ "$PREVIOUS_IMAGE" = "null" ] || [ "$PREVIOUS_IMAGE" = "none" ]; then
-          echo ""
-          echo "⚠️  WARNING: No previous image available for rollback"
-          echo ""
-          echo "Current value: '$PREVIOUS_IMAGE'"
-          echo ""
-          echo "This may indicate:"
-          echo "  - First deployment (no previous version exists)"
-          echo "  - Previous image was not properly captured before deployment"
-          echo "  - Azure Web App has no container configuration yet"
-          echo ""
-          echo "❌ Cannot rollback without a valid previous image"
-          echo ""
-          echo "NEXT STEPS:"
-          echo "  1. Review deployment logs to find the root cause of the health check failure"
-          echo "  2. Fix the underlying issue (database connectivity, configuration, etc.)"
-          echo "  3. Redeploy with the corrected code/configuration"
-          echo "  4. If this is dev environment, deployment will continue despite health check failure"
+        # Verify we have a previous image
+        if [ -z "${{ inputs.previous-image }}" ]; then
+          echo "⚠️  WARNING: No previous image found"
+          echo "This may be the first deployment - cannot rollback"
           exit 1
         fi
 
@@ -214,7 +197,7 @@ runs:
         echo "✅ Rollback completed"
 
     - name: Verify Rollback - Health Check After Rollback
-      if: steps.verify_health.outputs.health_verified != 'true' && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "🔍 Verifying previous image is healthy after rollback..."
