@@ -256,18 +256,6 @@ runs:
           exit 1
         fi
 
-    - name: Exit successfully if health checks passed
-      shell: bash
-      run: |
-        HEALTH_VERIFIED='${{ steps.verify_health.outputs.health_verified }}'
-        if [ "$HEALTH_VERIFIED" = "true" ]; then
-          echo "✅ All health checks passed - exiting successfully"
-          exit 0
-        fi
-        # If we reach here, health check failed but we're not in a rollback scenario
-        echo "Health verification did not complete successfully"
-        exit 1
-
     - name: Provide Debug Help (act environment)
       if: failure() && ${{ env.ACT }}
       shell: bash
