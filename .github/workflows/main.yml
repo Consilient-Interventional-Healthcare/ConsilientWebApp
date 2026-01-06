@@ -87,9 +87,17 @@ concurrency:
 jobs:
   initialize-workflow:
     name: Initialize Workflow
-    uses: ./.github/workflows/initialize.yml
-    with:
-      environment: ${{ github.event.inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      environment: ${{ steps.initialize.outputs.environment }}
+      runner_image: ${{ steps.initialize.outputs.runner_image }}
+    steps:
+      - name: Initialize configuration
+        id: initialize
+        uses: ./.github/actions/initialize
+        with:
+          environment: ${{ github.event.inputs.environment || 'dev' }}
 
   build-runner-image:
     name: Image Runner
