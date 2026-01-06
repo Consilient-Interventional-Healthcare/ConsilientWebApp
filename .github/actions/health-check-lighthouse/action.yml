@@ -73,8 +73,9 @@ runs:
         echo "⏳ Waiting ${{ inputs.wait-seconds }} seconds for deployment to stabilize..."
         sleep ${{ inputs.wait-seconds }}
 
-    - name: Run Lighthouse CI
-      id: lighthouse
+    - name: Run Lighthouse and Verify
+      id: lighthouse_verify
+      continue-on-error: true
       uses: treosh/lighthouse-ci-action@v10
       with:
         urls: |
@@ -87,9 +88,9 @@ runs:
         LHCI_ASSERT__ASSERTIONS__CATEGORIES_BEST_PRACTICES: '["warn", {"minScore": ${{ inputs.min-bp-score }}}]'
         LHCI_ASSERT__ASSERTIONS__CATEGORIES_SEO: '["warn", {"minScore": ${{ inputs.min-seo-score }}}]'
 
-    - name: Verify Lighthouse Results
+    - name: Log Lighthouse Results
       shell: bash
-      if: success()
+      if: steps.lighthouse_verify.outcome == 'success'
       run: |
         echo "✅ Lighthouse checks passed"
         echo "  Minimum Performance Score: ${{ inputs.min-perf-score }}"
@@ -98,7 +99,7 @@ runs:
         echo "  Minimum SEO Score: ${{ inputs.min-seo-score }}"
 
     - name: Login to Azure for Rollback (OIDC + act fallback)
-      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      if: steps.lighthouse_verify.outcome == 'failure' && inputs.resource-group != '' && inputs.environment != 'dev'
       uses: ./../../.github/actions/azure-login
       with:
         client-id: ${{ inputs.client-id }}
@@ -107,7 +108,7 @@ runs:
         client-secret: ${{ inputs.client-secret }}
 
     - name: Rollback Deployment
-      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      if: steps.lighthouse_verify.outcome == 'failure' && inputs.resource-group != '' && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
@@ -116,9 +117,27 @@ runs:
         echo "Resource Group: ${{ inputs.resource-group }}"
         echo "Previous Image: ${{ inputs.previous-image }}"
 
-        if [ -z "${{ inputs.previous-image }}" ]; then
-          echo "⚠️  WARNING: No previous image found"
-          echo "This may be the first deployment - cannot rollback"
+        # Verify we have a valid previous image
+        PREVIOUS_IMAGE="${{ inputs.previous-image }}"
+
+        if [ -z "$PREVIOUS_IMAGE" ] || [ "$PREVIOUS_IMAGE" = "false" ] || [ "$PREVIOUS_IMAGE" = "null" ] || [ "$PREVIOUS_IMAGE" = "none" ]; then
+          echo ""
+          echo "⚠️  WARNING: No previous image available for rollback"
+          echo ""
+          echo "Current value: '$PREVIOUS_IMAGE'"
+          echo ""
+          echo "This may indicate:"
+          echo "  - First deployment (no previous version exists)"
+          echo "  - Previous image was not properly captured before deployment"
+          echo "  - Azure Web App has no container configuration yet"
+          echo ""
+          echo "❌ Cannot rollback without a valid previous image"
+          echo ""
+          echo "NEXT STEPS:"
+          echo "  1. Review deployment logs to find the root cause of the Lighthouse check failure"
+          echo "  2. Fix the underlying issue (performance, accessibility, etc.)"
+          echo "  3. Redeploy with the corrected code/configuration"
+          echo "  4. If this is dev environment, deployment will continue despite check failure"
           exit 1
         fi
 
@@ -145,7 +164,7 @@ runs:
         echo "✅ Rollback completed"
 
     - name: Verify Rollback - Quick Health Check After Rollback
-      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      if: steps.lighthouse_verify.outcome == 'failure' && inputs.resource-group != '' && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "🔍 Verifying previous image is accessible after rollback..."

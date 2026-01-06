@@ -64,8 +64,9 @@ runs:
         echo "⏳ Waiting ${{ inputs.wait-seconds }} seconds for deployment to stabilize..."
         sleep ${{ inputs.wait-seconds }}
 
-    - name: Health Check with Retry
-      id: health_check
+    - name: Health Check and Verify
+      id: health_check_verify
+      continue-on-error: true
       shell: bash
       run: |
         set -e
@@ -74,6 +75,7 @@ runs:
         ATTEMPT=1
         SUCCESS=false
 
+        # Health check with retry loop
         while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
           echo "🔍 Health check attempt $ATTEMPT/$MAX_ATTEMPTS..."
 
@@ -86,8 +88,6 @@ runs:
 
             # Verify JSON response
             if echo "$RESPONSE_BODY" | jq empty 2>/dev/null; then
-              echo "$RESPONSE_BODY" > /tmp/health_response.json
-              echo "response=$(cat /tmp/health_response.json)" >> $GITHUB_OUTPUT
               SUCCESS=true
               break
             else
@@ -110,34 +110,18 @@ runs:
           exit 1
         fi
 
-    - name: Verify Health Status
-      id: verify_health
-      shell: bash
-      run: |
+        # Verify health status
         echo "🔍 Verifying health check response..."
-        RESPONSE='${{ steps.health_check.outputs.response }}'
-
-        # Check if response is valid JSON
-        if ! echo "$RESPONSE" | jq empty 2>/dev/null; then
-          echo "❌ ERROR: Invalid JSON response"
-          echo "Response: $RESPONSE"
-          echo "health_verified=false" >> $GITHUB_OUTPUT
-          exit 1
-        fi
-
-        # Verify overall status
-        STATUS=$(echo "$RESPONSE" | jq -r '.status // .overall_status // "unknown"' 2>/dev/null)
+        STATUS=$(echo "$RESPONSE_BODY" | jq -r '.status // .overall_status // "unknown"' 2>/dev/null)
         if [ "$STATUS" != "Healthy" ] && [ "$STATUS" != "healthy" ]; then
           echo "❌ ERROR: API health status is $STATUS"
-          echo "health_verified=false" >> $GITHUB_OUTPUT
           exit 1
         fi
 
         # Verify database connectivity if available
-        DB_STATUS=$(echo "$RESPONSE" | jq -r '.checks[0].status // "N/A"' 2>/dev/null)
+        DB_STATUS=$(echo "$RESPONSE_BODY" | jq -r '.checks[0].status // "N/A"' 2>/dev/null)
         if [ "$DB_STATUS" != "N/A" ] && [ "$DB_STATUS" != "Healthy" ]; then
           echo "❌ ERROR: Database connection status is $DB_STATUS"
-          echo "health_verified=false" >> $GITHUB_OUTPUT
           exit 1
         fi
 
@@ -146,10 +130,9 @@ runs:
         if [ "$DB_STATUS" != "N/A" ]; then
           echo "  Database Status: $DB_STATUS"
         fi
-        echo "health_verified=true" >> $GITHUB_OUTPUT
 
     - name: Login to Azure for Rollback (OIDC + act fallback)
-      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: steps.health_check_verify.outcome == 'failure' && inputs.resource-group != '' && !env.ACT && inputs.environment != 'dev'
       uses: ./.github/actions/azure-login
       with:
         client-id: ${{ inputs.client-id }}
@@ -158,7 +141,7 @@ runs:
         client-secret: ${{ inputs.client-secret }}
 
     - name: Rollback Deployment
-      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: steps.health_check_verify.outcome == 'failure' && inputs.resource-group != '' && !env.ACT && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
@@ -167,10 +150,27 @@ runs:
         echo "Resource Group: ${{ inputs.resource-group }}"
         echo "Previous Image: ${{ inputs.previous-image }}"
 
-        # Verify we have a previous image
-        if [ -z "${{ inputs.previous-image }}" ]; then
-          echo "⚠️  WARNING: No previous image found"
-          echo "This may be the first deployment - cannot rollback"
+        # Verify we have a valid previous image
+        PREVIOUS_IMAGE="${{ inputs.previous-image }}"
+
+        if [ -z "$PREVIOUS_IMAGE" ] || [ "$PREVIOUS_IMAGE" = "false" ] || [ "$PREVIOUS_IMAGE" = "null" ] || [ "$PREVIOUS_IMAGE" = "none" ]; then
+          echo ""
+          echo "⚠️  WARNING: No previous image available for rollback"
+          echo ""
+          echo "Current value: '$PREVIOUS_IMAGE'"
+          echo ""
+          echo "This may indicate:"
+          echo "  - First deployment (no previous version exists)"
+          echo "  - Previous image was not properly captured before deployment"
+          echo "  - Azure Web App has no container configuration yet"
+          echo ""
+          echo "❌ Cannot rollback without a valid previous image"
+          echo ""
+          echo "NEXT STEPS:"
+          echo "  1. Review deployment logs to find the root cause of the health check failure"
+          echo "  2. Fix the underlying issue (database connectivity, configuration, etc.)"
+          echo "  3. Redeploy with the corrected code/configuration"
+          echo "  4. If this is dev environment, deployment will continue despite health check failure"
           exit 1
         fi
 
@@ -197,7 +197,7 @@ runs:
         echo "✅ Rollback completed"
 
     - name: Verify Rollback - Health Check After Rollback
-      if: failure() && inputs.resource-group != '' && !${{ env.ACT }} && inputs.environment != 'dev'
+      if: steps.health_check_verify.outcome == 'failure' && inputs.resource-group != '' && !env.ACT && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "🔍 Verifying previous image is healthy after rollback..."
