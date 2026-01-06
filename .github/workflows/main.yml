@@ -207,10 +207,11 @@ jobs:
 
   deploy-react-apps:
     name: Deploy React
-    needs: [initialize-workflow, terraform, deploy-dotnet-apps]
+    needs: [initialize-workflow, terraform, deploy-databases, deploy-dotnet-apps]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
+      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
       (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
     uses: ./.github/workflows/react-apps.yml
     with:
