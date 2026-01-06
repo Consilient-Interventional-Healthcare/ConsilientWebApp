@@ -190,10 +190,11 @@ jobs:
 
   deploy-dotnet-apps:
     name: Deploy API
-    needs: [initialize-workflow, terraform, deploy-databases]
+    needs: [initialize-workflow, terraform, deploy-databases, build-runner-image]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
       always() &&
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
     uses: ./.github/workflows/dotnet-apps.yml
@@ -208,10 +209,11 @@ jobs:
 
   deploy-react-apps:
     name: Deploy React
-    needs: [initialize-workflow, terraform, deploy-databases, deploy-dotnet-apps]
+    needs: [initialize-workflow, terraform, deploy-databases, deploy-dotnet-apps, build-runner-image]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
       (needs.deploy-dotnet-apps.result == 'success' || needs.deploy-dotnet-apps.result == 'skipped')
     uses: ./.github/workflows/react-apps.yml
