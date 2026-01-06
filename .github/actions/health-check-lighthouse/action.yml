@@ -63,6 +63,9 @@ outputs:
   lighthouse-result:
     description: 'Lighthouse check result (passed/failed)'
     value: ${{ steps.lighthouse.outputs.result }}
+  checks_verified:
+    description: 'Whether Lighthouse checks passed'
+    value: ${{ steps.verify_lighthouse.outputs.checks_verified }}
 
 runs:
   using: 'composite'
@@ -88,17 +91,23 @@ runs:
         LHCI_ASSERT__ASSERTIONS__CATEGORIES_SEO: '["warn", {"minScore": ${{ inputs.min-seo-score }}}]'
 
     - name: Verify Lighthouse Results
+      id: verify_lighthouse
       shell: bash
-      if: success()
       run: |
-        echo "✅ Lighthouse checks passed"
-        echo "  Minimum Performance Score: ${{ inputs.min-perf-score }}"
-        echo "  Minimum Accessibility Score: ${{ inputs.min-a11y-score }}"
-        echo "  Minimum Best Practices Score: ${{ inputs.min-bp-score }}"
-        echo "  Minimum SEO Score: ${{ inputs.min-seo-score }}"
+        if [ $? -eq 0 ]; then
+          echo "✅ Lighthouse checks passed"
+          echo "  Minimum Performance Score: ${{ inputs.min-perf-score }}"
+          echo "  Minimum Accessibility Score: ${{ inputs.min-a11y-score }}"
+          echo "  Minimum Best Practices Score: ${{ inputs.min-bp-score }}"
+          echo "  Minimum SEO Score: ${{ inputs.min-seo-score }}"
+          echo "checks_verified=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Lighthouse checks failed"
+          echo "checks_verified=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: Login to Azure for Rollback (OIDC + act fallback)
-      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      if: steps.verify_lighthouse.outputs.checks_verified != 'true' && inputs.resource-group != '' && inputs.environment != 'dev'
       uses: ./../../.github/actions/azure-login
       with:
         client-id: ${{ inputs.client-id }}
@@ -107,7 +116,7 @@ runs:
         client-secret: ${{ inputs.client-secret }}
 
     - name: Rollback Deployment
-      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      if: steps.verify_lighthouse.outputs.checks_verified != 'true' && inputs.resource-group != '' && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "=== DEPLOYMENT ROLLBACK INITIATED ==="
@@ -116,9 +125,27 @@ runs:
         echo "Resource Group: ${{ inputs.resource-group }}"
         echo "Previous Image: ${{ inputs.previous-image }}"
 
-        if [ -z "${{ inputs.previous-image }}" ]; then
-          echo "⚠️  WARNING: No previous image found"
-          echo "This may be the first deployment - cannot rollback"
+        # Verify we have a valid previous image
+        PREVIOUS_IMAGE="${{ inputs.previous-image }}"
+
+        if [ -z "$PREVIOUS_IMAGE" ] || [ "$PREVIOUS_IMAGE" = "false" ] || [ "$PREVIOUS_IMAGE" = "null" ] || [ "$PREVIOUS_IMAGE" = "none" ]; then
+          echo ""
+          echo "⚠️  WARNING: No previous image available for rollback"
+          echo ""
+          echo "Current value: '$PREVIOUS_IMAGE'"
+          echo ""
+          echo "This may indicate:"
+          echo "  - First deployment (no previous version exists)"
+          echo "  - Previous image was not properly captured before deployment"
+          echo "  - Azure Web App has no container configuration yet"
+          echo ""
+          echo "❌ Cannot rollback without a valid previous image"
+          echo ""
+          echo "NEXT STEPS:"
+          echo "  1. Review deployment logs to find the root cause of the Lighthouse check failure"
+          echo "  2. Fix the underlying issue (performance, accessibility, etc.)"
+          echo "  3. Redeploy with the corrected code/configuration"
+          echo "  4. If this is dev environment, deployment will continue despite check failure"
           exit 1
         fi
 
@@ -145,7 +172,7 @@ runs:
         echo "✅ Rollback completed"
 
     - name: Verify Rollback - Quick Health Check After Rollback
-      if: failure() && inputs.resource-group != '' && inputs.environment != 'dev'
+      if: steps.verify_lighthouse.outputs.checks_verified != 'true' && inputs.resource-group != '' && inputs.environment != 'dev'
       shell: bash
       run: |
         echo "🔍 Verifying previous image is accessible after rollback..."

@@ -141,10 +141,17 @@ jobs:
               --resource-group "${RESOURCE_GROUP}" \
               --query '[0].value' -o tsv 2>/dev/null || echo "")
             echo "Previous image: ${CURRENT_IMAGE}"
-            echo "image=${CURRENT_IMAGE}" >> $GITHUB_OUTPUT
+
+            # Use explicit "none" instead of empty string
+            if [ -z "${CURRENT_IMAGE}" ]; then
+              echo "⚠️  No previous image found - this may be first deployment"
+              echo "image=none" >> $GITHUB_OUTPUT
+            else
+              echo "image=${CURRENT_IMAGE}" >> $GITHUB_OUTPUT
+            fi
           else
             echo "No resource group configured - skipping previous image capture"
-            echo "image=" >> $GITHUB_OUTPUT
+            echo "image=none" >> $GITHUB_OUTPUT
           fi
 
       - name: Build and push Docker image (Consilient.Api)
