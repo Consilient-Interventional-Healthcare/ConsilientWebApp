@@ -257,7 +257,7 @@ runs:
         fi
 
     - name: Provide Debug Help (act environment)
-      if: failure() && ${{ env.ACT }}
+      if: steps.health_check_verify.outcome == 'failure' && env.ACT == 'true'
       shell: bash
       run: |
         echo "======================================================================"
