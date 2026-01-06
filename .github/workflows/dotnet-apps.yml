@@ -176,7 +176,7 @@ jobs:
           images: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
   health-check-api:
-    name: API Health Check
+    name: Check API Health
     needs: build-and-deploy
     runs-on: ubuntu-latest
     if: needs.build-and-deploy.result == 'success'
