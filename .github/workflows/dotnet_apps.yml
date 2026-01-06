@@ -56,10 +56,10 @@ on:
 env:
   IMAGE_NAME: ${{ inputs.api_image_name }}
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
-  # Fallback: input > variable
   API_APP_NAME: ${{ inputs.api_app_name }}
   ACR_REGISTRY: ${{ inputs.acr_registry }}
   RESOURCE_GROUP: ${{ inputs.resource_group }}
+  ACT: false
 
 permissions:
   contents: read
@@ -172,3 +172,32 @@ jobs:
           app-name: ${{ env.API_APP_NAME }}
           images: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
+  health-check-api:
+    name: API Health Check
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    if: needs.build-and-deploy.result == 'success'
+    environment: ${{ inputs.environment }}
+    continue-on-error: ${{ inputs.environment == 'dev' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: API Health Check with Rollback
+        uses: ./.github/actions/health-check-api
+        with:
+          app-name: ${{ needs.build-and-deploy.outputs.api_app_name }}
+          endpoint-url: https://${{ needs.build-and-deploy.outputs.api_app_name }}.azurewebsites.net/health
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
+          resource-group: ${{ inputs.resource_group }}
+          previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
+          acr-registry: ${{ inputs.acr_registry }}
+          environment: ${{ inputs.environment }}
+          wait-seconds: '120'
+          max-attempts: '8'
+          retry-delay: '15s'

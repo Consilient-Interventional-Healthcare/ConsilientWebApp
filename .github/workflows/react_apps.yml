@@ -172,3 +172,40 @@ jobs:
           app-name: ${{ env.REACT_APP_NAME }}
           images: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
+  health-check-react:
+    name: React Lighthouse Check
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    if: needs.build-and-deploy.result == 'success'
+    container:
+      image: ${{ inputs.runner_image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    environment: ${{ inputs.environment }}
+    continue-on-error: ${{ inputs.environment == 'dev' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Lighthouse Health Check with Rollback
+        uses: ./.github/actions/health-check-lighthouse
+        with:
+          app-url: https://${{ needs.build-and-deploy.outputs.react_app_name }}.azurewebsites.net
+          app-name: ${{ needs.build-and-deploy.outputs.react_app_name }}
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
+          resource-group: ${{ inputs.resource_group }}
+          previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
+          acr-registry: ${{ inputs.acr_registry }}
+          environment: ${{ inputs.environment }}
+          wait-seconds: '120'
+          runs: '3'
+          min-perf-score: '0.7'
+          min-a11y-score: '0.9'
+          min-bp-score: '0.7'
+          min-seo-score: '0.7'

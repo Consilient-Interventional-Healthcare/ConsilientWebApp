@@ -85,40 +85,9 @@ concurrency:
 jobs:
   initialize-workflow:
     name: Initialize Workflow
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      environment: ${{ steps.setenv.outputs.environment }}
-      runner_image: ${{ steps.runner-image.outputs.runner_image }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Validate environment input
-        uses: ./.github/actions/validate-inputs
-        with:
-          environment: ${{ github.event.inputs.environment || 'dev' }}
-
-      - name: Set environment output
-        id: setenv
-        run: |
-          ENVIRONMENT_INPUT="${{ github.event.inputs.environment }}"
-
-          # Default to dev if no input (for non-dispatch events)
-          if [ -z "$ENVIRONMENT_INPUT" ]; then
-            ENVIRONMENT_INPUT="dev"
-          fi
-
-          echo "environment=$ENVIRONMENT_INPUT" >> $GITHUB_OUTPUT
-
-      - name: Compute runner image path
-        id: runner-image
-        run: |
-          # Convert repository to lowercase (Docker requirement)
-          REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          RUNNER_IMAGE="${{ vars.CONTAINER_REGISTRY }}/${REPO_LOWERCASE}/actions-runner:latest"
-          echo "runner_image=${RUNNER_IMAGE}" >> $GITHUB_OUTPUT
-          echo "Runner image: ${RUNNER_IMAGE}"
+    uses: ./.github/workflows/initialize.yml
+    with:
+      environment: ${{ github.event.inputs.environment || 'dev' }}
 
   build-runner-image:
     name: Image Runner
@@ -249,55 +218,6 @@ jobs:
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
       react_image_name: 'consilient-react'
-    secrets: inherit
-
-  health-check-api:
-    name: API Health Check
-    needs: [initialize-workflow, terraform, deploy-dotnet-apps]
-    if: |
-      (github.event_name != 'workflow_dispatch' || inputs.run-health-checks != false) &&
-      (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
-      always() &&
-      (needs.deploy-dotnet-apps.result == 'success')
-    uses: ./.github/workflows/healthchecks.yml
-    with:
-      check_type: 'api'
-      environment: ${{ needs.initialize-workflow.outputs.environment }}
-      app_name: ${{ needs.deploy-dotnet-apps.outputs.api_app_name }}
-      endpoint_url: https://${{ needs.deploy-dotnet-apps.outputs.api_app_name }}.azurewebsites.net/health
-      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
-      previous_image: ${{ needs.deploy-dotnet-apps.outputs.previous_image }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
-      wait_seconds: '120'
-      max_attempts: '8'
-      retry_delay: '15s'
-      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
-    secrets: inherit
-
-  health-check-react:
-    name: React Health Check
-    needs: [initialize-workflow, terraform, deploy-react-apps]
-    if: |
-      (github.event_name != 'workflow_dispatch' || inputs.run-health-checks != false) &&
-      (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
-      always() &&
-      (needs.deploy-react-apps.result == 'success')
-    uses: ./.github/workflows/healthchecks.yml
-    with:
-      check_type: 'react'
-      environment: ${{ needs.initialize-workflow.outputs.environment }}
-      app_name: ${{ needs.deploy-react-apps.outputs.react_app_name }}
-      endpoint_url: https://${{ needs.deploy-react-apps.outputs.react_app_name }}.azurewebsites.net
-      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
-      previous_image: ${{ needs.deploy-react-apps.outputs.previous_image }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
-      wait_seconds: '120'
-      runs: '3'
-      min_perf_score: '0.7'
-      min_a11y_score: '0.9'
-      min_bp_score: '0.7'
-      min_seo_score: '0.7'
-      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution

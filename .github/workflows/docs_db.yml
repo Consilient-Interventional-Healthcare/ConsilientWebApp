@@ -62,6 +62,7 @@ env:
   JDBC_VERSION: '12.4.2.jre11'
   SCHEMASPY_TIMEOUT_SECONDS: 600
   SCHEMA_DISCOVERY_TIMEOUT_SECONDS: 60
+  ACT: false
 
 jobs:
   extract-databases:
