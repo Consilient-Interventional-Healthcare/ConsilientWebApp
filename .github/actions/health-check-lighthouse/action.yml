@@ -70,8 +70,45 @@ runs:
     - name: Wait for Deployment
       shell: bash
       run: |
-        echo "⏳ Waiting ${{ inputs.wait-seconds }} seconds for deployment to stabilize..."
-        sleep ${{ inputs.wait-seconds }}
+        max_wait=${{ inputs.wait-seconds }}
+        interval=5
+        elapsed=0
+        app_url="${{ inputs.app-url }}"
+
+        echo "⏳ Polling for app readiness (max $max_wait seconds)..."
+
+        # Poll until app is ready or max wait reached
+        while [ $elapsed -lt $max_wait ]; do
+          http_code=$(curl -s -o /dev/null -w "%{http_code}" -m 5 "$app_url" 2>/dev/null || echo "000")
+
+          if [ "$http_code" = "200" ]; then
+            echo "✅ App ready after ${elapsed}s (HTTP 200)"
+            exit 0
+          else
+            echo "  Attempt at ${elapsed}s: HTTP $http_code (retrying in ${interval}s...)"
+          fi
+
+          sleep $interval
+          elapsed=$((elapsed + interval))
+        done
+
+        echo "⏳ Max wait time reached after ${max_wait}s. Proceeding with health checks."
+
+    - name: Verify App is Responding (Fail Fast)
+      id: app_health_check
+      shell: bash
+      run: |
+        app_url="${{ inputs.app-url }}"
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" "$app_url" 2>/dev/null || echo "000")
+
+        if [ "$http_code" = "200" ]; then
+          echo "✅ App returning HTTP 200 - proceeding with Lighthouse"
+          exit 0
+        else
+          echo "❌ App returned HTTP $http_code - failing fast"
+          echo "Skipping Lighthouse checks due to app unavailability"
+          exit 1
+        fi
 
     - name: Run Lighthouse and Verify
       id: lighthouse_verify

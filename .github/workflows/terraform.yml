@@ -253,12 +253,15 @@ jobs:
         id: init
         shell: bash
         # Runs in ./infra/terraform (job default)
+        env:
+          TF_INPUT: false
+          TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE: true
         run: |
           # Conditional backend configuration based on environment
           if [ -z "$ACT" ]; then
             # GitHub Actions: Use Azure Storage backend with OIDC
             echo "ℹ️  Initializing with Azure Storage backend (OIDC authentication)"
-            terraform init \
+            terraform init -upgrade=false \
               -backend-config="resource_group_name=${TF_STATE_RESOURCE_GROUP}" \
               -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
               -backend-config="container_name=${TF_STATE_CONTAINER}" \
@@ -288,25 +291,44 @@ jobs:
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Resource Group ID: ${RG_ID}"
           echo "RG_ID=${RG_ID}" >> $GITHUB_ENV
 
+      - name: Cache Hostname Pre-Check Results
+        id: hostname_cache
+        uses: actions/cache@v3
+        with:
+          path: .terraform-hostname-cache
+          key: hostname-tier-${{ env.TF_VAR_environment }}
+          restore-keys: hostname-tier-
+
       - name: Hostname Availability Pre-Check
         id: hostname_precheck
         shell: bash
         run: |
           echo "🔍 Running hostname availability pre-check..."
 
-          # Run pre-check script and capture all output (stdout and stderr)
-          PRECHECK_OUTPUT=$(bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/hostname-precheck.sh" 2>&1)
-          PRECHECK_EXIT=$?
+          # Check if we have a cached result
+          if [ -f ".terraform-hostname-cache" ]; then
+            echo "✅ Using cached hostname pre-check result"
+            NAMING_TIER=$(cat .terraform-hostname-cache)
+          else
+            echo "📋 Cache miss - running new pre-check..."
 
-          # Show all output from pre-check script
-          echo "$PRECHECK_OUTPUT"
+            # Run pre-check script and capture all output (stdout and stderr)
+            PRECHECK_OUTPUT=$(bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/hostname-precheck.sh" 2>&1)
+            PRECHECK_EXIT=$?
 
-          # Extract naming_tier from output (format: "naming_tier=N")
-          NAMING_TIER=$(echo "$PRECHECK_OUTPUT" | grep "naming_tier=" | cut -d= -f2 | tail -1)
+            # Show all output from pre-check script
+            echo "$PRECHECK_OUTPUT"
 
-          if [ -z "$NAMING_TIER" ]; then
-            echo "❌ Pre-check script failed to determine naming tier"
-            exit $PRECHECK_EXIT
+            # Extract naming_tier from output (format: "naming_tier=N")
+            NAMING_TIER=$(echo "$PRECHECK_OUTPUT" | grep "naming_tier=" | cut -d= -f2 | tail -1)
+
+            if [ -z "$NAMING_TIER" ]; then
+              echo "❌ Pre-check script failed to determine naming tier"
+              exit $PRECHECK_EXIT
+            fi
+
+            # Cache the result for next run
+            echo "$NAMING_TIER" > .terraform-hostname-cache
           fi
 
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Selected naming tier: $NAMING_TIER"

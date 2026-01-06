@@ -201,6 +201,6 @@ jobs:
           previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
           acr-registry: ${{ inputs.acr_registry }}
           environment: ${{ inputs.environment }}
-          wait-seconds: '120'
+          wait-seconds: '30'
           max-attempts: '8'
           retry-delay: '15s'

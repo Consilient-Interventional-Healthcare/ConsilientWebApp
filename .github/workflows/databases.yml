@@ -139,7 +139,7 @@ jobs:
         with:
           sql-server: ${{ env.SQL_SERVER }}
           database-name: ${{ env.DATABASE_NAME }}
-          timeout: '30'
+          timeout: '15'
 
       - name: List SQL files to apply
         id: list-files

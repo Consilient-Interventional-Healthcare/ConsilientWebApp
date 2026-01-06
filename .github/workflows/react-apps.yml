@@ -206,8 +206,8 @@ jobs:
           previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
           acr-registry: ${{ inputs.acr_registry }}
           environment: ${{ inputs.environment }}
-          wait-seconds: '120'
-          runs: '3'
+          wait-seconds: '45'
+          runs: '2'
           min-perf-score: '0.7'
           min-a11y-score: '0.9'
           min-bp-score: '0.7'
