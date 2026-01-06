@@ -218,23 +218,23 @@ jobs:
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
-  generate-db-docs:
-    name: Database Documentation
-    needs: [initialize-workflow, discover-databases, deploy-databases, terraform, warm-docker-cache]
-    if: |
-      (github.event_name != 'workflow_dispatch' || inputs.run-db-docs != false) &&
-      (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
-      always() &&
-      needs.initialize-workflow.result == 'success' &&
-      needs.discover-databases.result == 'success' &&
-      needs.discover-databases.outputs.count != '0'
-    uses: ./.github/workflows/database-docs.yml
-    with:
-      environment: ${{ needs.initialize-workflow.outputs.environment }}
-      database-configs: ${{ needs.discover-databases.outputs.database_configs }}
-      azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
-      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
-    secrets: inherit
+  # generate-db-docs:
+  #   name: Database Documentation
+  #   needs: [initialize-workflow, discover-databases, deploy-databases, terraform, warm-docker-cache]
+  #   if: |
+  #     (github.event_name != 'workflow_dispatch' || inputs.run-db-docs != false) &&
+  #     (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
+  #     always() &&
+  #     needs.initialize-workflow.result == 'success' &&
+  #     needs.discover-databases.result == 'success' &&
+  #     needs.discover-databases.outputs.count != '0'
+  #   uses: ./.github/workflows/database-docs.yml
+  #   with:
+  #     environment: ${{ needs.initialize-workflow.outputs.environment }}
+  #     database-configs: ${{ needs.discover-databases.outputs.database_configs }}
+  #     azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
+  #     runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+  #   secrets: inherit
 
   # ============================================================================
   # END DATABASE MANAGEMENT SECTION
