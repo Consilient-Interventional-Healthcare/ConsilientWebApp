@@ -11,7 +11,7 @@ resource "azurerm_mssql_server" "main" {
   administrator_login = var.sql_admin_username
   # IMPORTANT: Inject the password securely using environment variables, a secret manager, or your CI/CD pipeline. Never commit secrets.
   administrator_login_password  = var.sql_admin_password
-  public_network_access_enabled = var.enable_local_firewall
+  public_network_access_enabled = true
   tags                          = local.tags
 
   # Configure Azure AD admin for service principal authentication
@@ -21,6 +21,16 @@ resource "azurerm_mssql_server" "main" {
     tenant_id                   = data.azurerm_client_config.current.tenant_id
     azuread_authentication_only = false
   }
+}
+
+# Firewall rule to allow Azure services (GitHub Actions, Azure services, etc.)
+# Special Azure IP range: 0.0.0.0 to 0.0.0.0 represents all Azure services
+# See: https://learn.microsoft.com/en-us/azure/azure-sql/database/firewall-configure
+resource "azurerm_mssql_firewall_rule" "azure_services" {
+  name             = "AllowAzureServices"
+  server_id        = azurerm_mssql_server.main.id
+  start_ip_address = "0.0.0.0"
+  end_ip_address   = "0.0.0.0"
 }
 
 # Firewall rule for local act testing only
