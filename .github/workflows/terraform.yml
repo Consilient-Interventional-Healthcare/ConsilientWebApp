@@ -550,3 +550,21 @@ jobs:
           fi
           [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Proceeding with destroy for environment: ${{ inputs.environment }}"
           terraform destroy -auto-approve
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### Terraform Workflow Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** \`${{ inputs.action }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.action }}" == "apply" ] && [ -n "${{ steps.outputs.outputs.api_app_name }}" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Deployed Resources:**" >> $GITHUB_STEP_SUMMARY
+            echo "- **API App:** \`${{ steps.outputs.outputs.api_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **React App:** \`${{ steps.outputs.outputs.react_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **ACR Registry:** \`${{ steps.outputs.outputs.acr_registry_url }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Resource Group:** \`${{ steps.outputs.outputs.resource_group_name }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **SQL Server:** \`${{ steps.outputs.outputs.sql_server_fqdn }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
