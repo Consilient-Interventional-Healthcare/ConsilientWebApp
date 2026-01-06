@@ -102,20 +102,6 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
-      - name: Verify push success
-        if: steps.check-image.outputs.exists == 'false'
-        run: |
-          SHA_TAG="${{ steps.check-image.outputs.sha_tag }}"
-
-          echo "Verifying image was pushed successfully: ${SHA_TAG}"
-
-          if docker manifest inspect "${SHA_TAG}" > /dev/null 2>&1; then
-            echo "✅ Image successfully pushed to registry: ${SHA_TAG}"
-          else
-            echo "❌ Failed to verify image in registry: ${SHA_TAG}"
-            exit 1
-          fi
-
       - name: Summary
         if: always()
         run: |

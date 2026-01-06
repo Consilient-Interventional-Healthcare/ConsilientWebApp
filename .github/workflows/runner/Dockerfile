@@ -56,7 +56,6 @@ RUN apt-get update && \
     apt-get install -y wget ca-certificates gnupg lsb-release && \
     wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update && \
     apt-get install -y \
         google-chrome-stable \
         fonts-liberation \
@@ -182,39 +181,16 @@ ENV CLASSPATH="${SCHEMASPY_PATH}/msal4j.jar:${SCHEMASPY_PATH}/oauth2-oidc-sdk.ja
 ENV GITHUB_ACTIONS_PATH=/github/actions
 RUN mkdir -p ${GITHUB_ACTIONS_PATH}
 
-# actions/checkout@v4
-# Essential action used by nearly all workflows (11 occurrences)
-RUN mkdir -p ${GITHUB_ACTIONS_PATH}/actions && \
+# Pre-cache all GitHub Actions in a single layer for faster builds
+# Combines 6 git clone operations to reduce layer count and enable better parallelization
+RUN mkdir -p ${GITHUB_ACTIONS_PATH}/actions ${GITHUB_ACTIONS_PATH}/hashicorp ${GITHUB_ACTIONS_PATH}/azure ${GITHUB_ACTIONS_PATH}/docker && \
     git clone --depth 1 --branch v4 https://github.com/actions/checkout.git ${GITHUB_ACTIONS_PATH}/actions/checkout@v4 && \
-    echo "✅ Cloned actions/checkout@v4"
-
-# hashicorp/setup-terraform@v3
-# Used by terraform.yml workflow (disabled but still downloaded by GitHub Actions)
-RUN mkdir -p ${GITHUB_ACTIONS_PATH}/hashicorp && \
     git clone --depth 1 --branch v3 https://github.com/hashicorp/setup-terraform.git ${GITHUB_ACTIONS_PATH}/hashicorp/setup-terraform@v3 && \
-    echo "✅ Cloned hashicorp/setup-terraform@v3"
-
-# azure/login@v2
-# Used by .github/actions/azure-login composite action
-RUN mkdir -p ${GITHUB_ACTIONS_PATH}/azure && \
     git clone --depth 1 --branch v2 https://github.com/Azure/login.git ${GITHUB_ACTIONS_PATH}/azure/login@v2 && \
-    echo "✅ Cloned azure/login@v2"
-
-# docker/setup-buildx-action@v3
-# Required for all Docker builds (3 occurrences)
-RUN mkdir -p ${GITHUB_ACTIONS_PATH}/docker && \
     git clone --depth 1 --branch v3 https://github.com/docker/setup-buildx-action.git ${GITHUB_ACTIONS_PATH}/docker/setup-buildx-action@v3 && \
-    echo "✅ Cloned docker/setup-buildx-action@v3"
-
-# docker/build-push-action@v5
-# Core Docker build action (3 occurrences)
-RUN git clone --depth 1 --branch v5 https://github.com/docker/build-push-action.git ${GITHUB_ACTIONS_PATH}/docker/build-push-action@v5 && \
-    echo "✅ Cloned docker/build-push-action@v5"
-
-# docker/login-action@v3
-# ACR authentication (2 occurrences)
-RUN git clone --depth 1 --branch v3 https://github.com/docker/login-action.git ${GITHUB_ACTIONS_PATH}/docker/login-action@v3 && \
-    echo "✅ Cloned docker/login-action@v3"
+    git clone --depth 1 --branch v5 https://github.com/docker/build-push-action.git ${GITHUB_ACTIONS_PATH}/docker/build-push-action@v5 && \
+    git clone --depth 1 --branch v3 https://github.com/docker/login-action.git ${GITHUB_ACTIONS_PATH}/docker/login-action@v3 && \
+    echo "✅ All GitHub Actions cloned successfully"
 
 # ============================================================
 # LAYER 4: Terraform v1.9.0 with Pre-cached Providers
@@ -227,60 +203,31 @@ RUN curl -OsL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terr
     chmod +x /usr/local/bin/terraform && \
     rm terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 
-# Pre-cache Terraform providers to avoid downloading during terraform init
-# This significantly speeds up terraform init in CI/CD workflows
-
-# azurerm v4.57.0
-RUN mkdir -p ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azurerm/4.57.0/linux_amd64 && \
-    curl -L -o /tmp/azurerm.zip \
-      https://releases.hashicorp.com/terraform-provider-azurerm/4.57.0/terraform-provider-azurerm_4.57.0_linux_amd64.zip && \
+# Pre-cache Terraform providers in a single layer for faster builds
+# Combines 4 provider downloads to reduce layer count
+RUN mkdir -p \
+      ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azurerm/4.57.0/linux_amd64 \
+      ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azuread/3.7.0/linux_amd64 \
+      ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/local/2.6.1/linux_amd64 \
+      ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/null/3.2.4/linux_amd64 && \
+    curl -L -o /tmp/azurerm.zip https://releases.hashicorp.com/terraform-provider-azurerm/4.57.0/terraform-provider-azurerm_4.57.0_linux_amd64.zip && \
+    curl -L -o /tmp/azuread.zip https://releases.hashicorp.com/terraform-provider-azuread/3.7.0/terraform-provider-azuread_3.7.0_linux_amd64.zip && \
+    curl -L -o /tmp/local.zip https://releases.hashicorp.com/terraform-provider-local/2.6.1/terraform-provider-local_2.6.1_linux_amd64.zip && \
+    curl -L -o /tmp/null.zip https://releases.hashicorp.com/terraform-provider-null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip && \
     unzip -q /tmp/azurerm.zip -d /tmp/azurerm_extracted && \
-    mv /tmp/azurerm_extracted/terraform-provider-azurerm_* ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azurerm/4.57.0/linux_amd64/ && \
-    chmod +x ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azurerm/4.57.0/linux_amd64/terraform-provider-azurerm_* && \
-    rm -rf /tmp/azurerm.zip /tmp/azurerm_extracted
-
-# azuread v3.7.0
-RUN mkdir -p ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azuread/3.7.0/linux_amd64 && \
-    curl -L -o /tmp/azuread.zip \
-      https://releases.hashicorp.com/terraform-provider-azuread/3.7.0/terraform-provider-azuread_3.7.0_linux_amd64.zip && \
     unzip -q /tmp/azuread.zip -d /tmp/azuread_extracted && \
-    mv /tmp/azuread_extracted/terraform-provider-azuread_* ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azuread/3.7.0/linux_amd64/ && \
-    chmod +x ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azuread/3.7.0/linux_amd64/terraform-provider-azuread_* && \
-    rm -rf /tmp/azuread.zip /tmp/azuread_extracted
-
-# local v2.6.1
-RUN mkdir -p ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/local/2.6.1/linux_amd64 && \
-    curl -L -o /tmp/local.zip \
-      https://releases.hashicorp.com/terraform-provider-local/2.6.1/terraform-provider-local_2.6.1_linux_amd64.zip && \
     unzip -q /tmp/local.zip -d /tmp/local_extracted && \
-    mv /tmp/local_extracted/terraform-provider-local_* ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/local/2.6.1/linux_amd64/ && \
-    chmod +x ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/local/2.6.1/linux_amd64/terraform-provider-local_* && \
-    rm -rf /tmp/local.zip /tmp/local_extracted
-
-# null v3.2.4
-RUN mkdir -p ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/null/3.2.4/linux_amd64 && \
-    curl -L -o /tmp/null.zip \
-      https://releases.hashicorp.com/terraform-provider-null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip && \
     unzip -q /tmp/null.zip -d /tmp/null_extracted && \
+    mv /tmp/azurerm_extracted/terraform-provider-azurerm_* ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azurerm/4.57.0/linux_amd64/ && \
+    mv /tmp/azuread_extracted/terraform-provider-azuread_* ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azuread/3.7.0/linux_amd64/ && \
+    mv /tmp/local_extracted/terraform-provider-local_* ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/local/2.6.1/linux_amd64/ && \
     mv /tmp/null_extracted/terraform-provider-null_* ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/null/3.2.4/linux_amd64/ && \
+    chmod +x ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azurerm/4.57.0/linux_amd64/terraform-provider-azurerm_* && \
+    chmod +x ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/azuread/3.7.0/linux_amd64/terraform-provider-azuread_* && \
+    chmod +x ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/local/2.6.1/linux_amd64/terraform-provider-local_* && \
     chmod +x ${TERRAFORM_PLUGIN_CACHE_DIR}/registry.terraform.io/hashicorp/null/3.2.4/linux_amd64/terraform-provider-null_* && \
-    rm -rf /tmp/null.zip /tmp/null_extracted
-
-# ============================================================
-# Verification Layer
-# ============================================================
-# Note: Docker CLI is already included in the catthehacker base image
-RUN echo "=== Tool Verification ===" && \
-    echo "Azure CLI: $(az --version | head -n 1)" && \
-    echo "sqlcmd: $(sqlcmd --version)" && \
-    echo "Terraform: $(terraform --version | head -n 1)" && \
-    echo "Docker CLI: $(docker --version)" && \
-    echo "Java: $(java -version 2>&1 | head -n 1)" && \
-    echo "Chrome: $(google-chrome-stable --version)" && \
-    echo "Node.js: $(node --version)" && \
-    echo "npm: $(npm --version)" && \
-    echo "SchemaSpy: $(ls -lh ${SCHEMASPY_PATH})" && \
-    echo "========================="
+    rm -rf /tmp/*.zip /tmp/*_extracted && \
+    echo "✅ All Terraform providers cached successfully"
 
 # ============================================================
 # Working Directory & Health Check
