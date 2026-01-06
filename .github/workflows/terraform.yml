@@ -259,8 +259,10 @@ jobs:
         # Runs in ./infra/terraform (job default)
         env:
           TF_INPUT: false
-          TF_PLUGIN_CACHE_MAY_BREAK_DEPENDENCY_LOCK_FILE: true
         run: |
+          # Disable Terraform plugin cache to avoid checksum mismatches with pre-cached providers
+          unset TF_PLUGIN_CACHE_DIR
+
           # Conditional backend configuration based on environment
           if [ -z "$ACT" ]; then
             # GitHub Actions: Use Azure Storage backend with OIDC
