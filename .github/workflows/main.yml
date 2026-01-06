@@ -136,7 +136,6 @@ jobs:
     # Logic: (NOT manual trigger) OR (manual AND not disabled)
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-terraform != false) &&
-      always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped')
     uses: ./.github/workflows/terraform.yml
