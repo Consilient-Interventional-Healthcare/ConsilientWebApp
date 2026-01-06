@@ -93,6 +93,11 @@ jobs:
       environment: ${{ steps.initialize.outputs.environment }}
       runner_image: ${{ steps.initialize.outputs.runner_image }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
       - name: Initialize configuration
         id: initialize
         uses: ./.github/actions/initialize
