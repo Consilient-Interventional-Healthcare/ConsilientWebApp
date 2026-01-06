@@ -243,6 +243,7 @@ jobs:
 
       - name: Discover database schemas
         id: discover-schemas
+        shell: bash
         run: |
           set -e
           set -o pipefail
@@ -378,6 +379,7 @@ jobs:
 
       - name: Generate schema documentation (parallel)
         id: schema-doc
+        shell: bash
         run: |
           set -e
           set -o pipefail
@@ -486,6 +488,7 @@ jobs:
         if: steps.schema-doc.outcome == 'success'
         env:
           DB_NAME: ${{ steps.parse-config.outputs.database-name }}
+        shell: bash
         run: |
           set -e
           set -o pipefail
