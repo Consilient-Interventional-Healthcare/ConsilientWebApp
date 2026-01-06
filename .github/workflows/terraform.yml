@@ -249,6 +249,10 @@ jobs:
         if: false  # Currently uses container image with Terraform pre-installed
         uses: hashicorp/setup-terraform@v3
 
+      - name: Clear Terraform provider cache
+        shell: bash
+        run: rm -rf .terraform/providers
+
       - name: Terraform Init
         id: init
         shell: bash
