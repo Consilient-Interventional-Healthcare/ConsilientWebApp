@@ -177,14 +177,19 @@ jobs:
 
       - name: Summary - Build and Deploy
         run: |
-          echo "=== Build and Deploy Summary ==="
-          echo "✓ Docker image built successfully"
-          echo "  Image: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
-          echo "✓ Deployed to Azure Web App"
-          echo "  App Service: ${{ env.REACT_APP_NAME }}"
-          echo "  Environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}"
-          echo "✓ Previous image captured for rollback"
-          echo "  Previous Image: ${{ steps.capture_previous.outputs.image }}"
+          echo "### Build and Deploy Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** \`${{ inputs.environment || github.event.inputs.environment || 'dev' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **React App Name:** \`${{ env.REACT_APP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docker Image:** \`${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Steps Completed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ React application built in Release configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Docker image pushed to ACR" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Container image deployed to Azure Web App for Containers" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Previous image captured for rollback: \`${{ steps.capture_previous.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
 
   health-check-react:
     name: Check React App Health
@@ -225,15 +230,19 @@ jobs:
           min-seo-score: '0.7'
 
       - name: Summary - Health Check
+        if: always()
         run: |
-          echo "=== Health Check Summary ==="
-          echo "✓ Health check completed successfully"
-          echo "  App: https://${{ needs.build-and-deploy.outputs.react_app_name }}.azurewebsites.net"
-          echo "  Tests: 2 Lighthouse audit runs"
-          echo "✓ Quality thresholds validated"
-          echo "  Performance: 70%+ (min: 70%)"
-          echo "  Accessibility: 90%+ (min: 90%)"
-          echo "  Best Practices: 70%+ (min: 70%)"
-          echo "  SEO: 70%+ (min: 70%)"
-          echo "✓ Rollback capability verified"
-          echo "  Previous Image: ${{ needs.build-and-deploy.outputs.previous_image }}"
+          echo "### React App Health Check Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Health Check Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **App URL:** \`https://${{ needs.build-and-deploy.outputs.react_app_name }}.azurewebsites.net\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tests:** 2 Lighthouse audit runs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Quality Thresholds:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance:** 70%+ (min: 70%)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Accessibility:** 90%+ (min: 90%)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Best Practices:** 70%+ (min: 70%)" >> $GITHUB_STEP_SUMMARY
+          echo "- **SEO:** 70%+ (min: 70%)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Rollback Capability:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous Image:** \`${{ needs.build-and-deploy.outputs.previous_image }}\`" >> $GITHUB_STEP_SUMMARY
