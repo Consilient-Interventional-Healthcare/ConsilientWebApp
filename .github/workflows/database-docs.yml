@@ -150,6 +150,7 @@ jobs:
           echo "📋 Parsing configuration for ${{ matrix.database }}"
 
           ACTUAL_DATABASE_NAME="${{ matrix.database }}"
+          ENVIRONMENT="${{ inputs.environment }}"
 
           # Extract config file path for this database (from centralized discovery)
           CONFIG_DATA=$(echo '${{ inputs.database-configs }}' | jq -r '.["${{ matrix.database }}"]')
@@ -169,17 +170,23 @@ jobs:
               fi
 
               # Check for environment-specific database name override
-              ENV_DB_NAME=$(yq eval ".database.environment_names.[\"${{ inputs.environment }}\"]" "$CONFIG_FILE" 2>/dev/null)
+              ENV_DB_NAME=$(yq eval ".database.environment_names.[\"$ENVIRONMENT\"]" "$CONFIG_FILE" 2>/dev/null)
               if [ "$ENV_DB_NAME" != "null" ] && [ -n "$ENV_DB_NAME" ]; then
                 ACTUAL_DATABASE_NAME="$ENV_DB_NAME"
-                echo "🔄 Using environment-specific database name: $ACTUAL_DATABASE_NAME (environment: ${{ inputs.environment }})"
+                echo "🔄 Using environment-specific database name: $ACTUAL_DATABASE_NAME (environment: $ENVIRONMENT)"
               fi
 
             else
-              echo "⚠️  Config file not found: $CONFIG_FILE - using defaults"
+              echo "⚠️  Config file not found: $CONFIG_PATH - using default naming convention"
+              # Fallback: append environment code to database name
+              ACTUAL_DATABASE_NAME="${{ matrix.database }}-${ENVIRONMENT}"
+              echo "🔄 Using default naming: $ACTUAL_DATABASE_NAME (database-environment)"
             fi
           else
-            echo "⚠️  No config data found for ${{ matrix.database }} - using defaults"
+            echo "⚠️  No config data found for ${{ matrix.database }} - using default naming convention"
+            # Fallback: append environment code to database name
+            ACTUAL_DATABASE_NAME="${{ matrix.database }}-${ENVIRONMENT}"
+            echo "🔄 Using default naming: $ACTUAL_DATABASE_NAME (database-environment)"
           fi
 
           # Export values for use in subsequent steps
