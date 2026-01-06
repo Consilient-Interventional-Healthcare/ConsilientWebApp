@@ -177,23 +177,18 @@ jobs:
 
       - name: Build and Deploy Summary
         run: |
-          echo "=== Build and Deploy Summary ==="
-          echo ""
-          echo "✅ Build and Deployment Completed"
-          echo ""
-          echo "Deployment Details:"
-          echo "  - Environment: ${{ inputs.environment }}"
-          echo "  - API App Name: ${{ env.API_APP_NAME }}"
-          echo "  - Image Tag: ${{ env.IMAGE_TAG }}"
-          echo "  - Docker Image: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
-          echo ""
-          echo "Steps Completed:"
-          echo "  ✓ API application built in Release configuration"
-          echo "  ✓ Docker image pushed to ACR"
-          echo "  ✓ Container image deployed to Azure Web App for Containers"
-          echo ""
-          echo "Run ID: ${{ github.run_id }}"
-          echo "Commit: ${{ github.sha }}"
+          echo "### Build and Deploy Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **API App Name:** \`${{ env.API_APP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Docker Image:** \`${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Steps Completed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ API application built in Release configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Docker image pushed to ACR" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Container image deployed to Azure Web App for Containers" >> $GITHUB_STEP_SUMMARY
 
   health-check-api:
     name: Check API Health
@@ -227,18 +222,11 @@ jobs:
           retry-delay: '15s'
 
       - name: Health Check Summary
+        if: always()
         run: |
-          echo "=== Health Check Summary ==="
-          echo ""
-          echo "✅ API Health Check Completed"
-          echo ""
-          echo "Health Check Details:"
-          echo "  - App Name: ${{ needs.build-and-deploy.outputs.api_app_name }}"
-          echo "  - Endpoint: https://${{ needs.build-and-deploy.outputs.api_app_name }}.azurewebsites.net/health"
-          echo "  - Status: ${{ steps.health_check.outputs.status }}"
-          echo ""
-          echo "Health Check Response:"
-          echo "${{ steps.health_check.outputs.response }}"
-          echo ""
-          echo "Run ID: ${{ github.run_id }}"
-          echo "Commit: ${{ github.sha }}"
+          echo "### API Health Check Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Health Check Details:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **App Name:** \`${{ needs.build-and-deploy.outputs.api_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Endpoint:** \`https://${{ needs.build-and-deploy.outputs.api_app_name }}.azurewebsites.net/health\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** \`${{ steps.health_check.outputs.status }}\`" >> $GITHUB_STEP_SUMMARY
