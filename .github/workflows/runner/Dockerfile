@@ -7,8 +7,8 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 # Metadata labels
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
 LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
-LABEL org.opencontainers.image.version="2.1.1"
-LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17"
+LABEL org.opencontainers.image.version="2.2.0"
+LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17,chromium=latest"
 
 # ============================================================
 # Available Tools in this Image:
@@ -32,6 +32,9 @@ LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.
 #   - MSSQL JDBC Driver v12.4.2.jre11 - ADDED
 #   - MSAL4J v1.16.2 (Azure AD auth for JDBC) with full dependency tree - ADDED
 #
+# Browser Automation & Testing:
+#   - Chromium (latest stable) - ADDED
+#
 # Note: Docker CLI requires /var/run/docker.sock to be mounted
 #       when running this container to access the host's Docker daemon
 # ============================================================
@@ -44,6 +47,16 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y openjdk-17-jre-headless && \
     rm -rf /var/lib/apt/lists/*
+
+# ============================================================
+# LAYER 0: Chromium (required for Lighthouse CI)
+# ============================================================
+RUN apt-get update && \
+    apt-get install -y chromium && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set Chrome path for Lighthouse CI
+ENV CHROME_PATH=/usr/bin/chromium
 
 # ============================================================
 # LAYER 1: Azure CLI (Latest Stable)
@@ -223,6 +236,7 @@ RUN echo "=== Tool Verification ===" && \
     echo "Terraform: $(terraform --version | head -n 1)" && \
     echo "Docker CLI: $(docker --version)" && \
     echo "Java: $(java -version 2>&1 | head -n 1)" && \
+    echo "Chromium: $(chromium --version)" && \
     echo "Node.js: $(node --version)" && \
     echo "npm: $(npm --version)" && \
     echo "SchemaSpy: $(ls -lh ${SCHEMASPY_PATH})" && \
@@ -234,7 +248,7 @@ RUN echo "=== Tool Verification ===" && \
 WORKDIR /github/workspace
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD az --version && sqlcmd --version && terraform --version && docker --version && java -version && node --version
+    CMD az --version && sqlcmd --version && terraform --version && docker --version && java -version && chromium --version && node --version
 
 # ============================================================
 # Configuration
