@@ -1,0 +1,121 @@
+name: Generate Database Documentation (Standalone)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment (dev or prod)'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+        default: 'dev'
+
+permissions:
+  contents: read
+  id-token: write
+  pages: write
+  packages: read
+
+jobs:
+  # Job 1: Initialize (get runner image, set environment)
+  initialize-workflow:
+    name: Initialize
+    uses: ./.github/workflows/initialize.yml
+    with:
+      environment: ${{ inputs.environment }}
+
+  # Job 2: Discover databases
+  discover-databases:
+    name: Discover Databases
+    needs: [initialize-workflow]
+    runs-on: ubuntu-latest
+    outputs:
+      database_configs: ${{ steps.discover.outputs.database_configs }}
+      count: ${{ steps.discover.outputs.count }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Discover databases
+        id: discover
+        uses: ./.github/actions/discover-databases
+        with:
+          scripts_path: 'src/Databases'
+
+  # Job 3: Get Terraform outputs (read-only, no apply)
+  get-terraform-outputs:
+    name: Read Terraform State
+    needs: [initialize-workflow]
+    runs-on: ubuntu-latest
+    outputs:
+      sql_server_fqdn: ${{ steps.read-outputs.outputs.sql_server_fqdn }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Login to Azure (OIDC)
+        uses: ./.github/actions/azure-login
+        with:
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Read Terraform outputs
+        id: read-outputs
+        working-directory: ./infra/terraform
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_USE_OIDC: true
+        run: |
+          set -e
+
+          echo "🔄 Initializing Terraform for environment: ${{ inputs.environment }}"
+
+          terraform init \
+            -backend-config="resource_group_name=${{ vars.TF_STATE_RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ vars.TF_STATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ vars.TF_STATE_CONTAINER }}" \
+            -backend-config="key=${{ inputs.environment }}.terraform.tfstate" \
+            -backend-config="use_oidc=true"
+
+          echo "📖 Reading Terraform outputs..."
+          SQL_SERVER_FQDN=$(terraform output -raw sql_server_fqdn 2>/dev/null || echo "")
+
+          if [ -z "$SQL_SERVER_FQDN" ]; then
+            echo "❌ ERROR: Could not retrieve sql_server_fqdn from Terraform state"
+            echo "Please ensure Terraform has been applied for environment: ${{ inputs.environment }}"
+            exit 1
+          fi
+
+          echo "sql_server_fqdn=${SQL_SERVER_FQDN}" >> $GITHUB_OUTPUT
+          echo "✅ SQL Server FQDN: ${SQL_SERVER_FQDN}"
+
+  # Job 4: Generate documentation
+  generate-db-docs:
+    name: Generate Documentation
+    needs: [initialize-workflow, discover-databases, get-terraform-outputs]
+    if: needs.discover-databases.outputs.count != '0'
+    uses: ./.github/workflows/database-docs.yml
+    with:
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
+      database-configs: ${{ needs.discover-databases.outputs.database_configs }}
+      azure-sql-server-fqdn: ${{ needs.get-terraform-outputs.outputs.sql_server_fqdn }}
+      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+    secrets: inherit
