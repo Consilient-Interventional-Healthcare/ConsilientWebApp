@@ -96,7 +96,7 @@ resource "azurerm_container_app" "loki" {
   }
 
   ingress {
-    external_enabled = false
+    external_enabled = true
     target_port      = 3100
     transport        = "auto"
     traffic_weight {
