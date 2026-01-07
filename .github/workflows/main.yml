@@ -266,6 +266,7 @@ jobs:
       (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
     uses: ./.github/workflows/react-apps.yml
     with:
