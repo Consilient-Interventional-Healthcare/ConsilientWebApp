@@ -182,3 +182,16 @@ EOT
     error_message = "hostname_naming_tier must be 0 (standard), 1 (region), or 2 (random)."
   }
 }
+
+variable "oauth_enabled" {
+  description = <<EOT
+Enable OAuth/Microsoft login functionality.
+When enabled, creates:
+  - Azure AD App Registration for OAuth
+  - Client secret stored in Key Vault
+  - OAuth configuration keys in App Configuration
+The Terraform service principal needs Application.ReadWrite.All permission in Azure AD.
+EOT
+  type        = bool
+  default     = false
+}

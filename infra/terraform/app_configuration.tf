@@ -91,12 +91,19 @@ resource "azurerm_role_assignment" "appconfig_keyvault_secrets_user" {
 # ============================================================================
 
 # API Authentication and JWT Configuration
+# Keys use ConsilientApi: prefix which is stripped by the API at runtime via TrimKeyPrefix()
 resource "azurerm_app_configuration_key" "api_auth_enabled" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Authentication:Enabled"
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:Enabled"
   label                  = var.environment
   value                  = "true"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -104,10 +111,16 @@ resource "azurerm_app_configuration_key" "api_auth_enabled" {
 # JWT Issuer (matches API app service URL for audience validation)
 resource "azurerm_app_configuration_key" "api_jwt_issuer" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Authentication:Jwt:Issuer"
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:Jwt:Issuer"
   label                  = var.environment
   value                  = "https://${local.api.service_name}.azurewebsites.net"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -115,10 +128,16 @@ resource "azurerm_app_configuration_key" "api_jwt_issuer" {
 # JWT Audience (matches API app service URL)
 resource "azurerm_app_configuration_key" "api_jwt_audience" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Authentication:Jwt:Audience"
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:Jwt:Audience"
   label                  = var.environment
   value                  = "https://${local.api.service_name}.azurewebsites.net"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -126,10 +145,16 @@ resource "azurerm_app_configuration_key" "api_jwt_audience" {
 # JWT Token Expiry (in minutes)
 resource "azurerm_app_configuration_key" "api_jwt_expiry" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Authentication:Jwt:ExpiryMinutes"
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:Jwt:ExpiryMinutes"
   label                  = var.environment
   value                  = "60"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -137,21 +162,33 @@ resource "azurerm_app_configuration_key" "api_jwt_expiry" {
 # API Logging Configuration
 resource "azurerm_app_configuration_key" "api_logging_default_level" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Logging:LogLevel:Default"
+  key                    = "ConsilientApi:Logging:LogLevel:Default"
   label                  = var.environment
   # Debug in dev, Information in prod
-  value = var.environment == "dev" ? "Debug" : "Information"
-  type  = "kv"
+  value        = var.environment == "dev" ? "Debug" : "Information"
+  type         = "kv"
+  content_type = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "logging"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
 resource "azurerm_app_configuration_key" "api_logging_aspnetcore_level" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Logging:LogLevel:Microsoft.AspNetCore"
+  key                    = "ConsilientApi:Logging:LogLevel:Microsoft.AspNetCore"
   label                  = var.environment
   value                  = "Warning"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "logging"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -159,20 +196,32 @@ resource "azurerm_app_configuration_key" "api_logging_aspnetcore_level" {
 # Grafana Loki Configuration (push endpoint path)
 resource "azurerm_app_configuration_key" "api_loki_push_endpoint" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Logging:GrafanaLoki:PushEndpoint"
+  key                    = "ConsilientApi:Logging:GrafanaLoki:PushEndpoint"
   label                  = var.environment
   value                  = "/loki/api/v1/push"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "logging"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
 resource "azurerm_app_configuration_key" "api_loki_batch_posting_limit" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Logging:GrafanaLoki:BatchPostingLimit"
+  key                    = "ConsilientApi:Logging:GrafanaLoki:BatchPostingLimit"
   label                  = var.environment
   value                  = "100"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "logging"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -184,6 +233,12 @@ resource "azurerm_app_configuration_key" "aspnetcore_environment" {
   label                  = var.environment
   value                  = var.environment == "dev" ? "Development" : "Production"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "logging"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -199,6 +254,12 @@ resource "azurerm_app_configuration_key" "react_api_base_url" {
   label                  = var.environment
   value                  = "https://${local.api.service_name}.azurewebsites.net"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -213,6 +274,12 @@ resource "azurerm_app_configuration_key" "react_debug_mode" {
   label                  = var.environment
   value                  = tostring(local.react.enable_debug_mode[var.environment])
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -224,6 +291,12 @@ resource "azurerm_app_configuration_key" "react_use_mock_services" {
   label                  = var.environment
   value                  = tostring(local.react.use_mock_services[var.environment])
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -235,6 +308,12 @@ resource "azurerm_app_configuration_key" "react_remote_logging" {
   label                  = var.environment
   value                  = tostring(local.react.enable_remote_logging[var.environment])
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -246,6 +325,12 @@ resource "azurerm_app_configuration_key" "react_mock_auth_service" {
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -256,6 +341,12 @@ resource "azurerm_app_configuration_key" "react_mock_employees_service" {
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -266,6 +357,12 @@ resource "azurerm_app_configuration_key" "react_mock_daily_log_service" {
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -276,6 +373,12 @@ resource "azurerm_app_configuration_key" "react_mock_app_settings_service" {
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -287,6 +390,12 @@ resource "azurerm_app_configuration_key" "react_external_login_mock" {
   label                  = var.environment
   value                  = tostring(local.react.enable_external_login_mock[var.environment])
   type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "React"
+    category    = "feature-flags"
+  }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
@@ -301,10 +410,15 @@ resource "azurerm_app_configuration_key" "react_external_login_mock" {
 # JWT Signing Secret Reference
 resource "azurerm_app_configuration_key" "secrets_jwt_signing_secret" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Authentication:Jwt:Secret"
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:Jwt:Secret"
   label                  = var.environment
   type                   = "vault" # Special type for Key Vault references
   vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/jwt-signing-secret"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "secrets"
+  }
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
@@ -315,10 +429,15 @@ resource "azurerm_app_configuration_key" "secrets_jwt_signing_secret" {
 # SQL Connection String - Main Database Reference
 resource "azurerm_app_configuration_key" "secrets_sql_connection_main" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConnectionStrings:DefaultConnection"
+  key                    = "ConsilientApi:ConnectionStrings:DefaultConnection"
   label                  = var.environment
   type                   = "vault"
   vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/sql-connection-string-main"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "secrets"
+  }
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
@@ -329,10 +448,15 @@ resource "azurerm_app_configuration_key" "secrets_sql_connection_main" {
 # SQL Connection String - Hangfire Database Reference
 resource "azurerm_app_configuration_key" "secrets_sql_connection_hangfire" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConnectionStrings:HangfireConnection"
+  key                    = "ConsilientApi:ConnectionStrings:HangfireConnection"
   label                  = var.environment
   type                   = "vault"
   vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/sql-connection-string-hangfire"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "secrets"
+  }
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
@@ -343,10 +467,15 @@ resource "azurerm_app_configuration_key" "secrets_sql_connection_hangfire" {
 # Grafana Loki URL Reference
 resource "azurerm_app_configuration_key" "secrets_loki_url" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Logging:GrafanaLoki:Url"
+  key                    = "ConsilientApi:Logging:GrafanaLoki:Url"
   label                  = var.environment
   type                   = "vault"
   vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/grafana-loki-url"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "secrets"
+  }
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
@@ -354,29 +483,138 @@ resource "azurerm_app_configuration_key" "secrets_loki_url" {
   ]
 }
 
+# ============================================================================
+# CONFIGURATION KEYS - OAUTH SETTINGS
+# ============================================================================
+# OAuth configuration is conditionally created based on var.oauth_enabled
+# When enabled, creates Azure AD App Registration and stores credentials in Key Vault
+
 # OAuth Enabled Flag
-# OAuth is disabled by default. Can be re-enabled by setting to "true" and providing a valid OAuth configuration
-resource "azurerm_app_configuration_key" "backend_auth_oauth_enabled" {
+resource "azurerm_app_configuration_key" "oauth_enabled" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Authentication:OAuth:Enabled"
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:Enabled"
   label                  = var.environment
-  value                  = "false"
+  value                  = var.oauth_enabled ? "true" : "false"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Provider Name
+resource "azurerm_app_configuration_key" "oauth_provider_name" {
+  count                  = var.oauth_enabled ? 1 : 0
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ProviderName"
+  label                  = var.environment
+  value                  = "microsoft"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Authority (Microsoft login URL)
+resource "azurerm_app_configuration_key" "oauth_authority" {
+  count                  = var.oauth_enabled ? 1 : 0
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:Authority"
+  label                  = var.environment
+  value                  = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Client ID (from Azure AD App Registration)
+resource "azurerm_app_configuration_key" "oauth_client_id" {
+  count                  = var.oauth_enabled ? 1 : 0
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ClientId"
+  label                  = var.environment
+  value                  = azuread_application.oauth[0].client_id
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
 
   depends_on = [
-    azurerm_role_assignment.terraform_appconfig_owner
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azuread_application.oauth
   ]
 }
 
-# OAuth Client Secret
-# Set to dummy value since OAuth is disabled. When OAuth is re-enabled, this can be updated to a Key Vault reference.
-# The dummy value "not-configured" prevents startup failures but is never actually used since OAuth:Enabled = false
-resource "azurerm_app_configuration_key" "secrets_oauth_client_secret" {
+# OAuth Tenant ID
+resource "azurerm_app_configuration_key" "oauth_tenant_id" {
+  count                  = var.oauth_enabled ? 1 : 0
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "Api:Authentication:OAuth:ClientSecret"
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:TenantId"
   label                  = var.environment
-  value                  = "not-configured"
+  value                  = data.azurerm_client_config.current.tenant_id
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Scopes
+resource "azurerm_app_configuration_key" "oauth_scopes" {
+  count                  = var.oauth_enabled ? 1 : 0
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:Scopes"
+  label                  = var.environment
+  value                  = "openid,profile,email"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Client Secret (Key Vault reference)
+resource "azurerm_app_configuration_key" "oauth_client_secret" {
+  count                  = var.oauth_enabled ? 1 : 0
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ClientSecret"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/oauth-client-secret"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "secrets"
+  }
 
   depends_on = [
-    azurerm_role_assignment.terraform_appconfig_owner
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.oauth_client_secret
   ]
 }

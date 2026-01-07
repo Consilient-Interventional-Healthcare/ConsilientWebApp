@@ -122,6 +122,103 @@ cat .env.act | findstr ARM_
 
 ---
 
+### Remote Backend Configuration Error
+
+**Error:** `Error: Invalid backend configuration` or backend initialization fails in GitHub Actions
+
+**Diagnosis:**
+- GitHub variables not configured
+- OIDC federated credentials not set up
+- Azure Storage account not created
+- RBAC role not assigned
+
+**Solution:**
+
+1. Verify GitHub Variables are configured:
+```powershell
+# Go to: GitHub → Repository → Settings → Secrets and Variables → Actions → Variables
+# Should have:
+# TF_STATE_STORAGE_ACCOUNT = consilienttfstate{env}{hash}
+# TF_STATE_CONTAINER = tfstate
+```
+
+2. Verify OIDC federated credentials:
+```powershell
+# Check if credentials exist
+az ad app federated-credential list --id $AZURE_CLIENT_ID
+
+# Should show repository information
+```
+
+3. Verify Azure Storage Account and RBAC:
+```powershell
+# Check storage account exists
+az storage account show --name consilienttfstate{env}{hash}
+
+# Check RBAC role assignment
+az role assignment list --assignee $AZURE_CLIENT_ID --scope /subscriptions/$SUBSCRIPTION_ID
+# Should include "Storage Blob Data Contributor" role
+```
+
+4. For first-time setup:
+   - Storage account, container, and RBAC role must be created manually (bootstrap problem)
+   - See [components/terraform.md#state-management](components/terraform.md#state-management) for current setup
+   - See [`TERRAFORM_BACKEND_SETUP.md` guide](../../../TERRAFORM_BACKEND_SETUP.md) in root for detailed manual setup steps (if needed for new environments)
+
+**Prevention:**
+- Verify all GitHub variables before running workflow
+- Ensure RBAC role includes "Storage Blob Data Contributor"
+- Test OIDC authentication before enabling backend
+
+**Related Files:**
+- [components/terraform.md](components/terraform.md#state-management)
+- [reference/secrets-variables.md](reference/secrets-variables.md#github-variables)
+
+---
+
+### OIDC Backend Authentication Fails
+
+**Error:** `AADSTS65001: The user or admin has not consented...` or `Unauthorized` when accessing storage
+
+**Diagnosis:**
+- RBAC role not assigned to service principal
+- Wrong client ID in federated credentials
+- Service principal doesn't have permission to storage account
+
+**Solution:**
+
+1. Verify service principal has correct role:
+```powershell
+# Get storage account resource ID
+STORAGE_ID=$(az storage account show --name consilienttfstate{env}{hash} --query id -o tsv)
+
+# Check role assignment
+az role assignment list \
+  --assignee $AZURE_CLIENT_ID \
+  --scope $STORAGE_ID
+
+# Should show "Storage Blob Data Contributor" role
+```
+
+2. If role missing, assign it:
+```powershell
+az role assignment create \
+  --assignee $AZURE_CLIENT_ID \
+  --role "Storage Blob Data Contributor" \
+  --scope $STORAGE_ID
+```
+
+3. Wait for role propagation (can take 5-10 minutes)
+
+**Prevention:**
+- Verify RBAC role is assigned before first workflow run
+- Use "Storage Blob Data Contributor" role (most restrictive appropriate role)
+- Don't use "Owner" or "Contributor" roles for this purpose
+
+**Related Files:** [components/authentication.md](components/authentication.md#oidc-authentication)
+
+---
+
 ## GitHub Actions Failures
 
 ### Secret Validation Errors

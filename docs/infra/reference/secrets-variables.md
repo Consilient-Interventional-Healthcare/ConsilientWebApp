@@ -50,8 +50,8 @@ Secrets are sensitive values like passwords and API keys that must be kept confi
 | AZURE_REGION | canadacentral | All workflows | Azure region |
 | AZURE_RESOURCE_GROUP_NAME | consilient-resource-group | All workflows | Resource group name |
 | TERRAFORM_VERSION | 1.6.0 | Terraform workflow | Terraform version |
-| TF_STATE_STORAGE_ACCOUNT | consilienttfstate{env}{hash} | Terraform workflow | Terraform state storage |
-| TF_STATE_CONTAINER | tfstate | Terraform workflow | State container name |
+| TF_STATE_STORAGE_ACCOUNT | consilienttfstate{env}{hash} | Terraform workflow | Azure Storage account for remote state |
+| TF_STATE_CONTAINER | tfstate | Terraform workflow | Blob container name in storage account |
 
 ### Terraform Variables (22 Total)
 
@@ -291,6 +291,105 @@ terraform apply tfplan
 2. Check file is in `infra/act/` directory
 3. Ensure format matches template (KEY=VALUE per line)
 4. Run `.\run-act.ps1` from `infra/act/` directory
+
+---
+
+## Terraform Remote State Configuration
+
+### Overview
+
+Terraform state is stored remotely in Azure Storage with the following setup:
+
+**GitHub Actions (Production):**
+- Backend: Azure Storage (azurerm)
+- State file: `{environment}.terraform.tfstate` (e.g., `dev.terraform.tfstate`)
+- Authentication: OIDC federated identity (no secrets needed)
+- Variables: `TF_STATE_STORAGE_ACCOUNT`, `TF_STATE_CONTAINER`
+
+**Local Development (act):**
+- Backend: Local file (`infra/terraform/terraform.tfstate`)
+- Authentication: None (uses local credentials)
+- Storage: Persists via `--bind` mount in act
+
+### Required Variables
+
+Two GitHub variables **must** be configured:
+
+```
+TF_STATE_STORAGE_ACCOUNT = consilienttfstate{environment}{hash}
+TF_STATE_CONTAINER = tfstate
+```
+
+**Example values:**
+```
+TF_STATE_STORAGE_ACCOUNT = consilienttfstatedev1a2b3c
+TF_STATE_CONTAINER = tfstate
+```
+
+### How It Works
+
+**Terraform Init (GitHub Actions):**
+```bash
+terraform init \
+  -backend-config="resource_group_name=consilient-terraform" \
+  -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
+  -backend-config="container_name=${TF_STATE_CONTAINER}" \
+  -backend-config="key=${ENVIRONMENT}.terraform.tfstate" \
+  -backend-config="use_oidc=true"
+```
+
+**Terraform Init (Local/act):**
+```bash
+terraform init -reconfigure -backend=false
+```
+
+### Manual Setup (First-Time Only)
+
+The Azure Storage account and RBAC permissions must be created manually (bootstrap problem - Terraform can't create its own state backend).
+
+For detailed setup instructions, see the root-level setup guide. The following must exist:
+
+1. **Azure Storage Account:** `consilienttfstate{environment}{hash}`
+2. **Blob Container:** `tfstate`
+3. **RBAC Role:** "Storage Blob Data Contributor" assigned to OIDC service principal
+4. **GitHub Variables:** `TF_STATE_STORAGE_ACCOUNT` and `TF_STATE_CONTAINER` configured
+
+### State File Naming
+
+State files are named by environment for isolation:
+- Development: `dev.terraform.tfstate`
+- Production: `prod.terraform.tfstate`
+
+Each environment's state is completely independent.
+
+### State Detection
+
+State availability is detected using `terraform state list` which:
+- Works with both local and remote backends
+- Queries the actual backend (not local files)
+- Enables accurate "fresh deployment" detection
+
+### Security
+
+**OIDC Authentication Benefits:**
+- No secrets stored in environment variables
+- Tokens are short-lived and specific to workflow
+- Eliminates secret rotation burden
+- Auditable access via Azure Activity Log
+
+**Storage Security:**
+- No public blob access enabled
+- TLS 1.2 minimum encryption
+- HTTPS only
+- Versioning enabled for state file history
+- Soft delete enabled for recovery (7-day retention)
+
+### Troubleshooting
+
+See [TROUBLESHOOTING.md#remote-backend-configuration-error](../TROUBLESHOOTING.md#remote-backend-configuration-error) for:
+- Backend configuration errors
+- OIDC authentication failures
+- Storage account access issues
 
 ---
 

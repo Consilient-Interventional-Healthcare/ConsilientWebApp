@@ -59,10 +59,13 @@ namespace Consilient.Api
                     {
                         options
                             .Connect(new Uri(appConfigEndpoint), credential)
-                            // Load keys with no label (shared across all environments)
-                            .Select(KeyFilter.Any, LabelFilter.Null)
+                            // Load keys with ConsilientApi: prefix (shared across all environments)
+                            .Select("ConsilientApi:*", LabelFilter.Null)
                             // Load keys matching environment label (dev, prod, etc.)
-                            .Select(KeyFilter.Any, builder.Environment.EnvironmentName.ToLower())
+                            .Select("ConsilientApi:*", builder.Environment.EnvironmentName.ToLower())
+                            // Strip the ConsilientApi: prefix so keys match expected configuration paths
+                            // e.g., "ConsilientApi:ApplicationSettings:..." becomes "ApplicationSettings:..."
+                            .TrimKeyPrefix("ConsilientApi:")
                             // Configure Key Vault reference resolution (AAC resolves KV references at read time)
                             .ConfigureKeyVault(kv =>
                             {
@@ -73,7 +76,7 @@ namespace Consilient.Api
                         // Example:
                         // .ConfigureRefresh(refresh =>
                         // {
-                        //     refresh.Register("Api:RefreshSentinel", refreshAll: true)
+                        //     refresh.Register("ConsilientApi:RefreshSentinel", refreshAll: true)
                         //            .SetCacheExpiration(TimeSpan.FromMinutes(5));
                         // });
                     });

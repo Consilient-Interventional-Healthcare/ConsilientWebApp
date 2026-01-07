@@ -162,11 +162,58 @@ terraform destroy
 
 ## State Management
 
-**Current:** Local state file (`terraform.tfstate`)
+### Current Setup
 
-**For Production:** Should use Azure Storage backend
+**GitHub Actions:** Azure Storage backend with OIDC authentication
+- State file: `{environment}.terraform.tfstate` (e.g., `dev.terraform.tfstate`)
+- Storage account: `consilienttfstate{environment}{hash}`
+- Container: `tfstate`
+- Authentication: Azure AD federated identity (OIDC)
 
-**Template:** [`backend.tf`](../../../infra/terraform/backend.tf) has remote backend config ready to uncomment.
+**Local Testing (act):** Local backend
+- State file: `infra/terraform/terraform.tfstate`
+- Backend: Disabled (`-reconfigure -backend=false`)
+- Persists via `--bind` mount between test runs
+
+### Backend Configuration
+
+**File:** [`backend.tf`](../../../infra/terraform/backend.tf)
+
+The backend is configured for Azure Storage with OIDC:
+```hcl
+terraform {
+  backend "azurerm" {
+    use_oidc = true
+  }
+}
+```
+
+Configuration details are provided via CLI flags in the workflow to support conditional backend setup:
+- GitHub Actions: Uses Azure Storage backend
+- Local (act): Uses local backend with `backend=false` flag
+
+### State Detection
+
+State detection uses `terraform state list` to check if state exists, which works reliably with both local and remote backends:
+```bash
+STATE_RESOURCES=$(terraform state list 2>/dev/null || echo "")
+if [ -z "$STATE_RESOURCES" ]; then
+  # Truly fresh deployment
+fi
+```
+
+This approach queries the actual backend instead of checking local files, preventing false positives when state exists remotely but local files don't.
+
+### GitHub Variables Required
+
+Two variables must be configured in GitHub repository settings:
+
+```
+TF_STATE_STORAGE_ACCOUNT = consilienttfstate{env}{hash}
+TF_STATE_CONTAINER = tfstate
+```
+
+See [reference/secrets-variables.md](../reference/secrets-variables.md) for complete setup instructions.
 
 ## Security Best Practices
 
@@ -181,6 +228,8 @@ See [TROUBLESHOOTING.md#terraform-errors](../TROUBLESHOOTING.md#terraform-errors
 - State lock issues
 - Import loop problems
 - Provider authentication errors
+- Remote backend configuration errors
+- OIDC authentication failures
 
 ## Related Documentation
 
