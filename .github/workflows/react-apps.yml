@@ -44,9 +44,6 @@ on:
       ARM_CLIENT_SECRET:
         required: false
         description: 'Azure Client Secret for local testing with act (fallback)'
-      AZURE_WEBAPP_NAME:
-        required: false
-        description: 'Azure Web App name (legacy fallback, prefer workflow input)'
     outputs:
       react_app_name:
         description: 'React App Service name'
@@ -58,8 +55,7 @@ on:
 env:
   IMAGE_NAME: ${{ inputs.react_image_name }}
   IMAGE_TAG: v${{ github.run_number }}-${{ github.sha }}
-  # Fallback: input > variable
-  REACT_APP_NAME: ${{ inputs.react_app_name || secrets.AZURE_WEBAPP_NAME }}
+  REACT_APP_NAME: ${{ inputs.react_app_name }}
   ACR_REGISTRY: ${{ inputs.acr_registry }}
   RESOURCE_GROUP: ${{ inputs.resource_group }}
 
@@ -109,7 +105,6 @@ jobs:
             echo "This value should come from:"
             echo "  1. Terraform outputs (preferred)"
             echo "  2. Workflow input (when terraform is skipped)"
-            echo "  3. Secret AZURE_WEBAPP_NAME (legacy fallback)"
             exit 1
           fi
 
