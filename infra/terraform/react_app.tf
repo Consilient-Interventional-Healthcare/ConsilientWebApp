@@ -33,7 +33,6 @@ data "azurerm_app_configuration_keys" "react_config" {
   depends_on = [
     azurerm_app_configuration.main,
     azurerm_app_configuration_key.react_api_base_url,
-    azurerm_app_configuration_key.react_environment,
     azurerm_app_configuration_key.react_debug_mode,
     azurerm_app_configuration_key.react_use_mock_services,
     azurerm_app_configuration_key.react_remote_logging,

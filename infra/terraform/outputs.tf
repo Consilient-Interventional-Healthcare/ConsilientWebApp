@@ -128,3 +128,19 @@ output "key_vault_id" {
   description = "The resource ID of the Azure Key Vault"
   value       = azurerm_key_vault.main.id
 }
+
+# --------------------------------------------------------------------------
+# AZURE APP CONFIGURATION OUTPUTS
+# --------------------------------------------------------------------------
+# Note: app_configuration_endpoint is defined in app_configuration.tf
+# Additional outputs for reference:
+
+output "app_configuration_name" {
+  description = "The name of the Azure App Configuration"
+  value       = azurerm_app_configuration.main.name
+}
+
+output "app_configuration_id" {
+  description = "The resource ID of the Azure App Configuration"
+  value       = azurerm_app_configuration.main.id
+}

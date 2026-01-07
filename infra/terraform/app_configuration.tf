@@ -201,16 +201,8 @@ resource "azurerm_app_configuration_key" "react_api_base_url" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
-# React Environment (development or production)
-resource "azurerm_app_configuration_key" "react_environment" {
-  configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:Environment"
-  label                  = var.environment
-  value                  = local.react.app_env[var.environment]
-  type                   = "kv"
-
-  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
-}
+# NOTE: React:Environment removed - this is a build-time variable set via Docker build args,
+# not a runtime configuration. See react-apps.yml workflow for build-arg configuration.
 
 # Debug Mode Feature Flag
 resource "azurerm_app_configuration_key" "react_debug_mode" {
