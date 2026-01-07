@@ -53,6 +53,9 @@ resource "azurerm_container_app" "loki" {
   }
 
   template {
+    min_replicas = 1
+    max_replicas = 10
+
     container {
       name   = "loki"
       image  = "grafana/loki:2.9.3"
