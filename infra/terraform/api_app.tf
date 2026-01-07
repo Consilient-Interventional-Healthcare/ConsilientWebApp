@@ -27,7 +27,8 @@ module "api_app" {
 
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
-    ASPNETCORE_ENVIRONMENT              = "Production"
+    # Use environment variable to match App Configuration labels (dev -> Development, prod -> Production)
+    ASPNETCORE_ENVIRONMENT              = var.environment == "dev" ? "Development" : "Production"
 
     # Azure App Configuration endpoint (NEW - primary source for runtime config)
     # If set, API uses this for configuration loading via managed identity

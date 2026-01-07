@@ -55,14 +55,24 @@ namespace Consilient.Api
                 try
                 {
                     var credential = new DefaultAzureCredential();
+
+                    // Map ASP.NET Core environment names to App Configuration labels
+                    // Development -> dev, Production -> prod (matches Terraform var.environment)
+                    var appConfigLabel = builder.Environment.EnvironmentName switch
+                    {
+                        "Development" => "dev",
+                        "Production" => "prod",
+                        _ => builder.Environment.EnvironmentName.ToLower()
+                    };
+
                     builder.Configuration.AddAzureAppConfiguration(options =>
                     {
                         options
                             .Connect(new Uri(appConfigEndpoint), credential)
                             // Load keys with ConsilientApi: prefix (shared across all environments)
                             .Select("ConsilientApi:*", LabelFilter.Null)
-                            // Load keys matching environment label (dev, prod, etc.)
-                            .Select("ConsilientApi:*", builder.Environment.EnvironmentName.ToLower())
+                            // Load keys matching environment label (dev, prod)
+                            .Select("ConsilientApi:*", appConfigLabel)
                             // Strip the ConsilientApi: prefix so keys match expected configuration paths
                             // e.g., "ConsilientApi:ApplicationSettings:..." becomes "ApplicationSettings:..."
                             .TrimKeyPrefix("ConsilientApi:")
@@ -81,7 +91,7 @@ namespace Consilient.Api
                         // });
                     });
 
-                    Log.Information("Azure App Configuration loaded successfully from {Endpoint}", appConfigEndpoint);
+                    Log.Information("Azure App Configuration loaded successfully from {Endpoint} with label {Label}", appConfigEndpoint, appConfigLabel);
                 }
                 catch (Exception ex)
                 {
