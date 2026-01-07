@@ -22,6 +22,7 @@ using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Users.Services;
 using Consilient.Visits.Services;
+using Consilient.DoctorAssignments.Services;
 using GraphQL.Server.Ui.GraphiQL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -159,6 +160,7 @@ namespace Consilient.Api
                     useDistributedCache: builder.Environment.IsProduction());
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterHospitalizationServices();
+                builder.Services.AddDoctorAssignmentsServices();
                 builder.Services.RegisterLogging(logger);
                 builder.Services.ConfigureHangfire(hangfireConnectionString);
                 builder.Services.AddWorkers();
@@ -227,18 +229,21 @@ namespace Consilient.Api
                 // This prevents preflight (OPTIONS) being redirected which browsers disallow.
                 app.UseCors(Init.ConfigureCorsServiceCollectionExtensions.DefaultCorsPolicyName); // Must be before UseAuthentication/UseAuthorization and before HTTPS redirect
 
-                if (!app.Environment.IsProduction())
+                // Check if running in Azure App Service (WEBSITE_SITE_NAME is set by Azure)
+                var isRunningInAzure = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME"));
+
+                if (isRunningInAzure)
                 {
-                    // In development, enable HTTPS redirection for local testing
-                    // (from http://localhost:8090 to https://localhost:8091)
-                    app.UseHttpsRedirection();
-                }
-                else
-                {
-                    // In production (Azure App Service), HTTPS/TLS is handled at the platform level.
+                    // In Azure App Service, HTTPS/TLS is handled at the platform level.
                     // The container listens on HTTP/80, and App Service manages TLS termination.
                     // HSTS headers are added but HTTPS redirection is not needed.
                     app.UseHsts();
+                }
+                else if (!app.Environment.IsProduction())
+                {
+                    // In local development, enable HTTPS redirection for testing
+                    // (from http://localhost:8090 to https://localhost:8091)
+                    app.UseHttpsRedirection();
                 }
 
                 // Rate limiting middleware (applies GlobalLimiter by default)
