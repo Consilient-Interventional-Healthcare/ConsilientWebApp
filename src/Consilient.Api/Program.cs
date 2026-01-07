@@ -1,5 +1,6 @@
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
+using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Consilient.Api.Configuration;
 using Consilient.Api.Hubs;
 using Consilient.Api.Infra;
@@ -45,17 +46,70 @@ namespace Consilient.Api
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
-            // Add Key Vault configuration (using Managed Identity)
-            // In production (Azure), this uses the App Service's managed identity
-            // In development, this uses DefaultAzureCredential (Azure CLI, Visual Studio, etc.)
-            var keyVaultUrl = builder.Configuration["KeyVault:Url"];
-            if (!string.IsNullOrEmpty(keyVaultUrl))
+            // NEW: Add Azure App Configuration as primary source for runtime configuration
+            // This is the single source of truth for all application settings and Key Vault references
+            // Requires "AppConfiguration__Endpoint" app setting in App Service
+            var appConfigEndpoint = builder.Configuration["AppConfiguration:Endpoint"];
+            if (!string.IsNullOrEmpty(appConfigEndpoint))
             {
-                var credential = new DefaultAzureCredential();
-                builder.Configuration.AddAzureKeyVault(
-                    new Uri(keyVaultUrl),
-                    credential,
-                    new KeyVaultSecretManager());
+                try
+                {
+                    var credential = new DefaultAzureCredential();
+                    builder.Configuration.AddAzureAppConfiguration(options =>
+                    {
+                        options
+                            .Connect(new Uri(appConfigEndpoint), credential)
+                            // Load keys with no label (shared across all environments)
+                            .Select(KeyFilter.Any, LabelFilter.Null)
+                            // Load keys matching environment label (dev, prod, etc.)
+                            .Select(KeyFilter.Any, builder.Environment.EnvironmentName.ToLower())
+                            // Configure Key Vault reference resolution (AAC resolves KV references at read time)
+                            .ConfigureKeyVault(kv =>
+                            {
+                                kv.SetCredential(credential);
+                            });
+                        // Note: ConfigureRefresh() can be added here to enable dynamic configuration updates
+                        // without application restart. Requires Standard SKU in production.
+                        // Example:
+                        // .ConfigureRefresh(refresh =>
+                        // {
+                        //     refresh.Register("Api:RefreshSentinel", refreshAll: true)
+                        //            .SetCacheExpiration(TimeSpan.FromMinutes(5));
+                        // });
+                    });
+
+                    Log.Information("Azure App Configuration loaded successfully from {Endpoint}", appConfigEndpoint);
+                }
+                catch (Exception ex)
+                {
+                    // If AAC connection fails, fall back to legacy Key Vault integration
+                    Log.Warning(ex, "Failed to load Azure App Configuration, falling back to Azure Key Vault");
+                    var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+                    if (!string.IsNullOrEmpty(keyVaultUrl))
+                    {
+                        var credential = new DefaultAzureCredential();
+                        builder.Configuration.AddAzureKeyVault(
+                            new Uri(keyVaultUrl),
+                            credential,
+                            new KeyVaultSecretManager());
+                        Log.Information("Azure Key Vault loaded as fallback from {Url}", keyVaultUrl);
+                    }
+                }
+            }
+            else
+            {
+                // LEGACY: Fallback to direct Key Vault integration if AppConfiguration endpoint not configured
+                // This supports deployments without App Configuration (local dev, legacy environments, etc.)
+                var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+                if (!string.IsNullOrEmpty(keyVaultUrl))
+                {
+                    var credential = new DefaultAzureCredential();
+                    builder.Configuration.AddAzureKeyVault(
+                        new Uri(keyVaultUrl),
+                        credential,
+                        new KeyVaultSecretManager());
+                    Log.Information("Azure Key Vault loaded directly from {Url}", keyVaultUrl);
+                }
             }
 
             var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)?.Get<LoggingConfiguration>();

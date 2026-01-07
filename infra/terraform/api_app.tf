@@ -28,19 +28,26 @@ module "api_app" {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
     ASPNETCORE_ENVIRONMENT              = "Production"
 
-    # Key Vault configuration for secret loading via Managed Identity
+    # Azure App Configuration endpoint (NEW - primary source for runtime config)
+    # If set, API uses this for configuration loading via managed identity
+    "AppConfiguration__Endpoint" = azurerm_app_configuration.main.endpoint
+
+    # Legacy Key Vault configuration (TEMPORARY - for backward compatibility during migration)
+    # This is kept temporarily to allow fallback if AAC has issues
+    # Will be removed after validation period in next phase
     "KeyVault__Url" = "https://${azurerm_key_vault.main.name}.vault.azure.net/"
 
-    # Key Vault references for secrets
-    # Syntax: @Microsoft.KeyVault(VaultName=<vault-name>;SecretName=<secret-name>)
+    # Legacy Key Vault references for secrets (TEMPORARY - kept for backward compatibility)
     # These are resolved at runtime by App Service using the managed identity
+    # Will be removed after migration is complete
     "ApplicationSettings__Authentication__UserService__Jwt__Secret" = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=jwt-signing-secret)"
     "Logging__GrafanaLoki__Url"                                     = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=grafana-loki-url)"
 
     # OAuth Client Secret (only if OAuth is configured)
     "ApplicationSettings__Authentication__UserService__OAuth__ClientSecret" = var.oauth_client_secret != "" ? "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=oauth-client-secret)" : ""
 
-    # Non-secret configuration
+    # Non-secret configuration (DEPRECATED - now in App Configuration, kept for transition)
+    # These will be removed from here in next phase as API loads from AAC
     "ApplicationSettings__Authentication__UserService__Jwt__Issuer"        = "https://${local.api.service_name}.azurewebsites.net"
     "ApplicationSettings__Authentication__UserService__Jwt__Audience"      = "https://${local.api.service_name}.azurewebsites.net"
     "ApplicationSettings__Authentication__UserService__Jwt__ExpiryMinutes" = "60"
@@ -53,6 +60,8 @@ module "api_app" {
 
   # Connection strings must be separate from app_settings
   # Azure App Service treats these specially
+  # DEPRECATED - now managed by App Configuration via Key Vault references
+  # Kept for backward compatibility during migration phase
   connection_strings = {
     DefaultConnection = {
       type  = "SQLAzure"
