@@ -354,6 +354,18 @@ resource "azurerm_app_configuration_key" "secrets_loki_url" {
   ]
 }
 
+# OAuth Enabled Flag
+resource "azurerm_app_configuration_key" "backend_auth_oauth_enabled" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "Api:Authentication:OAuth:Enabled"
+  label                  = var.environment
+  value                  = var.oauth_client_secret != "" ? "true" : "false"
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner
+  ]
+}
+
 # OAuth Client Secret Reference (only if configured)
 resource "azurerm_app_configuration_key" "secrets_oauth_client_secret" {
   count                  = var.oauth_client_secret != "" ? 1 : 0
