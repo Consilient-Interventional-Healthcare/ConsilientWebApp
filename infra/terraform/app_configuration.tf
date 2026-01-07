@@ -27,11 +27,13 @@ resource "azurerm_app_configuration" "main" {
     type = "SystemAssigned"
   }
 
-  # Soft delete for accidental deletion protection
-  # 7 days for prod (compliance), 1 day for dev (faster recovery)
-  soft_delete_retention_days = var.environment == "prod" ? 7 : 1
+  # Soft delete for accidental deletion protection (Standard SKU only)
+  # Free SKU does not support soft delete
+  # 7 days for prod (compliance)
+  soft_delete_retention_days = var.environment == "prod" ? 7 : null
 
-  # Purge protection prevents permanent deletion
+  # Purge protection prevents permanent deletion (Standard SKU only)
+  # Free SKU does not support purge protection
   # Enable for prod (compliance), disable for dev (faster iterations)
   purge_protection_enabled = var.environment == "prod" ? true : false
 
