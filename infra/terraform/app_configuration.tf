@@ -51,9 +51,9 @@ output "app_configuration_endpoint" {
 # Grant Terraform service principal "App Configuration Data Owner" role
 # Allows Terraform to create/read/update/delete configuration keys
 resource "azurerm_role_assignment" "terraform_appconfig_owner" {
-  scope              = azurerm_app_configuration.main.id
+  scope                = azurerm_app_configuration.main.id
   role_definition_name = "App Configuration Data Owner"
-  principal_id       = data.azurerm_client_config.current.object_id
+  principal_id         = data.azurerm_client_config.current.object_id
 
   depends_on = [azurerm_app_configuration.main]
 }
