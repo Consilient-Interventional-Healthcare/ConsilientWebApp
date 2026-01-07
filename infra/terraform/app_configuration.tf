@@ -195,7 +195,7 @@ resource "azurerm_app_configuration_key" "aspnetcore_environment" {
 # API Base URL for React app
 resource "azurerm_app_configuration_key" "react_api_base_url" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:ApiBaseUrl"
+  key                    = "React:APP_API_BASE_URL"
   label                  = var.environment
   value                  = "https://${local.api.service_name}.azurewebsites.net"
   type                   = "kv"
@@ -209,7 +209,7 @@ resource "azurerm_app_configuration_key" "react_api_base_url" {
 # Debug Mode Feature Flag
 resource "azurerm_app_configuration_key" "react_debug_mode" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:EnableDebugMode"
+  key                    = "React:APP_ENABLE_DEBUG_MODE"
   label                  = var.environment
   value                  = tostring(local.react.enable_debug_mode[var.environment])
   type                   = "kv"
@@ -220,7 +220,7 @@ resource "azurerm_app_configuration_key" "react_debug_mode" {
 # Mock Services Feature Flag
 resource "azurerm_app_configuration_key" "react_use_mock_services" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:UseMockServices"
+  key                    = "React:APP_USE_MOCK_SERVICES"
   label                  = var.environment
   value                  = tostring(local.react.use_mock_services[var.environment])
   type                   = "kv"
@@ -231,7 +231,7 @@ resource "azurerm_app_configuration_key" "react_use_mock_services" {
 # Remote Logging Feature Flag
 resource "azurerm_app_configuration_key" "react_remote_logging" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:EnableRemoteLogging"
+  key                    = "React:APP_ENABLE_REMOTE_LOGGING"
   label                  = var.environment
   value                  = tostring(local.react.enable_remote_logging[var.environment])
   type                   = "kv"
@@ -242,7 +242,7 @@ resource "azurerm_app_configuration_key" "react_remote_logging" {
 # Individual Mock Service Flags (all disabled)
 resource "azurerm_app_configuration_key" "react_mock_auth_service" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:MockAuthService"
+  key                    = "React:APP_MOCK_AUTH_SERVICE"
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
@@ -252,7 +252,7 @@ resource "azurerm_app_configuration_key" "react_mock_auth_service" {
 
 resource "azurerm_app_configuration_key" "react_mock_employees_service" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:MockEmployeesService"
+  key                    = "React:APP_MOCK_EMPLOYEES_SERVICE"
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
@@ -262,7 +262,7 @@ resource "azurerm_app_configuration_key" "react_mock_employees_service" {
 
 resource "azurerm_app_configuration_key" "react_mock_daily_log_service" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:MockDailyLogService"
+  key                    = "React:APP_MOCK_DAILY_LOG_SERVICE"
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
@@ -272,7 +272,7 @@ resource "azurerm_app_configuration_key" "react_mock_daily_log_service" {
 
 resource "azurerm_app_configuration_key" "react_mock_app_settings_service" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:MockAppSettingsService"
+  key                    = "React:APP_MOCK_APP_SETTINGS_SERVICE"
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
@@ -283,9 +283,9 @@ resource "azurerm_app_configuration_key" "react_mock_app_settings_service" {
 # External Login Mock (enabled in dev for testing OAuth flows)
 resource "azurerm_app_configuration_key" "react_external_login_mock" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "React:EnableExternalLoginMock"
+  key                    = "React:APP_ENABLE_EXTERNAL_LOGIN_MOCK"
   label                  = var.environment
-  value                  = tostring(local.react.enable_debug_mode[var.environment])
+  value                  = tostring(local.react.enable_external_login_mock[var.environment])
   type                   = "kv"
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]

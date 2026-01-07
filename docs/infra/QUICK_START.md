@@ -1,5 +1,13 @@
 # Quick Start Guide
 
+<!-- AI_CONTEXT: Task-oriented guide for common infrastructure operations. Each task: 5-20 minutes. Two environments only: dev and prod. No staging. -->
+
+## For Non-Technical Stakeholders
+
+This guide helps developers complete common infrastructure tasks quickly. Each section is designed to take 5-20 minutes and includes step-by-step instructions with troubleshooting. These are the most common operations performed on the Consilient infrastructure.
+
+---
+
 Fast-track guides for common infrastructure tasks. Each section designed to take 5-20 minutes.
 
 ## 1. Deploy Infrastructure to Dev (~10 min)

@@ -1,5 +1,13 @@
 # Local Testing with Act
 
+<!-- AI_CONTEXT: Local GitHub Actions testing using act tool. Custom Docker runner image. Service Principal authentication (OIDC not available locally). Bind flag for 5x performance improvement. -->
+
+## For Non-Technical Stakeholders
+
+The `act` tool lets you test GitHub Actions workflows on your computer before pushing to GitHub. This saves time and GitHub Actions minutes. It uses Docker to simulate the GitHub Actions environment. Setup is one-time, then you can test locally.
+
+---
+
 Complete guide to testing GitHub Actions workflows locally using the `act` tool.
 
 ## Quick Start

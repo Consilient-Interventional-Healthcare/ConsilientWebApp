@@ -1,5 +1,13 @@
 # Authentication & Secrets
 
+<!-- AI_CONTEXT: Three-tier authentication strategy: OIDC (cloud), Service Principal (Terraform), Service Principal fallback (local act). Secret rotation procedures included. -->
+
+## For Non-Technical Stakeholders
+
+Authentication secures access to infrastructure and secrets. We use multiple methods: GitHub uses special tokens to authenticate to Azure, Terraform uses a service account, and local testing uses a fallback method. All secrets are stored securely in Azure Key Vault and never in code.
+
+---
+
 Complete guide to authentication architecture and secret configuration.
 
 ## Overview

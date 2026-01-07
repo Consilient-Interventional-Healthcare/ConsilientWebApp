@@ -1,5 +1,13 @@
 # GitHub Actions Workflows & Automation
 
+<!-- AI_CONTEXT: CI/CD automation using GitHub Actions. Workflows named descriptively without number prefixes. See reference/workflows-reference.md for quick catalog. -->
+
+## For Non-Technical Stakeholders
+
+GitHub Actions automatically builds and deploys code whenever developers push changes. When code is pushed to the main branch, workflows run tests, build Docker containers, update databases, and deploy to Azure - all without manual intervention. If health checks fail, the system automatically rolls back to the previous version.
+
+---
+
 Complete guide to CI/CD pipelines, GitHub Actions workflows, and composite actions.
 
 ## Quick Summary

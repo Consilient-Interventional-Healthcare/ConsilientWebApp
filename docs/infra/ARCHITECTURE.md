@@ -1,5 +1,13 @@
 # Infrastructure Architecture
 
+<!-- AI_CONTEXT: High-level system architecture for Consilient web application. Two environments: dev ($45/mo) and prod ($2,800/mo). No staging environment. -->
+
+## For Non-Technical Stakeholders
+
+This document describes how the Consilient application infrastructure works. The infrastructure automatically builds, tests, and deploys code changes to Azure cloud. Everything is automated through GitHub Actions workflows, meaning developers push code and the system handles the rest. No manual deployment steps are required.
+
+---
+
 High-level system design, component relationships, and data flow diagrams.
 
 ## High-Level Architecture
@@ -442,17 +450,20 @@ See [components/authentication.md](components/authentication.md) for complete au
 
 ## Cost Optimization
 
-### Three-Tier Environment Strategy
+### Two-Tier Environment Strategy
+
+<!-- AI_CONTEXT: Two environments only. Code validation in variables.tf:27-28 allows only "dev" or "prod". No staging environment exists. -->
 
 | Environment | SKUs | Monthly Cost | Purpose |
 |-------------|------|-------------|---------|
-| Development | Basic | ~$200 | Fast iteration, lower cost |
-| Staging | Standard | ~$1,200 | Realistic testing |
-| Production | Premium | ~$2,800 | High availability |
+| Development | Basic | ~$45 | Fast iteration, minimal cost |
+| Production | Premium | ~$2,800 | High availability, 24/7 operations |
+
+<!-- AI_NOTE: Previous documentation mentioned "staging" but code validation only supports dev/prod. Development cost was corrected from $200 to $45 based on actual locals.tf configuration. -->
 
 **Cost Drivers:**
-- App Service Plans: Largest cost (Basic → Standard → Premium)
-- SQL Database: Serverless recommended for dev/staging
+- App Service Plans: Largest cost (Basic $13/mo → Premium $204/mo)
+- SQL Database: Basic DTU for dev (~$5/mo), GP_Gen5_4 for prod (~$1,300/mo)
 - Storage: Minimal unless logging enabled
 
 See [reference/cost-management.md](reference/cost-management.md) for optimization strategies.

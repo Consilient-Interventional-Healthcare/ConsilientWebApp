@@ -1,5 +1,13 @@
 # Terraform Infrastructure Guide
 
+<!-- AI_CONTEXT: Infrastructure as Code using Terraform. All Azure resources defined in code. Two environments: dev ($45/mo) and prod ($2,800/mo). No staging. -->
+
+## For Non-Technical Stakeholders
+
+Terraform is a tool that defines cloud infrastructure in code files instead of clicking through Azure Portal. All resources (databases, servers, networks) are described in `.tf` files. When you run Terraform, it creates or updates Azure resources to match the code. This means infrastructure is versioned in Git, reviewable in pull requests, and reproducible with one command.
+
+---
+
 Complete guide to managing Azure infrastructure with Terraform.
 
 ## Overview
@@ -11,6 +19,7 @@ All infrastructure for Consilient is defined as code using Terraform and managed
 - **Provider:** azurerm >= 3.0.0 (locked at 4.57.0)
 - **State:** Local (can migrate to Azure Storage)
 - **Repository:** `infra/terraform/`
+- **Environments:** Two (dev and prod only, validated in variables.tf:27-28)
 
 ## Configuration Architecture
 
@@ -18,11 +27,13 @@ All infrastructure for Consilient is defined as code using Terraform and managed
 
 All configuration is centralized in [`locals.tf`](../../../infra/terraform/locals.tf) including:
 - Resource naming conventions
-- Cost profiles (dev/staging/prod)
+- Cost profiles (dev and prod only)
 - SKU configurations
 - Environment-specific settings
 
 **Why:** Changes propagate automatically to all resources, reducing drift.
+
+<!-- AI_CONTEXT: Two environments validated in variables.tf. No staging configuration should be used. -->
 
 ### File Organization
 

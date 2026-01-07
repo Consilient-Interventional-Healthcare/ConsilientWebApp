@@ -1,5 +1,13 @@
 # Database Deployment & Management
 
+<!-- AI_CONTEXT: SQL database deployment automation. Auto-discovery from src/Databases/. Matrix-based parallel deployment per database. Azure AD authentication. -->
+
+## For Non-Technical Stakeholders
+
+Database changes are deployed automatically when you push SQL scripts to the repository. The system discovers your database scripts, executes them in order, and verifies the deployment succeeded. Each database is deployed in parallel for speed. No manual scripts or connections needed.
+
+---
+
 Complete guide to database deployment automation via GitHub Actions.
 
 ## Quick Reference

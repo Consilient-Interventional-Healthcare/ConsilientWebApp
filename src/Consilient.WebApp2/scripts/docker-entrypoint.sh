@@ -9,7 +9,7 @@ window.__ENV = {
 EOF
 
 first=true
-# Export all environment variables that start with VITE_ or other expected keys
+# Export all environment variables that start with APP_
 for var in $(env | awk -F= '{print $1}' | grep -E '^(APP_)' || true); do
   val=$(printf '%s' "$(printenv $var)" | sed -e 's/"/\\"/g')
   if [ "$first" = true ] ; then

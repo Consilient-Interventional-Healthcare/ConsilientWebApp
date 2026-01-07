@@ -46,11 +46,12 @@ data "azurerm_app_configuration_keys" "react_config" {
 
 locals {
   # Transform App Configuration keys to APP_* format for React app
-  # "React:ApiBaseUrl" → "APP_API_BASE_URL"
-  # "React:EnableDebugMode" → "APP_ENABLE_DEBUG_MODE"
+  # "React:APP_API_BASE_URL" → "APP_API_BASE_URL"
+  # "React:APP_ENABLE_DEBUG_MODE" → "APP_ENABLE_DEBUG_MODE"
+  # Simply strip the "React:" prefix
   react_app_settings_from_aac = {
     for item in data.azurerm_app_configuration_keys.react_config.items :
-    replace(upper(replace(item.key, "React:", "APP_")), ":", "_") => item.value
+    replace(item.key, "React:", "") => item.value
   }
 }
 

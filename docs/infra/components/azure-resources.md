@@ -1,5 +1,13 @@
 # Azure Resources Configuration
 
+<!-- AI_CONTEXT: Complete overview of 19 Azure resources managed by Terraform. Per-environment deployment. Two environments: dev and prod. Resource dependencies documented. -->
+
+## For Non-Technical Stakeholders
+
+Azure resources are the cloud services that run the Consilient application. This includes servers for the API and website, databases for storing data, storage for logs, and networking to connect everything securely. All resources are defined in Terraform code and deployed automatically.
+
+---
+
 Overview of all Azure services managed by Terraform.
 
 ## Resource Overview

@@ -1,5 +1,7 @@
 # Resource Naming Conventions
 
+<!-- AI_CONTEXT: Standardized naming patterns for all Azure resources. Two environments: dev, prod (not staging). Multi-tier hostname strategy for App Services. -->
+
 Standardized naming patterns for all Azure resources.
 
 ## Global Pattern
@@ -12,10 +14,60 @@ Standardized naming patterns for all Azure resources.
 - `project` = "consilient" (fixed)
 - `type` = resource category
 - `name` = specific resource name
-- `environment` = dev, staging, prod
+- `environment` = dev or prod only (validated)
 - `unique_suffix` = 6-char hash (ensures global uniqueness)
 
-**Defined in:** [`infra/terraform/locals.tf:32-65`](../../../infra/terraform/locals.tf#L32-L65)
+**Defined in:** [`infra/terraform/locals.tf:17-50`](../../../infra/terraform/locals.tf#L17-L50)
+
+---
+
+## Multi-Tier Hostname Naming Strategy
+
+<!-- AI_CONTEXT: Three-tier fallback strategy for globally unique App Service hostnames. Uses hostname-precheck.sh script. -->
+
+Azure App Service requires globally unique hostnames. We use a three-tier fallback strategy to handle namespace conflicts.
+
+### Tiers Explained
+
+| Tier | Pattern | Example | When Used |
+|------|---------|---------|-----------|
+| 0 (Standard) | {project}-{app}-{env} | consilient-api-dev | Preferred (clean, readable) |
+| 1 (Region) | {project}-{app}-{env}-{region} | consilient-api-dev-canadacentral | If tier 0 taken |
+| 2 (Random) | {project}-{app}-{env}-{hash} | consilient-api-dev-ab12 | Guaranteed unique |
+
+### How It Works
+
+1. **Before Terraform Runs:** `hostname-precheck.sh` script checks DNS availability
+2. **Tier Selection:** Script picks lowest available tier (0 → 1 → 2)
+3. **Cache Result:** Tier selection cached to prevent renaming existing resources
+4. **Terraform Uses Tier:** `var.hostname_naming_tier` passed to Terraform
+
+### Configuration
+
+**File:** [`infra/terraform/locals.tf:18-50`](../../../infra/terraform/locals.tf#L18-L50)
+
+```hcl
+# Multi-tier hostname selection
+service_name = (
+  local.effective_naming_tier == 0 ? "consilient-api-dev" :
+  local.effective_naming_tier == 1 ? "consilient-api-dev-canadacentral" :
+  "consilient-api-dev-ab12"
+)
+```
+
+**Variable:** `hostname_naming_tier` in [`variables.tf:169-184`](../../../infra/terraform/variables.tf#L169-L184)
+
+### Backward Compatibility
+
+The deprecated `enable_unique_app_names` variable forces tier 2 if set to true.
+
+**Migration:**
+- Old: `enable_unique_app_names = true`
+- New: `hostname_naming_tier = 2`
+
+<!-- AI_WARNING: Existing deployments are never renamed. Tier selection is cached per environment. -->
+
+---
 
 ## Unique Suffix Calculation
 
@@ -65,11 +117,12 @@ See [components/databases.md](../components/databases.md#naming-convention) for 
 
 ## Environment Suffixes
 
+<!-- AI_NOTE: Only two environments are supported. Code validation in variables.tf:27-28 restricts to dev or prod. -->
+
 | Environment | Code | Example |
 |------------|------|---------|
-| Development | dev | consilient-api-app-dev-x1y2z3 |
-| Staging | staging | consilient-api-app-staging-x1y2z3 |
-| Production | prod | consilient-api-app-prod-x1y2z3 |
+| Development | dev | consilient-api-dev-x1y2z3 |
+| Production | prod | consilient-api-prod-x1y2z3 |
 
 ## Examples by Resource Type
 

@@ -1,5 +1,13 @@
 # Known Issues & Opportunities
 
+<!-- AI_CONTEXT: Living document tracking current issues, limitations, and improvement opportunities. No active issues at this time. -->
+
+## For Non-Technical Stakeholders
+
+This document tracks known limitations and planned improvements to the infrastructure. If you encounter an issue not listed here, please report it so we can add it.
+
+---
+
 Track current issues, limitations, and improvement opportunities for the Consilient infrastructure.
 
 ## Active Issues

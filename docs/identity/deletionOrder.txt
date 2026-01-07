@@ -1,7 +1,0 @@
-UserRoles
-UserTokens
-UserLogins
-UserClaims
-RoleClaims
-Roles
-Users

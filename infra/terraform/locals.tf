@@ -156,6 +156,11 @@ locals {
       dev  = false
       prod = true
     }
+
+    enable_external_login_mock = {
+      dev  = true
+      prod = false
+    }
   }
 
   # --------------------------------------------------------------------------

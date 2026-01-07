@@ -1,18 +1,23 @@
 # Cost Management Reference
 
+<!-- AI_CONTEXT: Two-environment cost model (dev, prod). No staging environment. Code validation in variables.tf:27-28. -->
+
 Quick reference for cost estimation, optimization, and cost profile configuration.
 
 ## Monthly Cost Summary
 
+<!-- AI_TABLE: Two-environment cost profile. No staging environment exists. -->
+
 | Environment | Estimated Cost | Primary Resources | Optimization Strategy |
 |-------------|-----------------|-------------------|----------------------|
-| **Development** | ~$45/month | Basic tier (B1 App Service, Basic SQL) | Minimal resources, auto-pause disabled |
-| **Staging** | ~$1,200/month | Standard tier (P1v2 App Service, Serverless SQL) | Shared Container App Environment, auto-pause enabled |
-| **Production** | ~$2,800/month | Premium tier (P2v3+ App Service, Provisioned SQL) | Zone-redundant, threat protection, full auditing |
+| **Development** | ~$45/month | Basic tier (B1 App Service, Basic SQL) | Minimal resources for testing |
+| **Production** | ~$2,800/month | Premium tier (P2v3 App Service, Provisioned SQL) | Zone-redundant, threat protection, full auditing |
+
+<!-- AI_NOTE: Previous documentation mentioned "staging" but code validation (variables.tf:27-28) only allows dev/prod. Staging configuration in locals.tf is not validated and should not be used. -->
 
 **Notes:**
-- Estimates from [`infra/terraform/locals.tf:220-224`](../../../infra/terraform/locals.tf#L220-L224)
-- SKU configurations in [`infra/terraform/locals.tf:24-49`](../../../infra/terraform/locals.tf#L24-L49)
+- Estimates from [`infra/terraform/locals.tf:285-288`](../../../infra/terraform/locals.tf#L285-L288)
+- SKU configurations in [`infra/terraform/locals.tf:57-82`](../../../infra/terraform/locals.tf#L57-L82)
 - Actual costs vary based on usage (storage, data egress, execution time)
 
 ## Cost Profile Configuration
@@ -58,61 +63,6 @@ dev = {
 | SQL Server (Hangfire) | Basic DTU | ~$5 |
 | Networking/Storage | - | ~$4 |
 | **Total** | | **~$45** |
-
-### Staging Tier (Staging)
-
-**Strategy:** Balanced cost/performance (~$1,200/month)
-
-```hcl
-staging = {
-  app_service_plan   = "P1v2"        # Premium v2 - ~$146/month
-  container_registry = "Standard"    # ~$20/month
-  sql_serverless     = "GP_S_Gen5_2" # ~$150/month when active
-  sql_provisioned    = "GP_Gen5_2"   # ~$650/month
-}
-```
-
-**Characteristics:**
-- Premium v2 App Service tier (2 vCPU, 7 GB RAM)
-- SQL Serverless with auto-pause after 2 hours (saves money during off-hours)
-- Threat protection enabled for security compliance
-- Auditing enabled with 90-day retention
-- Standard Container Registry
-- No zone redundancy (cost optimization)
-- Shared Container App Environment (cost optimization)
-
-**Use Cases:**
-- Pre-production testing
-- Quality assurance and testing
-- Staging/integration environment
-- Customer acceptance testing (CAT)
-- Load testing and performance validation
-
-**Cost Breakdown:**
-| Resource | SKU | Monthly Cost | Notes |
-|----------|-----|--------------|-------|
-| API App Service | P1v2 | ~$146 | |
-| React App Service | P1v2 | ~$146 | |
-| Container Registry | Standard | ~$20 | |
-| SQL Server (Main) | Serverless (paused) | ~$150 | Auto-pause 2hrs |
-| SQL Server (Hangfire) | Serverless (0.5 cores) | ~$40 | Auto-pause 2hrs |
-| Loki + Grafana | Shared CAE | ~$50 | Shared environment |
-| Networking/Storage | - | ~$100 | Private endpoints |
-| **Total** | | **~$1,200** | |
-
-**Auto-Pause Configuration:**
-```hcl
-# From locals.tf:146-150
-auto_pause_delay = {
-  staging = 120  # Auto-pause after 2 hours of inactivity
-}
-
-min_capacity = {
-  staging = 0.5  # Minimum capacity: 0.5 vCores
-}
-```
-
-**Optimization:** Hangfire database auto-pauses after 2 hours of no activity, reducing costs to near-zero during idle periods.
 
 ### Production Tier (Prod)
 

@@ -1,5 +1,13 @@
 # Troubleshooting Guide
 
+<!-- AI_CONTEXT: Problem-solution guide for infrastructure issues. Organized by category: Terraform, GitHub Actions, Databases, Authentication, Local testing. -->
+
+## For Non-Technical Stakeholders
+
+This guide helps diagnose and fix infrastructure problems when something goes wrong. Each section follows a pattern: describe the problem you see, explain what might be causing it, and provide solutions. Most issues can be resolved in 5-30 minutes using these procedures.
+
+---
+
 Comprehensive guide to diagnosing and fixing common infrastructure issues.
 
 ## Terraform Errors
