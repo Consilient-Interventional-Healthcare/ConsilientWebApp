@@ -461,8 +461,41 @@ jobs:
             # Capture apply output to check error type
             APPLY_OUTPUT=$(terraform apply -auto-approve 2>&1 || true)
 
+            # Check for state lock error specifically
+            if echo "$APPLY_OUTPUT" | grep -qiE "(Error acquiring the state lock|state blob is already locked)"; then
+              echo "🔓 Detected state lock - attempting to release..."
+
+              # Extract lock ID from output (format: ID: <uuid>)
+              LOCK_ID=$(echo "$APPLY_OUTPUT" | grep -oP "ID:\s+\K[a-f0-9\-]+")
+
+              if [ -n "$LOCK_ID" ]; then
+                [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Extracted lock ID: $LOCK_ID"
+
+                # Force release the lock
+                if terraform force-unlock -force "$LOCK_ID"; then
+                  echo "✅ State lock released successfully - retrying terraform apply..."
+
+                  # Retry apply
+                  if terraform apply -auto-approve; then
+                    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform apply succeeded after lock release"
+                    exit 0
+                  else
+                    echo "❌ Terraform apply still failing after lock release"
+                    exit 1
+                  fi
+                else
+                  echo "❌ Failed to release state lock"
+                  exit 1
+                fi
+              else
+                echo "⚠️  Could not extract lock ID from error output"
+                echo "State lock details:"
+                echo "$APPLY_OUTPUT" | grep -A 5 "Lock Info:"
+                exit 1
+              fi
+
             # Check for hostname conflict specifically (includes "already exists")
-            if echo "$APPLY_OUTPUT" | grep -qiE "(hostname.*already exists|name.*already exists.*Web/sites)"; then
+            elif echo "$APPLY_OUTPUT" | grep -qiE "(hostname.*already exists|name.*already exists.*Web/sites)"; then
               echo "🔍 Detected potential hostname conflict - running diagnostics via import script..."
 
               # Run import script which now includes hostname validation
