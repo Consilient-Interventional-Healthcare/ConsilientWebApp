@@ -22,7 +22,7 @@ resource "azurerm_private_endpoint" "loki_storage" {
   name                = local.loki.storage.private_endpoint
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.container_apps.id
+  subnet_id           = azurerm_subnet.private_endpoints.id
   tags                = local.tags
 
   private_service_connection {
