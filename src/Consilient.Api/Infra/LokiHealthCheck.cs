@@ -35,19 +35,31 @@ namespace Consilient.Api.Infra
                     return HealthCheckResult.Healthy("Loki is reachable");
                 }
 
-                return HealthCheckResult.Unhealthy($"Loki returned status code {(int)response.StatusCode}");
+                // Enhanced: Include response body for better diagnostics
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                var preview = responseBody.Length > 200 ? responseBody.Substring(0, 200) : responseBody;
+
+                return HealthCheckResult.Unhealthy(
+                    $"Loki returned status code {(int)response.StatusCode} from {readyUrl}. Response: {preview}"
+                );
             }
             catch (TaskCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
             }
+            catch (TaskCanceledException ex)
+            {
+                // Timeout (not cancellation)
+                return HealthCheckResult.Unhealthy($"Loki health check timed out after 5 seconds for URL: {lokiUrl}/ready", ex);
+            }
             catch (HttpRequestException ex)
             {
-                return HealthCheckResult.Unhealthy($"Cannot reach Loki: {ex.Message}");
+                // Enhanced: More detailed connection error
+                return HealthCheckResult.Unhealthy($"Cannot reach Loki at {lokiUrl}/ready: {ex.Message}", ex);
             }
             catch (Exception ex)
             {
-                return HealthCheckResult.Unhealthy($"Loki health check failed: {ex.Message}");
+                return HealthCheckResult.Unhealthy($"Loki health check failed: {ex.Message}", ex);
             }
         }
     }

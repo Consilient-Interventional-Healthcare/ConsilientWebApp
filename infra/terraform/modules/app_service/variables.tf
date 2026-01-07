@@ -105,3 +105,9 @@ variable "health_check_eviction_time_in_min" {
     error_message = "Health check eviction time must be between 2 and 10 minutes."
   }
 }
+
+variable "subnet_id" {
+  description = "Subnet ID for VNet integration (required for accessing internal Container Apps)"
+  type        = string
+  default     = null
+}

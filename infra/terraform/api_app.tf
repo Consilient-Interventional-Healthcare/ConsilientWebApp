@@ -10,6 +10,7 @@ module "api_app" {
   resource_group_name    = azurerm_resource_group.main.name
   linux_fx_version       = "DOCKER|<acr-login-server>/<api-image>:<tag>"
   vnet_route_all_enabled = true
+  subnet_id              = azurerm_subnet.app_service.id
 
   # Enable managed identity for ACR authentication
   # Uses the system-assigned managed identity (client_id left empty)
