@@ -43,9 +43,6 @@ module "api_app" {
     "ApplicationSettings__Authentication__UserService__Jwt__Secret" = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=jwt-signing-secret)"
     "Logging__GrafanaLoki__Url"                                     = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=grafana-loki-url)"
 
-    # OAuth Client Secret (only if OAuth is configured)
-    "ApplicationSettings__Authentication__UserService__OAuth__ClientSecret" = var.oauth_client_secret != "" ? "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=oauth-client-secret)" : ""
-
     # Non-secret configuration (DEPRECATED - now in App Configuration, kept for transition)
     # These will be removed from here in next phase as API loads from AAC
     "ApplicationSettings__Authentication__UserService__Jwt__Issuer"        = "https://${local.api.service_name}.azurewebsites.net"

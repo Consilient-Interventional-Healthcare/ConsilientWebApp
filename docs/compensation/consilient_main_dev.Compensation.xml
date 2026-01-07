@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?><database name="consilient_main_dev" schema="Compensation" type="Microsoft SQL Server - 12.00.924">
+   <tables>
+      <table catalog="consilient_main_dev" name="Employees" remarks="" schema="Compensation" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4">
+            <child catalog="consilient_main_dev" column="EmployeeId" foreignKey="FK_VisitAttendants_Employees_EmployeeId" implied="false" onDeleteCascade="false" schema="Clinical" table="VisitAttendants"/>
+            <child catalog="consilient_main_dev" column="EmployeeId" foreignKey="FK_VisitEvents_Employees_EmployeeId" implied="false" onDeleteCascade="false" schema="Clinical" table="VisitEvents"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="FirstName" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="LastName" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="TitleExtension" nullable="true" remarks="" size="4" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="4" name="IsProvider" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="Role" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="6" name="IsAdministrator" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="Email" nullable="true" remarks="" size="200" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="8" name="CanApproveVisits" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="9" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="10" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_Employees" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+      </table>
+   </tables>
+</database>

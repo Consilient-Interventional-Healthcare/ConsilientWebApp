@@ -164,17 +164,6 @@ EOT
   sensitive   = true
 }
 
-variable "oauth_client_secret" {
-  description = <<EOT
-OAuth provider client secret (if OAuth is enabled).
-SECURITY: Never set a default or commit this value to source control.
-Set to empty string "" if OAuth is not used.
-EOT
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
 variable "api_custom_domain" {
   description = <<EOT
 Custom domain name for the API App Service.

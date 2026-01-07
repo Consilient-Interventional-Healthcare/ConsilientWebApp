@@ -355,28 +355,28 @@ resource "azurerm_app_configuration_key" "secrets_loki_url" {
 }
 
 # OAuth Enabled Flag
+# OAuth is disabled by default. Can be re-enabled by setting to "true" and providing a valid OAuth configuration
 resource "azurerm_app_configuration_key" "backend_auth_oauth_enabled" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "Api:Authentication:OAuth:Enabled"
   label                  = var.environment
-  value                  = var.oauth_client_secret != "" ? "true" : "false"
+  value                  = "false"
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner
   ]
 }
 
-# OAuth Client Secret Reference (only if configured)
+# OAuth Client Secret
+# Set to dummy value since OAuth is disabled. When OAuth is re-enabled, this can be updated to a Key Vault reference.
+# The dummy value "not-configured" prevents startup failures but is never actually used since OAuth:Enabled = false
 resource "azurerm_app_configuration_key" "secrets_oauth_client_secret" {
-  count                  = var.oauth_client_secret != "" ? 1 : 0
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "Api:Authentication:OAuth:ClientSecret"
   label                  = var.environment
-  type                   = "vault"
-  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/oauth-client-secret"
+  value                  = "not-configured"
 
   depends_on = [
-    azurerm_role_assignment.terraform_appconfig_owner,
-    azurerm_key_vault_secret.oauth_client_secret
+    azurerm_role_assignment.terraform_appconfig_owner
   ]
 }

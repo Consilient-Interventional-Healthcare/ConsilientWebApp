@@ -6,6 +6,7 @@ using Consilient.Users.Services.OAuth;
 using Consilient.Users.Services.OAuth.StateManagers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Consilient.Users.Services
 {
@@ -29,8 +30,16 @@ namespace Consilient.Users.Services
             .AddEntityFrameworkStores<UsersDbContext>()
             .AddDefaultTokenProviders();
 
-            // Register OAuth provider services
-            services.AddScoped<IOAuthProviderService, MicrosoftOAuthProviderService>();
+            // Register OAuth provider services (only if enabled in configuration)
+            // Build a temporary service provider to read configuration
+            var serviceProvider = services.BuildServiceProvider();
+            var userConfig = serviceProvider.GetService<IOptions<UserServiceConfiguration>>();
+
+            // Only register OAuth service if it's configured and enabled
+            if (userConfig?.Value?.OAuth?.Enabled == true)
+            {
+                services.AddScoped<IOAuthProviderService, MicrosoftOAuthProviderService>();
+            }
 
             // Register OAuth provider registry
             services.AddScoped<IOAuthProviderRegistry, OAuthProviderRegistry>();

@@ -122,16 +122,3 @@ resource "azurerm_key_vault_secret" "grafana_loki_url" {
   })
 }
 
-# OAuth Client Secret (optional - only if OAuth is configured)
-resource "azurerm_key_vault_secret" "oauth_client_secret" {
-  count        = var.oauth_client_secret != "" ? 1 : 0
-  name         = "oauth-client-secret"
-  value        = var.oauth_client_secret
-  key_vault_id = azurerm_key_vault.main.id
-
-  depends_on = [azurerm_role_assignment.terraform_keyvault_secrets_officer]
-
-  tags = merge(local.tags, {
-    description = "OAuth provider client secret"
-  })
-}
