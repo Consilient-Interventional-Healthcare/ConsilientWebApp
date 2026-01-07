@@ -206,22 +206,14 @@ auto_pause_delay = {
 - Wake-up time: ~30 seconds on first query
 - Good for testing/staging, not production
 
-### 3. Shared Container App Environment (CAE)
+### 3. Container App Environment (CAE) Sizing
 
-**Configuration:** [`locals.tf:183-194`](../../../infra/terraform/locals.tf#L183-L194)
+**Configuration:** [`terraform.tfvars`](../../../infra/terraform/terraform.tfvars.example)
 
-```hcl
-# Dev/Staging share one CAE (cost savings)
-# Production uses dedicated CAE (isolation)
-use_shared_container_environment = true
-shared_container_environment_name = "consilient-cae-shared"
-```
-
-**Savings:** ~$100-150/month by sharing infrastructure
-
-**Trade-offs:**
-- Shared: Less isolation, lower cost (dev/staging)
-- Dedicated: Full isolation, higher cost (production)
+Each environment has its own Container App Environment using the template-based naming convention. Optimize CAE costs through:
+- CPU and memory allocation tuning
+- Container image optimization
+- Workload scheduling
 
 ### 4. Reserved Instances for Production
 

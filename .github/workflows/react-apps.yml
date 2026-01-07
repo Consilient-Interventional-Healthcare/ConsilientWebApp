@@ -31,6 +31,11 @@ on:
         required: false
         type: string
         default: 'consilient-react'
+      cache_image_ref:
+        description: 'Docker cache image reference (e.g., registry/image:latest)'
+        required: false
+        type: string
+        default: ''
     secrets:
       ARM_CLIENT_ID:
         required: true
@@ -58,6 +63,8 @@ env:
   REACT_APP_NAME: ${{ inputs.react_app_name }}
   ACR_REGISTRY: ${{ inputs.acr_registry }}
   RESOURCE_GROUP: ${{ inputs.resource_group }}
+  # Reusable image references for caching (passed from main workflow, or computed as fallback)
+  IMAGE_CACHE_REF: ${{ inputs.cache_image_ref || format('{0}/{1}:latest', inputs.acr_registry, inputs.react_image_name) }}
 
 permissions:
   contents: read
@@ -158,11 +165,15 @@ jobs:
           context: ./src/Consilient.WebApp2
           file: ./src/Consilient.WebApp2/Dockerfile
           push: true
-          tags: ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          tags: |
+            ${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_CACHE_REF }}
           build-args: |
             BUILD_CONFIGURATION=Release
-          cache-from: type=gha,type=registry,ref=${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}
-          cache-to: type=gha,mode=max,image-manifest=true,oci-mediatypes=true
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.IMAGE_CACHE_REF }}
+          cache-to: type=gha,mode=max
 
       - name: Deploy image to Azure Web App for Containers
         uses: azure/webapps-deploy@v3
@@ -217,7 +228,7 @@ jobs:
           previous-image: ${{ needs.build-and-deploy.outputs.previous_image }}
           acr-registry: ${{ inputs.acr_registry }}
           environment: ${{ inputs.environment }}
-          wait-seconds: '45'
+          wait-seconds: '30'
           runs: '2'
           min-perf-score: '0.7'
           min-a11y-score: '0.9'

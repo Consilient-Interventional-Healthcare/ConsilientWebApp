@@ -13,9 +13,7 @@ sql_admin_username = "sqladmin"        # Your SQL Server admin username
 sql_admin_password = "CHANGE-ME"       # Use a strong password! Store in GitHub Secrets for CI/CD
 
 # Container App Environment Configuration
-create_container_app_environment     = false  # Set to false to use existing CAE (matches workflow default)
-use_shared_container_environment     = true   # Set to true for free tier (single CAE across environments)
-shared_container_environment_name    = "consilient-env"
+container_app_environment_name_template = "consilient-cae-{environment}"  # Template with {environment} placeholder
 
 # Optional: Uncomment to override defaults (defined in variables.tf)
 # project_name = "consilient"

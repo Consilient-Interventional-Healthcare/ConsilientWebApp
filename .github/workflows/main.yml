@@ -257,6 +257,7 @@ jobs:
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
       api_image_name: 'consilient-api'
+      cache_image_ref: ${{ format('{0}/consilient-api:latest', needs.terraform.outputs.acr_registry_url) }}
     secrets: inherit
 
   deploy-react-apps:
@@ -276,6 +277,7 @@ jobs:
       resource_group: ${{ needs.terraform.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
       react_image_name: 'consilient-react'
+      cache_image_ref: ${{ format('{0}/consilient-react:latest', needs.terraform.outputs.acr_registry_url) }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution

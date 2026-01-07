@@ -647,23 +647,20 @@ cat src/Databases/{Name}/db_docs.yml | grep -P '\t'
 
 **Solution:**
 
-1. Check CAE configuration in [`locals.tf`](../../../infra/terraform/locals.tf):
+Each environment gets its own Container App Environment using the template-based naming convention. If you encounter a CAE conflict:
 
+1. Verify the CAE naming template in `terraform.tfvars`:
 ```hcl
-# For cost savings, can share CAE across environments
-use_shared_container_environment = true  # dev/staging share
-shared_container_environment_name = "consilient-cae-shared"
+container_app_environment_name_template = "consilient-cae-{environment}"
 ```
 
-2. Options:
-   - **Option A (Save money):** Use shared CAE (`use_shared_container_environment = true`)
-   - **Option B (Isolate):** Use separate CAE (`use_shared_container_environment = false`)
-
-3. After changing:
+2. After modifying:
 ```powershell
 terraform plan  # Review changes
 terraform apply
 ```
+
+3. If conflicts persist, check Azure portal for existing CAEs and consider using `existing_container_app_environment_id` to reference them explicitly.
 
 ---
 

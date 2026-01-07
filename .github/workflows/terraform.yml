@@ -114,10 +114,6 @@ jobs:
       # Environment-specific (from GitHub Environment Variables)
       TF_VAR_region: ${{ vars.AZURE_REGION }}
       TF_VAR_resource_group_name: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
-      # Container App Environment configuration (from GitHub Repository Variables)
-      # Using free-tier shared CAE mode: all environments share a single CAE instance
-      TF_VAR_use_shared_container_environment: ${{ vars.CAE_USE_SHARED || 'true' }}
-      TF_VAR_shared_container_environment_name: ${{ vars.CAE_SHARED_NAME }}
       # Terraform State Backend (from GitHub Repository Variables)
       TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
       TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}

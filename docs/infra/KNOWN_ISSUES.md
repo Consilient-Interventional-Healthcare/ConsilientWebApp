@@ -62,15 +62,13 @@ Currently, Terraform state is stored locally in `infra/terraform/terraform.tfsta
 **Issue:** Container App Environment (CAE) free tier has constraints
 
 **Details:**
-- Shared CAE across environments (save costs, but less isolation)
+- Each environment has a separate CAE (enables isolation)
 - No auto-scaling in free tier
 - Limited memory/CPU
 
 **Impact:** Performance may vary in high-load scenarios
 
-**Current Strategy:** Use shared CAE for dev/staging, premium for production
-
-**Configuration:** [`infra/terraform/locals.tf:use_shared_container_environment`](../../../infra/terraform/locals.tf#L85-L120)
+**Configuration:** [`infra/terraform/locals.tf`](../../../infra/terraform/locals.tf) for CAE naming strategy
 
 ---
 

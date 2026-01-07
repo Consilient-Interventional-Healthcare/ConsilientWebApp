@@ -26,36 +26,7 @@ fi
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Found existing state with $(echo "$STATE_RESOURCES" | wc -l) resources"
 
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Step 1: Reading CAE Configuration from Environment Variables ==="
-
-# CAE configuration from environment variables
-USE_SHARED_CAE="${TF_VAR_use_shared_container_environment}"
-SHARED_CAE_NAME="${TF_VAR_shared_container_environment_name}"
-CREATE_CAE="${TF_VAR_create_container_app_environment}"
-
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Configuration from environment:"
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  use_shared_container_environment: ${USE_SHARED_CAE}"
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  shared_container_environment_name: ${SHARED_CAE_NAME}"
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  create_container_app_environment: ${CREATE_CAE}"
-
-# Determine expected CAE name based on configuration
-if [ "$USE_SHARED_CAE" = "true" ]; then
-  # Shared mode: Use fixed name (NO environment substitution!)
-  EXPECTED_CAE_NAME="${SHARED_CAE_NAME}"
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Using shared mode with FIXED name: ${EXPECTED_CAE_NAME}"
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  (This name is used across ALL environments: dev, staging, prod)"
-else
-  # Template mode: Would resolve from template, but we'll just let Terraform handle it
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Using template mode - Terraform will resolve the name"
-  EXPECTED_CAE_NAME=""  # Don't try to guess
-fi
-
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Configuration loaded from environment variables"
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "All CAE settings will be managed by Terraform"
-
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Step 2: Importing Existing Azure Resources ==="
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Step 1: Importing Existing Azure Resources ==="
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 
 # Initialize tracking for failed imports
@@ -291,48 +262,15 @@ fi
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "8. Container App Environment"
-# Import CAE only if:
-# 1. We're NOT creating a new one (create_container_app_environment = false)
-# 2. We're in shared mode (use_shared_container_environment = true)
-# 3. The CAE name is known (from terraform.tfvars)
-# 4. The CAE is in the SAME resource group as other resources
+# Terraform will create or use the specified CAE. Attempting to import if it already exists.
 
-if [ "$CREATE_CAE" = "false" ] && [ "$USE_SHARED_CAE" = "true" ] && [ -n "$EXPECTED_CAE_NAME" ]; then
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Shared mode detected: Checking if CAE '${EXPECTED_CAE_NAME}' exists in resource group '${TF_VAR_resource_group_name}'"
+# Resolve the template from environment variable
+CAE_TEMPLATE="${TF_VAR_container_app_environment_name_template}"
+CAE_NAME="${CAE_TEMPLATE/\{environment\}/${TF_VAR_environment}}"
 
-  # Check if CAE exists in Azure in the SAME resource group
-  CAE_EXISTS=$(az containerapp env show \
-    --name "${EXPECTED_CAE_NAME}" \
-    --resource-group "${TF_VAR_resource_group_name}" \
-    --query "id" -o tsv 2>/dev/null || echo "")
-
-  if [ -n "$CAE_EXISTS" ]; then
-    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  CAE exists in same resource group - attempting import"
-    CAE_ID="${RG_ID}/providers/Microsoft.App/managedEnvironments/${EXPECTED_CAE_NAME}"
-    import_resource "azurerm_container_app_environment.shared[0]" "${CAE_ID}" "Container App Environment"
-  else
-    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  CAE '${EXPECTED_CAE_NAME}' not found in resource group '${TF_VAR_resource_group_name}'"
-    [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  Terraform will use data source to reference CAE from another resource group"
-  fi
-elif [ "$CREATE_CAE" = "true" ]; then
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  create_container_app_environment=true - Terraform will create a new CAE"
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  Attempting to import in case it already exists..."
-
-  # Try to determine CAE name (in template mode, Terraform resolves it)
-  if [ "$USE_SHARED_CAE" = "true" ]; then
-    CAE_NAME="${EXPECTED_CAE_NAME}"
-  else
-    # Template mode - resolve the template from environment variable
-    CAE_TEMPLATE="${TF_VAR_container_app_environment_name_template}"
-    CAE_NAME="${CAE_TEMPLATE/\{environment\}/${TF_VAR_environment}}"
-  fi
-
-  if [ -n "$CAE_NAME" ]; then
-    CAE_ID="${RG_ID}/providers/Microsoft.App/managedEnvironments/${CAE_NAME}"
-    import_resource "azurerm_container_app_environment.shared[0]" "${CAE_ID}" "Container App Environment"
-  fi
-else
-  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  ℹ️  CAE configuration doesn't require import (using existing CAE via data source or ID)"
+if [ -n "$CAE_NAME" ]; then
+  CAE_ID="${RG_ID}/providers/Microsoft.App/managedEnvironments/${CAE_NAME}"
+  import_resource "azurerm_container_app_environment.shared[0]" "${CAE_ID}" "Container App Environment"
 fi
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""

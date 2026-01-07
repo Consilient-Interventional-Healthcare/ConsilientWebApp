@@ -107,8 +107,6 @@ App Service
 | AZURE_REGION | Repo | canadacentral | terraform | Infrastructure |
 | AZURE_RESOURCE_GROUP_NAME | Repo | consilient-resource-group | terraform | Infrastructure |
 | TERRAFORM_VERSION | Repo | 1.6.0 | terraform | Infrastructure |
-| CAE_CREATE_NEW | Repo | false | terraform | CAE |
-| CAE_USE_SHARED | Repo | true | terraform | CAE |
 
 ### Table 3: Terraform Root Variables by Category (22 Total)
 
@@ -135,8 +133,6 @@ App Service
 | grafana_major_version | number | 11 | No | No |
 | **Container App Environment** |
 | create_container_app_environment | bool | true | No | No |
-| use_shared_container_environment | bool | false | No | No |
-| shared_container_environment_name | string | consilient-cae-shared | No | No |
 | container_app_environment_name_template | string | consilient-cae-{environment} | No | No |
 | existing_container_app_environment_id | string | "" | No | No |
 | **Security & Networking** |
@@ -1051,45 +1047,6 @@ terraform version
 
 ---
 
-##### CAE_USE_SHARED
-
-| Property | Value |
-|----------|-------|
-| Scope | Repository |
-| Default | true |
-| Used By | terraform.yml |
-| Required | No |
-
-**Description**: Whether to use shared Container App Environment across all environments.
-
-**Set to `true`**: For Azure free-tier subscriptions (limited to 1 CAE)
-
-**Set to `false`**: For paid subscriptions (separate CAE per environment)
-
----
-
-##### CAE_SHARED_NAME
-
-| Property | Value |
-|----------|-------|
-| Scope | Repository |
-| Default | consilient-env |
-| Used By | terraform.yml |
-| Required | No |
-
-**Description**: Name of shared Container App Environment (when using shared).
-
-**Format**: `<project>-<environment>`
-
-**Examples**:
-```
-consilient-env
-consilient-shared-env
-consilient-cae-shared
-```
-
----
-
 ##### CAE_NAME_TEMPLATE
 
 | Property | Value |
@@ -1922,119 +1879,12 @@ existing_container_app_environment_id = "/subscriptions/.../resourceGroups/.../p
 
 ---
 
-##### use_shared_container_environment
-
-```hcl
-variable "use_shared_container_environment" {
-  description = <<EOT
-Whether to use a shared Container App Environment across all environments.
-Set to true for Azure free-tier subscriptions (limited to 1 CAE) or when you want
-all environments to share the same CAE. Set to false for paid subscriptions where
-each environment can have its own CAE.
-
-When true: Uses shared_container_environment_name (ignores template)
-When false: Uses container_app_environment_name_template with {environment} placeholder
-EOT
-  type        = bool
-  default     = false
-}
-```
-
-| Property | Value |
-|----------|-------|
-| Required | No |
-| Default | false |
-| Type | bool |
-| Sensitive | No |
-
-**Description**: Whether to share one CAE across all environments (dev/prod) or create separate CAEs.
-
-**Azure Constraints**:
-- **Free-tier subscriptions**: Max 1 CAE (must use shared = true)
-- **Paid subscriptions**: Can have multiple CAEs
-
-**Set to `true`**: For free-tier or when all environments share one CAE
-
-**Set to `false`**: For paid subscriptions with separate CAE per environment
-
-**Setting**:
-```hcl
-# Free-tier: share one CAE
-use_shared_container_environment = true
-shared_container_environment_name = "consilient-cae-shared"
-
-# Paid: separate per environment
-use_shared_container_environment = false
-container_app_environment_name_template = "consilient-cae-{environment}"
-```
-
----
-
-##### shared_container_environment_name
-
-```hcl
-variable "shared_container_environment_name" {
-  description = <<EOT
-Fixed name for shared Container App Environment (used when use_shared_container_environment = true).
-This is the name used for Azure free-tier subscriptions where all environments must share one CAE.
-Default: "consilient-cae-shared"
-EOT
-  type        = string
-  default     = "consilient-cae-shared"
-
-  validation {
-    condition     = can(regex("^[a-z0-9]([a-z0-9-]{0,58}[a-z0-9])?$", var.shared_container_environment_name))
-    error_message = "Shared Container App Environment name must be a valid Azure resource name (lowercase alphanumeric and hyphens, 1-60 chars, start/end with alphanumeric)."
-  }
-}
-```
-
-| Property | Value |
-|----------|-------|
-| Required | No (if use_shared = false) |
-| Default | consilient-cae-shared |
-| Type | string |
-| Sensitive | No |
-| Validation | Must be valid Azure resource name |
-
-**Description**: Name of the shared Container App Environment (used when sharing across all environments).
-
-**Format Requirements**:
-- Lowercase alphanumeric and hyphens only
-- 1-60 characters
-- Must start and end with alphanumeric character
-- No underscores or uppercase
-
-**Valid Examples**:
-```
-consilient-cae-shared
-consilient-env
-my-cae
-```
-
-**Invalid Examples**:
-```
-Consilient-CAE          # Uppercase
-consilient_env          # Underscores
--consilient-cae-        # Starts/ends with hyphen
-consilient-cae-shared-shared-shared...  # Too long
-```
-
-**Setting** (Free-tier):
-```hcl
-use_shared_container_environment = true
-shared_container_environment_name = "consilient-cae-shared"
-```
-
----
-
 ##### container_app_environment_name_template
 
 ```hcl
 variable "container_app_environment_name_template" {
   description = <<EOT
 Template for Container App Environment name with placeholder substitution.
-Used when use_shared_container_environment = false (paid-tier subscriptions).
 Supports {environment} placeholder which will be replaced with the actual environment value.
 Examples:
   - "consilient-cae-{environment}" → "consilient-cae-dev" for dev environment
@@ -2058,7 +1908,7 @@ EOT
 | Sensitive | No |
 | Validation | Must result in valid Azure resource name |
 
-**Description**: Template for CAE names when using separate CAEs per environment.
+**Description**: Template for Container App Environment names with {environment} placeholder substitution.
 
 **Placeholder**: `{environment}` - replaced with actual environment value (dev or prod)
 
@@ -2076,9 +1926,8 @@ my-cae-{environment}
 env-{environment}
 ```
 
-**Setting** (Paid-tier):
+**Setting**:
 ```hcl
-use_shared_container_environment = false
 container_app_environment_name_template = "consilient-cae-{environment}"
 ```
 

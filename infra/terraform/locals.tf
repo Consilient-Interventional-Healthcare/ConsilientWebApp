@@ -250,21 +250,15 @@ locals {
   # CONTAINER APPS & LOKI
   # --------------------------------------------------------------------------
 
-  # Resolve Container App Environment name based on subscription tier
-  # Free-tier (use_shared_container_environment = true): Uses fixed shared name
-  # Paid-tier (use_shared_container_environment = false): Uses template with {environment} placeholder
-  container_app_environment_name = var.use_shared_container_environment ? (
-    var.shared_container_environment_name
-    ) : (
-    replace(
-      var.container_app_environment_name_template,
-      "{environment}",
-      var.environment
-    )
+  # Resolve Container App Environment name using template substitution
+  container_app_environment_name = replace(
+    var.container_app_environment_name_template,
+    "{environment}",
+    var.environment
   )
 
   loki = {
-    # Use resolved CAE name (handles both shared and template-based naming)
+    # Use resolved CAE name
     container_app_env_name = local.container_app_environment_name
     container_app_name     = "${var.project_name}-loki-${var.environment}"
     identity_name          = "${var.project_name}-loki-identity-${var.environment}"

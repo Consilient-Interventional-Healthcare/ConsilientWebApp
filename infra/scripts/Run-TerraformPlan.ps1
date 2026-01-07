@@ -166,10 +166,7 @@ $env:TF_VAR_enable_local_firewall = 'false'
 $env:TF_VAR_region = $envVars['AZURE_REGION']
 $env:TF_VAR_resource_group_name = $envVars['AZURE_RESOURCE_GROUP_NAME']
 
-# Container App Environment configuration
-$env:TF_VAR_create_container_app_environment = if ($envVars.ContainsKey('CAE_CREATE_NEW')) { $envVars['CAE_CREATE_NEW'] } else { 'false' }
-$env:TF_VAR_use_shared_container_environment = if ($envVars.ContainsKey('CAE_USE_SHARED')) { $envVars['CAE_USE_SHARED'] } else { 'true' }
-$env:TF_VAR_shared_container_environment_name = if ($envVars.ContainsKey('CAE_SHARED_NAME')) { $envVars['CAE_SHARED_NAME'] } else { 'consilient-env' }
+# Container App Environment naming configuration
 $env:TF_VAR_container_app_environment_name_template = if ($envVars.ContainsKey('CAE_NAME_TEMPLATE')) { $envVars['CAE_NAME_TEMPLATE'] } else { 'consilient-cae-{environment}' }
 
 Write-Host "[OK] Environment variables set" -ForegroundColor Green
