@@ -310,7 +310,7 @@ resource "azurerm_app_configuration_key" "secrets_jwt_signing_secret" {
   key                    = "Api:Authentication:Jwt:Secret"
   label                  = var.environment
   type                   = "vault" # Special type for Key Vault references
-  value                  = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/jwt-signing-secret"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/jwt-signing-secret"
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
@@ -324,7 +324,7 @@ resource "azurerm_app_configuration_key" "secrets_sql_connection_main" {
   key                    = "ConnectionStrings:DefaultConnection"
   label                  = var.environment
   type                   = "vault"
-  value                  = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/sql-connection-string-main"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/sql-connection-string-main"
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
@@ -338,7 +338,7 @@ resource "azurerm_app_configuration_key" "secrets_sql_connection_hangfire" {
   key                    = "ConnectionStrings:HangfireConnection"
   label                  = var.environment
   type                   = "vault"
-  value                  = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/sql-connection-string-hangfire"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/sql-connection-string-hangfire"
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
@@ -352,7 +352,7 @@ resource "azurerm_app_configuration_key" "secrets_loki_url" {
   key                    = "Api:Logging:GrafanaLoki:Url"
   label                  = var.environment
   type                   = "vault"
-  value                  = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/grafana-loki-url"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/grafana-loki-url"
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
@@ -367,7 +367,7 @@ resource "azurerm_app_configuration_key" "secrets_oauth_client_secret" {
   key                    = "Api:Authentication:OAuth:ClientSecret"
   label                  = var.environment
   type                   = "vault"
-  value                  = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/oauth-client-secret"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/oauth-client-secret"
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
