@@ -224,9 +224,9 @@ generate_database_docs() {
 
       # IMPORTANT: SchemaSpy Azure AD Configuration
       # - MUST use `-u "CloudSA"` (required by SchemaSpy parameter validator)
-      # - Authentication method is controlled by `-connprops` (Authentication=ActiveDirectoryDefault)
+      # - Connection properties MUST have escaped equals: Authentication\=ActiveDirectoryDefault
+      # - Unescaped equals signs cause "FileNotFoundException" (interpreted as file path)
       # - The username value is ignored by JDBC when Azure AD is configured
-      # - DO NOT use empty string (-u ""), which fails validation
       # - Reference: docs/infra/components/database-documentation.md (Troubleshooting section)
 
       timeout "$SCHEMASPY_TIMEOUT_SECONDS" \
@@ -236,7 +236,7 @@ generate_database_docs() {
         -host "$SQL_SERVER" \
         -db "$actual_db_name" \
         -u "CloudSA" \
-        -connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false" \
+        -connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false" \
         -norows \
         -vizjs \
         -imageformat svg \

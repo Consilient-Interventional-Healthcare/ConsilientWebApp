@@ -741,30 +741,41 @@ SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 
 <!-- AI_CRITICAL: MUST USE CloudSA FOR AZURE AD - See details below -->
 
-### Issue: "ERROR - The following option is required: [-u | --user]"
+### Issue: "ERROR - The following option is required: [-u | --user]" OR "FileNotFoundException: authentication=..."
 
-**Symptom**: SchemaSpy fails with:
+**Symptom**: SchemaSpy fails with one of these errors:
 ```
 ERROR - The following option is required: [-u | --user | schemaspy.u | schemaspy.user]
-The following option is required: [-u | --user | schemaspy.u | schemaspy.user]
 ```
 
-**Root Cause**: SchemaSpy's parameter validator requires a **non-empty value** for the `-u` parameter, even when using Azure AD authentication.
+OR:
+```
+ERROR - IOException
+java.io.FileNotFoundException: authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false (No such file or directory)
+```
 
-**Solution**: Use `-u "CloudSA"` (the Azure SQL default service account name)
+**Root Causes**:
+1. **Missing `-u` parameter**: SchemaSpy's parameter validator requires a non-empty value for the `-u` parameter, even when using Azure AD authentication
+2. **Unescaped equals signs**: Connection properties must have equals signs escaped as `\=` so they're passed as a single argument, not interpreted as a file path
+
+**Solution**: Use `-u "CloudSA"` with properly escaped connection properties
 
 ```bash
-# CORRECT (Azure AD):
+# CORRECT (Azure AD with escaped equals signs):
+-u "CloudSA" \
+-connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false"
+
+# WRONG (will fail - unescaped equals signs are interpreted as file path):
 -u "CloudSA" \
 -connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false"
 
-# WRONG (will fail):
+# ALSO WRONG (will fail - empty username):
 -u "" \
--connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false"
+-connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false"
 
-# ALSO WRONG (will fail):
+# ALSO WRONG (will fail - no username):
 # (no -u parameter at all)
--connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false"
+-connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false"
 ```
 
 **Why "CloudSA"?**
