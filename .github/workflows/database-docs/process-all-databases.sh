@@ -221,7 +221,7 @@ generate_database_docs() {
     # IMPORTANT: The JDBC driver internally loads Azure-Identity when Authentication=ActiveDirectoryDefault is configured
     # Use bash -c to ensure CLASSPATH environment variable is accessible to the Java process
     # The Docker image has CLASSPATH pre-configured with all Azure-Identity and transitive dependencies
-    timeout "$SCHEMASPY_TIMEOUT_SECONDS" bash -c 'java -jar /opt/schemaspy/schemaspy.jar \
+    timeout "$SCHEMASPY_TIMEOUT_SECONDS" bash -c 'export CLASSPATH=/opt/schemaspy/azure-identity.jar:/opt/schemaspy/azure-core.jar:/opt/schemaspy/azure-core-http-netty.jar:/opt/schemaspy/msal4j.jar:/opt/schemaspy/msal4j-persistence-extension.jar:/opt/schemaspy/jna.jar:/opt/schemaspy/jna-platform.jar:/opt/schemaspy/netty-all.jar:/opt/schemaspy/reactor-core.jar:/opt/schemaspy/reactive-streams.jar:/opt/schemaspy/slf4j-api.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jackson-datatype-jsr310.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jcip-annotations.jar; java -jar /opt/schemaspy/schemaspy.jar \
       -t mssql17 \
       -dp /opt/schemaspy/mssql-jdbc.jar \
       -host "'"$SQL_SERVER"'" \
