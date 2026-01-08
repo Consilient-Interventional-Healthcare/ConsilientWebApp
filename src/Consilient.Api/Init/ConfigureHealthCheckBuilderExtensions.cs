@@ -12,10 +12,15 @@ namespace Consilient.Api.Init
                 client.Timeout = TimeSpan.FromSeconds(5);
             });
 
+            services.AddHttpClient<LokiLoggingHealthCheck>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
+
             return services.AddHealthChecks()
                 .AddDbContextCheck<ConsilientDbContext>()
-                .AddCheck<LokiHealthCheck>("loki", tags: ["infrastructure"]);
+                .AddCheck<LokiHealthCheck>("loki", tags: ["infrastructure"])
+                .AddCheck<LokiLoggingHealthCheck>("loki-logging", tags: ["infrastructure", "logging"]);
         }
     }
-
 }
