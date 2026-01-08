@@ -65,6 +65,11 @@ on:
         required: false
         type: boolean
         default: false
+      enable-oauth:
+        description: 'Enable OAuth/Microsoft login (requires Azure AD App Registration to be set up)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -167,6 +172,7 @@ jobs:
       action: apply
       allow-local-firewall: ${{ inputs.allow-local-firewall || false }}
       enable-debug: ${{ inputs.enable-debug || false }}
+      enable-oauth: ${{ inputs.enable-oauth || false }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 

@@ -39,6 +39,7 @@ Secrets are sensitive values like passwords and API keys that must be kept confi
 
 | Variable | Value | Used By | Purpose |
 |----------|-------|---------|---------|
+| OAUTH_ENABLED | true/false | Terraform workflow | Enable OAuth/Microsoft login (see Feature Flags below) |
 | CONTAINER_REGISTRY | ghcr.io | All workflows | Container registry URL |
 | ACR_REGISTRY_URL | {acr}.azurecr.io | Docker workflows | Azure Container Registry |
 | API_IMAGE_NAME | consilient-api | API workflow | Docker image name |

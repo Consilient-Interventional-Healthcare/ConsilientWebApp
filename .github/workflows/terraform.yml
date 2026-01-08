@@ -21,6 +21,11 @@ on:
         required: false
         type: boolean
         default: false
+      enable-oauth:
+        description: 'Enable OAuth/Microsoft login (requires Azure AD App Registration)'
+        required: false
+        type: boolean
+        default: false
       runner_image:
         description: 'Docker image for the Terraform container'
         required: true
@@ -111,6 +116,8 @@ jobs:
       TF_VAR_sql_admin_password: ${{ secrets.SQL_ADMIN_PASSWORD }}
       TF_VAR_jwt_signing_secret: ${{ secrets.JWT_SIGNING_SECRET }}
       TF_VAR_enable_local_firewall: ${{ inputs.allow-local-firewall }}
+      # Feature flags - use input if provided (manual dispatch), otherwise fall back to repository variable
+      TF_VAR_oauth_enabled: ${{ inputs.enable-oauth || vars.OAUTH_ENABLED == 'true' }}
       # Environment-specific (from GitHub Environment Variables)
       TF_VAR_region: ${{ vars.AZURE_REGION }}
       TF_VAR_resource_group_name: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
