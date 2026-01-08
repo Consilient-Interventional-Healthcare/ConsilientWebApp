@@ -7,7 +7,7 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 # Metadata labels
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
 LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
-LABEL org.opencontainers.image.version="2.2.2"
+LABEL org.opencontainers.image.version="2.2.3"
 LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17,chrome=latest"
 
 # ============================================================
@@ -161,6 +161,14 @@ RUN mkdir -p ${SCHEMASPY_PATH} && \
     # Netty (required by azure-core-http-netty)
     curl -L -o ${SCHEMASPY_PATH}/netty-all.jar \
         "${MAVEN_REPO}/io/netty/netty-all/4.1.86.Final/netty-all-4.1.86.Final.jar" && \
+    # Reactor Netty (The missing bridge between Azure and Netty - required by azure-core-http-netty)
+    curl -L -o ${SCHEMASPY_PATH}/reactor-netty-http.jar \
+        "${MAVEN_REPO}/io/projectreactor/netty/reactor-netty-http/1.0.24/reactor-netty-http-1.0.24.jar" && \
+    curl -L -o ${SCHEMASPY_PATH}/reactor-netty-core.jar \
+        "${MAVEN_REPO}/io/projectreactor/netty/reactor-netty-core/1.0.24/reactor-netty-core-1.0.24.jar" && \
+    # Reactor Pool (required by reactor-netty-core)
+    curl -L -o ${SCHEMASPY_PATH}/reactor-pool.jar \
+        "${MAVEN_REPO}/io/projectreactor/addons/reactor-pool/0.2.10/reactor-pool-0.2.10.jar" && \
     # Project Reactor (required by azure-core)
     curl -L -o ${SCHEMASPY_PATH}/reactor-core.jar \
         "${MAVEN_REPO}/io/projectreactor/reactor-core/3.4.27/reactor-core-3.4.27.jar" && \
@@ -204,7 +212,7 @@ RUN mkdir -p ${SCHEMASPY_PATH} && \
 ENV PATH="${SCHEMASPY_PATH}:${PATH}"
 
 # Set CLASSPATH to include all Azure-Identity dependencies for Azure AD authentication
-ENV CLASSPATH="${SCHEMASPY_PATH}/azure-identity.jar:${SCHEMASPY_PATH}/azure-core.jar:${SCHEMASPY_PATH}/azure-core-http-netty.jar:${SCHEMASPY_PATH}/azure-json.jar:${SCHEMASPY_PATH}/msal4j.jar:${SCHEMASPY_PATH}/msal4j-persistence-extension.jar:${SCHEMASPY_PATH}/jna.jar:${SCHEMASPY_PATH}/jna-platform.jar:${SCHEMASPY_PATH}/netty-all.jar:${SCHEMASPY_PATH}/reactor-core.jar:${SCHEMASPY_PATH}/reactive-streams.jar:${SCHEMASPY_PATH}/slf4j-api.jar:${SCHEMASPY_PATH}/jackson-core.jar:${SCHEMASPY_PATH}/jackson-databind.jar:${SCHEMASPY_PATH}/jackson-annotations.jar:${SCHEMASPY_PATH}/jackson-datatype-jsr310.jar:${SCHEMASPY_PATH}/oauth2-oidc-sdk.jar:${SCHEMASPY_PATH}/nimbus-jose-jwt.jar:${SCHEMASPY_PATH}/content-type.jar:${SCHEMASPY_PATH}/lang-tag.jar:${SCHEMASPY_PATH}/json-smart.jar:${SCHEMASPY_PATH}/accessors-smart.jar:${SCHEMASPY_PATH}/asm.jar:${SCHEMASPY_PATH}/jcip-annotations.jar"
+ENV CLASSPATH="${SCHEMASPY_PATH}/azure-identity.jar:${SCHEMASPY_PATH}/azure-core.jar:${SCHEMASPY_PATH}/azure-core-http-netty.jar:${SCHEMASPY_PATH}/azure-json.jar:${SCHEMASPY_PATH}/msal4j.jar:${SCHEMASPY_PATH}/msal4j-persistence-extension.jar:${SCHEMASPY_PATH}/jna.jar:${SCHEMASPY_PATH}/jna-platform.jar:${SCHEMASPY_PATH}/netty-all.jar:${SCHEMASPY_PATH}/reactor-netty-http.jar:${SCHEMASPY_PATH}/reactor-netty-core.jar:${SCHEMASPY_PATH}/reactor-pool.jar:${SCHEMASPY_PATH}/reactor-core.jar:${SCHEMASPY_PATH}/reactive-streams.jar:${SCHEMASPY_PATH}/slf4j-api.jar:${SCHEMASPY_PATH}/jackson-core.jar:${SCHEMASPY_PATH}/jackson-databind.jar:${SCHEMASPY_PATH}/jackson-annotations.jar:${SCHEMASPY_PATH}/jackson-datatype-jsr310.jar:${SCHEMASPY_PATH}/oauth2-oidc-sdk.jar:${SCHEMASPY_PATH}/nimbus-jose-jwt.jar:${SCHEMASPY_PATH}/content-type.jar:${SCHEMASPY_PATH}/lang-tag.jar:${SCHEMASPY_PATH}/json-smart.jar:${SCHEMASPY_PATH}/accessors-smart.jar:${SCHEMASPY_PATH}/asm.jar:${SCHEMASPY_PATH}/jcip-annotations.jar"
 
 # ============================================================
 # LAYER 3B: Bake GitHub Actions into the Image
