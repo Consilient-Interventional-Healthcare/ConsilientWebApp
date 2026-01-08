@@ -16,6 +16,15 @@ EOT
   type        = bool
   default     = false
 }
+
+variable "grafana_admin_users" {
+  description = <<EOT
+List of Azure AD user/group object IDs to grant Grafana Admin role.
+Get user object ID via: az ad user show --id "user@domain.com" --query id -o tsv
+EOT
+  type        = list(string)
+  default     = []
+}
 # Global variables for Consilient Azure Infrastructure
 
 variable "project_name" {

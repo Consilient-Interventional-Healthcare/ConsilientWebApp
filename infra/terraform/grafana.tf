@@ -17,3 +17,12 @@ resource "azurerm_dashboard_grafana" "main" {
   # Add more configuration as needed
   tags = local.tags
 }
+
+# Grafana Admin role assignments
+# Add users/groups who need admin access to Grafana
+resource "azurerm_role_assignment" "grafana_admins" {
+  for_each             = toset(var.grafana_admin_users)
+  scope                = azurerm_dashboard_grafana.main.id
+  role_definition_name = "Grafana Admin"
+  principal_id         = each.value
+}

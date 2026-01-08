@@ -41,6 +41,7 @@ Secrets are sensitive values like passwords and API keys that must be kept confi
 |----------|-------|---------|---------|
 | OAUTH_ENABLED | true/false | Terraform workflow | Enable OAuth/Microsoft login (see Feature Flags below) |
 | GRAFANA_PUBLIC_NETWORK_ACCESS | true/false | Terraform workflow | Enable public access to Grafana (default: false) |
+| GRAFANA_ADMIN_USERS | JSON array | Terraform workflow | Azure AD object IDs for Grafana Admin role (e.g., `["id1","id2"]`) |
 | CONTAINER_REGISTRY | ghcr.io | All workflows | Container registry URL |
 | ACR_REGISTRY_URL | {acr}.azurecr.io | Docker workflows | Azure Container Registry |
 | API_IMAGE_NAME | consilient-api | API workflow | Docker image name |
@@ -79,6 +80,7 @@ Secrets are sensitive values like passwords and API keys that must be kept confi
 | loki_memory_limit | string | "2.0Gi" | No | Loki memory limit |
 | grafana_major_version | number | 11 | No | Grafana major version |
 | grafana_public_network_access | bool | false | No | Enable public internet access to Grafana |
+| grafana_admin_users | list(string) | [] | No | Azure AD object IDs for Grafana Admin role |
 | create_container_app_environment | bool | true | No | Create new CAE vs use existing |
 | existing_container_app_environment_id | string | "" | No | Existing CAE ID if using existing |
 | container_app_environment_name_template | string | "consilient-cae-{environment}" | No | CAE naming template |

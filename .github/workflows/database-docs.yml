@@ -5,7 +5,8 @@
 # - Java: 17+ (for running SchemaSpy)
 # - sqlcmd: Azure SQL command-line tool (for schema discovery)
 # - jq: JSON query tool (for parsing JSON input)
-# Note: These are typically pre-installed in GitHub Actions Ubuntu runners
+# - MSAL4J and Azure AD dependencies: Pre-installed in runner image for Azure authentication
+# Note: Most are pre-installed in the GitHub Actions runner image
 
 name: Generate Database Documentation
 
@@ -18,7 +19,7 @@ on:
         type: string
         default: 'dev'
       database-configs:
-        description: 'JSON array of database config objects (from centralized discovery in main.yml)'
+        description: 'JSON array of database config objects (from centralized discovery)'
         required: false
         type: string
         default: '[]'
@@ -31,21 +32,15 @@ on:
         required: true
         type: string
     secrets:
-      SQL_ADMIN_USERNAME:
-        required: true
-        description: 'SQL Server admin username for SchemaSpy authentication'
-      SQL_ADMIN_PASSWORD:
-        required: true
-        description: 'SQL Server admin password for SchemaSpy authentication'
       ARM_CLIENT_ID:
         required: false
-        description: 'Azure Service Principal Client ID for OIDC authentication (fallback if Azure login needed)'
+        description: 'Azure Service Principal Client ID for OIDC authentication'
       ARM_TENANT_ID:
         required: false
-        description: 'Azure Tenant ID for OIDC authentication (fallback if Azure login needed)'
+        description: 'Azure Tenant ID for OIDC authentication'
       AZURE_SUBSCRIPTION_ID:
         required: false
-        description: 'Azure Subscription ID for OIDC authentication (fallback if Azure login needed)'
+        description: 'Azure Subscription ID for OIDC authentication'
       ARM_CLIENT_SECRET:
         required: false
         description: 'Azure Client Secret for local testing with act (fallback)'
@@ -53,10 +48,7 @@ on:
 permissions:
   contents: read
   id-token: write
-
-concurrency:
-  group: generate-db-docs
-  cancel-in-progress: false
+  pages: write
 
 env:
   SQL_SERVER: ${{ inputs.azure-sql-server-fqdn }}
@@ -64,7 +56,7 @@ env:
   JDBC_VERSION: '12.4.2.jre11'
   SCHEMASPY_TIMEOUT_SECONDS: 600
   SCHEMA_DISCOVERY_TIMEOUT_SECONDS: 60
-  ACT: false
+  MAX_CONCURRENT_SCHEMAS: 4
 
 jobs:
   extract-databases:
@@ -93,9 +85,8 @@ jobs:
 
           echo "✅ Extracted database names: $DB_NAMES"
 
-
-  generate-db-docs:
-    name: Generate Docs for ${{ matrix.database }}
+  generate-all-db-docs:
+    name: Generate Docs for All Databases
     needs: [extract-databases]
     if: needs.extract-databases.outputs.databases != '[]'
     runs-on: ubuntu-latest
@@ -104,7 +95,7 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    timeout-minutes: 25
+    timeout-minutes: 90
     permissions:
       contents: read
       pages: write
@@ -113,13 +104,6 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    strategy:
-      matrix:
-        database: ${{ fromJson(needs.extract-databases.outputs.databases) }}
-      fail-fast: false
-
-    env:
-      DATABASE_NAME: ${{ matrix.database }}
 
     steps:
       - name: Checkout code
@@ -127,76 +111,34 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Validate database name
+      - name: Initialize database list
+        id: init-databases
         run: |
           set -e
 
-          DATABASE_NAME="${{ matrix.database }}"
+          DATABASES='${{ needs.extract-databases.outputs.databases }}'
 
-          # Validate database name matches safe pattern (alphanumeric, underscore, hyphen only)
-          if [[ ! "$DATABASE_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-            echo "❌ ERROR: Invalid database name: '$DATABASE_NAME'"
-            echo "Database names must contain only alphanumeric characters, underscores, and hyphens."
+          # Validate we have databases
+          if [ -z "$DATABASES" ] || [ "$DATABASES" = "[]" ]; then
+            echo "❌ ERROR: No databases to process"
             exit 1
           fi
 
-          echo "✅ Database name validated: $DATABASE_NAME"
+          # Export for use in subsequent steps
+          echo "DATABASES_JSON=$DATABASES" >> $GITHUB_ENV
 
-      - name: Parse database configuration
-        id: parse-config
-        run: |
-          set -e
+          # Count databases
+          DB_COUNT=$(echo "$DATABASES" | jq -r 'length')
+          echo "DATABASE_COUNT=$DB_COUNT" >> $GITHUB_ENV
 
-          echo "📋 Parsing configuration for ${{ matrix.database }}"
+          echo "✅ Initialized $DB_COUNT database(s) for processing"
+          echo "$DATABASES" | jq -r '.[]' | sed 's/^/  - /'
 
-          ACTUAL_DATABASE_NAME="${{ matrix.database }}"
-          ENVIRONMENT="${{ inputs.environment }}"
-
-          # Extract config file path for this database (from centralized discovery)
-          CONFIG_DATA=$(echo '${{ inputs.database-configs }}' | jq -r '.["${{ matrix.database }}"]')
-
-          if [ "$CONFIG_DATA" != "null" ] && [ -n "$CONFIG_DATA" ]; then
-            CONFIG_PATH=$(echo "$CONFIG_DATA" | jq -r '.config_path')
-
-            if [ -f "$CONFIG_PATH" ]; then
-              CONFIG_FILE="$CONFIG_PATH"
-              echo "✅ Found config: $CONFIG_FILE"
-
-              # Install yq if not available
-              if ! command -v yq &> /dev/null; then
-                echo "📦 Installing yq..."
-                sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-                sudo chmod +x /usr/local/bin/yq
-              fi
-
-              # Check for environment-specific database name override
-              ENV_DB_NAME=$(yq eval ".database.environment_names.[\"$ENVIRONMENT\"]" "$CONFIG_FILE" 2>/dev/null)
-              if [ "$ENV_DB_NAME" != "null" ] && [ -n "$ENV_DB_NAME" ]; then
-                ACTUAL_DATABASE_NAME="$ENV_DB_NAME"
-                echo "🔄 Using environment-specific database name: $ACTUAL_DATABASE_NAME (environment: $ENVIRONMENT)"
-              fi
-
-            else
-              echo "⚠️  Config file not found: $CONFIG_PATH - using default naming convention"
-              # Fallback: append environment code to database name with underscore separator
-              ACTUAL_DATABASE_NAME="${{ matrix.database }}_${ENVIRONMENT}"
-              echo "🔄 Using default naming: $ACTUAL_DATABASE_NAME (database_environment)"
-            fi
-          else
-            echo "⚠️  No config data found for ${{ matrix.database }} - using default naming convention"
-            # Fallback: append environment code to database name with underscore separator
-            ACTUAL_DATABASE_NAME="${{ matrix.database }}_${ENVIRONMENT}"
-            echo "🔄 Using default naming: $ACTUAL_DATABASE_NAME (database_environment)"
-          fi
-
-          # Export values for use in subsequent steps
-          echo "ACTUAL_DATABASE_NAME=$ACTUAL_DATABASE_NAME" >> $GITHUB_ENV
-
-          # Also export as step outputs for use in step conditions
-          echo "database-name=$ACTUAL_DATABASE_NAME" >> $GITHUB_OUTPUT
-
-          echo "✅ Configuration parsing complete"
-          echo "   Target database: $ACTUAL_DATABASE_NAME"
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
       - name: Login to Azure (OIDC + act fallback)
         uses: ./.github/actions/azure-login
@@ -206,639 +148,78 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
 
-      - name: Database connectivity health check
-        id: health-check
-        uses: ./.github/actions/health-check-database
-        with:
-          sql-server: ${{ env.SQL_SERVER }}
-          database-name: ${{ steps.parse-config.outputs.database-name }}
-          timeout: '30'
-        continue-on-error: true
-        
-      - name: Handle health check failure
-        if: steps.health-check.outcome == 'failure'
-        run: |
-          echo ""
-          echo "⚠️  Database connectivity health check failed"
-          echo ""
-
-          # In act (local testing), allow workflow to continue for testing
-          if [ "$RUNNER_NAME" = "act" ] || [ -f /.dockerenv ]; then
-            echo "ℹ️  Running in act (local) environment"
-            echo "📝 The database may not be reachable from the container."
-            echo "✅ Workflow will continue for documentation structure testing"
-            echo ""
-            echo "💡 To fix database connectivity in act:"
-            echo "   1. Ensure your machine can reach: ${{ env.SQL_SERVER }}"
-            echo "   2. Check firewall rules allow inbound from the docker bridge"
-            echo "   3. Run act with --network host flag for direct network access"
-            echo ""
-            exit 0
-          else
-            # In GitHub Actions, the database must be reachable - fail hard
-            echo "❌ In production environment, database must be reachable"
-            echo "🔗 Please verify Azure SQL Server connectivity"
-            exit 1
-          fi
-
-      - name: Discover database schemas
-        id: discover-schemas
+      - name: Process all databases
+        id: process-databases
         shell: bash
-        run: |
-          set -e
-          set -o pipefail
-
-          ACTUAL_DB_NAME="${{ steps.parse-config.outputs.database-name }}"
-          echo "🔍 Discovering schemas in $ACTUAL_DB_NAME..."
-
-          # Path to discovery SQL script
-          DISCOVERY_SQL="infra/db/list_user_schemas.sql"
-
-          if [ ! -f "$DISCOVERY_SQL" ]; then
-            echo "❌ ERROR: Schema discovery script not found: $DISCOVERY_SQL"
-            exit 1
-          fi
-
-          # Execute query using sqlcmd with Azure AD authentication
-          # Use marker to distinguish between successful empty output and command failure
-          DISCOVERED_SCHEMAS=$(timeout ${{ env.SCHEMA_DISCOVERY_TIMEOUT_SECONDS }} sqlcmd \
-            -S "${{ env.SQL_SERVER }}" \
-            -d "$ACTUAL_DB_NAME" \
-            -G \
-            -i "$DISCOVERY_SQL" \
-            -h -1 \
-            -W \
-            -b 2>schema_discovery_error.log || echo "__SQLCMD_FAILED__")
-
-          exit_code=$?
-
-          # Check for explicit failure marker
-          if echo "$DISCOVERED_SCHEMAS" | grep -q "__SQLCMD_FAILED__"; then
-            echo "❌ Schema discovery failed"
-            echo "--- Error output ---"
-            cat schema_discovery_error.log 2>/dev/null || echo "No error log available"
-            echo "-------------------"
-
-            # Check for specific error types
-            if grep -qi "login.*failed\|authentication.*failed" schema_discovery_error.log 2>/dev/null; then
-              echo "❌ Authentication failure detected"
-              echo "   This is expected when running locally with 'act'"
-              echo "   In GitHub Actions, Azure AD authentication should work correctly"
-            fi
-            exit 1
-          fi
-
-          # Check exit code
-          if [ $exit_code -ne 0 ]; then
-            echo "❌ Schema discovery failed with exit code $exit_code"
-            echo "--- Error output ---"
-            cat schema_discovery_error.log 2>/dev/null || echo "No error log available"
-            echo "-------------------"
-            exit 1
-          fi
-
-          # Check for error keywords in output
-          if echo "$DISCOVERED_SCHEMAS" | grep -qiE "error:|failed|exception|login"; then
-            echo "❌ Error detected in schema discovery output"
-            echo "Output: $DISCOVERED_SCHEMAS"
-            echo "--- Error log ---"
-            cat schema_discovery_error.log 2>/dev/null || echo "No error log"
-            echo "-----------------"
-            exit 1
-          fi
-
-          # Clean output (remove empty lines, trim whitespace, and filter out SQL keywords/artifacts)
-          DISCOVERED_SCHEMAS=$(echo "$DISCOVERED_SCHEMAS" | \
-            grep -v "^[[:space:]]*$" | \
-            grep -vi "^rows$\|^row$\|^affected\|^error" | \
-            xargs)
-
-          # Validate schemas are valid SQL identifiers and not SQL keywords
-          VALID_SCHEMAS=""
-          for schema in $DISCOVERED_SCHEMAS; do
-            # Check if schema matches SQL identifier pattern: starts with letter or underscore, followed by alphanumeric or underscore
-            # Also exclude common SQL keywords and artifacts
-            if echo "$schema" | grep -qE '^[a-zA-Z_][a-zA-Z0-9_]*$'; then
-              # Skip SQL keywords and common artifacts
-              if ! echo "$schema" | grep -iqE '^(rows?|affected|error|warning|database|select|from|where|order|by)$'; then
-                VALID_SCHEMAS="$VALID_SCHEMAS $schema"
-              else
-                echo "⚠️  Skipping SQL keyword or artifact: '$schema'"
-              fi
-            else
-              echo "⚠️  Skipping invalid schema name: '$schema'"
-            fi
-          done
-
-          DISCOVERED_SCHEMAS=$(echo $VALID_SCHEMAS | xargs)
-
-          # Validate at least one schema was found
-          if [ -z "$DISCOVERED_SCHEMAS" ]; then
-            echo "⚠️  WARNING: No valid user schemas discovered in database $ACTUAL_DB_NAME"
-            echo "This could indicate:"
-            echo "  1. The database has no user-created schemas"
-            echo "  2. Authentication/permission issues"
-            echo "  3. The database is empty or newly created"
-            echo ""
-            echo "Skipping documentation generation for this database."
-            echo "SKIP_DOCUMENTATION=true" >> $GITHUB_ENV
-            exit 0
-          fi
-
-          echo "✅ Discovered schemas: $DISCOVERED_SCHEMAS"
-          echo "DISCOVERED_SCHEMAS=$DISCOVERED_SCHEMAS" >> $GITHUB_ENV
-
-          # Count schemas
-          SCHEMA_COUNT=$(echo "$DISCOVERED_SCHEMAS" | wc -w)
-          echo "📊 Total schemas found: $SCHEMA_COUNT"
-
-      - name: Initialize and validate configuration
-        run: |
-          set -e
-
-          # Validate we have schemas to document
-          if [ -z "$DISCOVERED_SCHEMAS" ]; then
-            echo "❌ ERROR: No schemas available for documentation"
-            echo "This is unexpected - the discovery step should have caught this."
-            exit 1
-          fi
-
-          # Export for use in subsequent steps
-          echo "SCHEMAS_TO_DOC=$DISCOVERED_SCHEMAS" >> $GITHUB_ENV
-
-          echo "✅ Configuration validated"
-          echo "Database: ${{ steps.parse-config.outputs.database-name }}"
-          echo "SQL Server: ${{ env.SQL_SERVER }}"
-          echo "Schemas to document: $DISCOVERED_SCHEMAS"
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: Generate schema documentation (parallel)
-        id: schema-doc
-        shell: bash
-        run: |
-          set -e
-          set -o pipefail
-
-          ACTUAL_DB_NAME="${{ steps.parse-config.outputs.database-name }}"
-
-          # Using SQL authentication with username and password from .env.act
-          # These credentials are loaded from GitHub secrets/variables (or .env.act in act environment)
-          SCHEMASPY_COMMON="-t mssql17 \
-            -dp /opt/schemaspy/mssql-jdbc.jar \
-            -host ${{ env.SQL_SERVER }} \
-            -db $ACTUAL_DB_NAME \
-            -u ${{ secrets.SQL_ADMIN_USERNAME }} \
-            -p ${{ secrets.SQL_ADMIN_PASSWORD }} \
-            -connprops \"encrypt\\=true;trustServerCertificate\\=false\" \
-            -norows \
-            -vizjs \
-            -imageformat svg \
-            -noimplied \
-            -debug"
-
-          # Create output directories dynamically
-          DIRS_TO_CREATE=""
-          for schema in ${SCHEMAS_TO_DOC}; do
-            schema=$(echo "$schema" | xargs)
-            [ -z "$schema" ] && continue
-            schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
-            DIRS_TO_CREATE="$DIRS_TO_CREATE docs/$schema_lower"
-          done
-
-          mkdir -p $DIRS_TO_CREATE
-
-          echo "🚀 Starting parallel schema documentation generation for $ACTUAL_DB_NAME..."
-          echo "Schemas to document: ${SCHEMAS_TO_DOC}"
-
-          # Track PIDs for parallel execution
-          declare -a PIDS
-          declare -a SCHEMA_NAMES
-          declare -a START_TIMES
-
-          # Generate documentation for each schema in parallel
-          for schema in ${SCHEMAS_TO_DOC}; do
-            schema=$(echo "$schema" | xargs)
-            [ -z "$schema" ] && continue
-            schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
-
-            # Get description or use default
-            DESCRIPTION="${SCHEMA_DESCRIPTIONS[$schema]:-$schema Schema Documentation}"
-
-            START_TIME=$(date +%s)
-            CURRENT_TIME=$(date -u '+%H:%M:%S UTC')
-            echo "📊 [$CURRENT_TIME] Starting $schema schema generation (timeout: ${{ env.SCHEMASPY_TIMEOUT_SECONDS }}s)..."
-            # Note: Set CLASSPATH via bash to include all dependency JARs for Azure AD authentication
-            # This makes MSAL4J and all transitive dependencies available when java -jar loads the JARs
-            timeout ${{ env.SCHEMASPY_TIMEOUT_SECONDS }} bash -c 'export CLASSPATH=/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jcip-annotations.jar:/opt/schemaspy/slf4j-api.jar; java -jar /opt/schemaspy/schemaspy.jar '"$SCHEMASPY_COMMON"' -o docs/'"$schema_lower"' -s '"$schema"' -desc "'"$DESCRIPTION"'"' &
-
-            PIDS+=($!)
-            SCHEMA_NAMES+=("$schema")
-            START_TIMES+=("$START_TIME")
-          done
-
-          # Wait for all processes and check exit codes
-          TOTAL_TASKS=${#PIDS[@]}
-          echo ""
-          echo "⏳ Waiting for $TOTAL_TASKS documentation task(s) to complete..."
-
-          for i in "${!PIDS[@]}"; do
-            pid="${PIDS[$i]}"
-            name="${SCHEMA_NAMES[$i]}"
-            start_time="${START_TIMES[$i]}"
-
-            CURRENT_TIME=$(date -u '+%H:%M:%S UTC')
-            echo "⏳ [$CURRENT_TIME] Waiting for $name schema generation (PID: $pid)..."
-            if wait "$pid"; then
-              end_time=$(date +%s)
-              elapsed=$((end_time - start_time))
-              echo "✅ $name schema complete (elapsed: ${elapsed}s)"
-            else
-              echo "❌ $name schema failed with exit code: $?"
-              exit 1
-            fi
-          done
-
-          echo ""
-          echo "🎉 All schema documentation generated successfully for $ACTUAL_DB_NAME"
-
-      - name: Cleanup on failure
-        if: failure() && steps.schema-doc.outcome == 'failure'
-        run: |
-          echo "🧹 Cleaning up partial documentation due to schema generation failure..."
-          rm -rf docs/
-          echo "✅ Cleanup complete - partial docs removed"
-          echo ""
-          echo "### ❌ Schema Documentation Generation Failed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Database**: ${{ steps.parse-config.outputs.database-name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Reason**: One or more schemas failed to generate documentation." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**To diagnose:**" >> $GITHUB_STEP_SUMMARY
-          echo "1. Check the 'Generate Schema Documentation' step logs above" >> $GITHUB_STEP_SUMMARY
-          echo "2. Look for schema-specific error messages (❌ marks)" >> $GITHUB_STEP_SUMMARY
-          echo "3. Verify SchemaSpy timeout limits and database connectivity" >> $GITHUB_STEP_SUMMARY
-
-      - name: Create enhanced index page
-        if: steps.schema-doc.outcome == 'success'
         env:
-          DB_NAME: ${{ steps.parse-config.outputs.database-name }}
+          DATABASES_JSON: ${{ env.DATABASES_JSON }}
+          SQL_SERVER: ${{ inputs.azure-sql-server-fqdn }}
+          DATABASE_CONFIGS: ${{ inputs.database-configs }}
+          SCHEMA_DISCOVERY_TIMEOUT_SECONDS: 120
+          SCHEMASPY_TIMEOUT_SECONDS: 1800
+          MAX_CONCURRENT_SCHEMAS: 4
+          environment_input: ${{ inputs.environment }}
+        run: |
+          chmod +x .github/workflows/database-docs/process-all-databases.sh
+          .github/workflows/database-docs/process-all-databases.sh
+
+      - name: Create unified index page
+        if: steps.process-databases.outcome == 'success'
         shell: bash
+        env:
+          DATABASE_COUNT: ${{ env.DATABASE_COUNT }}
+          environment_input: ${{ inputs.environment }}
         run: |
-          set -e
-          set -o pipefail
-
-          # HTML escape function to prevent injection attacks
-          escape_html() {
-            local input="$1"
-            input="${input//&/&amp;}"
-            input="${input//</&lt;}"
-            input="${input//>/&gt;}"
-            input="${input//\"/&quot;}"
-            input="${input//$'\x27'/&#39;}"
-            echo "$input"
-          }
-
-          # Use variables directly - no heredoc quoting to allow substitution
-          CURRENT_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
-
-          # Generate schema cards HTML from SCHEMAS_TO_DOC
-          SCHEMA_CARDS=""
-          for schema in ${SCHEMAS_TO_DOC}; do
-            schema=$(echo "$schema" | xargs) # trim whitespace
-            [ -z "$schema" ] && continue
-            schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
-
-            # Use defaults for all metadata (no custom metadata supported in minimal config)
-            ICON="📦"
-            TITLE="$schema Schema"
-            DESC="Documentation for the $schema schema."
-
-            # Escape all dynamic content to prevent HTML injection
-            ICON_ESCAPED=$(escape_html "$ICON")
-            TITLE_ESCAPED=$(escape_html "$TITLE")
-            DESC_ESCAPED=$(escape_html "$DESC")
-            SCHEMA_LOWER_ESCAPED=$(escape_html "$schema_lower")
-
-            # Build card HTML with escaped content
-            CARD="<div class=\"schema-card\">
-                          <h2>$ICON_ESCAPED $TITLE_ESCAPED</h2>
-                          <p>$DESC_ESCAPED</p>"
-
-            CARD="$CARD
-                          <a href=\"./$SCHEMA_LOWER_ESCAPED/index.html\" class=\"btn\">View $TITLE_ESCAPED Schema →</a>
-                      </div>
-                      "
-
-            SCHEMA_CARDS="$SCHEMA_CARDS$CARD"
-          done
-
-          cat > docs/index.html << EOF
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Consilient Database Documentation</title>
-              <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
-              <style>
-                  :root {
-                      --primary-color: #3498db;
-                      --primary-dark: #2980b9;
-                      --background: #f5f5f5;
-                      --card-background: #ffffff;
-                      --text-primary: #2c3e50;
-                      --text-secondary: #7f8c8d;
-                      --border-radius: 8px;
-                      --shadow: 0 2px 4px rgba(0,0,0,0.1);
-                      --shadow-hover: 0 4px 8px rgba(0,0,0,0.15);
-                  }
-                  
-                  * {
-                      margin: 0;
-                      padding: 0;
-                      box-sizing: border-box;
-                  }
-                  
-                  body {
-                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                      line-height: 1.6;
-                      color: var(--text-primary);
-                      background: var(--background);
-                  }
-                  
-                  .container {
-                      max-width: 1200px;
-                      margin: 0 auto;
-                      padding: 2rem;
-                  }
-                  
-                  .header {
-                      background: var(--card-background);
-                      padding: 2rem;
-                      border-radius: var(--border-radius);
-                      box-shadow: var(--shadow);
-                      margin-bottom: 2rem;
-                  }
-                  
-                  h1 {
-                      color: var(--text-primary);
-                      margin-bottom: 0.5rem;
-                      font-size: 2.5rem;
-                  }
-                  
-                  .subtitle {
-                      color: var(--text-secondary);
-                      font-size: 1.1rem;
-                      margin-bottom: 1.5rem;
-                  }
-                  
-                  .info-grid {
-                      display: grid;
-                      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                      gap: 1rem;
-                      background: #e8f4f8;
-                      padding: 1.5rem;
-                      border-radius: var(--border-radius);
-                  }
-                  
-                  .info-item {
-                      display: flex;
-                      flex-direction: column;
-                  }
-                  
-                  .info-label {
-                      font-weight: 600;
-                      color: var(--text-secondary);
-                      font-size: 0.85rem;
-                      text-transform: uppercase;
-                      letter-spacing: 0.5px;
-                      margin-bottom: 0.25rem;
-                  }
-                  
-                  .info-value {
-                      color: var(--text-primary);
-                      font-size: 1rem;
-                      word-break: break-word;
-                  }
-                  
-                  .schema-grid {
-                      display: grid;
-                      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                      gap: 1.5rem;
-                      margin-top: 2rem;
-                  }
-                  
-                  .schema-card {
-                      background: var(--card-background);
-                      padding: 1.5rem;
-                      border-radius: var(--border-radius);
-                      box-shadow: var(--shadow);
-                      transition: all 0.3s ease;
-                      border-left: 4px solid var(--primary-color);
-                  }
-                  
-                  .schema-card:hover {
-                      transform: translateY(-4px);
-                      box-shadow: var(--shadow-hover);
-                  }
-                  
-                  .schema-card h2 {
-                      color: var(--primary-color);
-                      margin-bottom: 0.75rem;
-                      font-size: 1.5rem;
-                  }
-                  
-                  .schema-card p {
-                      color: var(--text-secondary);
-                      margin-bottom: 1rem;
-                  }
-                  
-                  .schema-card ul {
-                      list-style: none;
-                      margin-bottom: 1rem;
-                  }
-                  
-                  .schema-card li {
-                      padding: 0.25rem 0;
-                      color: var(--text-secondary);
-                  }
-                  
-                  .schema-card li:before {
-                      content: "▪";
-                      color: var(--primary-color);
-                      font-weight: bold;
-                      display: inline-block;
-                      width: 1em;
-                      margin-left: 0.5em;
-                  }
-                  
-                  .btn {
-                      display: inline-block;
-                      margin-top: 1rem;
-                      padding: 0.75rem 1.5rem;
-                      background: var(--primary-color);
-                      color: white;
-                      text-decoration: none;
-                      border-radius: var(--border-radius);
-                      font-weight: 500;
-                      transition: background 0.3s ease;
-                  }
-                  
-                  .btn:hover {
-                      background: var(--primary-dark);
-                  }
-                  
-                  @media (max-width: 768px) {
-                      .container {
-                          padding: 1rem;
-                      }
-                      
-                      h1 {
-                          font-size: 2rem;
-                      }
-                      
-                      .schema-grid {
-                          grid-template-columns: 1fr;
-                      }
-                  }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <div class="header">
-                      <h1>🏥 Consilient Database Documentation</h1>
-                      <p class="subtitle">Auto-generated database schema documentation for the Consilient Healthcare System</p>
-                      <div class="info-grid">
-                          <div class="info-item">
-                              <span class="info-label">Last Updated</span>
-                              <span class="info-value">${CURRENT_DATE}</span>
-                          </div>
-                          <div class="info-item">
-                              <span class="info-label">Database</span>
-                              <span class="info-value">${DB_NAME}</span>
-                          </div>
-                      </div>
-                  </div>
-
-                  <div class="schema-grid">
-                      $SCHEMA_CARDS
-                  </div>
-              </div>
-          </body>
-          </html>
-          EOF
-
-      - name: Generate summary
-        if: steps.schema-doc.outcome == 'success'
-        run: |
-          echo "## 📚 Database Documentation Generated" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Documentation successfully generated and uploaded as artifact" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📥 How to View" >> $GITHUB_STEP_SUMMARY
-          echo "1. Go to the **Summary** tab of this workflow run" >> $GITHUB_STEP_SUMMARY
-          echo "2. Download the **database-documentation** artifact" >> $GITHUB_STEP_SUMMARY
-          echo "3. Extract the ZIP file" >> $GITHUB_STEP_SUMMARY
-          echo "4. Open **index.html** in your browser" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Schemas Documented" >> $GITHUB_STEP_SUMMARY
-
-          for schema in ${SCHEMAS_TO_DOC}; do
-            schema=$(echo "$schema" | xargs)
-            [ -z "$schema" ] && continue
-            ICON="📦"
-            DESC="Schema documentation"
-            echo "- $ICON **$schema** - $DESC" >> $GITHUB_STEP_SUMMARY
-          done
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Documentation successfully generated and will be deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📖 Documentation" >> $GITHUB_STEP_SUMMARY
-          echo "- **Database**: ${{ steps.parse-config.outputs.database-name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status**: Generated and deploying to GitHub Pages" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "View at: [GitHub Pages](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }})" >> $GITHUB_STEP_SUMMARY
+          chmod +x .github/workflows/database-docs/generate-index.sh
+          .github/workflows/database-docs/generate-index.sh
 
       - name: Add .nojekyll file for GitHub Pages
-        if: steps.schema-doc.outcome == 'success'
+        if: steps.process-databases.outcome == 'success'
         run: |
           touch docs/.nojekyll
           echo "✅ Added .nojekyll file to prevent Jekyll processing"
 
       - name: Upload to GitHub Pages
-        if: steps.schema-doc.outcome == 'success' && github.event_name != 'pull_request' && !env.ACT
+        if: steps.process-databases.outcome == 'success' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
           retention-days: 1
-        continue-on-error: true
 
       - name: Deploy to GitHub Pages
         id: deployment
-        if: steps.schema-doc.outcome == 'success' && github.event_name != 'pull_request' && !env.ACT
+        if: steps.process-databases.outcome == 'success' && github.event_name != 'pull_request'
         uses: actions/deploy-pages@v4
-        continue-on-error: true
 
-      - name: GitHub Pages deployment skipped (act environment)
-        if: steps.schema-doc.outcome == 'success' && env.ACT
+      - name: Generate workflow summary
+        if: always()
         run: |
-          echo ""
-          echo "================================================"
-          echo "⚠️  GitHub Pages Deployment Skipped"
-          echo "================================================"
-          echo ""
-          echo "🏠 Running in local testing environment (act)"
-          echo ""
-          echo "The following steps were skipped:"
-          echo "  ❌ Upload to GitHub Pages"
-          echo "  ❌ Deploy to GitHub Pages"
-          echo ""
-          echo "Reason: GitHub Pages deployment requires:"
-          echo "  - ACTIONS_RUNTIME_TOKEN (for artifact upload)"
-          echo "  - ACTIONS_ID_TOKEN_REQUEST_URL (for OIDC authentication)"
-          echo "  These are only available in actual GitHub Actions runners."
-          echo ""
-          echo "✅ Your documentation was generated successfully!"
-          echo "   View it locally at: $(pwd)/docs/index.html"
-          echo ""
-          echo "💡 To deploy to GitHub Pages:"
-          echo "   1. Push your changes to GitHub"
-          echo "   2. Let GitHub Actions run this workflow"
-          echo "   3. Deployment will happen automatically"
-          echo ""
-          echo "================================================"
+          echo "## 📚 Database Documentation Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-      - name: Summary - Documentation deployment
-        if: steps.schema-doc.outcome == 'success'
-        run: |
-          echo ""
-          echo "================================================"
-          echo "📚 Documentation Deployment Summary"
-          echo "================================================"
-          echo ""
-
-          # Check if running in act (local testing)
-          if [ "$RUNNER_NAME" = "act" ] || [ -f /.dockerenv ]; then
-            echo "🏠 Local Testing Environment (act)"
-            echo "✅ Documentation generated and preserved in docs/ directory"
-            echo ""
-            echo "Generated files:"
-            find docs -type f -name "*.html" | wc -l | xargs echo "  - HTML files:"
-            echo ""
-            echo "To view locally:"
-            echo "  1. Navigate to: $(pwd)/docs"
-            echo "  2. Open docs/index.html in your browser"
+          if [ "${{ steps.process-databases.outcome }}" = "success" ]; then
+            echo "✅ Documentation successfully generated for all databases" >> $GITHUB_STEP_SUMMARY
           else
-            echo "☁️ GitHub Actions Environment"
-            echo "✅ Documentation will be deployed to GitHub Pages"
-            echo "📖 View at: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+            echo "❌ Documentation generation failed" >> $GITHUB_STEP_SUMMARY
           fi
-          echo ""
-          echo "================================================"
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Databases Processed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f /tmp/database_info.txt ]; then
+            while IFS='|' read -r db_name actual_db_name schemas; do
+              schema_count=$(echo "$schemas" | wc -w)
+              echo "- 🗄️ **$db_name** ($actual_db_name) - $schema_count schema(s)" >> $GITHUB_STEP_SUMMARY
+            done < /tmp/database_info.txt
+          else
+            echo "- _No databases processed_" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.deployment.outcome }}" = "success" ]; then
+            echo "✅ Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "View at: [GitHub Pages](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }})" >> $GITHUB_STEP_SUMMARY
+          fi
