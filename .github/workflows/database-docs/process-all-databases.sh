@@ -218,9 +218,23 @@ generate_database_docs() {
     echo "📊 Starting $schema schema generation..."
 
     # Launch SchemaSpy in background with controlled concurrency
-    # IMPORTANT: Set CLASSPATH via bash -c to include all dependency JARs for Azure AD authentication
-    # This makes MSAL4J and all transitive dependencies available when java -jar loads the JARs
-    timeout "$SCHEMASPY_TIMEOUT_SECONDS" bash -c 'export CLASSPATH=/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jcip-annotations.jar:/opt/schemaspy/slf4j-api.jar; java -jar /opt/schemaspy/schemaspy.jar -t mssql17 -dp /opt/schemaspy/mssql-jdbc.jar -host "'"$SQL_SERVER"'" -db "'"$actual_db_name"'" -u "CloudSA" -connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false" -norows -vizjs -imageformat svg -noimplied -debug -o "'"$db_output_dir/$schema_lower"'" -s "'"$schema"'" -desc "'"$description"'"' &
+    # IMPORTANT: Include all MSAL4J dependencies in the -dp (driver path) parameter
+    # The JDBC driver needs these JARs in its classpath to load MSAL4J
+    timeout "$SCHEMASPY_TIMEOUT_SECONDS" java -jar /opt/schemaspy/schemaspy.jar \
+      -t mssql17 \
+      -dp "/opt/schemaspy/mssql-jdbc.jar:/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jcip-annotations.jar:/opt/schemaspy/slf4j-api.jar" \
+      -host "$SQL_SERVER" \
+      -db "$actual_db_name" \
+      -u "CloudSA" \
+      -connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false" \
+      -norows \
+      -vizjs \
+      -imageformat svg \
+      -noimplied \
+      -debug \
+      -o "$db_output_dir/$schema_lower" \
+      -s "$schema" \
+      -desc "$description" &
 
     schema_pids+=($!)
     schema_names+=("$schema")
