@@ -766,16 +766,23 @@ Failed to load MSAL4J Java library for performing ActiveDirectoryDefault authent
 2. **Unescaped equals signs**: Connection properties must have equals signs escaped as `\=` so they're passed as a single argument, not interpreted as a file path
 3. **CLASSPATH not included**: Using `java -jar` ignores CLASSPATH environment variable, preventing MSAL4J libraries from being loaded
 
-**Solution**: Use `-cp` instead of `-jar` to properly include CLASSPATH with MSAL4J
+**Solution**: Export CLASSPATH in a bash subshell with `java -jar`
+
+The key is to export CLASSPATH in the same bash subshell BEFORE calling java -jar:
 
 ```bash
-# CORRECT (using -cp to include CLASSPATH with MSAL4J libraries):
-java -cp /opt/schemaspy/schemaspy.jar:$CLASSPATH org.schemaspy.Main \
+# CORRECT (export CLASSPATH in bash -c subshell with java -jar):
+timeout $SCHEMASPY_TIMEOUT bash -c 'export CLASSPATH=/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:...; java -jar /opt/schemaspy/schemaspy.jar \
   -u "CloudSA" \
   -connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false" \
-  ...other SchemaSpy options...
+  ...other SchemaSpy options...'
 
-# WRONG (using -jar ignores CLASSPATH, MSAL4J libraries not found):
+# WRONG (using java -cp with org.schemaspy.Main - doesn't work with this codebase):
+java -cp /opt/schemaspy/schemaspy.jar:$CLASSPATH org.schemaspy.Main \
+  -u "CloudSA" \
+  ...
+
+# WRONG (using -jar without CLASSPATH - MSAL4J libraries not found):
 java -jar /opt/schemaspy/schemaspy.jar \
   -u "CloudSA" \
   -connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false" \
@@ -789,12 +796,12 @@ java -jar /opt/schemaspy/schemaspy.jar \
 # or (no -u parameter at all)
 ```
 
-**Why use `-cp` instead of `-jar`?**
-- `java -jar` mode ignores the CLASSPATH environment variable for security reasons
-- This prevents MSAL4J and its transitive dependencies from being found by the JVM
-- Using `java -cp <classpath> <main-class>` explicitly includes all necessary libraries
-- The `-cp` syntax requires specifying the main class (`org.schemaspy.Main`) explicitly
-- This is the standard way to run Java applications that need external libraries
+**Why use `bash -c` with CLASSPATH export?**
+- When CLASSPATH is exported in the same bash subshell before `java -jar`, the JVM can access those JARs
+- Using single quotes prevents shell variable expansion of the command
+- This makes MSAL4J and all transitive dependencies available to the JVM
+- This is the working pattern that was successfully used in commit 16d072e
+- The `timeout` wrapper must be outside the bash -c command
 
 **Why "CloudSA"?**
 - SchemaSpy validates that `-u` parameter has a non-empty value during startup
@@ -804,6 +811,7 @@ java -jar /opt/schemaspy/schemaspy.jar \
 - The value is semantically meaningful (Microsoft's default service account) but functionally unused
 
 **Historical Context**:
+- Git commit 16d072e: Working implementation using `bash -c` with CLASSPATH export
 - Git commit 0b87242: "Note: -u is required by SchemaSpy but unused for Azure AD (auth happens via connprops)"
 - Git commit 3d7f017: Added MSAL4J library to Docker image for Azure AD support
 
