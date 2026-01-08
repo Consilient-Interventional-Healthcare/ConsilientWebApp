@@ -54,40 +54,33 @@ parse_database_config() {
   local db_name="$1"
   local environment="${environment_input}"
 
-  echo "📋 Parsing configuration for $db_name"
-  echo "   DEBUG: environment_input='${environment_input}', environment='${environment}'"
+  echo "📋 Parsing configuration for $db_name (environment: $environment)"
 
-  local actual_db_name="$db_name"
+  # Default: use database name + environment suffix
+  local actual_db_name="${db_name}_${environment}"
 
-  # Extract config file path for this database
-  local config_data=$(echo "$DATABASE_CONFIGS" | jq -r ".\"$db_name\"")
+  # Try to get config file path
+  local config_path=$(echo "$DATABASE_CONFIGS" | jq -r ".\"$db_name\".config_path // empty")
 
-  if [ "$config_data" != "null" ] && [ -n "$config_data" ]; then
-    local config_path=$(echo "$config_data" | jq -r '.config_path')
+  # Only override if we have a valid config file
+  if [ -n "$config_path" ] && [ -f "$config_path" ]; then
+    echo "✅ Found config file: $config_path"
 
-    if [ -f "$config_path" ]; then
-      echo "✅ Found config: $config_path"
+    # Install yq if not available
+    if ! command -v yq &> /dev/null; then
+      echo "📦 Installing yq..."
+      sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+      sudo chmod +x /usr/local/bin/yq
+    fi
 
-      # Install yq if not available
-      if ! command -v yq &> /dev/null; then
-        echo "📦 Installing yq..."
-        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-        sudo chmod +x /usr/local/bin/yq
-      fi
-
-      # Check for environment-specific database name override
-      local env_db_name=$(yq eval ".database.environment_names.[\"$environment\"]" "$config_path" 2>/dev/null)
-      if [ "$env_db_name" != "null" ] && [ -n "$env_db_name" ]; then
-        actual_db_name="$env_db_name"
-        echo "🔄 Using environment-specific database name: $actual_db_name"
-      fi
-    else
-      echo "⚠️  Config file not found, using default naming"
-      actual_db_name="${db_name}_${environment}"
+    # Check for environment-specific database name override
+    local env_db_name=$(yq eval ".database.environment_names.[\"$environment\"]" "$config_path" 2>/dev/null)
+    if [ "$env_db_name" != "null" ] && [ -n "$env_db_name" ]; then
+      actual_db_name="$env_db_name"
+      echo "🔄 Using environment-specific database name from config: $actual_db_name"
     fi
   else
-    echo "⚠️  No config data found, using default naming"
-    actual_db_name="${db_name}_${environment}"
+    echo "⚠️  No valid config file found, using default: ${db_name}_${environment}"
   fi
 
   echo "✅ Target database: $actual_db_name"
