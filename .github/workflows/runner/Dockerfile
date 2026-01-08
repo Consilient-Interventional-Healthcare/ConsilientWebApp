@@ -144,6 +144,9 @@ RUN mkdir -p ${SCHEMASPY_PATH} && \
         "${MAVEN_REPO}/com/azure/azure-core/1.39.0/azure-core-1.39.0.jar" && \
     curl -L -o ${SCHEMASPY_PATH}/azure-core-http-netty.jar \
         "${MAVEN_REPO}/com/azure/azure-core-http-netty/1.13.3/azure-core-http-netty-1.13.3.jar" && \
+    # Azure JSON (required by azure-core >= 1.35.0)
+    curl -L -o ${SCHEMASPY_PATH}/azure-json.jar \
+        "${MAVEN_REPO}/com/azure/azure-json/1.1.0/azure-json-1.1.0.jar" && \
     # MSAL4J 1.13.8 (required by azure-identity)
     curl -L -o ${SCHEMASPY_PATH}/msal4j.jar \
         "${MAVEN_REPO}/com/microsoft/azure/msal4j/1.13.8/msal4j-1.13.8.jar" && \
@@ -201,7 +204,7 @@ RUN mkdir -p ${SCHEMASPY_PATH} && \
 ENV PATH="${SCHEMASPY_PATH}:${PATH}"
 
 # Set CLASSPATH to include all Azure-Identity dependencies for Azure AD authentication
-ENV CLASSPATH="${SCHEMASPY_PATH}/azure-identity.jar:${SCHEMASPY_PATH}/azure-core.jar:${SCHEMASPY_PATH}/azure-core-http-netty.jar:${SCHEMASPY_PATH}/msal4j.jar:${SCHEMASPY_PATH}/msal4j-persistence-extension.jar:${SCHEMASPY_PATH}/jna.jar:${SCHEMASPY_PATH}/jna-platform.jar:${SCHEMASPY_PATH}/netty-all.jar:${SCHEMASPY_PATH}/reactor-core.jar:${SCHEMASPY_PATH}/reactive-streams.jar:${SCHEMASPY_PATH}/slf4j-api.jar:${SCHEMASPY_PATH}/jackson-core.jar:${SCHEMASPY_PATH}/jackson-databind.jar:${SCHEMASPY_PATH}/jackson-annotations.jar:${SCHEMASPY_PATH}/jackson-datatype-jsr310.jar:${SCHEMASPY_PATH}/oauth2-oidc-sdk.jar:${SCHEMASPY_PATH}/nimbus-jose-jwt.jar:${SCHEMASPY_PATH}/content-type.jar:${SCHEMASPY_PATH}/lang-tag.jar:${SCHEMASPY_PATH}/json-smart.jar:${SCHEMASPY_PATH}/accessors-smart.jar:${SCHEMASPY_PATH}/asm.jar:${SCHEMASPY_PATH}/jcip-annotations.jar"
+ENV CLASSPATH="${SCHEMASPY_PATH}/azure-identity.jar:${SCHEMASPY_PATH}/azure-core.jar:${SCHEMASPY_PATH}/azure-core-http-netty.jar:${SCHEMASPY_PATH}/azure-json.jar:${SCHEMASPY_PATH}/msal4j.jar:${SCHEMASPY_PATH}/msal4j-persistence-extension.jar:${SCHEMASPY_PATH}/jna.jar:${SCHEMASPY_PATH}/jna-platform.jar:${SCHEMASPY_PATH}/netty-all.jar:${SCHEMASPY_PATH}/reactor-core.jar:${SCHEMASPY_PATH}/reactive-streams.jar:${SCHEMASPY_PATH}/slf4j-api.jar:${SCHEMASPY_PATH}/jackson-core.jar:${SCHEMASPY_PATH}/jackson-databind.jar:${SCHEMASPY_PATH}/jackson-annotations.jar:${SCHEMASPY_PATH}/jackson-datatype-jsr310.jar:${SCHEMASPY_PATH}/oauth2-oidc-sdk.jar:${SCHEMASPY_PATH}/nimbus-jose-jwt.jar:${SCHEMASPY_PATH}/content-type.jar:${SCHEMASPY_PATH}/lang-tag.jar:${SCHEMASPY_PATH}/json-smart.jar:${SCHEMASPY_PATH}/accessors-smart.jar:${SCHEMASPY_PATH}/asm.jar:${SCHEMASPY_PATH}/jcip-annotations.jar"
 
 # ============================================================
 # LAYER 3B: Bake GitHub Actions into the Image
