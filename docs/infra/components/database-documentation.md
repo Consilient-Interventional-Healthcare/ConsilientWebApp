@@ -737,5 +737,96 @@ SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 
 ---
 
+## Troubleshooting SchemaSpy Authentication Issues
+
+<!-- AI_CRITICAL: MUST USE CloudSA FOR AZURE AD - See details below -->
+
+### Issue: "ERROR - The following option is required: [-u | --user]"
+
+**Symptom**: SchemaSpy fails with:
+```
+ERROR - The following option is required: [-u | --user | schemaspy.u | schemaspy.user]
+The following option is required: [-u | --user | schemaspy.u | schemaspy.user]
+```
+
+**Root Cause**: SchemaSpy's parameter validator requires a **non-empty value** for the `-u` parameter, even when using Azure AD authentication.
+
+**Solution**: Use `-u "CloudSA"` (the Azure SQL default service account name)
+
+```bash
+# CORRECT (Azure AD):
+-u "CloudSA" \
+-connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false"
+
+# WRONG (will fail):
+-u "" \
+-connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false"
+
+# ALSO WRONG (will fail):
+# (no -u parameter at all)
+-connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false"
+```
+
+**Why "CloudSA"?**
+- SchemaSpy validates that `-u` parameter has a non-empty value during startup
+- When Azure AD is configured via connection properties, the JDBC driver **ignores** the username/password parameters
+- The actual authentication is handled by `Authentication=ActiveDirectoryDefault` which uses managed identity/OIDC tokens
+- "CloudSA" is a placeholder/dummy value that satisfies SchemaSpy's validation
+- The value is semantically meaningful (Microsoft's default service account) but functionally unused
+
+**Historical Context** (from git commit 0b87242):
+> "Note: -u is required by SchemaSpy but unused for Azure AD (auth happens via connprops)"
+
+**DO NOT attempt these variations:**
+- ❌ `-u ""`  - Empty string fails validation
+- ❌ `-u "azuread"` - Works but incorrect (CloudSA is the standard)
+- ❌ `-p "anything"` - Should not include password parameter for Azure AD
+- ❌ No `-u` parameter - SchemaSpy will fail startup
+
+### Azure AD Authentication Quick Reference
+
+| Component | Configuration | Purpose |
+|-----------|---------------|---------|
+| **Parameter** | `-u "CloudSA"` | Required by SchemaSpy validator (placeholder) |
+| **Connection Property** | `Authentication=ActiveDirectoryDefault` | Tells JDBC driver to use Azure AD |
+| **Token Source** | Managed Identity or OIDC | Provided by GitHub Actions/Docker environment |
+| **Password Parameter** | ❌ Don't include | JDBC ignores it when using Azure AD |
+
+### Related Files for Developers/AI
+
+**File**: [`.github/workflows/database-docs/process-all-databases.sh`](../../../.github/workflows/database-docs/process-all-databases.sh)
+- **Lines 235-250**: SchemaSpy command with Azure AD parameters
+- **Critical Parameter**: Line 241 must be `-u "CloudSA"` (not empty string, not other values)
+
+**Implementation History**:
+- Commit eb47627: Initial SQL auth version (used `-u $USERNAME -p $PASSWORD`)
+- Commit 9953f6e: Switched to Azure AD but accidentally removed `-u` parameter (BROKE)
+- Commit 0b87242: Fixed by restoring `-u "CloudSA"` with Azure AD properties
+- Current state: Maintains `-u "CloudSA"` pattern
+
+### Testing the Fix
+
+After applying the fix, verify in workflow logs:
+```bash
+# Expected output (SUCCESS):
+✅ Database name validated: consilient_main
+📋 Parsing configuration for consilient_main (environment: dev)
+✅ Target database: consilient_main_dev
+🔍 Discovering schemas in consilient_main_dev...
+✅ Discovered schemas: Clinical Compensation Identity
+📊 Starting Clinical schema generation...
+📊 Starting Compensation schema generation...
+📊 Starting Identity schema generation...
+✅ Clinical schema complete
+✅ Compensation schema complete
+✅ Identity schema complete
+✅ All schemas generated successfully
+
+# Expected output (FAILURE with empty -u):
+ERROR - The following option is required: [-u | --user | schemaspy.u | schemaspy.user]
+```
+
+---
+
 **Last Updated:** December 2025
 **For Navigation:** See [README.md](../README.md)

@@ -222,13 +222,20 @@ generate_database_docs() {
       # Set CLASSPATH for Azure AD auth
       export CLASSPATH=/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jcip-annotations.jar:/opt/schemaspy/slf4j-api.jar
 
+      # IMPORTANT: SchemaSpy Azure AD Configuration
+      # - MUST use `-u "CloudSA"` (required by SchemaSpy parameter validator)
+      # - Authentication method is controlled by `-connprops` (Authentication=ActiveDirectoryDefault)
+      # - The username value is ignored by JDBC when Azure AD is configured
+      # - DO NOT use empty string (-u ""), which fails validation
+      # - Reference: docs/infra/components/database-documentation.md (Troubleshooting section)
+
       timeout "$SCHEMASPY_TIMEOUT_SECONDS" \
         java -jar /opt/schemaspy/schemaspy.jar \
         -t mssql17 \
         -dp /opt/schemaspy/mssql-jdbc.jar \
         -host "$SQL_SERVER" \
         -db "$actual_db_name" \
-        -u "" \
+        -u "CloudSA" \
         -connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false" \
         -norows \
         -vizjs \
