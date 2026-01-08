@@ -93,12 +93,12 @@ parse_database_config() {
 discover_schemas() {
   local db_name="$1"
 
-  echo "🔍 Discovering schemas in $db_name..."
+  echo "🔍 Discovering schemas in $db_name..." >&2
 
   local discovery_sql="infra/db/list_user_schemas.sql"
 
   if [ ! -f "$discovery_sql" ]; then
-    echo "❌ ERROR: Schema discovery script not found: $discovery_sql"
+    echo "❌ ERROR: Schema discovery script not found: $discovery_sql" >&2
     return 1
   fi
 
@@ -126,18 +126,18 @@ discover_schemas() {
 
   # Check exit code FIRST
   if [ $exit_code -ne 0 ]; then
-    echo "❌ Schema discovery failed with exit code $exit_code"
-    echo "--- Error output ---"
-    cat "$temp_error" 2>/dev/null || echo "No error log available"
-    echo "-------------------"
+    echo "❌ Schema discovery failed with exit code $exit_code" >&2
+    echo "--- Error output ---" >&2
+    cat "$temp_error" 2>/dev/null || echo "No error log available" >&2
+    echo "-------------------" >&2
     rm -f "$temp_output" "$temp_error"
     return 1
   fi
 
   # Then check for error keywords in output
   if echo "$discovered_schemas" | grep -qiE "error:|failed|exception|login"; then
-    echo "❌ Error detected in schema discovery output"
-    echo "Output: $discovered_schemas"
+    echo "❌ Error detected in schema discovery output" >&2
+    echo "Output: $discovered_schemas" >&2
     rm -f "$temp_output" "$temp_error"
     return 1
   fi
@@ -165,11 +165,11 @@ discover_schemas() {
 
   # Validate at least one schema was found
   if [ -z "$discovered_schemas" ]; then
-    echo "⚠️  WARNING: No valid user schemas discovered in database $db_name"
+    echo "⚠️  WARNING: No valid user schemas discovered in database $db_name" >&2
     return 1
   fi
 
-  echo "✅ Discovered schemas: $discovered_schemas"
+  echo "✅ Discovered schemas: $discovered_schemas" >&2
   echo "$discovered_schemas"  # Return value
 }
 
@@ -187,18 +187,6 @@ generate_database_docs() {
   # Create output directory for this database
   local db_output_dir="docs/dbs/${db_name}"
   mkdir -p "$db_output_dir"
-
-  # SchemaSpy command with Azure AD authentication (FIXES #1)
-  local schemaspy_common="-t mssql17 \
-    -dp /opt/schemaspy/mssql-jdbc.jar \
-    -host $SQL_SERVER \
-    -db $actual_db_name \
-    -connprops \"authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false\" \
-    -norows \
-    -vizjs \
-    -imageformat svg \
-    -noimplied \
-    -debug"
 
   # Create subdirectories for each schema
   for schema in $schemas; do
@@ -234,12 +222,22 @@ generate_database_docs() {
       # Set CLASSPATH for Azure AD auth
       export CLASSPATH=/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jcip-annotations.jar:/opt/schemaspy/slf4j-api.jar
 
-      eval timeout "$SCHEMASPY_TIMEOUT_SECONDS" \
+      timeout "$SCHEMASPY_TIMEOUT_SECONDS" \
         java -jar /opt/schemaspy/schemaspy.jar \
-        $schemaspy_common \
-        -o \"$db_output_dir/$schema_lower\" \
-        -s \"$schema\" \
-        -desc \"$description\"
+        -t mssql17 \
+        -dp /opt/schemaspy/mssql-jdbc.jar \
+        -host "$SQL_SERVER" \
+        -db "$actual_db_name" \
+        -u "" \
+        -connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false" \
+        -norows \
+        -vizjs \
+        -imageformat svg \
+        -noimplied \
+        -debug \
+        -o "$db_output_dir/$schema_lower" \
+        -s "$schema" \
+        -desc "$description"
     ) &
 
     schema_pids+=($!)
