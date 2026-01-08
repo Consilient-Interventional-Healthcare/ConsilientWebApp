@@ -218,13 +218,14 @@ generate_database_docs() {
     echo "📊 Starting $schema schema generation..."
 
     # Launch SchemaSpy in background with controlled concurrency
-    # IMPORTANT: Include all MSAL4J dependencies in the -dp (driver path) parameter
-    # The JDBC driver needs these JARs in its classpath to load MSAL4J
-    timeout "$SCHEMASPY_TIMEOUT_SECONDS" java -jar /opt/schemaspy/schemaspy.jar \
+    # IMPORTANT: The JDBC driver internally loads Azure-Identity when Authentication=ActiveDirectoryDefault is configured
+    # Use bash -c to ensure CLASSPATH environment variable is accessible to the Java process
+    # The Docker image has CLASSPATH pre-configured with all Azure-Identity and transitive dependencies
+    timeout "$SCHEMASPY_TIMEOUT_SECONDS" bash -c 'java -jar /opt/schemaspy/schemaspy.jar \
       -t mssql17 \
-      -dp "/opt/schemaspy/mssql-jdbc.jar:/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jcip-annotations.jar:/opt/schemaspy/slf4j-api.jar" \
-      -host "$SQL_SERVER" \
-      -db "$actual_db_name" \
+      -dp /opt/schemaspy/mssql-jdbc.jar \
+      -host "'"$SQL_SERVER"'" \
+      -db "'"$actual_db_name"'" \
       -u "CloudSA" \
       -connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false" \
       -norows \
@@ -232,9 +233,9 @@ generate_database_docs() {
       -imageformat svg \
       -noimplied \
       -debug \
-      -o "$db_output_dir/$schema_lower" \
-      -s "$schema" \
-      -desc "$description" &
+      -o "'"$db_output_dir/$schema_lower"'" \
+      -s "'"$schema"'" \
+      -desc "'"$description"'"' &
 
     schema_pids+=($!)
     schema_names+=("$schema")
