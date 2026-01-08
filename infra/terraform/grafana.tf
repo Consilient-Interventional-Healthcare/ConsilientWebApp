@@ -12,8 +12,8 @@ resource "azurerm_dashboard_grafana" "main" {
     type = "SystemAssigned"
   }
   api_key_enabled = true
-  # Network integration to subnet for private access
-  public_network_access_enabled = false
+  # Network integration - toggle via var.grafana_public_network_access
+  public_network_access_enabled = var.grafana_public_network_access
   # Add more configuration as needed
   tags = local.tags
 }

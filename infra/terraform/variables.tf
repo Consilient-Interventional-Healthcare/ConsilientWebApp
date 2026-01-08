@@ -6,6 +6,16 @@ variable "grafana_major_version" {
   type        = number
   default     = 11
 }
+
+variable "grafana_public_network_access" {
+  description = <<EOT
+Enable public network access for Grafana.
+When true, Grafana is accessible from the internet (useful for development/debugging).
+When false, Grafana is only accessible via private endpoints (recommended for production).
+EOT
+  type        = bool
+  default     = false
+}
 # Global variables for Consilient Azure Infrastructure
 
 variable "project_name" {

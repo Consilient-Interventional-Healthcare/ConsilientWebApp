@@ -58,6 +58,7 @@ Monitoring captures all application logs in one place and provides dashboards to
 - `var.loki_memory_request` - Default: "1.0Gi"
 - `var.loki_memory_limit` - Default: "2.0Gi"
 - `var.loki_retention` - Default: "30d"
+- `var.grafana_public_network_access` - Default: false (set to true for debugging access from internet)
 
 ---
 

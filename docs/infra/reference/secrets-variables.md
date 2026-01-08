@@ -33,13 +33,14 @@ Secrets are sensitive values like passwords and API keys that must be kept confi
 
 <!-- AI_WARNING: Never commit secrets to source control. Always use GitHub Secrets UI to configure. -->
 
-### GitHub Variables (13 Total)
+### GitHub Variables (14 Total)
 
 <!-- AI_TABLE: Non-sensitive configuration values used by workflows -->
 
 | Variable | Value | Used By | Purpose |
 |----------|-------|---------|---------|
 | OAUTH_ENABLED | true/false | Terraform workflow | Enable OAuth/Microsoft login (see Feature Flags below) |
+| GRAFANA_PUBLIC_NETWORK_ACCESS | true/false | Terraform workflow | Enable public access to Grafana (default: false) |
 | CONTAINER_REGISTRY | ghcr.io | All workflows | Container registry URL |
 | ACR_REGISTRY_URL | {acr}.azurecr.io | Docker workflows | Azure Container Registry |
 | API_IMAGE_NAME | consilient-api | API workflow | Docker image name |
@@ -77,6 +78,7 @@ Secrets are sensitive values like passwords and API keys that must be kept confi
 | loki_memory_request | string | "1.0Gi" | No | Loki memory request |
 | loki_memory_limit | string | "2.0Gi" | No | Loki memory limit |
 | grafana_major_version | number | 11 | No | Grafana major version |
+| grafana_public_network_access | bool | false | No | Enable public internet access to Grafana |
 | create_container_app_environment | bool | true | No | Create new CAE vs use existing |
 | existing_container_app_environment_id | string | "" | No | Existing CAE ID if using existing |
 | container_app_environment_name_template | string | "consilient-cae-{environment}" | No | CAE naming template |
@@ -221,6 +223,55 @@ cd infra/terraform
 terraform init
 terraform plan -out=tfplan
 terraform apply tfplan
+```
+
+---
+
+## Feature Flags
+
+### OAuth/Microsoft Login (OAUTH_ENABLED)
+
+OAuth/Microsoft Entra ID login is controlled by the `OAUTH_ENABLED` variable. This creates Azure AD App Registration and all required OAuth configuration in Azure App Configuration.
+
+**How it works:**
+
+| Workflow Trigger | OAuth Source | Notes |
+|------------------|--------------|-------|
+| Manual dispatch (`workflow_dispatch`) | `enable-oauth` checkbox | User selects in GitHub Actions UI |
+| Automatic (push/PR) | `vars.OAUTH_ENABLED` repository variable | Must be set to `true` |
+
+**Setup Steps:**
+
+1. **First-time setup (manual dispatch):**
+   - Go to GitHub Actions → Run workflow
+   - Check "Enable OAuth/Microsoft login"
+   - Run with Terraform `action: apply`
+   - This creates the Azure AD App Registration
+
+2. **Enable for automatic deployments:**
+   - Go to GitHub → Settings → Secrets and variables → Actions → Variables
+   - Create variable: `OAUTH_ENABLED` = `true`
+   - All subsequent push/PR triggered deployments will include OAuth
+
+**Terraform Resources Created:**
+- `azuread_application.oauth` - Azure AD App Registration
+- `azuread_service_principal.oauth` - Service Principal
+- `azuread_application_password.oauth` - Client Secret (1 year expiry)
+- `azurerm_key_vault_secret.oauth_client_secret` - Secret stored in Key Vault
+- App Configuration keys for `OAuth:Enabled`, `OAuth:ClientId`, `OAuth:Authority`, etc.
+
+**Verification:**
+
+After enabling, verify at:
+```
+GET /api/diagnostics/app-config/verify
+```
+
+Should return `oAuthEnabled: "true"` and all OAuth values as "SET".
+
+The `/settings` endpoint should return:
+```json
+{"externalLoginEnabled": true}
 ```
 
 ---
