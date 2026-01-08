@@ -31,6 +31,11 @@ on:
         description: 'Custom runner container image with sqlcmd and other tools pre-installed'
         required: true
         type: string
+      deploy-to-pages:
+        description: 'Whether to deploy generated documentation to GitHub Pages'
+        required: false
+        type: boolean
+        default: true
     secrets:
       ARM_CLIENT_ID:
         required: false
@@ -177,7 +182,7 @@ jobs:
           echo "✅ Added .nojekyll file to prevent Jekyll processing"
 
       - name: Upload to GitHub Pages
-        if: steps.process-databases.outcome == 'success' && github.event_name != 'pull_request'
+        if: steps.process-databases.outcome == 'success' && inputs.deploy-to-pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
@@ -185,7 +190,7 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        if: steps.process-databases.outcome == 'success' && github.event_name != 'pull_request'
+        if: steps.process-databases.outcome == 'success' && inputs.deploy-to-pages
         uses: actions/deploy-pages@v4
 
       - name: Generate workflow summary
