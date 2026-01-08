@@ -208,7 +208,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     environment: ${{ inputs.environment }}
-    continue-on-error: ${{ inputs.environment == 'dev' }}
+    # Job fails when health check fails (rollback is skipped for dev in the action)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
