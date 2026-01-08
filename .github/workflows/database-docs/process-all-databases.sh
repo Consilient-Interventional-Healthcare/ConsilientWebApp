@@ -223,14 +223,14 @@ generate_database_docs() {
       export CLASSPATH=/opt/schemaspy/msal4j.jar:/opt/schemaspy/oauth2-oidc-sdk.jar:/opt/schemaspy/nimbus-jose-jwt.jar:/opt/schemaspy/content-type.jar:/opt/schemaspy/lang-tag.jar:/opt/schemaspy/json-smart.jar:/opt/schemaspy/accessors-smart.jar:/opt/schemaspy/asm.jar:/opt/schemaspy/jackson-databind.jar:/opt/schemaspy/jackson-core.jar:/opt/schemaspy/jackson-annotations.jar:/opt/schemaspy/jcip-annotations.jar:/opt/schemaspy/slf4j-api.jar
 
       # IMPORTANT: SchemaSpy Azure AD Configuration
-      # - MUST use `-u "CloudSA"` (required by SchemaSpy parameter validator)
+      # - MUST use `-cp` instead of `-jar` to include MSAL4J dependencies in classpath
+      # - `java -jar` ignores CLASSPATH env var, so we use `-cp` and specify main class
       # - Connection properties MUST have escaped equals: Authentication\=ActiveDirectoryDefault
-      # - Unescaped equals signs cause "FileNotFoundException" (interpreted as file path)
-      # - The username value is ignored by JDBC when Azure AD is configured
+      # - MUST use `-u "CloudSA"` (required by SchemaSpy parameter validator)
       # - Reference: docs/infra/components/database-documentation.md (Troubleshooting section)
 
       timeout "$SCHEMASPY_TIMEOUT_SECONDS" \
-        java -jar /opt/schemaspy/schemaspy.jar \
+        java -cp /opt/schemaspy/schemaspy.jar:$CLASSPATH org.schemaspy.Main \
         -t mssql17 \
         -dp /opt/schemaspy/mssql-jdbc.jar \
         -host "$SQL_SERVER" \

@@ -741,7 +741,7 @@ SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 
 <!-- AI_CRITICAL: MUST USE CloudSA FOR AZURE AD - See details below -->
 
-### Issue: "ERROR - The following option is required: [-u | --user]" OR "FileNotFoundException: authentication=..."
+### Issue: "ERROR - The following option is required: [-u | --user]" OR "FileNotFoundException: authentication=..." OR "Failed to load MSAL4J..."
 
 **Symptom**: SchemaSpy fails with one of these errors:
 ```
@@ -754,29 +754,47 @@ ERROR - IOException
 java.io.FileNotFoundException: authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false (No such file or directory)
 ```
 
+OR:
+```
+WARN  - Connection Failure
+org.schemaspy.input.dbms.exceptions.ConnectionFailure: Failed to connect to database URL [...]
+Failed to load MSAL4J Java library for performing ActiveDirectoryDefault authentication.
+```
+
 **Root Causes**:
 1. **Missing `-u` parameter**: SchemaSpy's parameter validator requires a non-empty value for the `-u` parameter, even when using Azure AD authentication
 2. **Unescaped equals signs**: Connection properties must have equals signs escaped as `\=` so they're passed as a single argument, not interpreted as a file path
+3. **CLASSPATH not included**: Using `java -jar` ignores CLASSPATH environment variable, preventing MSAL4J libraries from being loaded
 
-**Solution**: Use `-u "CloudSA"` with properly escaped connection properties
+**Solution**: Use `-cp` instead of `-jar` to properly include CLASSPATH with MSAL4J
 
 ```bash
-# CORRECT (Azure AD with escaped equals signs):
--u "CloudSA" \
--connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false"
+# CORRECT (using -cp to include CLASSPATH with MSAL4J libraries):
+java -cp /opt/schemaspy/schemaspy.jar:$CLASSPATH org.schemaspy.Main \
+  -u "CloudSA" \
+  -connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false" \
+  ...other SchemaSpy options...
 
-# WRONG (will fail - unescaped equals signs are interpreted as file path):
--u "CloudSA" \
+# WRONG (using -jar ignores CLASSPATH, MSAL4J libraries not found):
+java -jar /opt/schemaspy/schemaspy.jar \
+  -u "CloudSA" \
+  -connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false" \
+  ...will fail with "Failed to load MSAL4J"...
+
+# ALSO WRONG (unescaped equals signs in connection properties):
 -connprops "authentication=ActiveDirectoryDefault;encrypt=true;trustServerCertificate=false"
 
-# ALSO WRONG (will fail - empty username):
+# ALSO WRONG (empty or missing username):
 -u "" \
--connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false"
-
-# ALSO WRONG (will fail - no username):
-# (no -u parameter at all)
--connprops "Authentication\=ActiveDirectoryDefault;encrypt\=true;trustServerCertificate\=false"
+# or (no -u parameter at all)
 ```
+
+**Why use `-cp` instead of `-jar`?**
+- `java -jar` mode ignores the CLASSPATH environment variable for security reasons
+- This prevents MSAL4J and its transitive dependencies from being found by the JVM
+- Using `java -cp <classpath> <main-class>` explicitly includes all necessary libraries
+- The `-cp` syntax requires specifying the main class (`org.schemaspy.Main`) explicitly
+- This is the standard way to run Java applications that need external libraries
 
 **Why "CloudSA"?**
 - SchemaSpy validates that `-u` parameter has a non-empty value during startup
@@ -785,8 +803,9 @@ java.io.FileNotFoundException: authentication=ActiveDirectoryDefault;encrypt=tru
 - "CloudSA" is a placeholder/dummy value that satisfies SchemaSpy's validation
 - The value is semantically meaningful (Microsoft's default service account) but functionally unused
 
-**Historical Context** (from git commit 0b87242):
-> "Note: -u is required by SchemaSpy but unused for Azure AD (auth happens via connprops)"
+**Historical Context**:
+- Git commit 0b87242: "Note: -u is required by SchemaSpy but unused for Azure AD (auth happens via connprops)"
+- Git commit 3d7f017: Added MSAL4J library to Docker image for Azure AD support
 
 **DO NOT attempt these variations:**
 - ❌ `-u ""`  - Empty string fails validation
