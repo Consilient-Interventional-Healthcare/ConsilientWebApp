@@ -162,6 +162,7 @@ jobs:
           MAX_CONCURRENT_SCHEMAS: 4
           environment_input: ${{ inputs.environment }}
         run: |
+          export environment_input="${environment_input}"
           chmod +x .github/workflows/database-docs/process-all-databases.sh
           .github/workflows/database-docs/process-all-databases.sh
 
