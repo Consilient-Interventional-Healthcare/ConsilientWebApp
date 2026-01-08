@@ -53,7 +53,7 @@ jobs:
   # Job 3: Discover databases
   discover-databases:
     name: Discover Databases
-    needs: [initialize-workflow, build-runner-image]
+    needs: [initialize-workflow]
     runs-on: ubuntu-latest
     outputs:
       database_configs: ${{ steps.discover.outputs.database_configs }}
@@ -73,7 +73,7 @@ jobs:
   # Job 4: Get Terraform outputs (read-only, no apply)
   get-terraform-outputs:
     name: Read Terraform State
-    needs: [initialize-workflow, build-runner-image]
+    needs: [initialize-workflow]
     runs-on: ubuntu-latest
     outputs:
       sql_server_fqdn: ${{ steps.read-outputs.outputs.sql_server_fqdn }}
