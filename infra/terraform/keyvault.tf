@@ -109,7 +109,7 @@ resource "azurerm_key_vault_secret" "jwt_signing_secret" {
 # Grafana Loki URL
 resource "azurerm_key_vault_secret" "grafana_loki_url" {
   name         = "grafana-loki-url"
-  value        = "http://${azurerm_container_app.loki.ingress[0].fqdn}"
+  value        = "https://${azurerm_container_app.loki.ingress[0].fqdn}"
   key_vault_id = azurerm_key_vault.main.id
 
   depends_on = [
