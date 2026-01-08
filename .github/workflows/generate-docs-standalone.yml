@@ -16,7 +16,7 @@ permissions:
   contents: read
   id-token: write
   pages: write
-  packages: read
+  packages: write
 
 jobs:
   # Job 1: Initialize (get runner image, set environment)
@@ -40,10 +40,20 @@ jobs:
           environment: ${{ inputs.environment }}
           container_registry: ${{ vars.CONTAINER_REGISTRY }}
 
-  # Job 2: Discover databases
+  # Job 2: Build runner image (check and conditionally build Docker image)
+  build-runner-image:
+    name: Build Runner Image
+    needs: [initialize-workflow]
+    uses: ./.github/workflows/build-runner-image.yml
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+
+  # Job 3: Discover databases
   discover-databases:
     name: Discover Databases
-    needs: [initialize-workflow]
+    needs: [initialize-workflow, build-runner-image]
     runs-on: ubuntu-latest
     outputs:
       database_configs: ${{ steps.discover.outputs.database_configs }}
@@ -60,10 +70,10 @@ jobs:
         with:
           scripts_path: 'src/Databases'
 
-  # Job 3: Get Terraform outputs (read-only, no apply)
+  # Job 4: Get Terraform outputs (read-only, no apply)
   get-terraform-outputs:
     name: Read Terraform State
-    needs: [initialize-workflow]
+    needs: [initialize-workflow, build-runner-image]
     runs-on: ubuntu-latest
     outputs:
       sql_server_fqdn: ${{ steps.read-outputs.outputs.sql_server_fqdn }}
@@ -121,10 +131,10 @@ jobs:
           echo "sql_server_fqdn=${SQL_SERVER_FQDN}" >> $GITHUB_OUTPUT
           echo "✅ SQL Server FQDN: ${SQL_SERVER_FQDN}"
 
-  # Job 4: Generate documentation
+  # Job 5: Generate documentation
   generate-db-docs:
     name: Generate Documentation
-    needs: [initialize-workflow, discover-databases, get-terraform-outputs]
+    needs: [initialize-workflow, build-runner-image, discover-databases, get-terraform-outputs]
     if: needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/database-docs.yml
     with:
