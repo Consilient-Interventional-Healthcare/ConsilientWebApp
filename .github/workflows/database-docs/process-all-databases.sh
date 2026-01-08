@@ -40,6 +40,48 @@ export environment_input
 # Initialize tracking
 > /tmp/database_info.txt
 
+#################################################
+# Extract database names if not already provided
+#################################################
+if [ -z "$DATABASES_JSON" ]; then
+  echo "📋 Extracting database names from configs..." >&2
+
+  CONFIGS="${DATABASE_CONFIGS}"
+
+  # Handle empty or invalid configs
+  if [ -z "$CONFIGS" ] || [ "$CONFIGS" = "{}" ] || [ "$CONFIGS" = "[]" ]; then
+    echo "✅ No databases to process, exiting gracefully"
+    echo "DATABASES_JSON=[]" >> $GITHUB_ENV
+    echo "DATABASE_COUNT=0" >> $GITHUB_ENV
+    exit 0
+  fi
+
+  # Extract database names (keys) from the config object
+  DATABASES_JSON=$(echo "$CONFIGS" | jq -c 'keys' 2>/dev/null || echo "[]")
+
+  # Validate we have databases
+  if [ -z "$DATABASES_JSON" ] || [ "$DATABASES_JSON" = "[]" ]; then
+    echo "✅ No databases to process, exiting gracefully"
+    echo "DATABASES_JSON=[]" >> $GITHUB_ENV
+    echo "DATABASE_COUNT=0" >> $GITHUB_ENV
+    exit 0
+  fi
+
+  echo "✅ Extracted database names: $DATABASES_JSON" >&2
+else
+  echo "📋 Using provided DATABASES_JSON" >&2
+fi
+
+# Export variables for downstream GitHub Actions steps
+echo "DATABASES_JSON=$DATABASES_JSON" >> $GITHUB_ENV
+
+# Count databases and export
+DB_COUNT=$(echo "$DATABASES_JSON" | jq -r 'length')
+echo "DATABASE_COUNT=$DB_COUNT" >> $GITHUB_ENV
+
+echo "✅ Initialized $DB_COUNT database(s) for processing" >&2
+echo "$DATABASES_JSON" | jq -r '.[]' | sed 's/^/  - /' >&2
+
 # Parse database list
 DATABASES_ARRAY=$(echo "$DATABASES_JSON" | jq -r '.[]')
 

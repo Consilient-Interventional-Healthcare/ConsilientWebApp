@@ -64,36 +64,8 @@ env:
   MAX_CONCURRENT_SCHEMAS: 4
 
 jobs:
-  extract-databases:
-    name: Extract Database Names
-    runs-on: ubuntu-latest
-    outputs:
-      databases: ${{ steps.extract.outputs.databases }}
-    steps:
-      - name: Extract database names from config object
-        id: extract
-        run: |
-          set -e
-
-          CONFIGS='${{ inputs.database-configs }}'
-
-          # Handle empty or invalid configs
-          if [ -z "$CONFIGS" ] || [ "$CONFIGS" = "{}" ] || [ "$CONFIGS" = "[]" ]; then
-            echo "databases=[]" >> $GITHUB_OUTPUT
-            echo "✅ No databases to extract"
-            exit 0
-          fi
-
-          # Extract database names (keys) from the config object
-          DB_NAMES=$(echo "$CONFIGS" | jq -c 'keys' 2>/dev/null || echo "[]")
-          echo "databases=$DB_NAMES" >> $GITHUB_OUTPUT
-
-          echo "✅ Extracted database names: $DB_NAMES"
-
-  generate-all-db-docs:
-    name: Generate Docs for All Databases
-    needs: [extract-databases]
-    if: needs.extract-databases.outputs.databases != '[]'
+  generate-database-documentation:
+    name: Generate Database Schema Documentation
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.runner_image }}
@@ -108,41 +80,18 @@ jobs:
       packages: read
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Initialize database list
-        id: init-databases
-        run: |
-          set -e
-
-          DATABASES='${{ needs.extract-databases.outputs.databases }}'
-
-          # Validate we have databases
-          if [ -z "$DATABASES" ] || [ "$DATABASES" = "[]" ]; then
-            echo "❌ ERROR: No databases to process"
-            exit 1
-          fi
-
-          # Export for use in subsequent steps
-          echo "DATABASES_JSON=$DATABASES" >> $GITHUB_ENV
-
-          # Count databases
-          DB_COUNT=$(echo "$DATABASES" | jq -r 'length')
-          echo "DATABASE_COUNT=$DB_COUNT" >> $GITHUB_ENV
-
-          echo "✅ Initialized $DB_COUNT database(s) for processing"
-          echo "$DATABASES" | jq -r '.[]' | sed 's/^/  - /'
-
-      - name: Set up Java
+      - name: Install Java 17
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "17"
 
-      - name: Login to Azure (OIDC + act fallback)
+      - name: Authenticate with Azure
         uses: ./.github/actions/azure-login
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
@@ -150,11 +99,10 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
 
-      - name: Process all databases
+      - name: Generate schema documentation with SchemaSpy
         id: process-databases
         shell: bash
         env:
-          DATABASES_JSON: ${{ env.DATABASES_JSON }}
           SQL_SERVER: ${{ inputs.azure-sql-server-fqdn }}
           DATABASE_CONFIGS: ${{ inputs.database-configs }}
           SCHEMA_DISCOVERY_TIMEOUT_SECONDS: 120
@@ -166,7 +114,7 @@ jobs:
           chmod +x .github/workflows/database-docs/process-all-databases.sh
           .github/workflows/database-docs/process-all-databases.sh
 
-      - name: Create unified index page
+      - name: Generate index page and configure GitHub Pages
         if: steps.process-databases.outcome == 'success'
         shell: bash
         env:
@@ -175,14 +123,10 @@ jobs:
         run: |
           chmod +x .github/workflows/database-docs/generate-index.sh
           .github/workflows/database-docs/generate-index.sh
-
-      - name: Add .nojekyll file for GitHub Pages
-        if: steps.process-databases.outcome == 'success'
-        run: |
           touch docs/.nojekyll
           echo "✅ Added .nojekyll file to prevent Jekyll processing"
 
-      - name: Upload to GitHub Pages
+      - name: Prepare artifact for GitHub Pages
         if: steps.process-databases.outcome == 'success' && inputs.deploy-to-pages
         uses: actions/upload-pages-artifact@v3
         with:
@@ -194,13 +138,13 @@ jobs:
         if: steps.process-databases.outcome == 'success' && inputs.deploy-to-pages
         uses: actions/deploy-pages@v4
 
-      - name: Check processing result
+      - name: Report processing failure
         if: steps.process-databases.outcome == 'failure'
         run: |
           echo "❌ Database processing failed"
           exit 1
 
-      - name: Generate workflow summary
+      - name: Report workflow completion status
         if: always()
         run: |
           echo "## 📚 Database Documentation Generated" >> $GITHUB_STEP_SUMMARY
