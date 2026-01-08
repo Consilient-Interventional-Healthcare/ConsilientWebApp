@@ -26,3 +26,62 @@ resource "azurerm_role_assignment" "grafana_admins" {
   role_definition_name = "Grafana Admin"
   principal_id         = each.value
 }
+
+# --------------------------------------------------------------------------
+# GRAFANA DATASOURCES
+# --------------------------------------------------------------------------
+# Azure Managed Grafana datasources must be configured via the Grafana API
+# We use a null_resource with local-exec to configure datasources via Azure CLI
+
+resource "null_resource" "grafana_loki_datasource" {
+  # Re-run if Grafana or Loki changes
+  triggers = {
+    grafana_id = azurerm_dashboard_grafana.main.id
+    loki_fqdn  = azurerm_container_app.loki.ingress[0].fqdn
+  }
+
+  provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
+    command     = <<-EOT
+      # Configure Loki datasource in Azure Managed Grafana
+      # Using az grafana data-source create command
+
+      az grafana data-source create \
+        --name "${azurerm_dashboard_grafana.main.name}" \
+        --resource-group "${azurerm_resource_group.main.name}" \
+        --definition '{
+          "name": "Loki",
+          "type": "loki",
+          "access": "proxy",
+          "url": "https://${azurerm_container_app.loki.ingress[0].fqdn}",
+          "isDefault": true,
+          "jsonData": {
+            "maxLines": 1000,
+            "timeout": "60"
+          }
+        }' || echo "Datasource may already exist, attempting update..."
+
+      # If create fails (datasource exists), try to update
+      az grafana data-source update \
+        --name "${azurerm_dashboard_grafana.main.name}" \
+        --resource-group "${azurerm_resource_group.main.name}" \
+        --data-source "Loki" \
+        --definition '{
+          "name": "Loki",
+          "type": "loki",
+          "access": "proxy",
+          "url": "https://${azurerm_container_app.loki.ingress[0].fqdn}",
+          "isDefault": true,
+          "jsonData": {
+            "maxLines": 1000,
+            "timeout": "60"
+          }
+        }' 2>/dev/null || true
+    EOT
+  }
+
+  depends_on = [
+    azurerm_dashboard_grafana.main,
+    azurerm_container_app.loki
+  ]
+}

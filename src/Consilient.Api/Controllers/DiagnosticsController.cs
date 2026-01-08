@@ -1,6 +1,9 @@
+using System.Text.Json;
 using Consilient.Infrastructure.Logging.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Serilog;
+using Serilog.Events;
 
 namespace Consilient.Api.Controllers
 {
@@ -10,6 +13,7 @@ namespace Consilient.Api.Controllers
     {
         private readonly LoggingConfiguration? _loggingConfiguration;
         private readonly IConfiguration _configuration;
+        private readonly Serilog.ILogger _logger;
 
         public DiagnosticsController(
             LoggingConfiguration? loggingConfiguration,
@@ -17,6 +21,7 @@ namespace Consilient.Api.Controllers
         {
             _loggingConfiguration = loggingConfiguration;
             _configuration = configuration;
+            _logger = Log.Logger;
         }
 
         [HttpGet("loki-config")]
@@ -122,6 +127,122 @@ namespace Consilient.Api.Controllers
             };
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Writes a test log entry to Loki via Serilog and then queries Loki to verify it was received.
+        /// Uses Fatal level to bypass any log level filtering.
+        /// </summary>
+        [HttpGet("test-loki-logging")]
+        [AllowAnonymous]  // TEMPORARY - Remove in production or add auth
+        public async Task<IActionResult> TestLokiLogging()
+        {
+            var lokiUrl = _loggingConfiguration?.GrafanaLoki?.Url;
+            if (string.IsNullOrEmpty(lokiUrl))
+            {
+                return BadRequest(new { Error = "Loki URL not configured" });
+            }
+
+            // Generate a unique marker so we can find this specific log entry
+            var testMarker = $"LOKI_TEST_{Guid.NewGuid():N}";
+            var timestamp = DateTimeOffset.UtcNow;
+
+            // Write the test log using Fatal level to ensure it bypasses any filtering
+            _logger.Write(LogEventLevel.Fatal,
+                "Loki connectivity test: {TestMarker} at {Timestamp}",
+                testMarker,
+                timestamp);
+
+            // Give Serilog's batch sink time to flush (it batches logs before sending)
+            await Task.Delay(3000);
+
+            // Now query Loki to see if the log entry appears
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+
+            var results = new List<object>();
+            var foundInLoki = false;
+            string? lokiError = null;
+
+            try
+            {
+                // Query Loki for recent logs with our test marker
+                // Use a time range from 5 minutes ago to now
+                var startNs = (timestamp.AddMinutes(-5).ToUnixTimeMilliseconds() * 1_000_000).ToString();
+                var endNs = (DateTimeOffset.UtcNow.AddMinutes(1).ToUnixTimeMilliseconds() * 1_000_000).ToString();
+
+                // Query for any logs containing our marker
+                var query = Uri.EscapeDataString($"{{app=~\".+\"}} |= \"{testMarker}\"");
+                var lokiQueryUrl = $"{lokiUrl.TrimEnd('/')}/loki/api/v1/query_range?query={query}&start={startNs}&end={endNs}&limit=10";
+
+                var response = await client.GetAsync(lokiQueryUrl);
+                var responseBody = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Parse the response to check if we found matches
+                    using var doc = JsonDocument.Parse(responseBody);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("data", out var data) &&
+                        data.TryGetProperty("result", out var result) &&
+                        result.GetArrayLength() > 0)
+                    {
+                        foundInLoki = true;
+                        foreach (var stream in result.EnumerateArray())
+                        {
+                            if (stream.TryGetProperty("values", out var values))
+                            {
+                                foreach (var value in values.EnumerateArray())
+                                {
+                                    if (value.GetArrayLength() >= 2)
+                                    {
+                                        results.Add(new
+                                        {
+                                            Timestamp = value[0].GetString(),
+                                            Message = value[1].GetString()
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    lokiError = $"Loki query failed with status {response.StatusCode}: {responseBody}";
+                }
+            }
+            catch (Exception ex)
+            {
+                lokiError = $"Error querying Loki: {ex.Message}";
+            }
+
+            // Also check what labels exist in Loki
+            string? labelsResponse = null;
+            try
+            {
+                var labelsUrl = $"{lokiUrl.TrimEnd('/')}/loki/api/v1/labels";
+                var response = await client.GetAsync(labelsUrl);
+                labelsResponse = await response.Content.ReadAsStringAsync();
+            }
+            catch (Exception ex)
+            {
+                labelsResponse = $"Error: {ex.Message}";
+            }
+
+            return Ok(new
+            {
+                TestMarker = testMarker,
+                LogWrittenAt = timestamp,
+                LokiUrl = lokiUrl,
+                FoundInLoki = foundInLoki,
+                MatchingEntries = results,
+                LokiLabels = labelsResponse,
+                LokiError = lokiError,
+                Note = foundInLoki
+                    ? "SUCCESS: Log entry was written to Loki and retrieved successfully!"
+                    : "Log entry was written via Serilog but not yet found in Loki. This could mean: (1) The Serilog Loki sink hasn't flushed yet, (2) The Loki URL in config doesn't match where logs are being sent, or (3) There's a network/auth issue between the API and Loki."
+            });
         }
     }
 }
