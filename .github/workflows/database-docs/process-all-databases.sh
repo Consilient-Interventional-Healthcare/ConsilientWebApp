@@ -29,6 +29,14 @@
 set -e
 set -o pipefail
 
+# Debug: Check environment variables
+echo "DEBUG: environment_input='${environment_input}'"
+if [ -z "${environment_input}" ]; then
+  echo "⚠️  WARNING: environment_input is empty, using default 'dev'"
+  environment_input="dev"
+fi
+export environment_input
+
 # Initialize tracking
 > /tmp/database_info.txt
 
@@ -47,6 +55,7 @@ parse_database_config() {
   local environment="${environment_input}"
 
   echo "📋 Parsing configuration for $db_name"
+  echo "   DEBUG: environment_input='${environment_input}', environment='${environment}'"
 
   local actual_db_name="$db_name"
 

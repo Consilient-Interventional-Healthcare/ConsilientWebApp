@@ -194,6 +194,12 @@ jobs:
         if: steps.process-databases.outcome == 'success' && inputs.deploy-to-pages
         uses: actions/deploy-pages@v4
 
+      - name: Check processing result
+        if: steps.process-databases.outcome == 'failure'
+        run: |
+          echo "❌ Database processing failed"
+          exit 1
+
       - name: Generate workflow summary
         if: always()
         run: |
