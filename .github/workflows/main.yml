@@ -40,16 +40,6 @@ on:
         required: false
         type: boolean
         default: false
-      run-health-checks:
-        description: 'Run health checks after deployment'
-        required: false
-        type: boolean
-        default: true
-      run-db-docs:
-        description: 'Run database documentation generation'
-        required: false
-        type: boolean
-        default: true
       run-api-deployment:
         description: 'Run .NET API deployment'
         required: false
@@ -124,6 +114,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       infrastructure: ${{ steps.filter.outputs.infrastructure }}
+      databases: ${{ steps.filter.outputs.databases }}
+      dotnet: ${{ steps.filter.outputs.dotnet }}
+      react: ${{ steps.filter.outputs.react }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -133,6 +126,14 @@ jobs:
             infrastructure:
               - 'infra/terraform/**/*.tf'
               - 'infra/terraform/**/*.tfvars'
+            databases:
+              - 'src/Databases/**'
+            dotnet:
+              - 'src/Consilient.*/**'
+              - '!src/Consilient.WebApp/**'
+              - '!src/Consilient.WebApp2/**'
+            react:
+              - 'src/Consilient.WebApp2/**'
 
   build-runner-image:
     name: Image Runner
@@ -246,20 +247,12 @@ jobs:
           echo "- Resource Group: \`${{ needs.terraform.outputs.resource_group_name || needs.terraform-outputs.outputs.resource_group_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- SQL Server: \`${{ needs.terraform.outputs.sql_server_fqdn || needs.terraform-outputs.outputs.sql_server_fqdn }}\`" >> $GITHUB_STEP_SUMMARY
 
-  # ============================================================================
-  # DATABASE MANAGEMENT: Deployment and Documentation
-  # ============================================================================
-  # Database discovery is now part of initialize-workflow job.
-  # This section handles:
-  # 1. deploy-databases: Deploys discovered databases
-  # 2. generate-db-docs: Generates documentation for configured databases
-  # ============================================================================
-
   deploy-databases:
     name: Deploy Databases
-    needs: [initialize-workflow, terraform-consolidation, build-runner-image, warm-docker-cache]
+    needs: [initialize-workflow, detect-changes, terraform-consolidation, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-databases != false) &&
+      (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.databases == 'true') &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       needs.terraform-consolidation.result == 'success' &&
@@ -274,36 +267,13 @@ jobs:
       runner_image: ${{ needs.build-runner-image.outputs.image_tag }}
     secrets: inherit
 
-  # generate-db-docs:
-  #   name: Database Documentation
-  #   # NOTE: Database documentation is run separately via generate-docs-standalone.yml
-  #   # which builds its own schemaspy-runner image. Uncomment this section if you want
-  #   # to integrate db docs into the main pipeline (requires adding build-schemaspy-image job).
-  #   needs: [initialize-workflow, deploy-databases, terraform-consolidation]
-  #   if: |
-  #     (github.event_name != 'workflow_dispatch' || inputs.run-db-docs != false) &&
-  #     (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
-  #     always() &&
-  #     needs.initialize-workflow.result == 'success' &&
-  #     needs.terraform-consolidation.result == 'success' &&
-  #     needs.initialize-workflow.outputs.database_count != '0'
-  #   uses: ./.github/workflows/database-docs.yml
-  #   with:
-  #     environment: ${{ needs.initialize-workflow.outputs.environment }}
-  #     database-configs: ${{ needs.initialize-workflow.outputs.database_configs }}
-  #     azure-sql-server-fqdn: ${{ needs.terraform-consolidation.outputs.sql_server_fqdn }}
-  #     runner_image: <schemaspy_runner_image from build-schemaspy-image job>
-  #   secrets: inherit
-
-  # ============================================================================
-  # END DATABASE MANAGEMENT SECTION
-  # ============================================================================
 
   deploy-dotnet-apps:
     name: Deploy API
-    needs: [initialize-workflow, terraform-consolidation, deploy-databases, warm-docker-cache]
+    needs: [initialize-workflow, detect-changes, terraform-consolidation, deploy-databases, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
+      (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.dotnet == 'true') &&
       always() &&
       needs.terraform-consolidation.result == 'success' &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
@@ -320,9 +290,10 @@ jobs:
 
   deploy-react-apps:
     name: Deploy React
-    needs: [initialize-workflow, terraform-consolidation, deploy-databases, build-runner-image, warm-docker-cache]
+    needs: [initialize-workflow, detect-changes, terraform-consolidation, deploy-databases, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
+      (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.react == 'true') &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       needs.terraform-consolidation.result == 'success' &&
@@ -339,167 +310,31 @@ jobs:
       cache_image_ref: ${{ format('{0}/consilient-react:latest', needs.terraform-consolidation.outputs.acr_registry_url) }}
     secrets: inherit
 
-  # Determine what changed to optimize workflow execution
-#   detect-changes:
-#     name: Detect Changes
-#     runs-on: ubuntu-latest
-#     needs: [setup-prerequisites]
-#     outputs:
-#       infrastructure: ${{ steps.filter.outputs.infrastructure }}
-#       database: ${{ steps.filter.outputs.database }}
-#       frontend: ${{ steps.filter.outputs.frontend }}
-#       backend: ${{ steps.filter.outputs.backend }}
-#       workflows: ${{ steps.filter.outputs.workflows }}
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
+  # ============================================================================
+  # WORKFLOW SUMMARY
+  # ============================================================================
 
-#       - name: Detect file changes
-#         uses: dorny/paths-filter@v3
-#         id: filter
-#         with:
-#           filters: |
-#             infrastructure:
-#               - 'infra/**'
-#               - 'terraform/**'
-#             database:
-#               - 'src/Databases/**/*.sql'
-#               - 'infra/db/**'
-#             frontend:
-#               - 'src/client/**'
-#               - 'src/web/**'
-#               - '**/package.json'
-#               - '**/package-lock.json'
-#             backend:
-#               - 'src/server/**'
-#               - 'src/api/**'
-#               - '**/*.csproj'
-#               - '**/*.cs'
-#             workflows:
-#               - '.github/workflows/**'
-
-#   # Build and test frontend
-#   build-frontend:
-#     name: Build Frontend
-#     needs: [setup-prerequisites, detect-changes]
-#     if: needs.detect-changes.outputs.frontend == 'true'
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-
-#       - name: Setup Node.js
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 20
-#           cache: 'npm'
-#           cache-dependency-path: '**/package-lock.json'
-
-#       - name: Install dependencies
-#         run: |
-#           if [ -f "package-lock.json" ]; then
-#             npm ci
-#           elif [ -f "package.json" ]; then
-#             npm install
-#           fi
-
-#       - name: Build frontend
-#         run: |
-#           if [ -f "package.json" ] && grep -q '"build"' package.json; then
-#             npm run build
-#           else
-#             echo "No build script found, skipping"
-#           fi
-
-#       - name: Run tests
-#         run: |
-#           if [ -f "package.json" ] && grep -q '"test"' package.json; then
-#             npm test -- --passWithNoTests || echo "No tests found"
-#           else
-#             echo "No test script found, skipping"
-#           fi
-
-#   # Build and test backend
-#   build-backend:
-#     name: Build Backend
-#     needs: [setup-prerequisites, detect-changes]
-#     if: needs.detect-changes.outputs.backend == 'true'
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-
-#       - name: Setup .NET
-#         uses: actions/setup-dotnet@v4
-#         with:
-#           dotnet-version: '8.x'
-
-#       - name: Restore dependencies
-#         run: |
-#           if ls *.sln 1> /dev/null 2>&1; then
-#             dotnet restore
-#           elif ls **/*.csproj 1> /dev/null 2>&1; then
-#             dotnet restore **/*.csproj
-#           else
-#             echo "No .NET project files found"
-#           fi
-
-#       - name: Build backend
-#         run: |
-#           if ls *.sln 1> /dev/null 2>&1; then
-#             dotnet build --no-restore --configuration Release
-#           elif ls **/*.csproj 1> /dev/null 2>&1; then
-#             dotnet build **/*.csproj --no-restore --configuration Release
-#           else
-#             echo "No .NET project files found"
-#           fi
-
-#       - name: Run tests
-#         run: |
-#           if ls **/*Tests.csproj 1> /dev/null 2>&1 || ls **/*Test.csproj 1> /dev/null 2>&1; then
-#             dotnet test --no-build --configuration Release --verbosity normal
-#           else
-#             echo "No test projects found"
-#           fi
-
-#   # Summary job - always runs
-#   workflow-summary:
-#     name: Workflow Summary
-#     runs-on: ubuntu-latest
-#     needs: [setup-prerequisites, detect-changes, build-frontend, build-backend]
-#     if: always()
-#     steps:
-#       - name: Create workflow summary
-#         run: |
-#           echo "# Workflow Execution Summary 🚀" >> $GITHUB_STEP_SUMMARY
-#           echo "" >> $GITHUB_STEP_SUMMARY
-#           echo "## Run Information" >> $GITHUB_STEP_SUMMARY
-#           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- **Event**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-#           echo "" >> $GITHUB_STEP_SUMMARY
-
-#           echo "## Changes Detected" >> $GITHUB_STEP_SUMMARY
-#           echo "- Infrastructure: ${{ needs.detect-changes.outputs.infrastructure == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- Database: ${{ needs.detect-changes.outputs.database == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- Frontend: ${{ needs.detect-changes.outputs.frontend == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- Backend: ${{ needs.detect-changes.outputs.backend == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- Workflows: ${{ needs.detect-changes.outputs.workflows == 'true' && '✅ Yes' || '⬜ No' }}" >> $GITHUB_STEP_SUMMARY
-#           echo "" >> $GITHUB_STEP_SUMMARY
-
-#           echo "## Job Results" >> $GITHUB_STEP_SUMMARY
-#           echo "- Setup Prerequisites: ${{ needs.setup-prerequisites.result == 'success' && '✅ Success' || needs.setup-prerequisites.result == 'skipped' && '⏭️ Skipped' || needs.setup-prerequisites.result == 'failure' && '❌ Failed' || '⬜ Not Run' }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- Build Frontend: ${{ needs.build-frontend.result == 'success' && '✅ Success' || needs.build-frontend.result == 'skipped' && '⏭️ Skipped' || needs.build-frontend.result == 'failure' && '❌ Failed' || '⬜ Not Run' }}" >> $GITHUB_STEP_SUMMARY
-#           echo "- Build Backend: ${{ needs.build-backend.result == 'success' && '✅ Success' || needs.build-backend.result == 'skipped' && '⏭️ Skipped' || needs.build-backend.result == 'failure' && '❌ Failed' || '⬜ Not Run' }}" >> $GITHUB_STEP_SUMMARY
-#           echo "" >> $GITHUB_STEP_SUMMARY
-
-#           # Overall status
-#           if [ "${{ needs.build-frontend.result }}" == "failure" ] || [ "${{ needs.build-backend.result }}" == "failure" ]; then
-#             echo "## ❌ Overall Status: Failed" >> $GITHUB_STEP_SUMMARY
-#             exit 1
-#           elif [ "${{ needs.build-frontend.result }}" == "cancelled" ] || [ "${{ needs.build-backend.result }}" == "cancelled" ]; then
-#             echo "## ⚠️ Overall Status: Cancelled" >> $GITHUB_STEP_SUMMARY
-#           else
-#             echo "## ✅ Overall Status: Success" >> $GITHUB_STEP_SUMMARY
-#           fi
+  workflow-summary:
+    name: Workflow Summary
+    needs: [detect-changes, terraform, terraform-outputs, deploy-databases, deploy-dotnet-apps, deploy-react-apps]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "## Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Detect Changes | ${{ needs.detect-changes.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Terraform | ${{ needs.terraform.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Terraform Outputs | ${{ needs.terraform-outputs.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Databases | ${{ needs.deploy-databases.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy API | ${{ needs.deploy-dotnet-apps.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy React | ${{ needs.deploy-react-apps.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Changes Detected" >> $GITHUB_STEP_SUMMARY
+          echo "- Infrastructure: ${{ needs.detect-changes.outputs.infrastructure }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Databases: ${{ needs.detect-changes.outputs.databases }}" >> $GITHUB_STEP_SUMMARY
+          echo "- .NET API: ${{ needs.detect-changes.outputs.dotnet }}" >> $GITHUB_STEP_SUMMARY
+          echo "- React App: ${{ needs.detect-changes.outputs.react }}" >> $GITHUB_STEP_SUMMARY
