@@ -474,11 +474,10 @@ resource "azurerm_app_configuration_key" "oauth_enabled" {
 
 # OAuth Provider Name
 resource "azurerm_app_configuration_key" "oauth_provider_name" {
-  count                  = var.oauth_enabled ? 1 : 0
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ProviderName"
   label                  = var.environment
-  value                  = "microsoft"
+  value                  = "Microsoft"
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -492,7 +491,6 @@ resource "azurerm_app_configuration_key" "oauth_provider_name" {
 
 # OAuth Authority (Microsoft login URL)
 resource "azurerm_app_configuration_key" "oauth_authority" {
-  count                  = var.oauth_enabled ? 1 : 0
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:Authority"
   label                  = var.environment
@@ -508,13 +506,12 @@ resource "azurerm_app_configuration_key" "oauth_authority" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
-# OAuth Client ID (from Azure AD App Registration)
+# OAuth Client ID (from Azure AD App Registration, or placeholder if not configured)
 resource "azurerm_app_configuration_key" "oauth_client_id" {
-  count                  = var.oauth_enabled ? 1 : 0
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ClientId"
   label                  = var.environment
-  value                  = azuread_application.oauth[0].client_id
+  value                  = var.oauth_enabled ? azuread_application.oauth[0].client_id : "not-configured"
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -523,15 +520,11 @@ resource "azurerm_app_configuration_key" "oauth_client_id" {
     category    = "authentication"
   }
 
-  depends_on = [
-    azurerm_role_assignment.terraform_appconfig_owner,
-    azuread_application.oauth
-  ]
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
 # OAuth Tenant ID
 resource "azurerm_app_configuration_key" "oauth_tenant_id" {
-  count                  = var.oauth_enabled ? 1 : 0
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:TenantId"
   label                  = var.environment
@@ -547,13 +540,12 @@ resource "azurerm_app_configuration_key" "oauth_tenant_id" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
-# OAuth Scopes
+# OAuth Scopes (comma-separated string for .NET to parse)
 resource "azurerm_app_configuration_key" "oauth_scopes" {
-  count                  = var.oauth_enabled ? 1 : 0
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:Scopes"
   label                  = var.environment
-  value                  = "openid,profile,email"
+  value                  = "openid profile email"
   type                   = "kv"
   content_type           = "text/plain"
 
