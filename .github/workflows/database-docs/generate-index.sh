@@ -88,10 +88,16 @@ fi
 mkdir -p docs/dbs
 cp "$TEMPLATE_PATH" docs/dbs/index.html
 
+# Escape special characters in replacement strings for sed
+CURRENT_DATE_ESCAPED_SED=$(printf '%s\n' "$CURRENT_DATE_ESCAPED" | sed -e 's/[\/&]/\\&/g')
+DATABASE_COUNT_SED=$(printf '%s\n' "$DATABASE_COUNT" | sed -e 's/[\/&]/\\&/g')
+ENVIRONMENT_ESCAPED_SED=$(printf '%s\n' "$ENVIRONMENT_ESCAPED" | sed -e 's/[\/&]/\\&/g')
+DATABASE_CARDS_SED=$(printf '%s\n' "$DATABASE_CARDS" | sed -e 's/[\/&]/\\&/g')
+
 # Replace placeholders using sed
-sed -i "s|{{CURRENT_DATE}}|$CURRENT_DATE_ESCAPED|g" docs/dbs/index.html
-sed -i "s|{{DATABASE_COUNT}}|$DATABASE_COUNT|g" docs/dbs/index.html
-sed -i "s|{{ENVIRONMENT}}|$ENVIRONMENT_ESCAPED|g" docs/dbs/index.html
-sed -i "s|{{DATABASE_CARDS}}|$DATABASE_CARDS|g" docs/dbs/index.html
+sed -i "s|{{CURRENT_DATE}}|$CURRENT_DATE_ESCAPED_SED|g" docs/dbs/index.html
+sed -i "s|{{DATABASE_COUNT}}|$DATABASE_COUNT_SED|g" docs/dbs/index.html
+sed -i "s|{{ENVIRONMENT}}|$ENVIRONMENT_ESCAPED_SED|g" docs/dbs/index.html
+sed -i "s|{{DATABASE_CARDS}}|$DATABASE_CARDS_SED|g" docs/dbs/index.html
 
 echo "✅ Unified index page created at docs/dbs/index.html"
