@@ -122,6 +122,7 @@ jobs:
 
   detect-changes:
     name: Detect Changes
+    needs: [initialize-workflow]
     runs-on: ubuntu-latest
     outputs:
       infrastructure: ${{ steps.filter.outputs.infrastructure }}
@@ -137,7 +138,7 @@ jobs:
 
   build-runner-image:
     name: Image Runner
-    needs: [initialize-workflow]
+    needs: [detect-changes]
     uses: ./.github/workflows/build-runner-image.yml
     permissions:
       contents: read
@@ -189,10 +190,11 @@ jobs:
   terraform:
     name: Terraform
     needs: [initialize-workflow, build-runner-image, warm-docker-cache, detect-changes]
-    # Run on push events, or when explicitly enabled in workflow_dispatch
+    # Run when: changes detected OR manual dispatch with run-terraform enabled
     # Note: always() is required to evaluate this condition when warm-docker-cache is skipped (if: false)
     if: |
       always() &&
+      (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.infrastructure == 'true') &&
       (github.event_name != 'workflow_dispatch' || inputs.run-terraform != false) &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
@@ -203,8 +205,46 @@ jobs:
       enable-debug: ${{ inputs.enable-debug || false }}
       enable-oauth: ${{ inputs.enable-oauth || false }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
-      outputs-only: ${{ github.event_name != 'workflow_dispatch' && needs.detect-changes.outputs.infrastructure != 'true' }}
     secrets: inherit
+
+  terraform-outputs:
+    name: Terraform Outputs
+    needs: [initialize-workflow, detect-changes, build-runner-image]
+    # Run when: NOT manual dispatch AND no infrastructure changes detected
+    if: |
+      always() &&
+      github.event_name != 'workflow_dispatch' &&
+      needs.detect-changes.outputs.infrastructure != 'true' &&
+      needs.build-runner-image.result == 'success'
+    uses: ./.github/workflows/terraform-outputs.yml
+    with:
+      environment: ${{ needs.initialize-workflow.outputs.environment }}
+    secrets: inherit
+
+  terraform-consolidation:
+    name: Terraform Consolidation
+    needs: [terraform, terraform-outputs]
+    if: always() && (needs.terraform.result == 'success' || needs.terraform-outputs.result == 'success')
+    runs-on: ubuntu-latest
+    outputs:
+      api_app_name: ${{ needs.terraform.outputs.api_app_name || needs.terraform-outputs.outputs.api_app_name }}
+      react_app_name: ${{ needs.terraform.outputs.react_app_name || needs.terraform-outputs.outputs.react_app_name }}
+      acr_registry_url: ${{ needs.terraform.outputs.acr_registry_url || needs.terraform-outputs.outputs.acr_registry_url }}
+      resource_group_name: ${{ needs.terraform.outputs.resource_group_name || needs.terraform-outputs.outputs.resource_group_name }}
+      sql_server_fqdn: ${{ needs.terraform.outputs.sql_server_fqdn || needs.terraform-outputs.outputs.sql_server_fqdn }}
+    steps:
+      - name: Consolidate outputs
+        run: |
+          echo "### Terraform Outputs Consolidated ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Source:** ${{ needs.terraform.result == 'success' && 'terraform.yml (full)' || 'terraform-outputs.yml (lightweight)' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Outputs:**" >> $GITHUB_STEP_SUMMARY
+          echo "- API App: \`${{ needs.terraform.outputs.api_app_name || needs.terraform-outputs.outputs.api_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- React App: \`${{ needs.terraform.outputs.react_app_name || needs.terraform-outputs.outputs.react_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- ACR Registry: \`${{ needs.terraform.outputs.acr_registry_url || needs.terraform-outputs.outputs.acr_registry_url }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Resource Group: \`${{ needs.terraform.outputs.resource_group_name || needs.terraform-outputs.outputs.resource_group_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- SQL Server: \`${{ needs.terraform.outputs.sql_server_fqdn || needs.terraform-outputs.outputs.sql_server_fqdn }}\`" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
   # DATABASE MANAGEMENT: Deployment and Documentation
@@ -217,13 +257,12 @@ jobs:
 
   deploy-databases:
     name: Deploy Databases
-    needs: [initialize-workflow, terraform, build-runner-image, warm-docker-cache]
-    # Note: terraform.result must be 'success' (not skipped) because we need sql_server_fqdn output
+    needs: [initialize-workflow, terraform-consolidation, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-databases != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
-      needs.terraform.result == 'success' &&
+      needs.terraform-consolidation.result == 'success' &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped') &&
       needs.initialize-workflow.outputs.database_count != '0'
     uses: ./.github/workflows/databases.yml
@@ -231,7 +270,7 @@ jobs:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       databases: ${{ needs.initialize-workflow.outputs.database_directories }}
       recreate-database-objects: ${{ inputs.recreate-database-objects || false }}
-      azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
+      azure-sql-server-fqdn: ${{ needs.terraform-consolidation.outputs.sql_server_fqdn }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
     secrets: inherit
 
@@ -259,46 +298,44 @@ jobs:
 
   deploy-dotnet-apps:
     name: Deploy API
-    needs: [initialize-workflow, terraform, deploy-databases, build-runner-image, warm-docker-cache]
-    # Note: terraform.result must be 'success' (not skipped) because we need acr_registry_url and other outputs
+    needs: [initialize-workflow, terraform-consolidation, deploy-databases, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
-      needs.terraform.result == 'success' &&
+      needs.terraform-consolidation.result == 'success' &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/dotnet-apps.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
-      api_app_name: ${{ needs.terraform.outputs.api_app_name || format('consilient-api-{0}', needs.initialize-workflow.outputs.environment) }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
-      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      api_app_name: ${{ needs.terraform-consolidation.outputs.api_app_name || format('consilient-api-{0}', needs.initialize-workflow.outputs.environment) }}
+      acr_registry: ${{ needs.terraform-consolidation.outputs.acr_registry_url }}
+      resource_group: ${{ needs.terraform-consolidation.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
       api_image_name: 'consilient-api'
-      cache_image_ref: ${{ format('{0}/consilient-api:latest', needs.terraform.outputs.acr_registry_url) }}
+      cache_image_ref: ${{ format('{0}/consilient-api:latest', needs.terraform-consolidation.outputs.acr_registry_url) }}
     secrets: inherit
 
   deploy-react-apps:
     name: Deploy React
-    needs: [initialize-workflow, terraform, deploy-databases, build-runner-image, warm-docker-cache]
-    # Note: terraform.result must be 'success' (not skipped) because we need acr_registry_url and other outputs
+    needs: [initialize-workflow, terraform-consolidation, deploy-databases, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
-      needs.terraform.result == 'success' &&
+      needs.terraform-consolidation.result == 'success' &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/react-apps.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
-      react_app_name: ${{ needs.terraform.outputs.react_app_name || format('consilient-react-{0}', needs.initialize-workflow.outputs.environment) }}
-      acr_registry: ${{ needs.terraform.outputs.acr_registry_url }}
-      resource_group: ${{ needs.terraform.outputs.resource_group_name }}
+      react_app_name: ${{ needs.terraform-consolidation.outputs.react_app_name || format('consilient-react-{0}', needs.initialize-workflow.outputs.environment) }}
+      acr_registry: ${{ needs.terraform-consolidation.outputs.acr_registry_url }}
+      resource_group: ${{ needs.terraform-consolidation.outputs.resource_group_name }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
       react_image_name: 'consilient-react'
-      cache_image_ref: ${{ format('{0}/consilient-react:latest', needs.terraform.outputs.acr_registry_url) }}
+      cache_image_ref: ${{ format('{0}/consilient-react:latest', needs.terraform-consolidation.outputs.acr_registry_url) }}
     secrets: inherit
 
   # Determine what changed to optimize workflow execution

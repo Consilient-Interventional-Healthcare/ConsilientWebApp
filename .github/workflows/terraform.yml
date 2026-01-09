@@ -30,11 +30,6 @@ on:
         description: 'Docker image for the Terraform container'
         required: true
         type: string
-      outputs-only:
-        description: 'Skip apply, only read outputs from state (used when no TF changes detected)'
-        required: false
-        type: boolean
-        default: false
     outputs:
       api_app_name:
         description: "The name of the API App Service"
@@ -186,7 +181,6 @@ jobs:
           bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/terraform-init.sh"
 
       - name: Cache Hostname Pre-Check Results
-        if: ${{ !inputs.outputs-only }}
         id: hostname_cache
         uses: actions/cache@v3
         with:
@@ -196,7 +190,6 @@ jobs:
           restore-keys: hostname-tier-
 
       - name: Hostname Availability Pre-Check
-        if: ${{ !inputs.outputs-only }}
         id: hostname_precheck
         shell: bash
         run: |
@@ -236,7 +229,6 @@ jobs:
           echo "✅ Pre-check complete - using tier ${NAMING_TIER}"
 
       - name: Terraform Validate
-        if: ${{ !inputs.outputs-only }}
         id: validate
         shell: bash
         # Runs in ./infra/terraform (job default)
@@ -276,7 +268,6 @@ jobs:
           fi
 
       - name: Terraform Apply
-        if: ${{ !inputs.outputs-only }}
         shell: bash
         # Runs in ./infra/terraform (job default)
         run: |
@@ -402,18 +393,12 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if [ "${{ inputs.outputs-only }}" == "true" ]; then
-            echo "### Terraform Outputs (from state) ✅" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Mode:** Outputs-only (no infrastructure changes detected)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### Terraform Workflow Complete ✅" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "### Terraform Workflow Complete ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ steps.outputs.outputs.api_app_name }}" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Resources:**" >> $GITHUB_STEP_SUMMARY
+            echo "**Deployed Resources:**" >> $GITHUB_STEP_SUMMARY
             echo "- **API App:** \`${{ steps.outputs.outputs.api_app_name }}\`" >> $GITHUB_STEP_SUMMARY
             echo "- **React App:** \`${{ steps.outputs.outputs.react_app_name }}\`" >> $GITHUB_STEP_SUMMARY
             echo "- **ACR Registry:** \`${{ steps.outputs.outputs.acr_registry_url }}\`" >> $GITHUB_STEP_SUMMARY

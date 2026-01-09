@@ -1,0 +1,106 @@
+name: Terraform Outputs (from state)
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: string
+    outputs:
+      api_app_name:
+        description: "The name of the API App Service"
+        value: ${{ jobs.outputs.outputs.api_app_name }}
+      react_app_name:
+        description: "The name of the React App Service"
+        value: ${{ jobs.outputs.outputs.react_app_name }}
+      acr_registry_url:
+        description: "The URL of the Azure Container Registry"
+        value: ${{ jobs.outputs.outputs.acr_registry_url }}
+      resource_group_name:
+        description: "The name of the Azure Resource Group"
+        value: ${{ jobs.outputs.outputs.resource_group_name }}
+      sql_server_fqdn:
+        description: "The fully qualified domain name of the Azure SQL Server"
+        value: ${{ jobs.outputs.outputs.sql_server_fqdn }}
+
+jobs:
+  outputs:
+    name: "Get Outputs"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      api_app_name: ${{ steps.outputs.outputs.api_app_name }}
+      react_app_name: ${{ steps.outputs.outputs.react_app_name }}
+      acr_registry_url: ${{ steps.outputs.outputs.acr_registry_url }}
+      resource_group_name: ${{ steps.outputs.outputs.resource_group_name }}
+      sql_server_fqdn: ${{ steps.outputs.outputs.sql_server_fqdn }}
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
+      TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+      TF_STATE_RESOURCE_GROUP: ${{ vars.TF_STATE_RESOURCE_GROUP }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            infra/terraform
+            .github/actions
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Login to Azure
+        uses: ./.github/actions/azure-login
+        with:
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${TF_STATE_RESOURCE_GROUP}" \
+            -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
+            -backend-config="container_name=${TF_STATE_CONTAINER}" \
+            -backend-config="key=${{ inputs.environment }}.terraform.tfstate" \
+            -backend-config="subscription_id=${ARM_SUBSCRIPTION_ID}" \
+            -backend-config="tenant_id=${ARM_TENANT_ID}" \
+            -backend-config="use_oidc=true"
+
+      - name: Capture Outputs
+        id: outputs
+        working-directory: infra/terraform
+        run: |
+          echo "api_app_name=$(terraform output -raw api_app_service_name)" >> $GITHUB_OUTPUT
+          echo "react_app_name=$(terraform output -raw react_app_service_name)" >> $GITHUB_OUTPUT
+          echo "acr_registry_url=$(terraform output -raw acr_registry_url)" >> $GITHUB_OUTPUT
+          echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+          echo "sql_server_fqdn=$(terraform output -raw sql_server_fqdn)" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        run: |
+          echo "### Terraform Outputs (from state) ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode:** Outputs-only (no infrastructure changes detected)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Resources:**" >> $GITHUB_STEP_SUMMARY
+          echo "- **API App:** \`${{ steps.outputs.outputs.api_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **React App:** \`${{ steps.outputs.outputs.react_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **ACR Registry:** \`${{ steps.outputs.outputs.acr_registry_url }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Resource Group:** \`${{ steps.outputs.outputs.resource_group_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **SQL Server:** \`${{ steps.outputs.outputs.sql_server_fqdn }}\`" >> $GITHUB_STEP_SUMMARY
