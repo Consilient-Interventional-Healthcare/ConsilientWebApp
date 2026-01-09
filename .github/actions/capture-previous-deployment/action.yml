@@ -1,0 +1,40 @@
+name: 'Capture Previous Deployment'
+description: 'Capture the current Docker image from an Azure Web App before deployment for rollback purposes'
+
+inputs:
+  app-name:
+    description: 'Azure Web App name'
+    required: true
+  resource-group:
+    description: 'Azure Resource Group name'
+    required: true
+
+outputs:
+  image:
+    description: 'The previous Docker image reference (or "none" if not found)'
+    value: ${{ steps.capture.outputs.image }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Capture Previous Deployment
+      id: capture
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.resource-group }}" ]; then
+          CURRENT_IMAGE=$(az webapp config container show \
+            --name "${{ inputs.app-name }}" \
+            --resource-group "${{ inputs.resource-group }}" \
+            --query '[0].value' -o tsv 2>/dev/null || echo "")
+          echo "Previous image: ${CURRENT_IMAGE}"
+
+          if [ -z "${CURRENT_IMAGE}" ]; then
+            echo "⚠️  No previous image found - this may be first deployment"
+            echo "image=none" >> $GITHUB_OUTPUT
+          else
+            echo "image=${CURRENT_IMAGE}" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "No resource group configured - skipping previous image capture"
+          echo "image=none" >> $GITHUB_OUTPUT
+        fi

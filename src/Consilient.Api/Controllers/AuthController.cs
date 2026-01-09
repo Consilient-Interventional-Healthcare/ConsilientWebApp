@@ -227,7 +227,9 @@ namespace Consilient.Api.Controllers
             }
 
             // Construct dynamic redirect URI from current request (matching the one used in login flow)
-            var redirectUri = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/auth/{provider.ToLowerInvariant()}/callback";
+            // Use X-Forwarded-Proto header when behind reverse proxy (Azure App Service)
+            var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
+            var redirectUri = $"{scheme}://{Request.Host}{Request.PathBase}/auth/{provider.ToLowerInvariant()}/callback";
 
             // Authenticate with OAuth provider
             var authResult = await _userService.AuthenticateExternalAsync(
@@ -293,7 +295,9 @@ namespace Consilient.Api.Controllers
                 var csrfToken = _csrfTokenService.GenerateAndSetCookie(Response);
 
                 // Construct dynamic redirect URI from current request
-                var redirectUri = $"{Request.Scheme}://{Request.Host}{Request.PathBase}/auth/{provider.ToLowerInvariant()}/callback";
+                // Use X-Forwarded-Proto header when behind reverse proxy (Azure App Service)
+                var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
+                var redirectUri = $"{scheme}://{Request.Host}{Request.PathBase}/auth/{provider.ToLowerInvariant()}/callback";
 
                 // Normalize returnUrl to be relative path only
                 var normalizedReturnUrl = NormalizeReturnUrl(returnUrl);

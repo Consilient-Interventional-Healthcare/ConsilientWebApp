@@ -145,31 +145,17 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
 
-      - name: Log in to ACR (via Azure CLI)
-        run: |
-          az acr login --name $(echo "${ACR_REGISTRY}" | sed 's/\.azurecr\.io//')
+      - name: Log in to ACR
+        uses: ./.github/actions/acr-login
+        with:
+          registry: ${{ env.ACR_REGISTRY }}
 
       - name: Capture Previous Deployment
         id: capture_previous
-        run: |
-          if [ -n "${RESOURCE_GROUP}" ]; then
-            CURRENT_IMAGE=$(az webapp config container show \
-              --name "${REACT_APP_NAME}" \
-              --resource-group "${RESOURCE_GROUP}" \
-              --query '[0].value' -o tsv 2>/dev/null || echo "")
-            echo "Previous image: ${CURRENT_IMAGE}"
-
-            # Use explicit "none" instead of empty string
-            if [ -z "${CURRENT_IMAGE}" ]; then
-              echo "⚠️  No previous image found - this may be first deployment"
-              echo "image=none" >> $GITHUB_OUTPUT
-            else
-              echo "image=${CURRENT_IMAGE}" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "No resource group configured - skipping previous image capture"
-            echo "image=none" >> $GITHUB_OUTPUT
-          fi
+        uses: ./.github/actions/capture-previous-deployment
+        with:
+          app-name: ${{ env.REACT_APP_NAME }}
+          resource-group: ${{ env.RESOURCE_GROUP }}
 
       - name: Build and push Docker image (Consilient.WebApp2)
         uses: docker/build-push-action@v5

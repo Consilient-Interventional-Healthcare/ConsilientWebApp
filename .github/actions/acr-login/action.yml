@@ -1,0 +1,15 @@
+name: 'ACR Login'
+description: 'Log in to Azure Container Registry using Azure CLI'
+
+inputs:
+  registry:
+    description: 'Azure Container Registry URL (e.g., myregistry.azurecr.io)'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Log in to ACR
+      shell: bash
+      run: |
+        az acr login --name $(echo "${{ inputs.registry }}" | sed 's/\.azurecr\.io//')
