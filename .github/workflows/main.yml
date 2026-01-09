@@ -169,7 +169,6 @@ jobs:
     uses: ./.github/workflows/terraform.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
-      action: apply
       allow-local-firewall: ${{ inputs.allow-local-firewall || false }}
       enable-debug: ${{ inputs.enable-debug || false }}
       enable-oauth: ${{ inputs.enable-oauth || false }}

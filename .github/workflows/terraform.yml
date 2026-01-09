@@ -6,11 +6,6 @@ on:
         description: 'Deployment environment'
         required: true
         type: string
-      action:
-        description: 'Terraform action to perform'
-        required: false
-        type: string
-        default: 'plan'
       allow-local-firewall:
         description: 'Allow local firewall rule for SQL Server (act testing only)'
         required: false
@@ -84,7 +79,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    #environment: ${{ inputs.environment }}
     timeout-minutes: 60
 
     outputs:
@@ -153,7 +147,6 @@ jobs:
         uses: ./.github/actions/validate-inputs
         with:
           environment: ${{ inputs.environment }}
-          action: ${{ inputs.action }}
 
       - name: Validate Required Secrets
         shell: bash
@@ -202,83 +195,14 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           client-secret: ${{ secrets.ARM_CLIENT_SECRET || '' }}
 
-      - name: Terraform Format Check
-        id: fmt
-        working-directory: .
-        # Runs in ./infra/terraform (job default)
-        run: |
-          if ! terraform fmt -check -recursive; then
-            echo "⚠️ Terraform formatting issues detected"
-            if [ -z "$ACT" ]; then
-              echo "::error::Terraform files need formatting. Recommendation: Run 'terraform fmt -recursive' in your infra/terraform directory locally to clean up the code files."
-              exit 1
-            else
-              echo "⚠️ Recommendation: Run 'terraform fmt -recursive' in your infra/terraform directory locally to clean up the code files."
-              echo "Skipping format check failure in act environment (local testing)"
-            fi
-          else
-            echo "✅ Terraform formatting check passed"
-          fi
-
-      - name: Configure Local Firewall Variable
-        run: |
-          # Override TF_VAR_enable_local_firewall based on ACT environment
-          # ACT is set automatically by the act tool when running locally
-          if [ -n "$ACT" ] && [ "${{ inputs.allow-local-firewall }}" = "true" ]; then
-            echo "TF_VAR_enable_local_firewall=true" >> $GITHUB_ENV
-            echo "✅ Local firewall rule ENABLED (act detected)"
-          else
-            echo "TF_VAR_enable_local_firewall=false" >> $GITHUB_ENV
-            echo "ℹ️ Local firewall rule disabled"
-          fi
-
-      - name: Clear Terraform provider cache
-        shell: bash
-        run: rm -rf .terraform/providers
-
       - name: Terraform Init
         id: init
         shell: bash
-        # Runs in ./infra/terraform (job default)
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         env:
           TF_INPUT: false
         run: |
-          # Disable Terraform plugin cache to avoid checksum mismatches with pre-cached providers
-          unset TF_PLUGIN_CACHE_DIR
-
-          # Conditional backend configuration based on environment
-          if [ -z "$ACT" ]; then
-            # GitHub Actions: Use Azure Storage backend with OIDC
-            echo "ℹ️  Initializing with Azure Storage backend (OIDC authentication)"
-            terraform init -upgrade=false \
-              -backend-config="resource_group_name=${TF_STATE_RESOURCE_GROUP}" \
-              -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}" \
-              -backend-config="container_name=${TF_STATE_CONTAINER}" \
-              -backend-config="key=${TF_VAR_environment}.terraform.tfstate" \
-              -backend-config="subscription_id=${AZURE_SUBSCRIPTION_ID}" \
-              -backend-config="tenant_id=${ARM_TENANT_ID}" \
-              -backend-config="use_oidc=true"
-          else
-            # Local (act): Use local backend, ignore remote backend configuration
-            echo "ℹ️  Initializing with local backend (act testing)"
-            terraform init -reconfigure -backend=false
-          fi
-
-      - name: Build Resource Group ID
-        shell: bash
-        run: |
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "=== Building Resource Group ID ==="
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
-
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Environment: ${TF_VAR_environment}"
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Region: ${TF_VAR_region}"
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Resource Group: ${TF_VAR_resource_group_name}"
-
-          # Build RG_ID for later use in resource imports
-          RG_ID="/subscriptions/${TF_VAR_subscription_id}/resourceGroups/${TF_VAR_resource_group_name}"
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "Resource Group ID: ${RG_ID}"
-          echo "RG_ID=${RG_ID}" >> $GITHUB_ENV
+          bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/terraform-init.sh"
 
       - name: Cache Hostname Pre-Check Results
         id: hostname_cache
@@ -302,7 +226,7 @@ jobs:
             echo "📋 Cache miss - running new pre-check..."
 
             # Run pre-check script and capture all output (stdout and stderr)
-            PRECHECK_OUTPUT=$(bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/hostname-precheck.sh" 2>&1)
+            PRECHECK_OUTPUT=$(bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/hostname-precheck.sh" 2>&1)
             PRECHECK_EXIT=$?
 
             # Show all output from pre-check script
@@ -326,27 +250,6 @@ jobs:
           echo "TF_VAR_hostname_naming_tier=${NAMING_TIER}" >> $GITHUB_ENV
 
           echo "✅ Pre-check complete - using tier ${NAMING_TIER}"
-
-      - name: Detect and Import Existing Resources (Fast Mode)
-        id: import
-        shell: bash
-        run: |
-          # Fast Mode: Skip import step initially, run import on-demand if Terraform operations fail
-          # This saves ~17 seconds on happy path (state is synced)
-
-          # Check if state exists using terraform state list (works with any backend)
-          STATE_RESOURCES=$(terraform state list 2>/dev/null || echo "")
-
-          if [ -z "$STATE_RESOURCES" ]; then
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  No Terraform state found - fresh deployment detected"
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import skipped (will create all resources from scratch)"
-          else
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  Terraform state found with $(echo "$STATE_RESOURCES" | wc -l) resources - assuming state is synced with Azure"
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import skipped (will run on-demand if Terraform operations fail)"
-          fi
-
-          # Set flag for conditional import in later steps
-          echo "import_needed=false" >> $GITHUB_ENV
 
       - name: Terraform Validate
         id: validate
@@ -387,52 +290,7 @@ jobs:
             exit 0
           fi
 
-      - name: Terraform Plan
-        id: plan
-        if: inputs.action == 'plan'
-        shell: bash
-        # Runs in ./infra/terraform (job default)
-        run: |
-          # Try plan - if it fails with state errors, run import and retry
-          if ! terraform plan; then
-            echo ""
-            echo "⚠️  Terraform plan failed - checking for state drift..."
-
-            # Capture plan output to check for state-related errors
-            PLAN_OUTPUT=$(terraform plan 2>&1 || true)
-
-            # Check if error is state-related
-            if echo "$PLAN_OUTPUT" | grep -qE "(resource doesn't exist|already exists|Cannot import|state|no matching")"; then
-              [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  State drift detected - running import script..."
-
-              # Run import script
-              if bash "${GITHUB_WORKSPACE}/infra/terraform/scripts/import.sh"; then
-                [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import completed successfully - retrying terraform plan..."
-
-                # Retry plan
-                if terraform plan; then
-                  [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform plan succeeded after import"
-                  exit 0
-                else
-                  echo "❌ Terraform plan still failing after import"
-                  exit 1
-                fi
-              else
-                echo "❌ Import script failed"
-                exit 1
-              fi
-            else
-              echo "❌ Terraform plan failed (not a state issue)"
-              echo "$PLAN_OUTPUT" | head -20
-              exit 1
-            fi
-          else
-            [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Terraform plan succeeded (state is synced)"
-            exit 0
-          fi
-
       - name: Terraform Apply
-        if: inputs.action == 'apply'
         shell: bash
         # Runs in ./infra/terraform (job default)
         run: |
@@ -532,7 +390,6 @@ jobs:
 
       - name: Capture Terraform Outputs
         id: outputs
-        if: inputs.action == 'apply'
         shell: bash
         working-directory: ./infra/terraform
         run: |
@@ -555,18 +412,6 @@ jobs:
           echo "resource_group_name=${RESOURCE_GROUP_NAME}" >> $GITHUB_OUTPUT
           echo "sql_server_fqdn=${SQL_SERVER_FQDN}" >> $GITHUB_OUTPUT
 
-      - name: Terraform Destroy
-        if: inputs.action == 'destroy'
-        # Runs in ./infra/terraform (job default)
-        run: |
-          if [ "${{ inputs.environment }}" == "prod" ]; then
-            echo "❌ ERROR: Terraform destroy is not allowed in production environment!"
-            echo "This is a safety measure to prevent accidental deletion of production resources."
-            exit 1
-          fi
-          [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Proceeding with destroy for environment: ${{ inputs.environment }}"
-          terraform destroy -auto-approve
-
       - name: Summary
         if: always()
         shell: bash
@@ -574,8 +419,7 @@ jobs:
           echo "### Terraform Workflow Complete ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Action:** \`${{ inputs.action }}\`" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ inputs.action }}" == "apply" ] && [ -n "${{ steps.outputs.outputs.api_app_name }}" ]; then
+          if [ -n "${{ steps.outputs.outputs.api_app_name }}" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Deployed Resources:**" >> $GITHUB_STEP_SUMMARY
             echo "- **API App:** \`${{ steps.outputs.outputs.api_app_name }}\`" >> $GITHUB_STEP_SUMMARY

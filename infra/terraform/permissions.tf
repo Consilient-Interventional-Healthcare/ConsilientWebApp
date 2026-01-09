@@ -87,8 +87,11 @@ resource "azurerm_role_assignment" "appconfig_keyvault_secrets_user" {
 # Grant user "Key Vault Secrets Officer" role (manage secrets)
 # Resolves email address to Azure AD object ID and grants access
 # Only created if keyvault_user_email is provided and user exists in Azure AD
+#
+# NOTE: This requires the Terraform service principal to have permission to read Azure AD users
+# If you see "Authorization_RequestDenied" error, use keyvault_user_object_id instead
 resource "azurerm_role_assignment" "user_keyvault_secrets_officer" {
-  count = var.keyvault_user_email != "" ? 1 : 0
+  count = var.keyvault_user_email != "" && var.keyvault_user_object_id == "" ? 1 : 0
 
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Secrets Officer"
@@ -98,6 +101,20 @@ resource "azurerm_role_assignment" "user_keyvault_secrets_officer" {
     azurerm_key_vault.main,
     data.azuread_user.keyvault_admin
   ]
+}
+
+# Alternative: Grant user via direct object ID (when email resolution fails)
+# This allows bypassing the Azure AD read permission requirement
+# Use when Terraform service principal lacks User.Read.All permission in Azure AD
+# Get object ID via: az ad user show --id "user@domain.com" --query id -o tsv
+resource "azurerm_role_assignment" "user_keyvault_secrets_officer_by_id" {
+  count = var.keyvault_user_object_id != "" ? 1 : 0
+
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = var.keyvault_user_object_id
+
+  depends_on = [azurerm_key_vault.main]
 }
 
 # ============================================================================

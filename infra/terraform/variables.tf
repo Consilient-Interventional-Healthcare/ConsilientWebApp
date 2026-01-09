@@ -226,6 +226,22 @@ The email can be provided via:
   - Environment variable: TF_VAR_keyvault_user_email
 Example: "hernanmarano@consilientivh.com"
 Leave empty to skip creating this role assignment.
+NOTE: Requires Terraform service principal to have User.Read.All permission in Azure AD.
+If permission is denied, use keyvault_user_object_id instead.
+EOT
+  type        = string
+  default     = ""
+}
+
+variable "keyvault_user_object_id" {
+  description = <<EOT
+Azure AD object ID of the user who should have "Key Vault Secrets Officer" role.
+Use this as an alternative when keyvault_user_email resolution fails due to insufficient permissions.
+The Terraform service principal needs User.Read.All permission in Azure AD to resolve email addresses.
+If that permission is not available, provide the object ID directly instead.
+Get object ID via: az ad user show --id "user@domain.com" --query id -o tsv
+Example: "5daf8f81-7f50-4ad2-bb63-3e78917ab008"
+Leave empty to use email-based resolution (if permissions allow).
 EOT
   type        = string
   default     = ""
