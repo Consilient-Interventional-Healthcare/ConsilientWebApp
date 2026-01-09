@@ -575,3 +575,25 @@ resource "azurerm_app_configuration_key" "oauth_client_secret" {
     azurerm_key_vault_secret.oauth_client_secret
   ]
 }
+
+# ============================================================================
+# CONFIGURATION KEYS - CORS SETTINGS
+# ============================================================================
+# AllowedOrigins for CORS - uses dynamically generated React app hostname
+# This ensures CORS configuration matches the actual deployed React app URL
+
+resource "azurerm_app_configuration_key" "allowed_origins" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:AllowedOrigins:0"
+  label                  = var.environment
+  value                  = "https://${local.react.service_name}.azurewebsites.net"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "cors"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}

@@ -29,9 +29,11 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           // Separate TanStack Query
           'query-vendor': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
-          // Separate UI libraries
+          // Separate UI libraries (small)
           'ui-vendor': [
             '@radix-ui/react-slot',
+            '@radix-ui/react-toggle',
+            '@radix-ui/react-toggle-group',
             'class-variance-authority',
             'clsx',
             'tailwind-merge',
@@ -41,6 +43,20 @@ export default defineConfig({
           'http-vendor': ['axios'],
           // Separate logging libraries
           'logging-vendor': ['loglevel', 'loglevel-plugin-remote'],
+          // Large UI component library
+          'rsuite-vendor': ['rsuite'],
+          // Charting library
+          'charts-vendor': ['recharts'],
+          // Data processing libraries (Excel, SQL)
+          'data-vendor': ['xlsx', 'alasql'],
+          // Icon libraries
+          'icons-vendor': [
+            '@fortawesome/fontawesome-svg-core',
+            '@fortawesome/free-solid-svg-icons',
+            '@fortawesome/react-fontawesome'
+          ],
+          // Utility libraries
+          'utils-vendor': ['date-fns', 'zod'],
         },
       },
     },
