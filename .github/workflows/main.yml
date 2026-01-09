@@ -117,6 +117,7 @@ jobs:
       databases: ${{ steps.filter.outputs.databases }}
       dotnet: ${{ steps.filter.outputs.dotnet }}
       react: ${{ steps.filter.outputs.react }}
+      any_changes: ${{ steps.filter.outputs.infrastructure == 'true' || steps.filter.outputs.databases == 'true' || steps.filter.outputs.dotnet == 'true' || steps.filter.outputs.react == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -129,15 +130,14 @@ jobs:
             databases:
               - 'src/Databases/**'
             dotnet:
-              - 'src/Consilient.*/**'
-              - '!src/Consilient.WebApp/**'
-              - '!src/Consilient.WebApp2/**'
+              - 'src/Consilient.!(WebApp|WebApp2)/**'
             react:
               - 'src/Consilient.WebApp2/**'
 
   build-runner-image:
     name: Image Runner
     needs: [detect-changes]
+    if: github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.any_changes == 'true'
     uses: ./.github/workflows/build-docker-image.yml
     with:
       image_type: actions-runner
@@ -195,6 +195,7 @@ jobs:
     # Note: always() is required to evaluate this condition when warm-docker-cache is skipped (if: false)
     if: |
       always() &&
+      (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.any_changes == 'true') &&
       (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.infrastructure == 'true') &&
       (github.event_name != 'workflow_dispatch' || inputs.run-terraform != false) &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
@@ -211,12 +212,13 @@ jobs:
   terraform-outputs:
     name: Terraform Outputs
     needs: [initialize-workflow, detect-changes, build-runner-image]
-    # Run when: NOT manual dispatch AND no infrastructure changes detected
+    # Run when: NOT manual dispatch AND no infrastructure changes detected (but some other changes exist)
     if: |
       always() &&
       github.event_name != 'workflow_dispatch' &&
+      needs.detect-changes.outputs.any_changes == 'true' &&
       needs.detect-changes.outputs.infrastructure != 'true' &&
-      needs.build-runner-image.result == 'success'
+      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
     uses: ./.github/workflows/terraform-outputs.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
@@ -324,6 +326,10 @@ jobs:
         run: |
           echo "## Workflow Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.detect-changes.outputs.any_changes }}" != "true" && "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+            echo "> **No changes detected** - workflow short-circuited" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Detect Changes | ${{ needs.detect-changes.result }} |" >> $GITHUB_STEP_SUMMARY
