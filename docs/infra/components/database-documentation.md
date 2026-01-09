@@ -866,5 +866,41 @@ ERROR - The following option is required: [-u | --user | schemaspy.u | schemaspy
 
 ---
 
+## Solution: Maven Dependencies with Directory Path
+
+**Final Working Solution (Commit ecb442c):**
+
+The complete fix involved two components working together:
+
+1. **Dockerfile includes Maven dependencies** (`.github/workflows/runner/Dockerfile`):
+   - Downloads azure-identity.jar, msal4j.jar, and all transitive dependencies via Maven Central
+   - Stores all JARs in `/opt/schemaspy/` directory
+   - Sets ENV CLASSPATH with all JARs (though `java -jar` ignores this)
+
+2. **SchemaSpy uses directory path for driver** (`.github/workflows/database-docs/process-all-databases.sh`):
+   ```bash
+   # CORRECT - Point to directory, not single JAR:
+   -dp /opt/schemaspy
+
+   # WRONG - Single JAR can't find dependencies:
+   -dp /opt/schemaspy/mssql-jdbc.jar
+   ```
+
+**Why this works:**
+- SchemaSpy's `DbDriverLoader` scans the entire directory specified by `-dp`
+- Automatically loads all JARs: JDBC driver + MSAL4J + Azure Identity + dependencies
+- JDBC driver can find authentication libraries at runtime
+- No CLASSPATH manipulation needed (simpler and more reliable)
+
+**Technical Details:**
+- Maven dependencies downloaded in Dockerfile build stage
+- Includes: mssql-jdbc, azure-identity, msal4j, oauth2-oidc-sdk, jackson, netty, reactor-core
+- Total: 25+ JARs in `/opt/schemaspy/`
+- All available to SchemaSpy when `-dp` points to directory
+
+**Commit Reference:** ecb442c - "Fix: Replace manual JAR downloads with Maven dependency resolution"
+
+---
+
 **Last Updated:** December 2025
 **For Navigation:** See [README.md](../README.md)
