@@ -22,7 +22,7 @@
 # If the email doesn't exist or is empty, the role assignment is skipped.
 
 data "azuread_user" "keyvault_admin" {
-  count             = var.keyvault_user_email != "" ? 1 : 0
+  count               = var.keyvault_user_email != "" ? 1 : 0
   user_principal_name = var.keyvault_user_email
 }
 
