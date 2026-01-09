@@ -120,6 +120,21 @@ jobs:
         with:
           scripts_path: 'src/Databases'
 
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      infrastructure: ${{ steps.filter.outputs.infrastructure }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            infrastructure:
+              - 'infra/terraform/**/*.tf'
+              - 'infra/terraform/**/*.tfvars'
+
   build-runner-image:
     name: Image Runner
     needs: [initialize-workflow]
@@ -173,7 +188,7 @@ jobs:
 
   terraform:
     name: Terraform
-    needs: [initialize-workflow, build-runner-image, warm-docker-cache]
+    needs: [initialize-workflow, build-runner-image, warm-docker-cache, detect-changes]
     # Run on push events, or when explicitly enabled in workflow_dispatch
     # Note: always() is required to evaluate this condition when warm-docker-cache is skipped (if: false)
     if: |
@@ -188,6 +203,7 @@ jobs:
       enable-debug: ${{ inputs.enable-debug || false }}
       enable-oauth: ${{ inputs.enable-oauth || false }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+      outputs-only: ${{ github.event_name != 'workflow_dispatch' && needs.detect-changes.outputs.infrastructure != 'true' }}
     secrets: inherit
 
   # ============================================================================
