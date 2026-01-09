@@ -1,7 +1,7 @@
 using Consilient.Infrastructure.Logging.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace Consilient.Api.Infra
+namespace Consilient.Api.Infra.HealthChecks
 {
     internal class LokiHealthCheck : IHealthCheck
     {

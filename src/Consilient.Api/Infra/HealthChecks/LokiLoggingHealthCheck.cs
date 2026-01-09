@@ -4,7 +4,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using Serilog.Events;
 
-namespace Consilient.Api.Infra
+namespace Consilient.Api.Infra.HealthChecks
 {
     /// <summary>
     /// Health check that verifies the complete logging pipeline to Loki by:

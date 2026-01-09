@@ -3,7 +3,6 @@ using Azure.Identity;
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Consilient.Api.Configuration;
 using Consilient.Api.Hubs;
-using Consilient.Api.Infra;
 using Consilient.Api.Infra.Authentication;
 using Consilient.Api.Infra.ModelBinders;
 using Consilient.Api.Init;
@@ -31,6 +30,7 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationM
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
+using Consilient.Api.Infra.HealthChecks;
 
 namespace Consilient.Api
 {

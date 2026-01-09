@@ -1,4 +1,4 @@
-﻿using Consilient.Api.Infra;
+﻿using Consilient.Api.Infra.HealthChecks;
 using Consilient.Data;
 
 namespace Consilient.Api.Init
