@@ -125,6 +125,127 @@ resource "azurerm_app_configuration_key" "api_jwt_expiry" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
+# Password Policy Configuration
+resource "azurerm_app_configuration_key" "api_password_policy_require_digit" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequireDigit"
+  label                  = var.environment
+  value                  = "true"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+resource "azurerm_app_configuration_key" "api_password_policy_required_length" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequiredLength"
+  label                  = var.environment
+  value                  = "8"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+resource "azurerm_app_configuration_key" "api_password_policy_require_non_alphanumeric" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequireNonAlphanumeric"
+  label                  = var.environment
+  value                  = "false"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+resource "azurerm_app_configuration_key" "api_password_policy_require_uppercase" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequireUppercase"
+  label                  = var.environment
+  value                  = "true"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+resource "azurerm_app_configuration_key" "api_password_policy_require_lowercase" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequireLowercase"
+  label                  = var.environment
+  value                  = "true"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+resource "azurerm_app_configuration_key" "api_password_policy_required_unique_chars" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequiredUniqueChars"
+  label                  = var.environment
+  value                  = "1"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
 # API Logging Configuration
 resource "azurerm_app_configuration_key" "api_logging_default_level" {
   configuration_store_id = azurerm_app_configuration.main.id
