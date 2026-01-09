@@ -21,11 +21,6 @@ on:
         required: false
         type: boolean
         default: false
-      keyvault-user-email:
-        description: 'Email address of user to grant Key Vault Secrets Officer role (optional)'
-        required: false
-        type: string
-        default: ''
       runner_image:
         description: 'Docker image for the Terraform container'
         required: true
@@ -119,8 +114,8 @@ jobs:
       TF_VAR_oauth_enabled: ${{ inputs.enable-oauth || vars.OAUTH_ENABLED == 'true' }}
       TF_VAR_grafana_public_network_access: ${{ vars.GRAFANA_PUBLIC_NETWORK_ACCESS == 'true' }}
       TF_VAR_grafana_admin_users: ${{ vars.GRAFANA_ADMIN_USERS || '[]' }}
-      # Key Vault user permissions (email-based, resolved to object ID via Azure AD)
-      TF_VAR_keyvault_user_email: ${{ inputs.keyvault-user-email || vars.AZURE_USER_EMAIL || '' }}
+      # Key Vault user permissions (object ID from GitHub repository variable, bypasses Azure AD Graph API requirement)
+      TF_VAR_keyvault_user_object_id: ${{ vars.AZURE_USER_OBJECT_ID || '' }}
       # Environment-specific (from GitHub Environment Variables)
       TF_VAR_region: ${{ vars.AZURE_REGION }}
       TF_VAR_resource_group_name: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}

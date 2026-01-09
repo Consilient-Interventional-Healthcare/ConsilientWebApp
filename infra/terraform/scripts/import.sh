@@ -199,9 +199,16 @@ import_resource "azurerm_resource_group.main" "${RG_ID}" "Resource Group"
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "2. Networking Resources"
 VNET_ID="${RG_ID}/providers/Microsoft.Network/virtualNetworks/${TF_VAR_project_name}-vnet-${TF_VAR_environment}"
-SUBNET_ID="${VNET_ID}/subnets/${TF_VAR_project_name}-subnet-${TF_VAR_environment}"
 import_resource "azurerm_virtual_network.main" "${VNET_ID}" "Virtual Network"
-import_resource "azurerm_subnet.main" "${SUBNET_ID}" "Subnet"
+
+# Import three separate subnets (refactored from single subnet in commit b90072a)
+SUBNET_CONTAINER_APPS_ID="${VNET_ID}/subnets/${TF_VAR_project_name}-subnet-${TF_VAR_environment}-containers"
+SUBNET_APP_SERVICE_ID="${VNET_ID}/subnets/${TF_VAR_project_name}-subnet-${TF_VAR_environment}-appservice"
+SUBNET_PRIVATE_ENDPOINTS_ID="${VNET_ID}/subnets/${TF_VAR_project_name}-subnet-${TF_VAR_environment}-privateendpoints"
+
+import_resource "azurerm_subnet.container_apps" "${SUBNET_CONTAINER_APPS_ID}" "Container Apps Subnet"
+import_resource "azurerm_subnet.app_service" "${SUBNET_APP_SERVICE_ID}" "App Service Subnet"
+import_resource "azurerm_subnet.private_endpoints" "${SUBNET_PRIVATE_ENDPOINTS_ID}" "Private Endpoints Subnet"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "3. Container Registry"
@@ -377,7 +384,13 @@ import_resource "azurerm_key_vault_secret.jwt_signing_secret" "https://${KV_NAME
 import_resource "azurerm_key_vault_secret.grafana_loki_url" "https://${KV_NAME}.vault.azure.net/secrets/grafana-loki-url" "Grafana Loki URL Secret"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
-[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "16. Key Vault Role Assignments"
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "16. App Configuration"
+APPCONFIG_NAME=$(terraform output -raw app_configuration_name 2>/dev/null || echo "${TF_VAR_project_name}-config-${TF_VAR_environment}-$(echo -n "${TF_VAR_subscription_id}-${TF_VAR_resource_group_name}" | md5sum | cut -c1-6)")
+APPCONFIG_ID="${RG_ID}/providers/Microsoft.AppConfiguration/configurationStores/${APPCONFIG_NAME}"
+import_resource "azurerm_app_configuration.main" "${APPCONFIG_ID}" "App Configuration"
+
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "17. Key Vault Role Assignments"
 if [ -n "$API_PRINCIPAL_ID" ]; then
   [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found API app service principal ID: ${API_PRINCIPAL_ID}"
   # Find the role assignment for Key Vault Secrets User
