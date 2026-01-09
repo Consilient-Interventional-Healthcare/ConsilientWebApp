@@ -7,7 +7,7 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 # Metadata labels
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
 LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
-LABEL org.opencontainers.image.version="2.2.4"
+LABEL org.opencontainers.image.version="2.2.5"
 LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17,chrome=latest"
 
 # ============================================================
@@ -120,122 +120,57 @@ RUN curl -L -o /tmp/sqlcmd.tar.bz2 \
 RUN sqlcmd --version
 
 # ============================================================
-# LAYER 3: SchemaSpy 6.2.4 + JDBC Driver 12.4.2 + Azure-Identity Dependencies
+# LAYER 3: SchemaSpy 6.2.4 + Dependencies via Maven (Automatic Dependency Resolution)
 # ============================================================
 ENV SCHEMASPY_VERSION=6.2.4
-ENV JDBC_VERSION=12.4.2
-ENV AZURE_IDENTITY_VERSION=1.9.0
 ENV SCHEMASPY_PATH=/opt/schemaspy
 
-# Maven Central Base URL for conciseness
-ENV MAVEN_REPO="https://repo1.maven.org/maven2"
+# Install Maven (used only for downloading dependencies, will be removed after)
+RUN apt-get update && \
+    apt-get install -y maven && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p ${SCHEMASPY_PATH} && \
-    # SchemaSpy
-    curl -L -o ${SCHEMASPY_PATH}/schemaspy.jar \
-        "https://github.com/schemaspy/schemaspy/releases/download/v${SCHEMASPY_VERSION}/schemaspy-${SCHEMASPY_VERSION}.jar" && \
-    # MSSQL JDBC Driver
-    curl -L -o ${SCHEMASPY_PATH}/mssql-jdbc.jar \
-        "${MAVEN_REPO}/com/microsoft/sqlserver/mssql-jdbc/${JDBC_VERSION}.jre11/mssql-jdbc-${JDBC_VERSION}.jre11.jar" && \
-    # Azure-Identity + Core Libraries for Azure AD Authentication (JDBC Driver v12.4.2 requirement)
-    curl -L -o ${SCHEMASPY_PATH}/azure-identity.jar \
-        "${MAVEN_REPO}/com/azure/azure-identity/${AZURE_IDENTITY_VERSION}/azure-identity-${AZURE_IDENTITY_VERSION}.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/azure-core.jar \
-        "${MAVEN_REPO}/com/azure/azure-core/1.39.0/azure-core-1.39.0.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/azure-core-http-netty.jar \
-        "${MAVEN_REPO}/com/azure/azure-core-http-netty/1.13.3/azure-core-http-netty-1.13.3.jar" && \
-    # Azure JSON (required by azure-core >= 1.35.0)
-    curl -L -o ${SCHEMASPY_PATH}/azure-json.jar \
-        "${MAVEN_REPO}/com/azure/azure-json/1.1.0/azure-json-1.1.0.jar" && \
-    # MSAL4J 1.13.8 (required by azure-identity)
-    curl -L -o ${SCHEMASPY_PATH}/msal4j.jar \
-        "${MAVEN_REPO}/com/microsoft/azure/msal4j/1.13.8/msal4j-1.13.8.jar" && \
-    # MSAL4J Persistence Extension
-    curl -L -o ${SCHEMASPY_PATH}/msal4j-persistence-extension.jar \
-        "${MAVEN_REPO}/com/microsoft/azure/msal4j-persistence-extension/1.2.0/msal4j-persistence-extension-1.2.0.jar" && \
-    # JNA Platform (required by azure-identity)
-    curl -L -o ${SCHEMASPY_PATH}/jna.jar \
-        "${MAVEN_REPO}/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/jna-platform.jar \
-        "${MAVEN_REPO}/net/java/dev/jna/jna-platform/5.6.0/jna-platform-5.6.0.jar" && \
-    # Reactor Netty (The Driver - required by azure-core-http-netty)
-    curl -L -o ${SCHEMASPY_PATH}/reactor-netty-http.jar \
-        "${MAVEN_REPO}/io/projectreactor/netty/reactor-netty-http/1.0.24/reactor-netty-http-1.0.24.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/reactor-netty-core.jar \
-        "${MAVEN_REPO}/io/projectreactor/netty/reactor-netty-core/1.0.24/reactor-netty-core-1.0.24.jar" && \
-    # Reactor Pool (required by reactor-netty-core)
-    curl -L -o ${SCHEMASPY_PATH}/reactor-pool.jar \
-        "${MAVEN_REPO}/io/projectreactor/addons/reactor-pool/0.2.10/reactor-pool-0.2.10.jar" && \
-    # Netty Core Modules (Granular approach to fix AddressResolverGroup error - replace netty-all)
-    curl -L -o ${SCHEMASPY_PATH}/netty-common.jar \
-        "${MAVEN_REPO}/io/netty/netty-common/4.1.86.Final/netty-common-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-buffer.jar \
-        "${MAVEN_REPO}/io/netty/netty-buffer/4.1.86.Final/netty-buffer-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-transport.jar \
-        "${MAVEN_REPO}/io/netty/netty-transport/4.1.86.Final/netty-transport-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-resolver.jar \
-        "${MAVEN_REPO}/io/netty/netty-resolver/4.1.86.Final/netty-resolver-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-handler.jar \
-        "${MAVEN_REPO}/io/netty/netty-handler/4.1.86.Final/netty-handler-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-codec.jar \
-        "${MAVEN_REPO}/io/netty/netty-codec/4.1.86.Final/netty-codec-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-codec-http.jar \
-        "${MAVEN_REPO}/io/netty/netty-codec-http/4.1.86.Final/netty-codec-http-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-codec-http2.jar \
-        "${MAVEN_REPO}/io/netty/netty-codec-http2/4.1.86.Final/netty-codec-http2-4.1.86.Final.jar" && \
-    # Netty DNS (CRITICAL: This contains AddressResolverGroup)
-    curl -L -o ${SCHEMASPY_PATH}/netty-resolver-dns.jar \
-        "${MAVEN_REPO}/io/netty/netty-resolver-dns/4.1.86.Final/netty-resolver-dns-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-codec-dns.jar \
-        "${MAVEN_REPO}/io/netty/netty-codec-dns/4.1.86.Final/netty-codec-dns-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-handler-proxy.jar \
-        "${MAVEN_REPO}/io/netty/netty-handler-proxy/4.1.86.Final/netty-handler-proxy-4.1.86.Final.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/netty-transport-native-unix-common.jar \
-        "${MAVEN_REPO}/io/netty/netty-transport-native-unix-common/4.1.86.Final/netty-transport-native-unix-common-4.1.86.Final.jar" && \
-    # Project Reactor (required by azure-core)
-    curl -L -o ${SCHEMASPY_PATH}/reactor-core.jar \
-        "${MAVEN_REPO}/io/projectreactor/reactor-core/3.4.27/reactor-core-3.4.27.jar" && \
-    # Reactive Streams (required by reactor)
-    curl -L -o ${SCHEMASPY_PATH}/reactive-streams.jar \
-        "${MAVEN_REPO}/org/reactivestreams/reactive-streams/1.0.4/reactive-streams-1.0.4.jar" && \
-    # SLF4J API and Implementation
-    curl -L -o ${SCHEMASPY_PATH}/slf4j-api.jar \
-        "${MAVEN_REPO}/org/slf4j/slf4j-api/2.0.7/slf4j-api-2.0.7.jar" && \
-    # Jackson (for JSON serialization)
-    curl -L -o ${SCHEMASPY_PATH}/jackson-core.jar \
-        "${MAVEN_REPO}/com/fasterxml/jackson/core/jackson-core/2.15.3/jackson-core-2.15.3.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/jackson-databind.jar \
-        "${MAVEN_REPO}/com/fasterxml/jackson/core/jackson-databind/2.15.3/jackson-databind-2.15.3.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/jackson-annotations.jar \
-        "${MAVEN_REPO}/com/fasterxml/jackson/core/jackson-annotations/2.15.3/jackson-annotations-2.15.3.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/jackson-datatype-jsr310.jar \
-        "${MAVEN_REPO}/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.3/jackson-datatype-jsr310-2.15.3.jar" && \
-    # OAuth2 and JOSE (required by msal4j)
-    curl -L -o ${SCHEMASPY_PATH}/oauth2-oidc-sdk.jar \
-        "${MAVEN_REPO}/com/nimbusds/oauth2-oidc-sdk/10.7.1/oauth2-oidc-sdk-10.7.1.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/nimbus-jose-jwt.jar \
-        "${MAVEN_REPO}/com/nimbusds/nimbus-jose-jwt/9.37.3/nimbus-jose-jwt-9.37.3.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/content-type.jar \
-        "${MAVEN_REPO}/com/nimbusds/content-type/2.3/content-type-2.3.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/lang-tag.jar \
-        "${MAVEN_REPO}/com/nimbusds/lang-tag/1.7/lang-tag-1.7.jar" && \
-    # JSON processing
-    curl -L -o ${SCHEMASPY_PATH}/json-smart.jar \
-        "${MAVEN_REPO}/net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar" && \
-    curl -L -o ${SCHEMASPY_PATH}/accessors-smart.jar \
-        "${MAVEN_REPO}/net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar" && \
-    # ASM (bytecode manipulation, required by accessors-smart)
-    curl -L -o ${SCHEMASPY_PATH}/asm.jar \
-        "${MAVEN_REPO}/org/ow2/asm/asm/9.3/asm-9.3.jar" && \
-    # Annotations
-    curl -L -o ${SCHEMASPY_PATH}/jcip-annotations.jar \
-        "${MAVEN_REPO}/com/github/stephenc/jcip/jcip-annotations/1.0-1/jcip-annotations-1.0-1.jar"
+WORKDIR ${SCHEMASPY_PATH}
+
+# Download SchemaSpy JAR
+RUN curl -L -o schemaspy.jar \
+    "https://github.com/schemaspy/schemaspy/releases/download/v${SCHEMASPY_VERSION}/schemaspy-${SCHEMASPY_VERSION}.jar"
+
+# Create a POM.xml that defines the top-level dependencies
+# Maven automatically resolves the entire transitive dependency tree
+RUN printf '%s\n' \
+    '<?xml version="1.0" encoding="UTF-8"?>' \
+    '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+    '  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">' \
+    '  <modelVersion>4.0.0</modelVersion>' \
+    '  <groupId>local</groupId>' \
+    '  <artifactId>schemaspy-deps</artifactId>' \
+    '  <version>1.0.0</version>' \
+    '  <dependencies>' \
+    '    <dependency>' \
+    '      <groupId>com.microsoft.sqlserver</groupId>' \
+    '      <artifactId>mssql-jdbc</artifactId>' \
+    '      <version>12.4.2.jre11</version>' \
+    '    </dependency>' \
+    '    <dependency>' \
+    '      <groupId>com.azure</groupId>' \
+    '      <artifactId>azure-identity</artifactId>' \
+    '      <version>1.11.0</version>' \
+    '    </dependency>' \
+    '  </dependencies>' \
+    '</project>' > pom.xml
+
+# Run Maven to download all JARs and their transitive dependencies into /opt/schemaspy
+RUN mvn -q dependency:copy-dependencies -DoutputDirectory=${SCHEMASPY_PATH} -DincludeScope=runtime
+
+# Clean up Maven (reduces image size by ~500MB)
+RUN apt-get remove -y maven && \
+    apt-get autoremove -y && \
+    rm pom.xml && \
+    rm -rf ~/.m2
 
 # Add SchemaSpy to PATH
 ENV PATH="${SCHEMASPY_PATH}:${PATH}"
-
-# Set CLASSPATH to include all Azure-Identity dependencies for Azure AD authentication
-ENV CLASSPATH="${SCHEMASPY_PATH}/azure-identity.jar:${SCHEMASPY_PATH}/azure-core.jar:${SCHEMASPY_PATH}/azure-core-http-netty.jar:${SCHEMASPY_PATH}/azure-json.jar:${SCHEMASPY_PATH}/msal4j.jar:${SCHEMASPY_PATH}/msal4j-persistence-extension.jar:${SCHEMASPY_PATH}/jna.jar:${SCHEMASPY_PATH}/jna-platform.jar:${SCHEMASPY_PATH}/reactor-netty-http.jar:${SCHEMASPY_PATH}/reactor-netty-core.jar:${SCHEMASPY_PATH}/reactor-pool.jar:${SCHEMASPY_PATH}/netty-common.jar:${SCHEMASPY_PATH}/netty-buffer.jar:${SCHEMASPY_PATH}/netty-transport.jar:${SCHEMASPY_PATH}/netty-resolver.jar:${SCHEMASPY_PATH}/netty-handler.jar:${SCHEMASPY_PATH}/netty-codec.jar:${SCHEMASPY_PATH}/netty-codec-http.jar:${SCHEMASPY_PATH}/netty-codec-http2.jar:${SCHEMASPY_PATH}/netty-resolver-dns.jar:${SCHEMASPY_PATH}/netty-codec-dns.jar:${SCHEMASPY_PATH}/netty-handler-proxy.jar:${SCHEMASPY_PATH}/netty-transport-native-unix-common.jar:${SCHEMASPY_PATH}/reactor-core.jar:${SCHEMASPY_PATH}/reactive-streams.jar:${SCHEMASPY_PATH}/slf4j-api.jar:${SCHEMASPY_PATH}/jackson-core.jar:${SCHEMASPY_PATH}/jackson-databind.jar:${SCHEMASPY_PATH}/jackson-annotations.jar:${SCHEMASPY_PATH}/jackson-datatype-jsr310.jar:${SCHEMASPY_PATH}/oauth2-oidc-sdk.jar:${SCHEMASPY_PATH}/nimbus-jose-jwt.jar:${SCHEMASPY_PATH}/content-type.jar:${SCHEMASPY_PATH}/lang-tag.jar:${SCHEMASPY_PATH}/json-smart.jar:${SCHEMASPY_PATH}/accessors-smart.jar:${SCHEMASPY_PATH}/asm.jar:${SCHEMASPY_PATH}/jcip-annotations.jar"
 
 # ============================================================
 # LAYER 3B: Bake GitHub Actions into the Image
