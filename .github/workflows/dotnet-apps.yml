@@ -84,6 +84,11 @@ jobs:
     name: Build and Deploy API
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
     outputs:
       api_app_name: ${{ env.API_APP_NAME }}
       previous_image: ${{ steps.capture_previous.outputs.image }}
