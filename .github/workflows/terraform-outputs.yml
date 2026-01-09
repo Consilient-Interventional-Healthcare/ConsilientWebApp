@@ -57,6 +57,7 @@ jobs:
           sparse-checkout: |
             infra/terraform
             .github/actions
+            .github/workflows/terraform/scripts
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
