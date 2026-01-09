@@ -29,23 +29,24 @@ namespace Consilient.Infrastructure.Logging
             if (!string.IsNullOrEmpty(loggingSettings.GrafanaLoki.Username) &&
                 !string.IsNullOrEmpty(loggingSettings.GrafanaLoki.Password))
             {
-                lokiCredentials = new BasicAuthCredentials(
-                    loggingSettings.GrafanaLoki.Username,
-                    loggingSettings.GrafanaLoki.Password
-                );
+                lokiCredentials = new LokiCredentials
+                {
+                    Login = loggingSettings.GrafanaLoki.Username,
+                    Password = loggingSettings.GrafanaLoki.Password
+                };
             }
 
             loggerConfiguration.WriteTo.GrafanaLoki(
-                loggingSettings.GrafanaLoki.Url,
-                lokiLabels,
-                lokiCredentials,
-                null,
-                null,
-                minimumLogLevel,
-                loggingSettings.GrafanaLoki.BatchPostingLimit,
-                null,
-                null,
-                new LokiJsonTextFormatter()
+                uri: loggingSettings.GrafanaLoki.Url,
+                labels: lokiLabels,
+                propertiesAsLabels: null,
+                credentials: lokiCredentials,
+                tenant: null,
+                restrictedToMinimumLevel: minimumLogLevel,
+                batchPostingLimit: loggingSettings.GrafanaLoki.BatchPostingLimit,
+                queueLimit: null,
+                period: null,
+                textFormatter: new LokiJsonTextFormatter()
             );
 
             var logger = loggerConfiguration.CreateLogger();
