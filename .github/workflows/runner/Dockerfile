@@ -6,9 +6,9 @@ FROM ghcr.io/catthehacker/ubuntu:act-22.04
 
 # Metadata labels
 LABEL org.opencontainers.image.title="Consilient GitHub Actions Runner"
-LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, sqlcmd, and SchemaSpy"
-LABEL org.opencontainers.image.version="2.2.5"
-LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,terraform=1.9.0,nodejs=20,docker-cli=latest,java=17,chrome=latest"
+LABEL org.opencontainers.image.description="Custom runner based on catthehacker/ubuntu:act-22.04 with Azure CLI, Terraform, sqlcmd, and Chrome"
+LABEL org.opencontainers.image.version="3.0.0"
+LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,terraform=1.9.0,nodejs=20,docker-cli=latest,chrome=latest"
 
 # ============================================================
 # Available Tools in this Image:
@@ -20,36 +20,26 @@ LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.
 #   - Docker CLI, Docker buildx
 #
 # Cloud & Infrastructure:
-#   - Azure CLI (latest stable) - ADDED
-#   - Terraform v1.9.0 - ADDED
+#   - Azure CLI (latest stable)
+#   - Terraform v1.9.0 + pre-cached providers
 #
 # Database Tools:
-#   - sqlcmd v1.6.0 (with Azure AD auth support) - ADDED
-#
-# Development Tools:
-#   - Java 17 (OpenJDK JRE) - ADDED
-#   - SchemaSpy v6.2.4 - ADDED
-#   - MSSQL JDBC Driver v12.4.2.jre11 - ADDED
-#   - MSAL4J v1.16.2 (Azure AD auth for JDBC) with full dependency tree - ADDED
+#   - sqlcmd v1.6.0 (with Azure AD auth support)
 #
 # Browser Automation & Testing:
-#   - Google Chrome (latest stable from official repo) - ADDED
+#   - Google Chrome (latest stable from official repo)
 #
 # Note: Docker CLI requires /var/run/docker.sock to be mounted
 #       when running this container to access the host's Docker daemon
+#
+# For database documentation (SchemaSpy), use Dockerfile.schemaspy instead
 # ============================================================
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install Java (required for SchemaSpy)
-# Note: git is already in the catthehacker base image, so no need to install it
-RUN apt-get update && \
-    apt-get install -y openjdk-17-jre-headless && \
-    rm -rf /var/lib/apt/lists/*
-
 # ============================================================
-# LAYER 0: Chrome (required for Lighthouse CI)
+# LAYER 1: Chrome (required for Lighthouse CI)
 # ============================================================
 # Install Google Chrome from official repository and dependencies for headless browser operation
 RUN apt-get update && \
@@ -99,12 +89,12 @@ RUN apt-get update && \
 ENV CHROME_PATH=/usr/bin/google-chrome-stable
 
 # ============================================================
-# LAYER 1: Azure CLI (Latest Stable)
+# LAYER 2: Azure CLI (Latest Stable)
 # ============================================================
 RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
 # ============================================================
-# LAYER 2: sqlcmd v1.6.0
+# LAYER 3: sqlcmd v1.6.0
 # ============================================================
 ENV SQLCMD_VERSION=1.6.0
 ENV SQLCMD_PATH=/usr/local/bin
@@ -120,60 +110,7 @@ RUN curl -L -o /tmp/sqlcmd.tar.bz2 \
 RUN sqlcmd --version
 
 # ============================================================
-# LAYER 3: SchemaSpy 6.2.4 + Dependencies via Maven (Automatic Dependency Resolution)
-# ============================================================
-ENV SCHEMASPY_VERSION=6.2.4
-ENV SCHEMASPY_PATH=/opt/schemaspy
-
-# Install Maven (used only for downloading dependencies, will be removed after)
-RUN apt-get update && \
-    apt-get install -y maven && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR ${SCHEMASPY_PATH}
-
-# Download SchemaSpy JAR
-RUN curl -L -o schemaspy.jar \
-    "https://github.com/schemaspy/schemaspy/releases/download/v${SCHEMASPY_VERSION}/schemaspy-${SCHEMASPY_VERSION}.jar"
-
-# Create a POM.xml that defines the top-level dependencies
-# Maven automatically resolves the entire transitive dependency tree
-RUN printf '%s\n' \
-    '<?xml version="1.0" encoding="UTF-8"?>' \
-    '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
-    '  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">' \
-    '  <modelVersion>4.0.0</modelVersion>' \
-    '  <groupId>local</groupId>' \
-    '  <artifactId>schemaspy-deps</artifactId>' \
-    '  <version>1.0.0</version>' \
-    '  <dependencies>' \
-    '    <dependency>' \
-    '      <groupId>com.microsoft.sqlserver</groupId>' \
-    '      <artifactId>mssql-jdbc</artifactId>' \
-    '      <version>12.4.2.jre11</version>' \
-    '    </dependency>' \
-    '    <dependency>' \
-    '      <groupId>com.azure</groupId>' \
-    '      <artifactId>azure-identity</artifactId>' \
-    '      <version>1.11.0</version>' \
-    '    </dependency>' \
-    '  </dependencies>' \
-    '</project>' > pom.xml
-
-# Run Maven to download all JARs and their transitive dependencies into /opt/schemaspy
-RUN mvn -q dependency:copy-dependencies -DoutputDirectory=${SCHEMASPY_PATH} -DincludeScope=runtime
-
-# Clean up Maven (reduces image size by ~500MB)
-RUN apt-get remove -y maven && \
-    apt-get autoremove -y && \
-    rm pom.xml && \
-    rm -rf ~/.m2
-
-# Add SchemaSpy to PATH
-ENV PATH="${SCHEMASPY_PATH}:${PATH}"
-
-# ============================================================
-# LAYER 3B: Bake GitHub Actions into the Image
+# LAYER 4: Bake GitHub Actions into the Image
 # ============================================================
 # Pre-clone frequently-used GitHub Actions to avoid network calls during workflow execution
 # This significantly speeds up act and GitHub Actions workflows, and provides offline capability
@@ -195,7 +132,7 @@ RUN mkdir -p ${GITHUB_ACTIONS_PATH}/actions ${GITHUB_ACTIONS_PATH}/hashicorp ${G
     echo "✅ All GitHub Actions cloned successfully"
 
 # ============================================================
-# LAYER 4: Terraform v1.9.0 with Pre-cached Providers
+# LAYER 5: Terraform v1.9.0 with Pre-cached Providers
 # ============================================================
 ENV TERRAFORM_VERSION=1.9.0
 ENV TERRAFORM_PLUGIN_CACHE_DIR=/terraform-plugins
@@ -237,7 +174,7 @@ RUN mkdir -p \
 WORKDIR /github/workspace
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD az --version && sqlcmd --version && terraform --version && docker --version && java -version && google-chrome-stable --version && node --version
+    CMD az --version && sqlcmd --version && terraform --version && docker --version && google-chrome-stable --version && node --version
 
 # ============================================================
 # Configuration

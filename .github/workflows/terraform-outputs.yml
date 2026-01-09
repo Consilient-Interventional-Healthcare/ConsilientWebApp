@@ -85,11 +85,7 @@ jobs:
         id: outputs
         working-directory: infra/terraform
         run: |
-          echo "api_app_name=$(terraform output -raw api_app_service_name)" >> $GITHUB_OUTPUT
-          echo "react_app_name=$(terraform output -raw react_app_service_name)" >> $GITHUB_OUTPUT
-          echo "acr_registry_url=$(terraform output -raw acr_registry_url)" >> $GITHUB_OUTPUT
-          echo "resource_group_name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
-          echo "sql_server_fqdn=$(terraform output -raw sql_server_fqdn)" >> $GITHUB_OUTPUT
+          bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/terraform-outputs.sh"
 
       - name: Summary
         run: |

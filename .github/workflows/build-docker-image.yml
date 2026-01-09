@@ -1,6 +1,18 @@
-name: Build Runner Image
+name: Build Docker Image
 on:
   workflow_call:
+    inputs:
+      image_type:
+        description: 'Type of image to build: actions-runner or schemaspy-runner'
+        required: true
+        type: string
+    outputs:
+      image_tag:
+        description: 'Full image tag with hash'
+        value: ${{ jobs.build-and-verify.outputs.image_tag }}
+      image_exists:
+        description: 'Whether the image already existed'
+        value: ${{ jobs.build-and-verify.outputs.image_exists }}
 
 permissions:
   contents: read
@@ -11,19 +23,40 @@ env:
 
 jobs:
   build-and-verify:
-    name: Verify existence and Build
+    name: Build ${{ inputs.image_type }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     if: github.event_name != 'pull_request'
+    outputs:
+      image_tag: ${{ steps.check-image.outputs.hash_tag }}
+      image_exists: ${{ steps.check-image.outputs.exists }}
 
     steps:
-      - name: Set lowercase image name
-        id: image-name
+      - name: Validate image type
         run: |
-          # Convert repository name to lowercase (Docker requirement)
-          IMAGE_NAME=$(echo "${{ github.repository }}/actions-runner" | tr '[:upper:]' '[:lower:]')
-          echo "value=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-          echo "Using image name: ${IMAGE_NAME}"
+          if [[ "${{ inputs.image_type }}" != "actions-runner" && "${{ inputs.image_type }}" != "schemaspy-runner" ]]; then
+            echo "❌ Invalid image_type: ${{ inputs.image_type }}"
+            echo "Must be 'actions-runner' or 'schemaspy-runner'"
+            exit 1
+          fi
+
+      - name: Set image configuration
+        id: config
+        run: |
+          IMAGE_TYPE="${{ inputs.image_type }}"
+          REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
+          if [ "$IMAGE_TYPE" = "actions-runner" ]; then
+            echo "dockerfile=Dockerfile" >> $GITHUB_OUTPUT
+            echo "image_name=${REPO_LOWERCASE}/actions-runner" >> $GITHUB_OUTPUT
+            echo "title=Consilient Actions Runner" >> $GITHUB_OUTPUT
+            echo "description=Custom GitHub Actions runner with pre-installed tools" >> $GITHUB_OUTPUT
+          else
+            echo "dockerfile=Dockerfile.schemaspy" >> $GITHUB_OUTPUT
+            echo "image_name=${REPO_LOWERCASE}/schemaspy-runner" >> $GITHUB_OUTPUT
+            echo "title=Consilient SchemaSpy Runner" >> $GITHUB_OUTPUT
+            echo "description=Database documentation runner with SchemaSpy, Azure CLI, and sqlcmd" >> $GITHUB_OUTPUT
+          fi
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,8 +66,12 @@ jobs:
       - name: Compute Dockerfile hash
         id: dockerfile-hash
         run: |
-          # Compute SHA256 hash of Dockerfile and take first 12 characters
-          HASH=$(sha256sum .github/workflows/runner/Dockerfile | cut -d' ' -f1 | cut -c1-12)
+          DOCKERFILE=".github/workflows/runner/${{ steps.config.outputs.dockerfile }}"
+          if [ ! -f "$DOCKERFILE" ]; then
+            echo "❌ Dockerfile not found: $DOCKERFILE"
+            exit 1
+          fi
+          HASH=$(sha256sum "$DOCKERFILE" | cut -d' ' -f1 | cut -c1-12)
           echo "hash=${HASH}" >> $GITHUB_OUTPUT
           echo "Dockerfile hash: ${HASH}"
 
@@ -48,8 +85,7 @@ jobs:
       - name: Check if image exists
         id: check-image
         run: |
-          # Use hash-based tag instead of SHA-based tag for content-aware caching
-          IMAGE_NAME="${{ steps.image-name.outputs.value }}"
+          IMAGE_NAME="${{ steps.config.outputs.image_name }}"
           DOCKERFILE_HASH="${{ steps.dockerfile-hash.outputs.hash }}"
           HASH_TAG="${{ env.REGISTRY }}/${IMAGE_NAME}:dockerfile-${DOCKERFILE_HASH}"
 
@@ -73,15 +109,15 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}
+          images: ${{ env.REGISTRY }}/${{ steps.config.outputs.image_name }}
           tags: |
             type=raw,value=dockerfile-${{ steps.dockerfile-hash.outputs.hash }}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
             type=ref,event=pr
           labels: |
-            org.opencontainers.image.title=Consilient Actions Runner
-            org.opencontainers.image.description=Custom GitHub Actions runner with pre-installed tools
+            org.opencontainers.image.title=${{ steps.config.outputs.title }}
+            org.opencontainers.image.description=${{ steps.config.outputs.description }}
             org.opencontainers.image.vendor=Consilient
             org.opencontainers.image.version=${{ github.sha }}
 
@@ -91,11 +127,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .github/workflows/runner
-          file: .github/workflows/runner/Dockerfile
+          file: .github/workflows/runner/${{ steps.config.outputs.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,type=registry,ref=${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}
+          cache-from: type=gha,type=registry,ref=${{ env.REGISTRY }}/${{ steps.config.outputs.image_name }}
           cache-to: type=gha,mode=max,image-manifest=true,oci-mediatypes=true
           platforms: linux/amd64
 
@@ -104,17 +140,16 @@ jobs:
         run: |
           HASH_TAG="${{ steps.check-image.outputs.hash_tag }}"
           IMAGE_EXISTS="${{ steps.check-image.outputs.exists }}"
-          IMAGE_NAME="${{ steps.image-name.outputs.value }}"
+          IMAGE_NAME="${{ steps.config.outputs.image_name }}"
+          IMAGE_TYPE="${{ inputs.image_type }}"
 
           if [ "$IMAGE_EXISTS" = "true" ]; then
-            # Image already existed
-            echo "### Runner Image Ready ♻️" >> $GITHUB_STEP_SUMMARY
+            echo "### ${IMAGE_TYPE} Image Ready ♻️" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Status:** ✅ Using existing image from registry" >> $GITHUB_STEP_SUMMARY
             echo "**Action:** Build skipped (image already exists)" >> $GITHUB_STEP_SUMMARY
           else
-            # Image was built
-            echo "### Runner Image Built 🐳" >> $GITHUB_STEP_SUMMARY
+            echo "### ${IMAGE_TYPE} Image Built 🐳" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Status:** ✅ Newly built and pushed to registry" >> $GITHUB_STEP_SUMMARY
             echo "**Action:** Image recreated for Dockerfile changes" >> $GITHUB_STEP_SUMMARY
@@ -133,12 +168,7 @@ jobs:
           echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### Pull Command (Latest)" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${IMAGE_NAME}:latest" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### Pull Command (Specific Dockerfile)" >> $GITHUB_STEP_SUMMARY
+          echo "#### Pull Command" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "docker pull ${HASH_TAG}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

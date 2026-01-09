@@ -19,14 +19,13 @@ permissions:
   packages: write
 
 jobs:
-  # Job 1: Initialize (get runner image, set environment)
+  # Job 1: Initialize (set environment)
   initialize-workflow:
     name: Initialize Workflow
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       environment: ${{ steps.initialize.outputs.environment }}
-      runner_image: ${{ steps.initialize.outputs.runner_image }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,13 +37,14 @@ jobs:
         uses: ./.github/actions/initialize
         with:
           environment: ${{ inputs.environment }}
-          container_registry: ${{ vars.CONTAINER_REGISTRY }}
 
-  # Job 2: Build runner image (check and conditionally build Docker image)
-  build-runner-image:
-    name: Build Runner Image
+  # Job 2: Build schemaspy runner image (check and conditionally build Docker image)
+  build-schemaspy-image:
+    name: Build SchemaSpy Image
     needs: [initialize-workflow]
-    uses: ./.github/workflows/build-runner-image.yml
+    uses: ./.github/workflows/build-docker-image.yml
+    with:
+      image_type: schemaspy-runner
     permissions:
       contents: read
       packages: write
@@ -134,12 +134,12 @@ jobs:
   # Job 5: Generate documentation
   generate-db-docs:
     name: Generate Documentation
-    needs: [initialize-workflow, build-runner-image, discover-databases, get-terraform-outputs]
+    needs: [initialize-workflow, build-schemaspy-image, discover-databases, get-terraform-outputs]
     if: needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/database-docs.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       database-configs: ${{ needs.discover-databases.outputs.database_configs }}
       azure-sql-server-fqdn: ${{ needs.get-terraform-outputs.outputs.sql_server_fqdn }}
-      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+      runner_image: ${{ needs.build-schemaspy-image.outputs.image_tag }}
     secrets: inherit

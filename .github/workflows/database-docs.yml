@@ -1,12 +1,14 @@
 # Runtime Dependencies
-# This workflow requires the following tools to be available in the runner environment:
+# This workflow requires the schemaspy-runner image (Dockerfile.schemaspy) which includes:
 # - SchemaSpy JAR: /opt/schemaspy/schemaspy.jar (version controlled via SCHEMASPY_VERSION)
 # - JDBC Driver: /opt/schemaspy/mssql-jdbc.jar (SQL Server driver)
 # - Java: 17+ (for running SchemaSpy)
 # - sqlcmd: Azure SQL command-line tool (for schema discovery)
 # - jq: JSON query tool (for parsing JSON input)
-# - MSAL4J and Azure AD dependencies: Pre-installed in runner image for Azure authentication
-# Note: Most are pre-installed in the GitHub Actions runner image
+# - MSAL4J and Azure AD dependencies: Pre-installed for Azure authentication
+# - Azure CLI: For Azure authentication
+#
+# When calling this workflow, pass schemaspy_runner_image from initialize action
 
 name: Generate Database Documentation
 
@@ -28,7 +30,7 @@ on:
         required: true
         type: string
       runner_image:
-        description: 'Custom runner container image with sqlcmd and other tools pre-installed'
+        description: 'SchemaSpy runner container image (use schemaspy_runner_image from initialize action)'
         required: true
         type: string
       deploy-to-pages:

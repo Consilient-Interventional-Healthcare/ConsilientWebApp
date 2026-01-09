@@ -1,0 +1,142 @@
+# SchemaSpy Runner - Database Documentation Image
+# Purpose: Specialized image for generating database schema documentation
+# Base: catthehacker/ubuntu:act-22.04 (optimized for act + GitHub Actions)
+#
+# This image is separate from the main actions-runner to keep CI/CD jobs fast.
+# Only database-docs.yml and generate-docs-standalone.yml use this image.
+FROM ghcr.io/catthehacker/ubuntu:act-22.04
+
+# Metadata labels
+LABEL org.opencontainers.image.title="Consilient SchemaSpy Runner"
+LABEL org.opencontainers.image.description="Database documentation runner with SchemaSpy, Azure CLI, and sqlcmd"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.tools="azure-cli=latest,sqlcmd=1.6.0,schemaspy=6.2.4,msal4j=1.16.2,java=17"
+
+# ============================================================
+# Available Tools in this Image:
+# ============================================================
+# System Utilities (from catthehacker base):
+#   - curl, ca-certificates, gnupg, lsb-release
+#   - tar, bzip2, unzip
+#   - git, jq, node.js 20
+#
+# Cloud:
+#   - Azure CLI (latest stable) - for Azure AD authentication
+#
+# Database Tools:
+#   - sqlcmd v1.6.0 (with Azure AD auth support) - for schema discovery
+#
+# Documentation Tools:
+#   - Java 17 (OpenJDK JRE) - required for SchemaSpy
+#   - SchemaSpy v6.2.4 - generates database documentation
+#   - MSSQL JDBC Driver v12.4.2.jre11
+#   - MSAL4J v1.16.2 (Azure AD auth for JDBC) with full dependency tree
+# ============================================================
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ============================================================
+# LAYER 1: Java 17 (required for SchemaSpy)
+# ============================================================
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jre-headless && \
+    rm -rf /var/lib/apt/lists/*
+
+# ============================================================
+# LAYER 2: Azure CLI (Latest Stable)
+# ============================================================
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# ============================================================
+# LAYER 3: sqlcmd v1.6.0 (for schema discovery)
+# ============================================================
+ENV SQLCMD_VERSION=1.6.0
+ENV SQLCMD_PATH=/usr/local/bin
+
+RUN curl -L -o /tmp/sqlcmd.tar.bz2 \
+    "https://github.com/microsoft/go-sqlcmd/releases/download/v${SQLCMD_VERSION}/sqlcmd-v${SQLCMD_VERSION}-linux-x64.tar.bz2" && \
+    tar -xf /tmp/sqlcmd.tar.bz2 -C /tmp && \
+    mv /tmp/sqlcmd ${SQLCMD_PATH}/sqlcmd && \
+    chmod +x ${SQLCMD_PATH}/sqlcmd && \
+    rm -rf /tmp/sqlcmd.tar.bz2
+
+# Verify sqlcmd installation
+RUN sqlcmd --version
+
+# ============================================================
+# LAYER 4: SchemaSpy 6.2.4 + Dependencies via Maven
+# ============================================================
+ENV SCHEMASPY_VERSION=6.2.4
+ENV SCHEMASPY_PATH=/opt/schemaspy
+
+# Install Maven (used only for downloading dependencies, will be removed after)
+RUN apt-get update && \
+    apt-get install -y maven && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR ${SCHEMASPY_PATH}
+
+# Download SchemaSpy JAR
+RUN curl -L -o schemaspy.jar \
+    "https://github.com/schemaspy/schemaspy/releases/download/v${SCHEMASPY_VERSION}/schemaspy-${SCHEMASPY_VERSION}.jar"
+
+# Create a POM.xml that defines the top-level dependencies
+# Maven automatically resolves the entire transitive dependency tree
+RUN printf '%s\n' \
+    '<?xml version="1.0" encoding="UTF-8"?>' \
+    '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' \
+    '  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">' \
+    '  <modelVersion>4.0.0</modelVersion>' \
+    '  <groupId>local</groupId>' \
+    '  <artifactId>schemaspy-deps</artifactId>' \
+    '  <version>1.0.0</version>' \
+    '  <dependencies>' \
+    '    <dependency>' \
+    '      <groupId>com.microsoft.sqlserver</groupId>' \
+    '      <artifactId>mssql-jdbc</artifactId>' \
+    '      <version>12.4.2.jre11</version>' \
+    '    </dependency>' \
+    '    <dependency>' \
+    '      <groupId>com.azure</groupId>' \
+    '      <artifactId>azure-identity</artifactId>' \
+    '      <version>1.11.0</version>' \
+    '    </dependency>' \
+    '  </dependencies>' \
+    '</project>' > pom.xml
+
+# Run Maven to download all JARs and their transitive dependencies into /opt/schemaspy
+RUN mvn -q dependency:copy-dependencies -DoutputDirectory=${SCHEMASPY_PATH} -DincludeScope=runtime
+
+# Clean up Maven (reduces image size by ~500MB)
+RUN apt-get remove -y maven && \
+    apt-get autoremove -y && \
+    rm pom.xml && \
+    rm -rf ~/.m2
+
+# Add SchemaSpy to PATH
+ENV PATH="${SCHEMASPY_PATH}:${PATH}"
+
+# ============================================================
+# Working Directory & Health Check
+# ============================================================
+WORKDIR /github/workspace
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD az --version && sqlcmd --version && java -version
+
+# ============================================================
+# Configuration
+# ============================================================
+ENV DEBIAN_FRONTEND=
+
+# Configure git to use credentials from environment variables
+ENV GIT_TERMINAL_PROMPT=0
+RUN git config --global url."https://".insteadOf git:// && \
+    git config --global --add credential.helper store
+
+# Create an entrypoint script that sets up git credentials before running commands
+RUN mkdir -p /root && printf '#!/bin/bash\nset -e\n\nif [ -n "$GITHUB_TOKEN" ]; then\n    echo "Configuring git credentials..."\n    echo "https://x-access-token:${GITHUB_TOKEN}@github.com" > /root/.git-credentials\n    chmod 600 /root/.git-credentials\nfi\n\nexec "$@"\n' > /root/entrypoint.sh && chmod +x /root/entrypoint.sh
+
+ENTRYPOINT ["/root/entrypoint.sh"]
+CMD ["/bin/bash"]

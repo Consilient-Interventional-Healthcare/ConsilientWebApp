@@ -1,38 +1,20 @@
 name: Initialize Workflow Configuration
-description: Initializes workflow configuration by validating environment inputs and computing runner image paths
+description: Initializes workflow configuration by validating environment inputs
 
 inputs:
   environment:
     description: 'Target environment (dev/prod/etc)'
     required: false
     default: ''
-  container_registry:
-    description: 'Container registry URL'
-    required: true
 
 outputs:
   environment:
     description: 'Computed deployment environment'
     value: ${{ steps.setenv.outputs.environment }}
-  runner_image:
-    description: 'Docker image for the actions runner'
-    value: ${{ steps.runner-image.outputs.runner_image }}
-  dockerfile_hash:
-    description: 'SHA256 hash of the Dockerfile'
-    value: ${{ steps.dockerfile-hash.outputs.hash }}
 
 runs:
   using: composite
   steps:
-    - name: Compute Dockerfile hash
-      id: dockerfile-hash
-      shell: bash
-      run: |
-        # Compute SHA256 hash of Dockerfile and take first 12 characters
-        HASH=$(sha256sum .github/workflows/runner/Dockerfile | cut -d' ' -f1 | cut -c1-12)
-        echo "hash=${HASH}" >> $GITHUB_OUTPUT
-        echo "Dockerfile hash: ${HASH}"
-
     - name: Validate environment input
       uses: ./.github/actions/validate-inputs
       with:
@@ -51,22 +33,9 @@ runs:
 
         echo "environment=$ENVIRONMENT_INPUT" >> $GITHUB_OUTPUT
 
-    - name: Compute runner image path
-      id: runner-image
-      shell: bash
-      run: |
-        # Convert repository to lowercase (Docker requirement)
-        REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-        DOCKERFILE_HASH="${{ steps.dockerfile-hash.outputs.hash }}"
-        RUNNER_IMAGE="${{ inputs.container_registry }}/${REPO_LOWERCASE}/actions-runner:dockerfile-${DOCKERFILE_HASH}"
-        echo "runner_image=${RUNNER_IMAGE}" >> $GITHUB_OUTPUT
-        echo "Runner image: ${RUNNER_IMAGE}"
-
     - name: Summary
       shell: bash
       run: |
         echo "### Workflow Initialization Complete ✅" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Environment:** \`${{ steps.setenv.outputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "**Runner Image:** \`${{ steps.runner-image.outputs.runner_image }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "**Dockerfile Hash:** \`${{ steps.dockerfile-hash.outputs.hash }}\`" >> $GITHUB_STEP_SUMMARY

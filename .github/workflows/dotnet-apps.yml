@@ -22,10 +22,6 @@ on:
         required: false
         type: string
         default: ''
-      runner_image:
-        description: 'Docker image for the deployment container'
-        required: true
-        type: string
       api_image_name:
         description: 'Docker image name for the API'
         required: false

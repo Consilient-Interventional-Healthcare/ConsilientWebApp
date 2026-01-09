@@ -96,7 +96,6 @@ jobs:
     timeout-minutes: 5
     outputs:
       environment: ${{ steps.initialize.outputs.environment }}
-      runner_image: ${{ steps.initialize.outputs.runner_image }}
       # Database discovery outputs (merged from discover-databases job)
       database_directories: ${{ steps.discover.outputs.database_directories }}
       database_configs: ${{ steps.discover.outputs.database_configs }}
@@ -112,7 +111,6 @@ jobs:
         uses: ./.github/actions/initialize
         with:
           environment: ${{ github.event.inputs.environment || 'dev' }}
-          container_registry: ${{ vars.CONTAINER_REGISTRY }}
 
       - name: Discover databases
         id: discover
@@ -139,7 +137,9 @@ jobs:
   build-runner-image:
     name: Image Runner
     needs: [detect-changes]
-    uses: ./.github/workflows/build-runner-image.yml
+    uses: ./.github/workflows/build-docker-image.yml
+    with:
+      image_type: actions-runner
     permissions:
       contents: read
       packages: write
@@ -168,11 +168,11 @@ jobs:
       - name: Pull Docker image with layer caching
         run: |
           echo "🐳 Pre-pulling Docker image with layer caching..."
-          echo "Image: ${{ needs.initialize-workflow.outputs.runner_image }}"
+          echo "Image: ${{ needs.build-runner-image.outputs.image_tag }}"
 
           # Use docker buildx with caching to pull and cache layers locally
           docker buildx build --load --cache-from=type=gha --cache-to=type=gha,mode=max \
-            --build-arg BASE_IMAGE="${{ needs.initialize-workflow.outputs.runner_image }}" \
+            --build-arg BASE_IMAGE="${{ needs.build-runner-image.outputs.image_tag }}" \
             -f - . <<'EOF'
           ARG BASE_IMAGE
           FROM ${BASE_IMAGE}
@@ -184,7 +184,7 @@ jobs:
         run: |
           echo "### Docker Cache Warming Complete ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ needs.initialize-workflow.outputs.runner_image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ needs.build-runner-image.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Cache Status:** ✅ Layer caching enabled (GHA)" >> $GITHUB_STEP_SUMMARY
 
   terraform:
@@ -204,7 +204,7 @@ jobs:
       allow-local-firewall: ${{ inputs.allow-local-firewall || false }}
       enable-debug: ${{ inputs.enable-debug || false }}
       enable-oauth: ${{ inputs.enable-oauth || false }}
-      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+      runner_image: ${{ needs.build-runner-image.outputs.image_tag }}
     secrets: inherit
 
   terraform-outputs:
@@ -271,25 +271,28 @@ jobs:
       databases: ${{ needs.initialize-workflow.outputs.database_directories }}
       recreate-database-objects: ${{ inputs.recreate-database-objects || false }}
       azure-sql-server-fqdn: ${{ needs.terraform-consolidation.outputs.sql_server_fqdn }}
-      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+      runner_image: ${{ needs.build-runner-image.outputs.image_tag }}
     secrets: inherit
 
   # generate-db-docs:
   #   name: Database Documentation
-  #   needs: [initialize-workflow, discover-databases, deploy-databases, terraform, warm-docker-cache]
+  #   # NOTE: Database documentation is run separately via generate-docs-standalone.yml
+  #   # which builds its own schemaspy-runner image. Uncomment this section if you want
+  #   # to integrate db docs into the main pipeline (requires adding build-schemaspy-image job).
+  #   needs: [initialize-workflow, deploy-databases, terraform-consolidation]
   #   if: |
   #     (github.event_name != 'workflow_dispatch' || inputs.run-db-docs != false) &&
   #     (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') &&
   #     always() &&
   #     needs.initialize-workflow.result == 'success' &&
-  #     needs.discover-databases.result == 'success' &&
-  #     needs.discover-databases.outputs.count != '0'
+  #     needs.terraform-consolidation.result == 'success' &&
+  #     needs.initialize-workflow.outputs.database_count != '0'
   #   uses: ./.github/workflows/database-docs.yml
   #   with:
   #     environment: ${{ needs.initialize-workflow.outputs.environment }}
-  #     database-configs: ${{ needs.discover-databases.outputs.database_configs }}
-  #     azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
-  #     runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+  #     database-configs: ${{ needs.initialize-workflow.outputs.database_configs }}
+  #     azure-sql-server-fqdn: ${{ needs.terraform-consolidation.outputs.sql_server_fqdn }}
+  #     runner_image: <schemaspy_runner_image from build-schemaspy-image job>
   #   secrets: inherit
 
   # ============================================================================
@@ -298,11 +301,10 @@ jobs:
 
   deploy-dotnet-apps:
     name: Deploy API
-    needs: [initialize-workflow, terraform-consolidation, deploy-databases, build-runner-image, warm-docker-cache]
+    needs: [initialize-workflow, terraform-consolidation, deploy-databases, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
       always() &&
-      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       needs.terraform-consolidation.result == 'success' &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
@@ -312,7 +314,6 @@ jobs:
       api_app_name: ${{ needs.terraform-consolidation.outputs.api_app_name || format('consilient-api-{0}', needs.initialize-workflow.outputs.environment) }}
       acr_registry: ${{ needs.terraform-consolidation.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform-consolidation.outputs.resource_group_name }}
-      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
       api_image_name: 'consilient-api'
       cache_image_ref: ${{ format('{0}/consilient-api:latest', needs.terraform-consolidation.outputs.acr_registry_url) }}
     secrets: inherit
@@ -333,7 +334,7 @@ jobs:
       react_app_name: ${{ needs.terraform-consolidation.outputs.react_app_name || format('consilient-react-{0}', needs.initialize-workflow.outputs.environment) }}
       acr_registry: ${{ needs.terraform-consolidation.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform-consolidation.outputs.resource_group_name }}
-      runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
+      runner_image: ${{ needs.build-runner-image.outputs.image_tag }}
       react_image_name: 'consilient-react'
       cache_image_ref: ${{ format('{0}/consilient-react:latest', needs.terraform-consolidation.outputs.acr_registry_url) }}
     secrets: inherit
