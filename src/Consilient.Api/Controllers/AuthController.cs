@@ -388,16 +388,18 @@ namespace Consilient.Api.Controllers
         {
             var encodedError = Uri.EscapeDataString(errorMessage);
 
-            if (IsValidReturnUrl(returnUrl))
+            var absoluteUrl = BuildAbsoluteReturnUrl(returnUrl);
+            if (!string.IsNullOrWhiteSpace(absoluteUrl))
             {
-                var separator = returnUrl!.Contains('?') ? "&" : "?";
-                return Task.FromResult<IActionResult>(Redirect($"{returnUrl}{separator}error={encodedError}"));
+                var separator = absoluteUrl.Contains('?') ? "&" : "?";
+                return Task.FromResult<IActionResult>(Redirect($"{absoluteUrl}{separator}error={encodedError}"));
             }
 
             _logger.LogWarning(
                 "Invalid return URL detected for error redirect, using default. URL: {ReturnUrl}",
                 returnUrl);
-            return Task.FromResult<IActionResult>(Redirect($"/?error={encodedError}"));
+            var defaultOrigin = _allowedOrigins.FirstOrDefault() ?? "/";
+            return Task.FromResult<IActionResult>(Redirect($"{defaultOrigin}?error={encodedError}"));
         }
 
         /// <summary>
