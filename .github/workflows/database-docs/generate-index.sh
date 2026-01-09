@@ -39,6 +39,12 @@ CURRENT_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 CURRENT_DATE_ESCAPED=$(escape_html "$CURRENT_DATE")
 ENVIRONMENT_ESCAPED=$(escape_html "$environment_input")
 
+# Export variables for Python script
+export CURRENT_DATE_ESCAPED
+export ENVIRONMENT_ESCAPED
+export DATABASE_COUNT
+export DATABASE_CARDS
+
 # Build database cards from metadata file
 DATABASE_CARDS=""
 
@@ -76,6 +82,9 @@ else
   DATABASE_CARDS="<p>No databases processed</p>"
 fi
 
+# Export DATABASE_CARDS now that it's fully built
+export DATABASE_CARDS
+
 # Read template file
 TEMPLATE_PATH=".github/workflows/database-docs/index.template.html"
 
@@ -88,16 +97,30 @@ fi
 mkdir -p docs/dbs
 cp "$TEMPLATE_PATH" docs/dbs/index.html
 
-# Escape special characters in replacement strings for sed
-CURRENT_DATE_ESCAPED_SED=$(printf '%s\n' "$CURRENT_DATE_ESCAPED" | sed -e 's/[\/&]/\\&/g')
-DATABASE_COUNT_SED=$(printf '%s\n' "$DATABASE_COUNT" | sed -e 's/[\/&]/\\&/g')
-ENVIRONMENT_ESCAPED_SED=$(printf '%s\n' "$ENVIRONMENT_ESCAPED" | sed -e 's/[\/&]/\\&/g')
-DATABASE_CARDS_SED=$(printf '%s\n' "$DATABASE_CARDS" | sed -e 's/[\/&]/\\&/g')
+# Replace placeholders using a Python one-liner (most reliable cross-platform approach)
+# Python handles multi-line strings, special characters, and HTML content correctly
+python3 << 'PYTHON_SCRIPT'
+import os
 
-# Replace placeholders using sed
-sed -i "s|{{CURRENT_DATE}}|$CURRENT_DATE_ESCAPED_SED|g" docs/dbs/index.html
-sed -i "s|{{DATABASE_COUNT}}|$DATABASE_COUNT_SED|g" docs/dbs/index.html
-sed -i "s|{{ENVIRONMENT}}|$ENVIRONMENT_ESCAPED_SED|g" docs/dbs/index.html
-sed -i "s|{{DATABASE_CARDS}}|$DATABASE_CARDS_SED|g" docs/dbs/index.html
+# Read the template
+with open('docs/dbs/index.html', 'r') as f:
+    content = f.read()
+
+# Get variables from environment
+current_date = os.environ.get('CURRENT_DATE_ESCAPED', '')
+database_count = os.environ.get('DATABASE_COUNT', '0')
+environment = os.environ.get('ENVIRONMENT_ESCAPED', '')
+database_cards = os.environ.get('DATABASE_CARDS', '')
+
+# Replace placeholders
+content = content.replace('{{CURRENT_DATE}}', current_date)
+content = content.replace('{{DATABASE_COUNT}}', database_count)
+content = content.replace('{{ENVIRONMENT}}', environment)
+content = content.replace('{{DATABASE_CARDS}}', database_cards)
+
+# Write the result
+with open('docs/dbs/index.html', 'w') as f:
+    f.write(content)
+PYTHON_SCRIPT
 
 echo "✅ Unified index page created at docs/dbs/index.html"
