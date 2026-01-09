@@ -143,47 +143,20 @@ jobs:
         # Note: Checkout runs in root directory (./), composite action default overrides job default
         # MUST run before custom actions that reference ./.github/actions/
 
-      - name: Validate Inputs
+      - name: Validate Inputs and Secrets
         uses: ./.github/actions/validate-inputs
         with:
           environment: ${{ inputs.environment }}
-
-      - name: Validate Required Secrets
-        shell: bash
-        working-directory: .
-        run: |
-          # CRITICAL: Bash runs with -e -o pipefail in GitHub Actions workflows.
-          # This means: (1) any command returning non-zero exits the script, and
-          # (2) scripts must explicitly exit 0 on success or return non-zero on failure.
-          # Without explicit exit 0, the script can fail even when validation passes.
-
-          MISSING_SECRETS=()
-
-          # Check all required secrets are available as environment variables
-          # In GitHub Actions: injected from repository secrets via job env:
-          # In act: loaded from .env.act via PowerShell --secret flags and job env:
-
-          [ -z "${AZURE_SUBSCRIPTION_ID}" ] && MISSING_SECRETS+=("AZURE_SUBSCRIPTION_ID (Azure subscription)")
-          [ -z "${ARM_CLIENT_ID}" ] && MISSING_SECRETS+=("ARM_CLIENT_ID (Terraform provider auth)")
-          [ -z "${ARM_CLIENT_SECRET}" ] && MISSING_SECRETS+=("ARM_CLIENT_SECRET (Terraform provider auth)")
-          [ -z "${ARM_TENANT_ID}" ] && MISSING_SECRETS+=("ARM_TENANT_ID (Terraform provider auth)")
-          [ -z "${SQL_ADMIN_USERNAME}" ] && MISSING_SECRETS+=("SQL_ADMIN_USERNAME (SQL server creation)")
-          [ -z "${SQL_ADMIN_PASSWORD}" ] && MISSING_SECRETS+=("SQL_ADMIN_PASSWORD (SQL server creation)")
-          [ -z "${JWT_SIGNING_SECRET}" ] && MISSING_SECRETS+=("JWT_SIGNING_SECRET (API authentication)")
-
-          # Report any missing secrets and exit with error
-          if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
-            echo "❌ ERROR: Missing required secrets:"
-            for secret in "${MISSING_SECRETS[@]}"; do
-              echo "   - $secret"
-            done
-            echo ""
-            echo "Please configure these secrets in GitHub repository settings or .env.act file."
-            exit 1
-          fi
-
-          echo "✅ All required secrets are configured"
-          exit 0
+          required-secrets: |
+            [
+              {"name": "AZURE_SUBSCRIPTION_ID", "env": "AZURE_SUBSCRIPTION_ID", "description": "Azure subscription"},
+              {"name": "ARM_CLIENT_ID", "env": "ARM_CLIENT_ID", "description": "Terraform provider auth"},
+              {"name": "ARM_CLIENT_SECRET", "env": "ARM_CLIENT_SECRET", "description": "Terraform provider auth"},
+              {"name": "ARM_TENANT_ID", "env": "ARM_TENANT_ID", "description": "Terraform provider auth"},
+              {"name": "SQL_ADMIN_USERNAME", "env": "SQL_ADMIN_USERNAME", "description": "SQL server creation"},
+              {"name": "SQL_ADMIN_PASSWORD", "env": "SQL_ADMIN_PASSWORD", "description": "SQL server creation"},
+              {"name": "JWT_SIGNING_SECRET", "env": "JWT_SIGNING_SECRET", "description": "API authentication"}
+            ]
 
       - name: Login to Azure (OIDC + act fallback)
         # AZURE_CLIENT_ID is for OIDC authentication (production)

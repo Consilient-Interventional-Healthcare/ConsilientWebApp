@@ -15,6 +15,10 @@ inputs:
   scripts-path:
     description: 'Path to verify exists (for database workflows)'
     required: false
+  required-secrets:
+    description: 'JSON array of secret names with descriptions. Example: [{"name": "SECRET_NAME", "env": "ENV_VAR_NAME", "description": "Purpose"}]'
+    required: false
+    default: '[]'
 
 outputs:
   validation-passed:
@@ -81,6 +85,42 @@ runs:
               echo "✅ $field is set"
             fi
           done < <(echo "$REQUIRED" | jq -r 'keys[]')
+        fi
+
+        # Validate required secrets
+        SECRETS_JSON='${{ inputs.required-secrets }}'
+        if [ "$SECRETS_JSON" != "[]" ]; then
+          echo ""
+          echo "=== Secret Validation ==="
+          MISSING_SECRETS=()
+
+          # Parse JSON array and check each secret
+          while IFS= read -r secret; do
+            SECRET_NAME=$(echo "$secret" | jq -r '.name')
+            SECRET_ENV=$(echo "$secret" | jq -r '.env')
+            SECRET_DESC=$(echo "$secret" | jq -r '.description')
+
+            # Check if environment variable is set
+            if [ -z "${!SECRET_ENV}" ]; then
+              MISSING_SECRETS+=("$SECRET_NAME ($SECRET_DESC)")
+            else
+              echo "✅ $SECRET_NAME is configured"
+            fi
+          done < <(echo "$SECRETS_JSON" | jq -c '.[]')
+
+          # Report missing secrets
+          if [ ${#MISSING_SECRETS[@]} -gt 0 ]; then
+            echo ""
+            echo "❌ ERROR: Missing required secrets:"
+            for secret in "${MISSING_SECRETS[@]}"; do
+              echo "   - $secret"
+            done
+            echo ""
+            echo "Please configure these secrets in GitHub repository settings or .env.act file."
+            PASSED=false
+          else
+            echo "✅ All required secrets are configured"
+          fi
         fi
 
         echo ""

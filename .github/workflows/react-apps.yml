@@ -95,10 +95,17 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Validate environment input
+      - name: Validate environment input and secrets
         uses: ./.github/actions/validate-inputs
         with:
           environment: ${{ inputs.environment || github.event.inputs.environment || 'dev' }}
+          required-secrets: |
+            [
+              {"name": "AZURE_SUBSCRIPTION_ID", "env": "AZURE_SUBSCRIPTION_ID", "description": "Azure subscription"},
+              {"name": "ARM_CLIENT_ID", "env": "ARM_CLIENT_ID", "description": "Azure authentication"},
+              {"name": "ARM_CLIENT_SECRET", "env": "ARM_CLIENT_SECRET", "description": "Azure authentication"},
+              {"name": "ARM_TENANT_ID", "env": "ARM_TENANT_ID", "description": "Azure authentication"}
+            ]
 
       - name: Validate Deployment Configuration
         run: |
