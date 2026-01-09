@@ -469,6 +469,10 @@ resource "azurerm_app_configuration_key" "oauth_enabled" {
     category    = "authentication"
   }
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
@@ -518,6 +522,10 @@ resource "azurerm_app_configuration_key" "oauth_client_id" {
   tags = {
     application = "ConsilientApi"
     category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
   }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]

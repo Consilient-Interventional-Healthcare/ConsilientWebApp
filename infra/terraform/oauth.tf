@@ -75,6 +75,10 @@ resource "azurerm_key_vault_secret" "oauth_client_secret" {
   value        = local.oauth.enabled ? azuread_application_password.oauth[0].value : "not-configured"
   key_vault_id = azurerm_key_vault.main.id
 
+  lifecycle {
+    ignore_changes = [value]
+  }
+
   depends_on = [azurerm_role_assignment.terraform_keyvault_secrets_officer]
 }
 
