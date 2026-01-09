@@ -47,6 +47,9 @@ on:
         description: "The fully qualified domain name of the Azure SQL Server"
         value: ${{ jobs.terraform.outputs.sql_server_fqdn }}
     secrets:
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+        description: 'Azure subscription ID for Terraform'
       ARM_CLIENT_ID:
         required: true
         description: 'Service Principal Client ID for Terraform'
