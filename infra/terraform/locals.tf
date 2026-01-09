@@ -274,6 +274,28 @@ locals {
       private_endpoint           = "${var.project_name}-pe-loki-storage-${var.environment}"
       private_service_connection = "${var.project_name}-psc-loki-storage-${var.environment}"
     }
+
+    # Environment-specific Loki retention period
+    # Dev: 7 days (cost optimization)
+    # Prod: 30 days (default, for debugging production issues)
+    retention = {
+      dev  = "7d"
+      prod = "30d"
+    }
+
+    # Environment-specific container resources
+    # Dev: Minimal resources for cost savings
+    # Prod: Higher resources for production workloads
+    resources = {
+      dev = {
+        cpu    = 0.25
+        memory = "0.5Gi"
+      }
+      prod = {
+        cpu    = 0.5
+        memory = "1.0Gi"
+      }
+    }
   }
 
   # --------------------------------------------------------------------------

@@ -165,9 +165,10 @@ resource "azurerm_role_assignment" "loki_blob" {
 
 # Grafana Admin role assignments for specified users
 # Users from var.grafana_admin_users will have admin privileges on Grafana
+# Only created when Grafana is enabled
 resource "azurerm_role_assignment" "grafana_admins" {
-  for_each             = toset(var.grafana_admin_users)
-  scope                = azurerm_dashboard_grafana.main.id
+  for_each             = var.grafana_enabled ? toset(var.grafana_admin_users) : toset([])
+  scope                = azurerm_dashboard_grafana.main[0].id
   role_definition_name = "Grafana Admin"
   principal_id         = each.value
 }

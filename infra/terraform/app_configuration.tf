@@ -570,6 +570,44 @@ resource "azurerm_app_configuration_key" "secrets_loki_url" {
   ]
 }
 
+# Grafana Loki Basic Auth Username Reference
+resource "azurerm_app_configuration_key" "secrets_loki_username" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:Logging:GrafanaLoki:Username"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/loki-basic-auth-username"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.loki_basic_auth_username
+  ]
+}
+
+# Grafana Loki Basic Auth Password Reference
+resource "azurerm_app_configuration_key" "secrets_loki_password" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:Logging:GrafanaLoki:Password"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/loki-basic-auth-password"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.loki_basic_auth_password
+  ]
+}
+
 # ============================================================================
 # CONFIGURATION KEYS - OAUTH SETTINGS
 # ============================================================================

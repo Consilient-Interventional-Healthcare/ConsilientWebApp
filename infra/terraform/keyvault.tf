@@ -105,3 +105,29 @@ resource "azurerm_key_vault_secret" "grafana_loki_url" {
   })
 }
 
+# Loki Basic Auth Username
+resource "azurerm_key_vault_secret" "loki_basic_auth_username" {
+  name         = "loki-basic-auth-username"
+  value        = var.loki_basic_auth_username
+  key_vault_id = azurerm_key_vault.main.id
+
+  depends_on = [azurerm_role_assignment.terraform_keyvault_secrets_officer]
+
+  tags = merge(local.tags, {
+    description = "Loki Basic Auth username"
+  })
+}
+
+# Loki Basic Auth Password
+resource "azurerm_key_vault_secret" "loki_basic_auth_password" {
+  name         = "loki-basic-auth-password"
+  value        = local.loki_basic_auth_password
+  key_vault_id = azurerm_key_vault.main.id
+
+  depends_on = [azurerm_role_assignment.terraform_keyvault_secrets_officer]
+
+  tags = merge(local.tags, {
+    description = "Loki Basic Auth password (auto-generated if not provided)"
+  })
+}
+

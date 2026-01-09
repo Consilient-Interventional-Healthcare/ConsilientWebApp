@@ -1,6 +1,18 @@
 # Cost-related variables are now centralized in cost_profiles.tf
 # These defaults will be overridden by the cost profile configuration
 
+variable "grafana_enabled" {
+  description = <<EOT
+Enable Azure Managed Grafana deployment.
+When false, Grafana is not deployed (useful for dev environments to save costs).
+You can share a single Grafana instance across environments by:
+1. Deploying Grafana in prod only (grafana_enabled = true)
+2. Configuring the prod Grafana to connect to dev Loki via datasource
+EOT
+  type        = bool
+  default     = true
+}
+
 variable "grafana_major_version" {
   description = "Grafana major version."
   type        = number
@@ -244,5 +256,25 @@ Example: "5daf8f81-7f50-4ad2-bb63-3e78917ab008"
 Leave empty to use email-based resolution (if permissions allow).
 EOT
   type        = string
+  default     = ""
+}
+
+variable "loki_basic_auth_username" {
+  description = <<EOT
+Username for Loki Basic Auth.
+Used to protect Loki endpoint from unauthorized access.
+EOT
+  type        = string
+  default     = "loki"
+}
+
+variable "loki_basic_auth_password" {
+  description = <<EOT
+Password for Loki Basic Auth.
+If left empty, Terraform will auto-generate a strong password and store it in Key Vault.
+You can retrieve it later via: az keyvault secret show --vault-name <vault> --name loki-basic-auth-password --query value -o tsv
+EOT
+  type        = string
+  sensitive   = true
   default     = ""
 }

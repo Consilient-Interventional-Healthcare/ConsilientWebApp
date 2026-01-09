@@ -15,6 +15,11 @@ sql_admin_password = "CHANGE-ME"       # Use a strong password! Store in GitHub 
 # Container App Environment Configuration
 container_app_environment_name_template = "consilient-cae-{environment}"  # Template with {environment} placeholder
 
+# Loki Basic Auth Configuration
+loki_basic_auth_username = "loki"           # Username for Loki API access
+# loki_basic_auth_password = ""             # Optional: Leave empty to auto-generate. Retrieve via:
+                                            # az keyvault secret show --vault-name <vault> --name loki-basic-auth-password --query value -o tsv
+
 # Optional: Uncomment to override defaults (defined in variables.tf)
 # project_name = "consilient"
 # grafana_major_version = 11

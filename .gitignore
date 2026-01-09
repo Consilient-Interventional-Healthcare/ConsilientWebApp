@@ -425,3 +425,4 @@ FodyWeavers.xsd
 /.claude
 /infra/terraform/tfplan
 /infra/act/.env
+.env.local

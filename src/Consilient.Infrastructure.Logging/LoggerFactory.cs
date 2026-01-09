@@ -24,10 +24,21 @@ namespace Consilient.Infrastructure.Logging
                 Value = x.Value.ToLowerInvariant()
             });
 
+            // Configure Loki credentials if provided
+            LokiCredentials? lokiCredentials = null;
+            if (!string.IsNullOrEmpty(loggingSettings.GrafanaLoki.Username) &&
+                !string.IsNullOrEmpty(loggingSettings.GrafanaLoki.Password))
+            {
+                lokiCredentials = new BasicAuthCredentials(
+                    loggingSettings.GrafanaLoki.Username,
+                    loggingSettings.GrafanaLoki.Password
+                );
+            }
+
             loggerConfiguration.WriteTo.GrafanaLoki(
                 loggingSettings.GrafanaLoki.Url,
                 lokiLabels,
-                null,
+                lokiCredentials,
                 null,
                 null,
                 minimumLogLevel,
