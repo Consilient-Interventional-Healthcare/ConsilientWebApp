@@ -18,14 +18,8 @@ resource "azurerm_dashboard_grafana" "main" {
   tags = local.tags
 }
 
-# Grafana Admin role assignments
-# Add users/groups who need admin access to Grafana
-resource "azurerm_role_assignment" "grafana_admins" {
-  for_each             = toset(var.grafana_admin_users)
-  scope                = azurerm_dashboard_grafana.main.id
-  role_definition_name = "Grafana Admin"
-  principal_id         = each.value
-}
+# Role assignments for Grafana admins have been moved to permissions.tf
+# See: infra/terraform/permissions.tf
 
 # --------------------------------------------------------------------------
 # GRAFANA DATASOURCES

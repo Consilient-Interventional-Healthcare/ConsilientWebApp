@@ -36,25 +36,8 @@ resource "azurerm_key_vault" "main" {
   tags = local.tags
 }
 
-# Grant API App Service "Key Vault Secrets User" role (read-only access to secrets)
-resource "azurerm_role_assignment" "api_keyvault_secrets_user" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User" # Built-in role for reading secrets
-  principal_id         = module.api_app.app_service_principal_id
-
-  # Prevent race condition - ensure identity exists before assigning role
-  depends_on = [module.api_app]
-}
-
-# Grant Terraform service principal "Key Vault Secrets Officer" role (manage secrets)
-# This allows Terraform to create/update/delete secrets
-resource "azurerm_role_assignment" "terraform_keyvault_secrets_officer" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets Officer" # Built-in role for managing secrets
-  principal_id         = data.azurerm_client_config.current.object_id
-
-  depends_on = [azurerm_key_vault.main]
-}
+# Role assignments for Key Vault have been moved to permissions.tf
+# See: infra/terraform/permissions.tf
 
 # Create secrets in Key Vault
 # These will be populated during terraform apply using variables

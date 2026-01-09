@@ -94,9 +94,5 @@ module "react_app" {
   ]
 }
 
-# Grant React App Service permission to pull images from ACR
-resource "azurerm_role_assignment" "react_acr_pull" {
-  scope                = azurerm_container_registry.main.id
-  role_definition_name = "AcrPull"
-  principal_id         = module.react_app.app_service_principal_id
-}
+# Role assignment for ACR pull has been moved to permissions.tf
+# See: infra/terraform/permissions.tf

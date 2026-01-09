@@ -32,11 +32,8 @@ resource "azurerm_user_assigned_identity" "loki" {
   tags                = local.tags
 }
 
-resource "azurerm_role_assignment" "loki_blob" {
-  scope                = azurerm_storage_account.loki.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_user_assigned_identity.loki.principal_id
-}
+# Role assignment for Loki storage has been moved to permissions.tf
+# See: infra/terraform/permissions.tf
 
 resource "azurerm_container_app" "loki" {
   name                         = local.loki.container_app_name

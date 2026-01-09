@@ -49,42 +49,8 @@ output "app_configuration_endpoint" {
 # ============================================================================
 # RBAC ROLE ASSIGNMENTS
 # ============================================================================
-
-# Grant Terraform service principal "App Configuration Data Owner" role
-# Allows Terraform to create/read/update/delete configuration keys
-resource "azurerm_role_assignment" "terraform_appconfig_owner" {
-  scope                = azurerm_app_configuration.main.id
-  role_definition_name = "App Configuration Data Owner"
-  principal_id         = data.azurerm_client_config.current.object_id
-
-  depends_on = [azurerm_app_configuration.main]
-}
-
-# Grant API App Service "App Configuration Data Reader" role
-# Allows API to read configuration at runtime via managed identity
-resource "azurerm_role_assignment" "api_appconfig_reader" {
-  scope                = azurerm_app_configuration.main.id
-  role_definition_name = "App Configuration Data Reader"
-  principal_id         = module.api_app.app_service_principal_id
-
-  depends_on = [
-    azurerm_app_configuration.main,
-    module.api_app
-  ]
-}
-
-# Grant App Configuration managed identity "Key Vault Secrets User" role
-# Allows App Configuration to resolve Key Vault references at read time
-resource "azurerm_role_assignment" "appconfig_keyvault_secrets_user" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_app_configuration.main.identity[0].principal_id
-
-  depends_on = [
-    azurerm_app_configuration.main,
-    azurerm_key_vault.main
-  ]
-}
+# Role assignments for App Configuration have been moved to permissions.tf
+# See: infra/terraform/permissions.tf
 
 # ============================================================================
 # CONFIGURATION KEYS - API SETTINGS

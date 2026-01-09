@@ -214,3 +214,19 @@ EOT
   type        = bool
   default     = false
 }
+
+variable "keyvault_user_email" {
+  description = <<EOT
+Email address of the user who should have "Key Vault Secrets Officer" role.
+If provided, Terraform will automatically resolve the email to Azure AD object ID.
+This allows passing user emails from CI/CD variables without hardcoding user IDs.
+The email can be provided via:
+  - GitHub workflow input: keyvault-user-email
+  - GitHub repository variable: AZURE_USER_EMAIL
+  - Environment variable: TF_VAR_keyvault_user_email
+Example: "hernanmarano@consilientivh.com"
+Leave empty to skip creating this role assignment.
+EOT
+  type        = string
+  default     = ""
+}

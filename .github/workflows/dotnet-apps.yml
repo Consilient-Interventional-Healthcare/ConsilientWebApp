@@ -194,6 +194,25 @@ jobs:
           echo "- ✓ API application built in Release configuration" >> $GITHUB_STEP_SUMMARY
           echo "- ✓ Docker image pushed to ACR" >> $GITHUB_STEP_SUMMARY
           echo "- ✓ Container image deployed to Azure Web App for Containers" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Microsoft OAuth Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Configure the following Redirect URIs in your Microsoft Entra ID app registration:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Template:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "https://{API_APP_NAME}.azurewebsites.net/auth/microsoft/callback" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Actual Redirect URI:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "https://${{ env.API_APP_NAME }}.azurewebsites.net/auth/microsoft/callback" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**For Local Development:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "https://localhost:5001/auth/microsoft/callback" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   health-check-api:
     name: Check API Health
