@@ -69,10 +69,10 @@ resource "azuread_application_password" "oauth" {
 }
 
 # Store client secret in Key Vault
+# Always created - uses actual OAuth secret when enabled, placeholder when disabled
 resource "azurerm_key_vault_secret" "oauth_client_secret" {
-  count        = local.oauth.enabled ? 1 : 0
   name         = "oauth-client-secret"
-  value        = azuread_application_password.oauth[0].value
+  value        = local.oauth.enabled ? azuread_application_password.oauth[0].value : "not-configured"
   key_vault_id = azurerm_key_vault.main.id
 
   depends_on = [azurerm_role_assignment.terraform_keyvault_secrets_officer]

@@ -122,6 +122,10 @@ jobs:
   warm-docker-cache:
     name: Warm Docker Cache
     needs: [initialize-workflow, build-runner-image]
+    # DISABLED: This job adds ~69s but doesn't reduce downstream container init times.
+    # Each container job still pulls the image independently. Re-enable after investigating
+    # GitHub Actions container caching or self-hosted runners with pre-pulled images.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -165,7 +169,8 @@ jobs:
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-terraform != false) &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
-      (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped')
+      (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
+      (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/terraform.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
@@ -212,6 +217,7 @@ jobs:
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped') &&
       needs.discover-databases.result == 'success' &&
       needs.discover-databases.outputs.count != '0'
     uses: ./.github/workflows/databases.yml
@@ -253,7 +259,8 @@ jobs:
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
+      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
+      (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/dotnet-apps.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
@@ -273,7 +280,8 @@ jobs:
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
-      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped')
+      (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
+      (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/react-apps.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}

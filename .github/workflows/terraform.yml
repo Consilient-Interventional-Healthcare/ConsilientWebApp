@@ -184,7 +184,8 @@ jobs:
         id: hostname_cache
         uses: actions/cache@v3
         with:
-          path: .terraform-hostname-cache
+          # Use absolute path from workspace root since actions/cache doesn't respect working-directory
+          path: ./infra/terraform/.terraform-hostname-cache
           key: hostname-tier-${{ env.TF_VAR_environment }}
           restore-keys: hostname-tier-
 
@@ -194,7 +195,7 @@ jobs:
         run: |
           echo "🔍 Running hostname availability pre-check..."
 
-          # Check if we have a cached result
+          # Check if we have a cached result (file is in working directory ./infra/terraform)
           if [ -f ".terraform-hostname-cache" ]; then
             echo "✅ Using cached hostname pre-check result"
             NAMING_TIER=$(cat .terraform-hostname-cache)
@@ -216,7 +217,7 @@ jobs:
               exit $PRECHECK_EXIT
             fi
 
-            # Cache the result for next run
+            # Cache the result for next run (in working directory for cache action to find)
             echo "$NAMING_TIER" > .terraform-hostname-cache
           fi
 

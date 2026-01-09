@@ -559,7 +559,6 @@ resource "azurerm_app_configuration_key" "oauth_scopes" {
 
 # OAuth Client Secret (Key Vault reference)
 resource "azurerm_app_configuration_key" "oauth_client_secret" {
-  count                  = var.oauth_enabled ? 1 : 0
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ClientSecret"
   label                  = var.environment
