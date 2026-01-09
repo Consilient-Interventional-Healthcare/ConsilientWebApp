@@ -64,7 +64,7 @@ env:
   MAX_CONCURRENT_SCHEMAS: 4
 
 jobs:
-  generate-database-documentation:
+  generate-documentation:
     name: Generate Database Schema Documentation
     runs-on: ubuntu-latest
     container:
@@ -75,7 +75,6 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: read
-      pages: write
       id-token: write
       packages: read
 
@@ -126,25 +125,14 @@ jobs:
           touch docs/.nojekyll
           echo "✅ Added .nojekyll file to prevent Jekyll processing"
 
-      - name: Prepare artifact for GitHub Pages
-        if: steps.process-databases.outcome == 'success' && inputs.deploy-to-pages
+      - name: Upload documentation artifact
+        if: steps.process-databases.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
           retention-days: 1
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        if: steps.process-databases.outcome == 'success' && inputs.deploy-to-pages
-        uses: actions/deploy-pages@v4
-
-      - name: Report processing failure
-        if: steps.process-databases.outcome == 'failure'
-        run: |
-          echo "❌ Database processing failed"
-          exit 1
-
-      - name: Report workflow completion status
+      - name: Report processing status
         if: always()
         run: |
           echo "## 📚 Database Documentation Generated" >> $GITHUB_STEP_SUMMARY
@@ -169,10 +157,39 @@ jobs:
             echo "- _No databases processed_" >> $GITHUB_STEP_SUMMARY
           fi
 
+      - name: Report processing failure
+        if: steps.process-databases.outcome == 'failure'
+        run: |
+          echo "❌ Database processing failed"
+          exit 1
+
+  deploy-to-pages:
+    name: Deploy to GitHub Pages
+    needs: generate-documentation
+    if: inputs.deploy-to-pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Report deployment status
+        if: always()
+        run: |
+          echo "## 🚀 GitHub Pages Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ steps.deployment.outcome }}" = "success" ]; then
-            echo "✅ Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Successfully deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "View at: [GitHub Pages](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }})" >> $GITHUB_STEP_SUMMARY
+            echo "View at: [${{ steps.deployment.outputs.page_url }}](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Deployment to GitHub Pages failed" >> $GITHUB_STEP_SUMMARY
           fi
