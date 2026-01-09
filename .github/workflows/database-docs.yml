@@ -67,6 +67,9 @@ jobs:
   generate-database-documentation:
     name: Generate Database Schema Documentation
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     container:
       image: ${{ inputs.runner_image }}
       credentials:
