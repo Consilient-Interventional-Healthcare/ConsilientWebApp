@@ -97,6 +97,10 @@ jobs:
     outputs:
       environment: ${{ steps.initialize.outputs.environment }}
       runner_image: ${{ steps.initialize.outputs.runner_image }}
+      # Database discovery outputs (merged from discover-databases job)
+      database_directories: ${{ steps.discover.outputs.database_directories }}
+      database_configs: ${{ steps.discover.outputs.database_configs }}
+      database_count: ${{ steps.discover.outputs.count }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -109,6 +113,12 @@ jobs:
         with:
           environment: ${{ github.event.inputs.environment || 'dev' }}
           container_registry: ${{ vars.CONTAINER_REGISTRY }}
+
+      - name: Discover databases
+        id: discover
+        uses: ./.github/actions/discover-databases
+        with:
+          scripts_path: 'src/Databases'
 
   build-runner-image:
     name: Image Runner
@@ -163,13 +173,13 @@ jobs:
 
   terraform:
     name: Terraform
-    needs: [initialize-workflow, build-runner-image, discover-databases, warm-docker-cache]
+    needs: [initialize-workflow, build-runner-image, warm-docker-cache]
     # Run on push events, or when explicitly enabled in workflow_dispatch
-    # Logic: (NOT manual trigger) OR (manual AND not disabled)
+    # Note: always() is required to evaluate this condition when warm-docker-cache is skipped (if: false)
     if: |
+      always() &&
       (github.event_name != 'workflow_dispatch' || inputs.run-terraform != false) &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
-      (needs.discover-databases.result == 'success' || needs.discover-databases.result == 'skipped') &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/terraform.yml
     with:
@@ -181,49 +191,29 @@ jobs:
     secrets: inherit
 
   # ============================================================================
-  # DATABASE MANAGEMENT: Discovery, Deployment, and Documentation
+  # DATABASE MANAGEMENT: Deployment and Documentation
   # ============================================================================
-  # This section handles all database-related operations:
-  # 1. discover-databases: Scans for databases and prepares metadata
-  # 2. deploy-databases: Deploys discovered databases
-  # 3. generate-db-docs: Generates documentation for configured databases
+  # Database discovery is now part of initialize-workflow job.
+  # This section handles:
+  # 1. deploy-databases: Deploys discovered databases
+  # 2. generate-db-docs: Generates documentation for configured databases
   # ============================================================================
-
-  discover-databases:
-    name: Discover Databases
-    needs: [initialize-workflow]
-    runs-on: ubuntu-latest
-    outputs:
-      database_directories: ${{ steps.discover.outputs.database_directories }}
-      database_configs: ${{ steps.discover.outputs.database_configs }}
-      count: ${{ steps.discover.outputs.count }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Discover databases
-        id: discover
-        uses: ./.github/actions/discover-databases
-        with:
-          scripts_path: 'src/Databases'
 
   deploy-databases:
     name: Deploy Databases
-    needs: [initialize-workflow, discover-databases, terraform, build-runner-image, warm-docker-cache]
+    needs: [initialize-workflow, terraform, build-runner-image, warm-docker-cache]
+    # Note: terraform.result must be 'success' (not skipped) because we need sql_server_fqdn output
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-databases != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
-      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      needs.terraform.result == 'success' &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped') &&
-      needs.discover-databases.result == 'success' &&
-      needs.discover-databases.outputs.count != '0'
+      needs.initialize-workflow.outputs.database_count != '0'
     uses: ./.github/workflows/databases.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
-      databases: ${{ needs.discover-databases.outputs.database_directories }}
+      databases: ${{ needs.initialize-workflow.outputs.database_directories }}
       recreate-database-objects: ${{ inputs.recreate-database-objects || false }}
       azure-sql-server-fqdn: ${{ needs.terraform.outputs.sql_server_fqdn }}
       runner_image: ${{ needs.initialize-workflow.outputs.runner_image }}
@@ -254,11 +244,12 @@ jobs:
   deploy-dotnet-apps:
     name: Deploy API
     needs: [initialize-workflow, terraform, deploy-databases, build-runner-image, warm-docker-cache]
+    # Note: terraform.result must be 'success' (not skipped) because we need acr_registry_url and other outputs
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
-      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      needs.terraform.result == 'success' &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/dotnet-apps.yml
@@ -275,11 +266,12 @@ jobs:
   deploy-react-apps:
     name: Deploy React
     needs: [initialize-workflow, terraform, deploy-databases, build-runner-image, warm-docker-cache]
+    # Note: terraform.result must be 'success' (not skipped) because we need acr_registry_url and other outputs
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
-      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped') &&
+      needs.terraform.result == 'success' &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/react-apps.yml
