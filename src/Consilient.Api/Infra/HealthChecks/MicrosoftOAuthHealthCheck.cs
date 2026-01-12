@@ -15,24 +15,18 @@ namespace Consilient.Api.Infra.HealthChecks
     ///
     /// Returns structured data for troubleshooting with separate status for each check.
     /// </summary>
-    internal class MicrosoftOAuthHealthCheck : IHealthCheck
+    internal class MicrosoftOAuthHealthCheck(
+        HttpClient httpClient,
+        IOptions<UserServiceConfiguration> userConfig) : IHealthCheck
     {
-        private readonly HttpClient _httpClient;
-        private readonly OAuthProviderServiceConfiguration? _configuration;
+        private readonly HttpClient _httpClient = httpClient;
+        private readonly OAuthProviderServiceConfiguration? _configuration = userConfig?.Value?.OAuth;
 
         // Cache the last successful check to avoid hammering Microsoft endpoints
         private static DateTime _lastSuccessfulCheck = DateTime.MinValue;
-        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(5);
 
         private const string GraphScope = "https://graph.microsoft.com/.default";
-
-        public MicrosoftOAuthHealthCheck(
-            HttpClient httpClient,
-            IOptions<UserServiceConfiguration> userConfig)
-        {
-            _httpClient = httpClient;
-            _configuration = userConfig?.Value?.OAuth;
-        }
 
         public async Task<HealthCheckResult> CheckHealthAsync(
             HealthCheckContext context,
@@ -67,7 +61,7 @@ namespace Consilient.Api.Infra.HealthChecks
             data["clientId"] = MaskValue(_configuration.ClientId) ?? "not configured";
 
             // Check cache - if recently successful, return cached result
-            if (DateTime.UtcNow - _lastSuccessfulCheck < CacheDuration)
+            if (DateTime.UtcNow - _lastSuccessfulCheck < _cacheDuration)
             {
                 data["discoveryStatus"] = "cached";
                 data["jwksStatus"] = "cached";
