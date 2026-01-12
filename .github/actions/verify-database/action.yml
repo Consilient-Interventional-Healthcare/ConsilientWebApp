@@ -1,0 +1,100 @@
+name: 'Verify Database'
+description: 'Verify database deployment by checking table count and listing tables'
+
+inputs:
+  sql-server:
+    description: 'SQL Server FQDN (e.g., server.database.windows.net)'
+    required: true
+  database-name:
+    description: 'Database name to verify'
+    required: true
+  timeout:
+    description: 'Command timeout in seconds'
+    required: false
+    default: '30'
+
+outputs:
+  table-count:
+    description: 'Number of tables in the database'
+    value: ${{ steps.verify.outputs.table-count }}
+  status:
+    description: 'Verification status (success/failed)'
+    value: ${{ steps.verify.outputs.status }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Verify Database Tables
+      id: verify
+      shell: bash
+      run: |
+        set +e  # Don't exit on error, we'll handle it ourselves
+
+        SQL_SERVER="${{ inputs.sql-server }}"
+        DATABASE_NAME="${{ inputs.database-name }}"
+        TIMEOUT="${{ inputs.timeout }}"
+        ACTION_PATH="${{ github.action_path }}"
+
+        echo "================================================"
+        echo "🔍 Database Verification"
+        echo "================================================"
+        echo "Server: ${SQL_SERVER}"
+        echo "Database: ${DATABASE_NAME}"
+        echo ""
+
+        # Get table count
+        echo "📊 Counting tables..."
+        COUNT_RESULT=$(timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
+          -d "$DATABASE_NAME" \
+          -G \
+          -i "$ACTION_PATH/table_count.sql" \
+          -h -1 \
+          -W \
+          -b 2>&1)
+
+        COUNT_EXIT=$?
+
+        if [ $COUNT_EXIT -ne 0 ]; then
+          echo "❌ Failed to count tables"
+          echo "$COUNT_RESULT"
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "table-count=0" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        # Extract count (second line, second column)
+        TABLE_COUNT=$(echo "$COUNT_RESULT" | tail -n 1 | awk '{print $NF}')
+        echo "   Found $TABLE_COUNT tables"
+        echo ""
+
+        # List tables
+        echo "📋 Listing tables..."
+        timeout "$TIMEOUT" sqlcmd -S "$SQL_SERVER" \
+          -d "$DATABASE_NAME" \
+          -G \
+          -i "$ACTION_PATH/list_tables.sql" \
+          -b
+
+        LIST_EXIT=$?
+
+        if [ $LIST_EXIT -ne 0 ]; then
+          echo "❌ Failed to list tables"
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "table-count=$TABLE_COUNT" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+        echo ""
+        echo "✅ Database verification complete"
+        echo "status=success" >> $GITHUB_OUTPUT
+        echo "table-count=$TABLE_COUNT" >> $GITHUB_OUTPUT
+
+    - name: Summary
+      shell: bash
+      run: |
+        echo "### Database Verification 🔍" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Database:** ${{ inputs.database-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Server:** ${{ inputs.sql-server }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Table Count:** ${{ steps.verify.outputs.table-count }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ${{ steps.verify.outputs.status }}" >> $GITHUB_STEP_SUMMARY

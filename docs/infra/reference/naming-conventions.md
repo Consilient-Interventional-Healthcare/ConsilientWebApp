@@ -199,7 +199,7 @@ Configuration and output files for the automated database documentation system.
 |------|---------|---------|
 | Configuration File | `src/Databases/{Name}/db_docs.yml` | `src/Databases/Main/db_docs.yml` |
 | Configuration Template | `src/Databases/db_docs.yml.template` | Reference for creating new configs |
-| Schema Discovery SQL | `infra/db/list_user_schemas.sql` | (Single file, no variation) |
+| Schema Discovery SQL | `.github/actions/discover-databases/list_user_schemas.sql` | (Single file, no variation) |
 | Discovery Action | `.github/actions/discover-databases/` | (Single action, no variation) |
 | Documentation Workflow | `.github/workflows/docs_db.yml` | (Single workflow, no variation) |
 | Output Artifact | `database-documentation-{name}-{suffix}` | `database-documentation-consilient_main-latest.zip` |

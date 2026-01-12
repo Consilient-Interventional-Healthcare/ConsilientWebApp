@@ -91,7 +91,7 @@ schemas:
   #
   # DISCOVERY PROCESS:
   # 1. docs_db.yml queries database for all user-created schemas
-  #    (see: infra/db/list_user_schemas.sql)
+  #    (see: .github/actions/discover-databases/list_user_schemas.sql)
   # 2. System schemas automatically excluded:
   #    - sys, INFORMATION_SCHEMA, guest
   #    - Database role schemas (db_owner, db_accessadmin, etc.)
@@ -403,7 +403,7 @@ schemas:
 #     Workflow that generates documentation
 #   - .github/actions/discover-databases/action.yml
 #     Discovers databases and reads this configuration
-#   - infra/db/list_user_schemas.sql
+#   - .github/actions/discover-databases/list_user_schemas.sql
 #     SQL query that discovers schemas
 #
 # Configuration Help:

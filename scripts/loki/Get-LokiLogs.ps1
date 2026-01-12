@@ -66,17 +66,17 @@ if (-not (Get-Command logcli -ErrorAction SilentlyContinue)) {
 # Build query if not provided
 if (-not $Query) {
     $labelFilters = @()
-    if ($App) { $labelFilters += "app=`"$App`"" }
-    if ($Level) { $labelFilters += "level=`"$Level`"" }
+    if ($App) { $labelFilters += "app=\`"$App\`"" }
+    if ($Level) { $labelFilters += "level=\`"$Level\`"" }
 
     if ($labelFilters.Count -gt 0) {
         $Query = "{" + ($labelFilters -join ", ") + "}"
     } else {
-        $Query = '{app=~".+"}'
+        $Query = '{app=~\".+\"}'
     }
 
     if ($Contains) {
-        $Query += " |= `"$Contains`""
+        $Query += " |= \`"$Contains\`""
     }
 }
 
@@ -92,4 +92,4 @@ logcli query `
     --since="$Since" `
     --limit=$Limit `
     --output=jsonl `
-    $Query
+    "$Query"

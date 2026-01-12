@@ -13,6 +13,9 @@ Central index of all scripts for debugging, troubleshooting, and automation.
 | Docker | KillContainers.ps1 | Stop/remove Docker containers |
 | Terraform | Run-TerraformPlan.ps1 | Run terraform plan locally |
 | Loki | Get-LokiLogs.ps1 | Query logs from Loki using LogCLI |
+| Database | AddMigration.ps1 | Add new EF migration |
+| Database | CreateScript.ps1 | Generate idempotent SQL script |
+| Database | UpdateDatabase.ps1 | Add migrations + generate scripts for all contexts |
 
 ## Secrets Management
 
@@ -98,12 +101,21 @@ Loki log querying and monitoring scripts.
 |--------|---------|-------|
 | **Get-LokiLogs.ps1** | Query logs from Loki using LogCLI | `.\Get-LokiLogs.ps1 -App consilient-api -Level ERROR` |
 
+### Database (`scripts/db/`)
+
+EF Core migration utilities.
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| **AddMigration.ps1** | Add new EF migration | `.\AddMigration.ps1 -MigrationName "AddUserTable"` |
+| **CreateScript.ps1** | Generate idempotent SQL script | `.\CreateScript.ps1` |
+| **UpdateDatabase.ps1** | Add migrations + generate scripts for all contexts | `.\UpdateDatabase.ps1 -MigrationName "AddUserTable"` |
+
 ### Placeholders
 
 These folders are reserved for future scripts:
 
 - `scripts/az/` - Azure CLI debugging scripts
-- `scripts/db/` - Database debugging scripts
 
 ---
 
@@ -123,10 +135,8 @@ These scripts remain in their original locations due to tight coupling with thei
 
 | Location | Scripts | Purpose |
 |----------|---------|---------|
-| `src/Scripts/` | UpdateDatabase.ps1, generate-types.ps1 | Development build scripts |
+| `src/Scripts/` | generate-types.ps1, organize-types.ps1 | TypeScript generation |
 | `src/Consilient.Api/` | Generate-ApiTypes.ps1 | API type generation |
-| `src/Consilient.Data/` | AddMigration.ps1 | EF Core migration helper |
-| `src/Consilient.Data.Migrations/` | CreateScript.ps1 | Migration script generator |
 | `src/Consilient.WebApp2/scripts/` | docker-entrypoint.sh | Container entrypoint |
 
 ---

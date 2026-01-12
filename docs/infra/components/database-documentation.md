@@ -223,7 +223,7 @@ Final Schemas Documented: dbo, Sales, Marketing
 
 ### How Schemas Are Discovered
 
-**File:** [`infra/db/list_user_schemas.sql`](../../../infra/db/list_user_schemas.sql)
+**File:** [`.github/actions/discover-databases/list_user_schemas.sql`](../../../.github/actions/discover-databases/list_user_schemas.sql)
 
 The workflow automatically discovers schemas in your database without any configuration:
 
@@ -265,7 +265,7 @@ ORDER BY s.name;
 sqlcmd -S {server} \
        -d {database} \
        -G \
-       -i infra/db/list_user_schemas.sql
+       -i .github/actions/discover-databases/list_user_schemas.sql
 
 # Outputs list of discovered schema names
 # Example: dbo, Sales, Marketing, Internal, Staging
@@ -428,7 +428,7 @@ generate-db-docs:
 
 **Step 3: Discover Schemas**
 ```bash
-sqlcmd -S {server} -d {database} -G -i infra/db/list_user_schemas.sql
+sqlcmd -S {server} -d {database} -G -i .github/actions/discover-databases/list_user_schemas.sql
 # Output: List of user-created schemas (auto-excludes system schemas)
 ```
 
@@ -719,7 +719,7 @@ SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 ### Code References
 - **Workflow:** [`.github/workflows/docs_db.yml`](../../../.github/workflows/docs_db.yml) - Full workflow definition
 - **Discovery Action:** [`.github/actions/discover-databases/action.yml`](../../../.github/actions/discover-databases/action.yml) - Discovery implementation
-- **Schema Discovery SQL:** [`infra/db/list_user_schemas.sql`](../../../infra/db/list_user_schemas.sql) - Schema enumeration logic
+- **Schema Discovery SQL:** [`.github/actions/discover-databases/list_user_schemas.sql`](../../../.github/actions/discover-databases/list_user_schemas.sql) - Schema enumeration logic
 - **Configuration Example:** [`src/Databases/consilient_main/db_docs.yml`](../../../src/Databases/consilient_main/db_docs.yml) - Real configuration file
 
 ---
@@ -730,7 +730,7 @@ SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 |------|------|---------|
 | Documentation Workflow | [`.github/workflows/docs_db.yml`](../../../.github/workflows/docs_db.yml) | Main documentation generation workflow |
 | Discovery Action | [`.github/actions/discover-databases/action.yml`](../../../.github/actions/discover-databases/action.yml) | Scans for databases and configurations |
-| Schema Discovery | [`infra/db/list_user_schemas.sql`](../../../infra/db/list_user_schemas.sql) | Queries database for user schemas |
+| Schema Discovery | [`.github/actions/discover-databases/list_user_schemas.sql`](../../../.github/actions/discover-databases/list_user_schemas.sql) | Queries database for user schemas |
 | Configuration Template | [Template Guide](#configuration-guide-dbdocsyml) | (See section below) |
 | Example Configuration | [`src/Databases/consilient_main/db_docs.yml`](../../../src/Databases/consilient_main/db_docs.yml) | Working example |
 | Main Orchestrator | [`.github/workflows/main.yml:173-186`](../../../.github/workflows/main.yml#L173-L186) | Calls docs_db.yml from main.yml |

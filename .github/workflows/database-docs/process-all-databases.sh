@@ -137,7 +137,7 @@ discover_schemas() {
 
   echo "🔍 Discovering schemas in $db_name..." >&2
 
-  local discovery_sql="infra/db/list_user_schemas.sql"
+  local discovery_sql=".github/actions/discover-databases/list_user_schemas.sql"
 
   if [ ! -f "$discovery_sql" ]; then
     echo "❌ ERROR: Schema discovery script not found: $discovery_sql" >&2

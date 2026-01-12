@@ -213,7 +213,7 @@ jobs:
         with:
           sql-server: ${{ env.SQL_SERVER }}
           database-name: ${{ env.DATABASE_NAME }}
-          script-file: "infra/db/drop_all_objects.sql"
+          script-file: ".github/actions/sqlcmd-execute/drop_all_objects.sql"
           timeout: '300'
           fail-on-error: 'true'
 
@@ -303,56 +303,10 @@ jobs:
           echo "================================================"
 
       - name: Verify database deployment
-        shell: bash
-        run: |
-          set -e
-
-          # Helper function to execute sqlcmd with Azure AD authentication
-          run_sqlcmd_verify() {
-            local script_file="$1"
-            timeout 60 sqlcmd -S "${SQL_SERVER}" -d "${DATABASE_NAME}" -G -i "$script_file" -b 2>/dev/null
-          }
-
-          echo ""
-          echo "================================================"
-          echo "Verifying database: ${{ env.DATABASE_NAME }}"
-          echo "================================================"
-
-          # Validate required SQL scripts exist and are executable
-          VERIFICATION_FAILED=false
-
-          if [ ! -f "infra/db/list_tables.sql" ]; then
-            echo "❌ ERROR: infra/db/list_tables.sql not found"
-            VERIFICATION_FAILED=true
-          else
-            echo "Tables in database:"
-            if run_sqlcmd_verify "infra/db/list_tables.sql"; then
-              echo "✅ Table listing completed"
-            else
-              echo "❌ ERROR: Could not list tables - database may be inaccessible or corrupt"
-              VERIFICATION_FAILED=true
-            fi
-          fi
-
-          echo ""
-          if [ ! -f "infra/db/table_count.sql" ]; then
-            echo "⚠️  Warning: infra/db/table_count.sql not found, skipping table count"
-          else
-            echo "Database size:"
-            if run_sqlcmd_verify "infra/db/table_count.sql"; then
-              echo "✅ Table count completed"
-            else
-              echo "⚠️  Could not get table count (optional check)"
-            fi
-          fi
-
-          echo ""
-          if [ "$VERIFICATION_FAILED" = "true" ]; then
-            echo "❌ DEPLOYMENT FAILED: Database verification failed"
-            exit 1
-          fi
-
-          echo "✅ Database ${{ env.DATABASE_NAME }} deployment completed successfully!"
+        uses: ./.github/actions/verify-database
+        with:
+          sql-server: ${{ env.SQL_SERVER }}
+          database-name: ${{ env.DATABASE_NAME }}
 
   summary:
     name: Deployment Summary

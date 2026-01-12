@@ -3,7 +3,7 @@
 # Unified Index Page Generator
 #
 # Purpose:
-#   Generates the master index.html page from template with database cards
+#   Generates the master index.html page and per-database index pages
 #
 # Expected Environment Variables:
 #   - DATABASE_COUNT: Total number of databases processed
@@ -12,9 +12,12 @@
 # Expected Files:
 #   - /tmp/database_info.txt: Pipe-delimited database metadata
 #   - .github/workflows/database-docs/index.template.html: HTML template
+#   - .github/workflows/database-docs/database.template.html: Database page template
 #
 # Output:
-#   - docs/dbs/index.html: Final rendered index page
+#   - docs/index.html: Root redirect to dbs/
+#   - docs/dbs/index.html: Main index page listing all databases
+#   - docs/dbs/<database>/index.html: Per-database index pages listing schemas
 #
 # Security:
 #   - All dynamic content HTML-escaped to prevent XSS
@@ -44,6 +47,9 @@ export CURRENT_DATE_ESCAPED
 export ENVIRONMENT_ESCAPED
 export DATABASE_COUNT
 export DATABASE_CARDS
+
+# Database template path
+DB_TEMPLATE_PATH=".github/workflows/database-docs/database.template.html"
 
 # Build database cards from metadata file
 DATABASE_CARDS=""
@@ -76,6 +82,55 @@ if [ -f /tmp/database_info.txt ]; then
     </div>"
 
     DATABASE_CARDS="$DATABASE_CARDS$CARD"
+
+    # Generate per-database index page
+    if [ -f "$DB_TEMPLATE_PATH" ]; then
+      # Build schema cards for this database
+      SCHEMA_CARDS=""
+      for schema in $schemas; do
+        schema_escaped=$(escape_html "$schema")
+        schema_lower=$(echo "$schema" | tr '[:upper:]' '[:lower:]')
+        SCHEMA_CARD="<div class=\"schema-card\">
+          <h2>📋 $schema_escaped</h2>
+          <p>View tables, relationships, and constraints for the <strong>$schema_escaped</strong> schema.</p>
+          <a href=\"./${schema_lower}/\" class=\"btn\">View Schema →</a>
+        </div>"
+        SCHEMA_CARDS="$SCHEMA_CARDS$SCHEMA_CARD"
+      done
+
+      # Create database directory and generate index
+      mkdir -p "docs/dbs/${db_name_lower}"
+      cp "$DB_TEMPLATE_PATH" "docs/dbs/${db_name_lower}/index.html"
+
+      # Export variables for Python replacement
+      export DB_NAME_ESCAPED
+      export ACTUAL_DB_NAME_ESCAPED
+      export SCHEMA_COUNT="$schema_count"
+      export SCHEMA_CARDS
+
+      # Replace placeholders in database index
+      python3 << PYTHON_DB_SCRIPT
+import os
+
+db_index_path = "docs/dbs/${db_name_lower}/index.html"
+
+with open(db_index_path, 'r') as f:
+    content = f.read()
+
+content = content.replace('{{DB_NAME}}', os.environ.get('DB_NAME_ESCAPED', ''))
+content = content.replace('{{ACTUAL_DB_NAME}}', os.environ.get('ACTUAL_DB_NAME_ESCAPED', ''))
+content = content.replace('{{SCHEMA_COUNT}}', os.environ.get('SCHEMA_COUNT', '0'))
+content = content.replace('{{ENVIRONMENT}}', os.environ.get('ENVIRONMENT_ESCAPED', ''))
+content = content.replace('{{CURRENT_DATE}}', os.environ.get('CURRENT_DATE_ESCAPED', ''))
+content = content.replace('{{SCHEMA_CARDS}}', os.environ.get('SCHEMA_CARDS', ''))
+
+with open(db_index_path, 'w') as f:
+    f.write(content)
+PYTHON_DB_SCRIPT
+
+      echo "✅ Database index page created at docs/dbs/${db_name_lower}/index.html"
+    fi
+
   done < /tmp/database_info.txt
 else
   echo "⚠️  WARNING: No database info found at /tmp/database_info.txt"
@@ -124,3 +179,20 @@ with open('docs/dbs/index.html', 'w') as f:
 PYTHON_SCRIPT
 
 echo "✅ Unified index page created at docs/dbs/index.html"
+
+# Create root redirect to dbs/
+cat > docs/index.html << 'ROOT_REDIRECT'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0; url=dbs/">
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to <a href="dbs/">database documentation</a>...</p>
+</body>
+</html>
+ROOT_REDIRECT
+
+echo "✅ Root redirect created at docs/index.html"
