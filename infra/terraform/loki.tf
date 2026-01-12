@@ -10,6 +10,12 @@ resource "random_password" "loki_basic_auth" {
 locals {
   # Use provided password or fall back to generated one
   loki_basic_auth_password = var.loki_basic_auth_password != "" ? var.loki_basic_auth_password : random_password.loki_basic_auth.result
+
+  # Generate bcrypt hash for htpasswd (nginx supports bcrypt with $2y$ prefix)
+  # Note: bcrypt() generates a different hash each run due to random salt.
+  # The container_app lifecycle ignores secret changes to prevent recreation.
+  # To update the password: terraform taint azurerm_container_app.loki
+  loki_htpasswd_hash = bcrypt(local.loki_basic_auth_password)
 }
 
 # Option: Create a new Container App Environment (may hit quota limits)
@@ -36,9 +42,7 @@ locals {
     : azurerm_container_app_environment.shared[0].id
   )
 
-  # Generate htpasswd entry using bcrypt-compatible format for nginx
-  # Note: We use a simpler approach with plain password in nginx config since
-  # Azure Container Apps doesn't support running htpasswd command during deployment
+  # Nginx configuration for Loki reverse proxy with basic auth
   loki_nginx_config = <<-EOF
     worker_processes 1;
     events { worker_connections 1024; }
@@ -97,7 +101,11 @@ resource "azurerm_container_app" "loki" {
 
   lifecycle {
     ignore_changes = [
-      workload_profile_name
+      workload_profile_name,
+      # Ignore secret changes to prevent recreation on every apply
+      # (bcrypt generates different hash each time due to random salt)
+      # To update htpasswd: terraform taint azurerm_container_app.loki
+      secret
     ]
   }
 
@@ -108,7 +116,7 @@ resource "azurerm_container_app" "loki" {
 
   secret {
     name  = "htpasswd"
-    value = "${var.loki_basic_auth_username}:${local.loki_basic_auth_password}"
+    value = "${var.loki_basic_auth_username}:${local.loki_htpasswd_hash}"
   }
 
   template {

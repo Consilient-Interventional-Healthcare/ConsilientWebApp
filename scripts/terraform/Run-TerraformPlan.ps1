@@ -18,7 +18,7 @@
     Target environment (dev or prod). Default: 'dev'
 
 .PARAMETER EnvFile
-    Path to the .env.act file relative to the script location. Default: '../act/.env.act'
+    Path to the secrets file relative to the scripts folder. Default: '../.env.local'
 
 .PARAMETER Verbose
     Enable verbose output for detailed logging
@@ -34,13 +34,13 @@
     .\Run-TerraformPlan.ps1 -Environment dev -FreshState -Verbose
 
 .NOTES
-    Run this script from the repository root: .\infra\scripts\Run-TerraformPlan.ps1
+    Run this script from the repository root: .\scripts\terraform\Run-TerraformPlan.ps1
     Use -FreshState to see what would be deployed to an empty Azure environment.
 #>
 
 param(
     [string]$Environment = 'dev',
-    [string]$EnvFile = '../act/.env.act',
+    [string]$EnvFile = '../.env.local',
     [switch]$Verbose,
     [switch]$FreshState
 )

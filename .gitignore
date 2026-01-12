@@ -426,3 +426,7 @@ FodyWeavers.xsd
 /infra/terraform/tfplan
 /infra/act/.env
 .env.local
+
+# Scripts secrets files
+/scripts/.env.local
+/scripts/.env.dev

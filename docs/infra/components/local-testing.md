@@ -13,8 +13,8 @@ Complete guide to testing GitHub Actions workflows locally using the `act` tool.
 ## Quick Start
 
 ```powershell
-cd infra/act
-.\run-act.ps1
+cd scripts/act
+.\Invoke-ActWorkflow.ps1
 ```
 
 Follow prompts or use parameters. See [setup guide](#setup-guide) for details.
@@ -48,13 +48,13 @@ Follow prompts or use parameters. See [setup guide](#setup-guide) for details.
 
 3. **Credentials**
    - Azure service principal (for auth)
-   - Stored in `infra/act/.env.act`
+   - Stored in `scripts/.env.local` (or legacy `infra/act/.env.act`)
 
 ## Setup Guide
 
 ### Step 1: Configure Secrets
 
-**File:** [`infra/act/.env.act`](../../../infra/act/.env.act)
+**File:** [`scripts/.env.local`](../../../scripts/.env.local) (copy from [`scripts/.env.template`](../../../scripts/.env.template))
 
 Copy template and fill with Azure credentials:
 
@@ -223,15 +223,15 @@ This dual-purpose approach keeps all configuration in one file while maintaining
 
 ---
 
-## Using run-act.ps1 Script
+## Using Invoke-ActWorkflow.ps1 Script
 
-**Main script:** [`infra/act/run-act.ps1`](../../../infra/act/run-act.ps1)
+**Main script:** [`scripts/act/Invoke-ActWorkflow.ps1`](../../../scripts/act/Invoke-ActWorkflow.ps1)
 
 ### Interactive Mode (Recommended)
 
 ```powershell
-cd infra/act
-.\run-act.ps1
+cd scripts/act
+.\Invoke-ActWorkflow.ps1
 ```
 
 Prompts for:
@@ -492,9 +492,10 @@ See [TROUBLESHOOTING.md#local-testing-act](../TROUBLESHOOTING.md#local-testing-a
 
 ## Files Reference
 
-- [infra/act/run-act.ps1](../../../infra/act/run-act.ps1) - Main orchestrator script
-- [infra/act/.env.act](../../../infra/act/.env.act) - Secrets, credentials & variables (in .gitignore, dual-purpose)
-- [infra/act/.env.act.template](../../../infra/act/.env.act.template) - Template for new setup
+- [scripts/act/Invoke-ActWorkflow.ps1](../../../scripts/act/Invoke-ActWorkflow.ps1) - Main orchestrator script
+- [scripts/.env.local](../../../scripts/.env.local) - Secrets for local development (gitignored)
+- [scripts/.env.template](../../../scripts/.env.template) - Template for new setup
+- [scripts/SCRIPTS.md](../../../scripts/SCRIPTS.md) - Scripts registry and documentation
 - [.github/workflows/runner/Dockerfile](../../../.github/workflows/runner/Dockerfile) - Custom runner image
 
 ## Related Documentation
