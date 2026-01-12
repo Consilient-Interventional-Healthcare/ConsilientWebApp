@@ -97,8 +97,7 @@ resource "azurerm_container_app" "loki" {
 
   lifecycle {
     ignore_changes = [
-      workload_profile_name,
-      template
+      workload_profile_name
     ]
   }
 
@@ -109,7 +108,7 @@ resource "azurerm_container_app" "loki" {
 
   secret {
     name  = "htpasswd"
-    value = "${var.loki_basic_auth_username}:{PLAIN}${local.loki_basic_auth_password}"
+    value = "${var.loki_basic_auth_username}:${local.loki_basic_auth_password}"
   }
 
   template {
@@ -133,7 +132,7 @@ resource "azurerm_container_app" "loki" {
       }
 
       command = ["/bin/sh", "-c"]
-      args    = ["echo \"$NGINX_CONFIG\" > /etc/nginx/nginx.conf && echo \"$HTPASSWD\" > /etc/nginx/.htpasswd"]
+      args    = ["printf '%s' \"$NGINX_CONFIG\" > /etc/nginx/nginx.conf && printf '%s' \"$HTPASSWD\" > /etc/nginx/.htpasswd"]
 
       volume_mounts {
         name = "nginx-config-volume"
