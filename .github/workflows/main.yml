@@ -318,7 +318,7 @@ jobs:
 
   workflow-summary:
     name: Workflow Summary
-    needs: [initialize-workflow, detect-changes, terraform, terraform-outputs, deploy-databases, deploy-dotnet-apps, deploy-react-apps]
+    needs: [initialize-workflow, detect-changes, terraform, terraform-outputs, terraform-consolidation, deploy-databases, deploy-dotnet-apps, deploy-react-apps]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -349,6 +349,8 @@ jobs:
         env:
           TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
           ENVIRONMENT: ${{ needs.initialize-workflow.outputs.environment }}
+          API_APP_NAME: ${{ needs.terraform-consolidation.outputs.api_app_name }}
+          REACT_APP_NAME: ${{ needs.terraform-consolidation.outputs.react_app_name }}
         run: |
           # Skip if webhook URL is not configured
           if [[ -z "$TEAMS_WEBHOOK_URL" ]]; then
@@ -382,11 +384,29 @@ jobs:
           # Environment tag (uppercase for visibility)
           ENV_TAG=$(echo "$ENVIRONMENT" | tr '[:lower:]' '[:upper:]')
 
+          # Build app URLs from app names (Azure App Service URLs)
+          API_URL="https://${API_APP_NAME}.azurewebsites.net"
+          REACT_URL="https://${REACT_APP_NAME}.azurewebsites.net"
+
           # Get status icons for each job
           TF_ICON=$(get_status_icon "${{ needs.terraform.result }}")
           DB_ICON=$(get_status_icon "${{ needs.deploy-databases.result }}")
           API_ICON=$(get_status_icon "${{ needs.deploy-dotnet-apps.result }}")
           REACT_ICON=$(get_status_icon "${{ needs.deploy-react-apps.result }}")
+
+          # Build API status with URL if successful
+          if [[ "${{ needs.deploy-dotnet-apps.result }}" == "success" ]]; then
+            API_VALUE="${API_ICON} [${{ needs.deploy-dotnet-apps.result }}](${API_URL})"
+          else
+            API_VALUE="${API_ICON} ${{ needs.deploy-dotnet-apps.result }}"
+          fi
+
+          # Build React status with URL if successful
+          if [[ "${{ needs.deploy-react-apps.result }}" == "success" ]]; then
+            REACT_VALUE="${REACT_ICON} [${{ needs.deploy-react-apps.result }}](${REACT_URL})"
+          else
+            REACT_VALUE="${REACT_ICON} ${{ needs.deploy-react-apps.result }}"
+          fi
 
           curl -H "Content-Type: application/json" -d '{
             "@type": "MessageCard",
@@ -401,14 +421,14 @@ jobs:
                 { "name": "Triggered by", "value": "${{ github.actor }}" },
                 { "name": "Terraform", "value": "'"$TF_ICON"' ${{ needs.terraform.result }}" },
                 { "name": "Databases", "value": "'"$DB_ICON"' ${{ needs.deploy-databases.result }}" },
-                { "name": "API", "value": "'"$API_ICON"' ${{ needs.deploy-dotnet-apps.result }}" },
-                { "name": "React", "value": "'"$REACT_ICON"' ${{ needs.deploy-react-apps.result }}" }
+                { "name": "API", "value": "'"$API_VALUE"'" },
+                { "name": "React", "value": "'"$REACT_VALUE"'" }
               ],
               "markdown": true
             }],
-            "potentialAction": [{
-              "@type": "OpenUri",
-              "name": "View Run",
-              "targets": [{ "os": "default", "uri": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }]
-            }]
+            "potentialAction": [
+              { "@type": "OpenUri", "name": "View Run", "targets": [{ "os": "default", "uri": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }] },
+              { "@type": "OpenUri", "name": "Open API", "targets": [{ "os": "default", "uri": "'"$API_URL"'" }] },
+              { "@type": "OpenUri", "name": "Open React App", "targets": [{ "os": "default", "uri": "'"$REACT_URL"'" }] }
+            ]
           }' "$TEAMS_WEBHOOK_URL"

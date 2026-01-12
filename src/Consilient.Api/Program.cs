@@ -82,14 +82,17 @@ namespace Consilient.Api
                             {
                                 kv.SetCredential(credential);
                             });
-                        // Note: ConfigureRefresh() can be added here to enable dynamic configuration updates
-                        // without application restart. Requires Standard SKU in production.
-                        // Example:
-                        // .ConfigureRefresh(refresh =>
-                        // {
-                        //     refresh.Register("ConsilientApi:RefreshSentinel", refreshAll: true)
-                        //            .SetCacheExpiration(TimeSpan.FromMinutes(5));
-                        // });
+
+                        // Enable dynamic configuration refresh for production only
+                        // Dev uses Free SKU and stop/start for config changes
+                        if (builder.Environment.IsProduction())
+                        {
+                            options.ConfigureRefresh(refresh =>
+                            {
+                                refresh.Register("ConsilientApi:RefreshSentinel", refreshAll: true)
+                                       .SetRefreshInterval(TimeSpan.FromMinutes(5));
+                            });
+                        }
                     });
 
                     Log.Information("Azure App Configuration loaded successfully from {Endpoint} with label {Label}", appConfigEndpoint, appConfigLabel);
@@ -210,6 +213,11 @@ namespace Consilient.Api
                 builder.ConfigureAuthentication(applicationSettings.Authentication.UserService.Jwt);
 
                 var app = builder.Build();
+
+                // Enable Azure App Configuration refresh middleware
+                // This polls for sentinel key changes and refreshes configuration when detected
+                // Safe to call even when refresh isn't configured (no-op for dev environment)
+                app.UseAzureAppConfiguration();
 
                 // Configure the HTTP request pipeline.
                 if (app.Environment.IsDevelopment())

@@ -764,3 +764,32 @@ resource "azurerm_app_configuration_key" "allowed_origins" {
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
+
+# ============================================================================
+# SENTINEL KEY FOR CONFIGURATION REFRESH (Production Only)
+# ============================================================================
+
+# Sentinel key for triggering configuration refresh
+# Only created for production - dev uses stop/start for config changes
+# Update this key's value to force all connected applications to refresh their config
+resource "azurerm_app_configuration_key" "refresh_sentinel" {
+  count                  = var.environment == "prod" ? 1 : 0
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:RefreshSentinel"
+  label                  = var.environment
+  value                  = formatdate("YYYY-MM-DD'T'hh:mm:ssZ", timestamp())
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "infrastructure"
+    purpose     = "config-refresh-trigger"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+
+  lifecycle {
+    ignore_changes = [value] # Don't update on every apply, only when explicitly changed
+  }
+}
