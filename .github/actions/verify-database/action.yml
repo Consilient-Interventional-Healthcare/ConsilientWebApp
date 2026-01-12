@@ -33,7 +33,8 @@ runs:
         SQL_SERVER="${{ inputs.sql-server }}"
         DATABASE_NAME="${{ inputs.database-name }}"
         TIMEOUT="${{ inputs.timeout }}"
-        ACTION_PATH="${{ github.action_path }}"
+        # Use GITHUB_WORKSPACE for container compatibility (github.action_path doesn't work in containers)
+        ACTION_PATH="${GITHUB_WORKSPACE}/.github/actions/verify-database"
 
         echo "================================================"
         echo "🔍 Database Verification"
