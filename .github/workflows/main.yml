@@ -318,7 +318,7 @@ jobs:
 
   workflow-summary:
     name: Workflow Summary
-    needs: [detect-changes, terraform, terraform-outputs, deploy-databases, deploy-dotnet-apps, deploy-react-apps]
+    needs: [initialize-workflow, detect-changes, terraform, terraform-outputs, deploy-databases, deploy-dotnet-apps, deploy-react-apps]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -344,3 +344,71 @@ jobs:
           echo "- Databases: ${{ needs.detect-changes.outputs.databases }}" >> $GITHUB_STEP_SUMMARY
           echo "- .NET API: ${{ needs.detect-changes.outputs.dotnet }}" >> $GITHUB_STEP_SUMMARY
           echo "- React App: ${{ needs.detect-changes.outputs.react }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify Teams
+        env:
+          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          ENVIRONMENT: ${{ needs.initialize-workflow.outputs.environment }}
+        run: |
+          # Skip if webhook URL is not configured
+          if [[ -z "$TEAMS_WEBHOOK_URL" ]]; then
+            echo "TEAMS_WEBHOOK_URL not configured, skipping Teams notification"
+            exit 0
+          fi
+
+          # Function to get emoji for job status
+          get_status_icon() {
+            case "$1" in
+              success)  echo "✅" ;;
+              failure)  echo "❌" ;;
+              skipped)  echo "⏭️" ;;
+              cancelled) echo "🚫" ;;
+              *)        echo "⚪" ;;
+            esac
+          }
+
+          # Determine overall status
+          if [[ "${{ needs.terraform.result }}" == "failure" ]] || \
+             [[ "${{ needs.deploy-databases.result }}" == "failure" ]] || \
+             [[ "${{ needs.deploy-dotnet-apps.result }}" == "failure" ]] || \
+             [[ "${{ needs.deploy-react-apps.result }}" == "failure" ]]; then
+            STATUS="Failed"
+            COLOR="FF0000"
+          else
+            STATUS="Succeeded"
+            COLOR="00FF00"
+          fi
+
+          # Environment tag (uppercase for visibility)
+          ENV_TAG=$(echo "$ENVIRONMENT" | tr '[:lower:]' '[:upper:]')
+
+          # Get status icons for each job
+          TF_ICON=$(get_status_icon "${{ needs.terraform.result }}")
+          DB_ICON=$(get_status_icon "${{ needs.deploy-databases.result }}")
+          API_ICON=$(get_status_icon "${{ needs.deploy-dotnet-apps.result }}")
+          REACT_ICON=$(get_status_icon "${{ needs.deploy-react-apps.result }}")
+
+          curl -H "Content-Type: application/json" -d '{
+            "@type": "MessageCard",
+            "themeColor": "'"$COLOR"'",
+            "summary": "['"$ENV_TAG"'] Workflow '"$STATUS"'",
+            "sections": [{
+              "activityTitle": "['"$ENV_TAG"'] Consilient Deployment Pipeline - '"$STATUS"'",
+              "facts": [
+                { "name": "Environment", "value": "**'"$ENV_TAG"'**" },
+                { "name": "Repository", "value": "${{ github.repository }}" },
+                { "name": "Branch", "value": "${{ github.ref_name }}" },
+                { "name": "Triggered by", "value": "${{ github.actor }}" },
+                { "name": "Terraform", "value": "'"$TF_ICON"' ${{ needs.terraform.result }}" },
+                { "name": "Databases", "value": "'"$DB_ICON"' ${{ needs.deploy-databases.result }}" },
+                { "name": "API", "value": "'"$API_ICON"' ${{ needs.deploy-dotnet-apps.result }}" },
+                { "name": "React", "value": "'"$REACT_ICON"' ${{ needs.deploy-react-apps.result }}" }
+              ],
+              "markdown": true
+            }],
+            "potentialAction": [{
+              "@type": "OpenUri",
+              "name": "View Run",
+              "targets": [{ "os": "default", "uri": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }]
+            }]
+          }' "$TEAMS_WEBHOOK_URL"
