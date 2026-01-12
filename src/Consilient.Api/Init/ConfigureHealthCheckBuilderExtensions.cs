@@ -12,9 +12,15 @@ namespace Consilient.Api.Init
                 client.Timeout = TimeSpan.FromSeconds(15); // Allow time for connectivity + pipeline checks
             });
 
+            services.AddHttpClient<MicrosoftOAuthHealthCheck>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(15); // Allow time for discovery + JWKS + token checks
+            });
+
             return services.AddHealthChecks()
                 .AddDbContextCheck<ConsilientDbContext>()
-                .AddCheck<LokiHealthCheck>("loki", tags: ["infrastructure", "logging"]);
+                .AddCheck<LokiHealthCheck>("loki", tags: ["infrastructure", "logging"])
+                .AddCheck<MicrosoftOAuthHealthCheck>("microsoft_oauth", tags: ["infrastructure", "authentication"]);
         }
     }
 }
