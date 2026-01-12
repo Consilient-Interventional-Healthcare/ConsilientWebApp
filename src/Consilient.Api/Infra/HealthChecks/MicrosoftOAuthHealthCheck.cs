@@ -198,9 +198,15 @@ namespace Consilient.Api.Infra.HealthChecks
         {
             try
             {
+                // Authority may already include TenantId (e.g., https://login.microsoftonline.com/{tenantId})
+                // or may be just the base URL. Handle both cases.
                 var authority = _configuration!.Authority!.TrimEnd('/');
-                var tenantId = _configuration.TenantId;
-                var discoveryUrl = $"{authority}/{tenantId}/.well-known/openid-configuration";
+                var tenantId = _configuration.TenantId!;
+
+                // Check if authority already ends with the tenant ID
+                var discoveryUrl = authority.EndsWith(tenantId, StringComparison.OrdinalIgnoreCase)
+                    ? $"{authority}/.well-known/openid-configuration"
+                    : $"{authority}/{tenantId}/.well-known/openid-configuration";
 
                 var response = await _httpClient.GetAsync(discoveryUrl, cancellationToken);
 
