@@ -10,12 +10,6 @@ resource "random_password" "loki_basic_auth" {
 locals {
   # Use provided password or fall back to generated one
   loki_basic_auth_password = var.loki_basic_auth_password != "" ? var.loki_basic_auth_password : random_password.loki_basic_auth.result
-
-  # Generate bcrypt hash for htpasswd (nginx supports bcrypt with $2y$ prefix)
-  # Note: bcrypt() generates a different hash each run due to random salt.
-  # The container_app lifecycle ignores secret changes to prevent recreation.
-  # To update the password: terraform taint azurerm_container_app.loki
-  loki_htpasswd_hash = bcrypt(local.loki_basic_auth_password)
 }
 
 # Option: Create a new Container App Environment (may hit quota limits)
@@ -101,11 +95,7 @@ resource "azurerm_container_app" "loki" {
 
   lifecycle {
     ignore_changes = [
-      workload_profile_name,
-      # Ignore secret changes to prevent recreation on every apply
-      # (bcrypt generates different hash each time due to random salt)
-      # To update htpasswd: terraform taint azurerm_container_app.loki
-      secret
+      workload_profile_name
     ]
   }
 
@@ -115,18 +105,23 @@ resource "azurerm_container_app" "loki" {
   }
 
   secret {
-    name  = "htpasswd"
-    value = "${var.loki_basic_auth_username}:${local.loki_htpasswd_hash}"
+    name  = "loki-username"
+    value = var.loki_basic_auth_username
+  }
+
+  secret {
+    name  = "loki-password"
+    value = local.loki_basic_auth_password
   }
 
   template {
     min_replicas = 1
     max_replicas = 10
 
-    # Init container to set up nginx config files
+    # Init container to set up nginx config files and generate htpasswd
     init_container {
       name   = "init-nginx"
-      image  = "busybox:1.36"
+      image  = "httpd:2.4-alpine"
       cpu    = 0.25
       memory = "0.5Gi"
 
@@ -135,12 +130,16 @@ resource "azurerm_container_app" "loki" {
         secret_name = "nginx-config"
       }
       env {
-        name        = "HTPASSWD"
-        secret_name = "htpasswd"
+        name        = "LOKI_USERNAME"
+        secret_name = "loki-username"
+      }
+      env {
+        name        = "LOKI_PASSWORD"
+        secret_name = "loki-password"
       }
 
       command = ["/bin/sh", "-c"]
-      args    = ["printf '%s' \"$NGINX_CONFIG\" > /etc/nginx/nginx.conf && printf '%s' \"$HTPASSWD\" > /etc/nginx/.htpasswd"]
+      args    = ["printf '%s' \"$NGINX_CONFIG\" > /etc/nginx/nginx.conf && htpasswd -bc /etc/nginx/.htpasswd \"$LOKI_USERNAME\" \"$LOKI_PASSWORD\""]
 
       volume_mounts {
         name = "nginx-config-volume"
