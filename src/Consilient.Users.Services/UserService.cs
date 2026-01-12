@@ -27,6 +27,9 @@ namespace Consilient.Users.Services
         {
             ArgumentNullException.ThrowIfNull(request);
 
+            _logger.LogDebug("External authentication request received for provider: {Provider}", request.Provider);
+            _logger.LogDebug("RedirectUri: {RedirectUri}", request.RedirectUri);
+
             if (string.IsNullOrWhiteSpace(request.Provider))
             {
                 _logger.LogWarning("Provider missing in external authentication request");
@@ -45,12 +48,17 @@ namespace Consilient.Users.Services
                 return IdentityHelper.CreateFailureResult(["Authorization code is required."]);
             }
 
+            _logger.LogDebug("Calling OAuth provider to validate authorization code");
             var result = await oauthService!
                 .ValidateAuthorizationCodeAsync(request.Code, request.CodeVerifier, request.RedirectUri, cancellationToken)
                 .ConfigureAwait(false);
 
+            _logger.LogDebug("OAuth provider validation result - Succeeded: {Succeeded}, UserEmail: {Email}, ProviderKey: {ProviderKey}",
+                result.Succeeded, result.UserEmail, result.ProviderKey);
+
             if (!result.Succeeded)
             {
+                _logger.LogDebug("OAuth validation failed with error: {Error}", result.Error);
                 return IdentityHelper.CreateFailureResult([result.Error!]);
             }
 
@@ -70,6 +78,8 @@ namespace Consilient.Users.Services
                 return IdentityHelper.CreateFailureResult([ErrorMessages.EmailDomainNotAllowed]);
             }
 
+            _logger.LogDebug("Looking up existing external login for provider: {Provider}, key: {ProviderKey}",
+                result.ProviderName, result.ProviderKey);
             var existingLoginUser = await _userManager
                 .FindByLoginAsync(result.ProviderName, result.ProviderKey)
                 .ConfigureAwait(false);
@@ -80,9 +90,11 @@ namespace Consilient.Users.Services
             {
                 _logger.LogInformation("Existing external login found. UserId: {UserId}, Email: {Email}",
                     existingLoginUser.Id, existingLoginUser.Email);
+                _logger.LogDebug("Generating JWT token for existing user");
                 return await CreateSuccessResultAsync(existingLoginUser);
             }
 
+            _logger.LogDebug("No existing external login found, will create or link user");
             return await CreateOrLinkUserWithExternalLoginAsync(
                 result.UserEmail,
                 result.ProviderName,

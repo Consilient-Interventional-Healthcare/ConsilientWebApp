@@ -9,20 +9,13 @@ namespace Consilient.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class DiagnosticsController : ControllerBase
+    public class DiagnosticsController(
+        LoggingConfiguration? loggingConfiguration,
+        IConfiguration configuration) : ControllerBase
     {
-        private readonly LoggingConfiguration? _loggingConfiguration;
-        private readonly IConfiguration _configuration;
-        private readonly Serilog.ILogger _logger;
-
-        public DiagnosticsController(
-            LoggingConfiguration? loggingConfiguration,
-            IConfiguration configuration)
-        {
-            _loggingConfiguration = loggingConfiguration;
-            _configuration = configuration;
-            _logger = Log.Logger;
-        }
+        private readonly LoggingConfiguration? _loggingConfiguration = loggingConfiguration;
+        private readonly IConfiguration _configuration = configuration;
+        private readonly Serilog.ILogger _logger = Log.Logger;
 
         [HttpGet("loki-config")]
         [AllowAnonymous]  // TEMPORARY - Remove in production or add auth

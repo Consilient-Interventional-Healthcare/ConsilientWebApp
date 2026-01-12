@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
 using Consilient.Api.Infra.HealthChecks;
+using Consilient.Api.Infra.Middleware;
 
 namespace Consilient.Api
 {
@@ -218,6 +219,9 @@ namespace Consilient.Api
                 // This polls for sentinel key changes and refreshes configuration when detected
                 // Safe to call even when refresh isn't configured (no-op for dev environment)
                 app.UseAzureAppConfiguration();
+
+                // Enrich all logs with request-level information (RequestId, HttpMethod, Path)
+                app.UseMiddleware<RequestLoggingMiddleware>();
 
                 // Configure the HTTP request pipeline.
                 if (app.Environment.IsDevelopment())

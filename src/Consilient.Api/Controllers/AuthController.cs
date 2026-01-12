@@ -171,6 +171,10 @@ namespace Consilient.Api.Controllers
             [FromQuery] string? error_description,
             CancellationToken cancellationToken)
         {
+            _logger.LogDebug("OAuth callback received for provider: {Provider}", provider);
+            _logger.LogDebug("Callback parameters - Code present: {CodePresent}, State present: {StatePresent}, Error: {Error}",
+                !string.IsNullOrWhiteSpace(code), !string.IsNullOrWhiteSpace(state), error);
+
             // Validate provider
             if (!_providerRegistry.IsProviderSupported(provider))
             {
@@ -197,8 +201,11 @@ namespace Consilient.Api.Controllers
                 return BadRequest("Missing code or state parameter.");
             }
 
+            _logger.LogDebug("Authorization code received (length: {CodeLength}), State: {State}", code.Length, state);
+
             // Retrieve CSRF token from cookie
             var csrfToken = _csrfTokenService.GetAndValidateFromCookie(Request);
+            _logger.LogDebug("CSRF token from cookie: {HasCsrf}", !string.IsNullOrWhiteSpace(csrfToken));
             if (string.IsNullOrWhiteSpace(csrfToken))
             {
                 _logger.LogWarning("CSRF token missing from cookie during OAuth callback for {Provider}", provider);
@@ -206,10 +213,14 @@ namespace Consilient.Api.Controllers
             }
 
             // Validate state and CSRF token
+            _logger.LogDebug("Validating state and CSRF token");
             var validationResult = await _stateManager.ValidateAndConsumeAsync(
                 state,
                 csrfToken,
                 cancellationToken);
+
+            _logger.LogDebug("State validation result - Valid: {IsValid}, ReturnUrl: {ReturnUrl}, HasCodeVerifier: {HasCodeVerifier}",
+                validationResult.IsValid, validationResult.ReturnUrl, !string.IsNullOrWhiteSpace(validationResult.CodeVerifier));
 
             // Clear CSRF cookie regardless of validation result
             _csrfTokenService.ClearCookie(Response);
@@ -230,11 +241,18 @@ namespace Consilient.Api.Controllers
             // Use X-Forwarded-Proto header when behind reverse proxy (Azure App Service)
             var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
             var redirectUri = $"{scheme}://{Request.Host}{Request.PathBase}/auth/{provider.ToLowerInvariant()}/callback";
+            _logger.LogDebug("Constructed callback redirect URI: {RedirectUri} (scheme: {Scheme}, host: {Host})",
+                redirectUri, scheme, Request.Host);
 
             // Authenticate with OAuth provider
+            _logger.LogDebug("Calling UserService.AuthenticateExternalAsync to exchange code for token");
             var authResult = await _userService.AuthenticateExternalAsync(
                 new ExternalAuthenticateRequest(provider, code, validationResult.CodeVerifier, redirectUri),
                 cancellationToken);
+
+            _logger.LogDebug("AuthenticateExternalAsync result - Succeeded: {Succeeded}, HasToken: {HasToken}, Errors: {Errors}",
+                authResult.Succeeded, !string.IsNullOrWhiteSpace(authResult.Token),
+                authResult.Errors != null ? string.Join(", ", authResult.Errors) : "none");
 
             if (authResult.Succeeded)
             {
@@ -246,6 +264,7 @@ namespace Consilient.Api.Controllers
 
                 // Build absolute URL for cross-origin redirect to frontend
                 var redirectUrl = BuildAbsoluteReturnUrl(validationResult.ReturnUrl);
+                _logger.LogDebug("Built absolute return URL: {RedirectUrl}", redirectUrl);
 
                 if (!string.IsNullOrWhiteSpace(redirectUrl))
                 {
@@ -278,6 +297,8 @@ namespace Consilient.Api.Controllers
             [FromQuery] string? returnUrl,
             CancellationToken cancellationToken)
         {
+            _logger.LogDebug("OAuth login initiated for provider: {Provider}, returnUrl: {ReturnUrl}", provider, returnUrl);
+
             // Validate provider
             if (!_providerRegistry.IsProviderSupported(provider))
             {
@@ -290,17 +311,23 @@ namespace Consilient.Api.Controllers
                 // Generate PKCE parameters
                 var codeVerifier = PkceHelper.GenerateCodeVerifier();
                 var codeChallenge = PkceHelper.GenerateCodeChallenge(codeVerifier);
+                _logger.LogDebug("PKCE parameters generated - CodeVerifier length: {VerifierLength}, CodeChallenge length: {ChallengeLength}",
+                    codeVerifier.Length, codeChallenge.Length);
 
                 // Generate and set CSRF token cookie
                 var csrfToken = _csrfTokenService.GenerateAndSetCookie(Response);
+                _logger.LogDebug("CSRF token generated and set in cookie");
 
                 // Construct dynamic redirect URI from current request
                 // Use X-Forwarded-Proto header when behind reverse proxy (Azure App Service)
                 var scheme = Request.Headers["X-Forwarded-Proto"].FirstOrDefault() ?? Request.Scheme;
                 var redirectUri = $"{scheme}://{Request.Host}{Request.PathBase}/auth/{provider.ToLowerInvariant()}/callback";
+                _logger.LogDebug("Constructed redirect URI: {RedirectUri} (scheme: {Scheme}, host: {Host}, pathBase: {PathBase})",
+                    redirectUri, scheme, Request.Host, Request.PathBase);
 
                 // Normalize returnUrl to be relative path only
                 var normalizedReturnUrl = NormalizeReturnUrl(returnUrl);
+                _logger.LogDebug("Normalized return URL: {NormalizedReturnUrl}", normalizedReturnUrl);
 
                 // Store state with code verifier and CSRF token
                 var state = await _stateManager.GenerateStateAsync(
@@ -308,6 +335,7 @@ namespace Consilient.Api.Controllers
                     codeVerifier,
                     csrfToken,
                     cancellationToken);
+                _logger.LogDebug("State token generated: {State}", state);
 
                 // Build authorization URL with PKCE challenge and dynamic redirect URI
                 var authUrl = await _userService.BuildAuthorizationUrlAsync(
@@ -319,6 +347,7 @@ namespace Consilient.Api.Controllers
 
                 _logger.LogInformation("Initiating OAuth login flow for {Provider} with state: {State}, returnUrl: {ReturnUrl}",
                     provider, state, normalizedReturnUrl);
+                _logger.LogDebug("Redirecting to authorization URL: {AuthUrl}", authUrl);
 
                 return Redirect(authUrl);
             }

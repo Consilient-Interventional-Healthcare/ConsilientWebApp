@@ -44,7 +44,13 @@ namespace Consilient.Users.Services.OAuth
             ArgumentException.ThrowIfNullOrWhiteSpace(redirectUri);
             cancellationToken.ThrowIfCancellationRequested();
 
+            _logger.LogDebug("Building authorization URL for Microsoft OAuth");
+            _logger.LogDebug("Redirect URI: {RedirectUri}", redirectUri);
+            _logger.LogDebug("Authority: {Authority}/{TenantId}", _configuration.Authority, _configuration.TenantId);
+            _logger.LogDebug("Client ID: {ClientId}", _configuration.ClientId);
+
             var scopes = _configuration.Scopes ?? [];
+            _logger.LogDebug("Scopes requested: {Scopes}", string.Join(", ", scopes));
             if (!scopes.Any())
             {
                 _logger.LogWarning("No OAuth scopes configured");
@@ -58,6 +64,8 @@ namespace Consilient.Users.Services.OAuth
                 .WithExtraQueryParameters($"state={Uri.EscapeDataString(state)}&code_challenge={Uri.EscapeDataString(codeChallenge)}&code_challenge_method=S256")
                 .ExecuteAsync(cancellationToken)
                 .ConfigureAwait(false);
+
+            _logger.LogDebug("Authorization URL built successfully: {AuthUrl}", authUrl);
 
             return authUrl.ToString();
         }
@@ -73,27 +81,40 @@ namespace Consilient.Users.Services.OAuth
             ArgumentException.ThrowIfNullOrWhiteSpace(redirectUri);
             cancellationToken.ThrowIfCancellationRequested();
 
+            _logger.LogDebug("Validating authorization code with Microsoft Entra");
+            _logger.LogDebug("Redirect URI for token exchange: {RedirectUri}", redirectUri);
+            _logger.LogDebug("Code length: {CodeLength}, CodeVerifier length: {VerifierLength}", code.Length, codeVerifier.Length);
+
             var app = CreateConfidentialClientApplication(redirectUri);
             var scopes = _configuration.Scopes ?? [];
+            _logger.LogDebug("Scopes for token exchange: {Scopes}", string.Join(", ", scopes));
 
             try
             {
+                _logger.LogDebug("Initiating token exchange with Microsoft Entra (AcquireTokenByAuthorizationCode)");
+
                 // Use PKCE code verifier for token exchange
                 var result = await app.AcquireTokenByAuthorizationCode(scopes, code)
                     .WithPkceCodeVerifier(codeVerifier)
                     .ExecuteAsync(cancellationToken)
                     .ConfigureAwait(false);
 
+                _logger.LogDebug("Token exchange response received from Microsoft Entra");
+
                 cancellationToken.ThrowIfCancellationRequested();
 
                 if (result.Account == null)
                 {
+                    _logger.LogDebug("Token exchange succeeded but Account is null in response");
                     throw new InvalidOperationException("Account information not present in token response.");
                 }
 
                 var account = result.Account;
                 var userEmail = account.Username ?? string.Empty;
                 var providerKey = account.HomeAccountId?.ObjectId ?? string.Empty;
+
+                _logger.LogDebug("Token exchange successful. Account: {Username}, ObjectId: {ObjectId}, TenantId: {TenantId}",
+                    account.Username, account.HomeAccountId?.ObjectId, account.HomeAccountId?.TenantId);
 
                 return new AuthorizationCodeValidationResult
                 {
@@ -179,6 +200,10 @@ namespace Consilient.Users.Services.OAuth
         {
             var authority = _configuration.Authority!.TrimEnd('/');
             var authorityUri = $"{authority}/{_configuration.TenantId}";
+
+            _logger.LogDebug("Creating MSAL ConfidentialClientApplication");
+            _logger.LogDebug("Authority URI: {AuthorityUri}", authorityUri);
+            _logger.LogDebug("Redirect URI: {RedirectUri}", redirectUri);
 
             return ConfidentialClientApplicationBuilder
                 .Create(_configuration.ClientId)
