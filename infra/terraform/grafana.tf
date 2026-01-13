@@ -48,52 +48,71 @@ resource "null_resource" "grafana_loki_datasource" {
     interpreter = ["bash", "-c"]
     environment = {
       LOKI_PASSWORD = local.loki_basic_auth_password
+      LOKI_FQDN     = azurerm_container_app.loki.ingress[0].fqdn
     }
     command = <<-EOT
-      # Configure Loki datasource in Azure Managed Grafana with Basic Auth
-      # Using az grafana data-source create command
+      set -e
 
-      az grafana data-source create \
+      # Properly escape password for JSON using jq
+      ESCAPED_PASSWORD=$(printf '%s' "$LOKI_PASSWORD" | jq -Rs .)
+
+      # Wait for Loki to be ready before configuring datasource
+      echo "Waiting for Loki to be ready..."
+      for i in {1..30}; do
+        if curl -sf "https://$LOKI_FQDN/ready" > /dev/null 2>&1; then
+          echo "Loki is ready"
+          break
+        fi
+        if [ $i -eq 30 ]; then
+          echo "ERROR: Loki did not become ready in time"
+          exit 1
+        fi
+        echo "Attempt $i: Loki not ready, waiting 5s..."
+        sleep 5
+      done
+
+      # Build the datasource definition with properly escaped password
+      DATASOURCE_DEF=$(cat <<EOF
+      {
+        "name": "Loki",
+        "type": "loki",
+        "access": "proxy",
+        "url": "https://$LOKI_FQDN",
+        "isDefault": true,
+        "basicAuth": true,
+        "basicAuthUser": "${var.loki_basic_auth_username}",
+        "secureJsonData": {
+          "basicAuthPassword": $ESCAPED_PASSWORD
+        },
+        "jsonData": {
+          "maxLines": 1000,
+          "timeout": "60"
+        }
+      }
+      EOF
+      )
+
+      # Try to create datasource first
+      echo "Creating Loki datasource in Grafana..."
+      if az grafana data-source create \
         --name "${azurerm_dashboard_grafana.main[0].name}" \
         --resource-group "${azurerm_resource_group.main.name}" \
-        --definition '{
-          "name": "Loki",
-          "type": "loki",
-          "access": "proxy",
-          "url": "https://${azurerm_container_app.loki.ingress[0].fqdn}",
-          "isDefault": true,
-          "basicAuth": true,
-          "basicAuthUser": "${var.loki_basic_auth_username}",
-          "secureJsonData": {
-            "basicAuthPassword": "'"$LOKI_PASSWORD"'"
-          },
-          "jsonData": {
-            "maxLines": 1000,
-            "timeout": "60"
-          }
-        }' || echo "Datasource may already exist, attempting update..."
-
-      # If create fails (datasource exists), try to update
-      az grafana data-source update \
-        --name "${azurerm_dashboard_grafana.main[0].name}" \
-        --resource-group "${azurerm_resource_group.main.name}" \
-        --data-source "Loki" \
-        --definition '{
-          "name": "Loki",
-          "type": "loki",
-          "access": "proxy",
-          "url": "https://${azurerm_container_app.loki.ingress[0].fqdn}",
-          "isDefault": true,
-          "basicAuth": true,
-          "basicAuthUser": "${var.loki_basic_auth_username}",
-          "secureJsonData": {
-            "basicAuthPassword": "'"$LOKI_PASSWORD"'"
-          },
-          "jsonData": {
-            "maxLines": 1000,
-            "timeout": "60"
-          }
-        }' 2>/dev/null || true
+        --definition "$DATASOURCE_DEF" 2>&1; then
+        echo "Datasource created successfully"
+      else
+        # If create fails (datasource exists), try to update
+        echo "Datasource may already exist, attempting update..."
+        if az grafana data-source update \
+          --name "${azurerm_dashboard_grafana.main[0].name}" \
+          --resource-group "${azurerm_resource_group.main.name}" \
+          --data-source "Loki" \
+          --definition "$DATASOURCE_DEF" 2>&1; then
+          echo "Datasource updated successfully"
+        else
+          echo "ERROR: Failed to create or update datasource"
+          exit 1
+        fi
+      fi
     EOT
   }
 

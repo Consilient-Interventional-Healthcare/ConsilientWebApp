@@ -15,6 +15,13 @@ namespace Consilient.Api.Infra.Authentication
         private readonly IWebHostEnvironment _environment = environment ?? throw new ArgumentNullException(nameof(environment));
         private readonly ILogger<JwtTokenCookieService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
+        // Validate CookieExpiryMinutes at construction time
+        private readonly bool _ = settings?.Value?.Authentication?.CookieExpiryMinutes > 0
+            ? true
+            : throw new InvalidOperationException(
+                $"CookieExpiryMinutes must be greater than 0. Current value: {settings?.Value?.Authentication?.CookieExpiryMinutes ?? 0}. " +
+                "Set 'ConsilientApi:ApplicationSettings:Authentication:CookieExpiryMinutes' in Azure App Configuration.");
+
         public void SetAuthenticationCookie(HttpResponse response, string token)
         {
             ArgumentNullException.ThrowIfNull(response);

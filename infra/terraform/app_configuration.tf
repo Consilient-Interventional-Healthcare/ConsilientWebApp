@@ -724,6 +724,51 @@ resource "azurerm_app_configuration_key" "oauth_scopes" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
+# Cookie expiry time for authentication tokens (in minutes)
+# Controls how long the auth_token cookie is valid
+resource "azurerm_app_configuration_key" "auth_cookie_expiry" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:CookieExpiryMinutes"
+  label                  = var.environment
+  value                  = "60" # 1 hour
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# Auto-provision users on OAuth login
+# When enabled, new users are automatically created when they authenticate via Microsoft OAuth
+# (provided their email domain is in AllowedEmailDomains)
+resource "azurerm_app_configuration_key" "user_auto_provision" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:AutoProvisionUser"
+  label                  = var.environment
+  value                  = var.environment == "dev" ? "true" : "false"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
 # OAuth Client Secret (Key Vault reference)
 resource "azurerm_app_configuration_key" "oauth_client_secret" {
   configuration_store_id = azurerm_app_configuration.main.id
