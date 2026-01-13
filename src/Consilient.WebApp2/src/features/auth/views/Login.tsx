@@ -10,7 +10,7 @@ import { AppSettingsServiceFactory } from "@/shared/core/appSettings/AppSettings
 const authService = getAuthService();
 
 export default function Login() {
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -64,6 +64,17 @@ export default function Login() {
     };
     void loadSettings();
   }, []);
+
+  // Redirect if user is already authenticated (e.g., after OAuth callback)
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      logger.debug('Login - User already authenticated, redirecting', {
+        component: 'Login',
+        destination: from
+      });
+      void navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, isLoading, from, navigate]);
 
 
   const handleMicrosoftLogin = () => {
