@@ -48,8 +48,11 @@ export async function handleResponseError(
         })
         .finally(() => {
           // Dispatch custom event to trigger navigation in React Router context
+          // Don't redirect if already on auth pages (login, logout) to avoid loops
           const currentPath = window.location.pathname;
-          dispatchSessionExpired(currentPath);
+          if (!currentPath.startsWith('/auth/login') && !currentPath.startsWith('/auth/logout')) {
+            dispatchSessionExpired(currentPath);
+          }
 
           // Reset flag after logout process completes
           // Small delay to ensure all pending requests complete

@@ -128,7 +128,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null);
 
       // Navigate to login page with redirect parameter
-      void navigate(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(event.detail.redirectPath)}`);
+      // Don't include redirect if destination is login page itself (avoids loops)
+      const redirectPath = event.detail.redirectPath;
+      if (redirectPath && redirectPath !== ROUTES.LOGIN && !redirectPath.startsWith(ROUTES.LOGIN)) {
+        void navigate(`${ROUTES.LOGIN}?redirect=${encodeURIComponent(redirectPath)}`);
+      } else {
+        void navigate(ROUTES.LOGIN);
+      }
     };
 
     window.addEventListener('auth:sessionExpired', handleSessionExpired);
