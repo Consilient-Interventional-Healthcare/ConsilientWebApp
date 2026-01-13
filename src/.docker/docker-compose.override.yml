@@ -1,0 +1,14 @@
+# Visual Studio Docker Compose Override
+# This file is used by Visual Studio when debugging with Docker
+
+services:
+  consilient.api:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:8091
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/consilient-api.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=${DEV_CERT_PASSWORD}
+    volumes:
+      - ${USERPROFILE}/.aspnet/https:/https:ro
+    ports:
+      - "8091:8091"

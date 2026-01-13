@@ -14,6 +14,7 @@ using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Visits.Services;
+using Consilient.DoctorAssignments.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +32,7 @@ namespace Consilient.BackgroundHost
             builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
                 .AddJsonFile(ApplicationConstants.ConfigurationFiles.AppSettings, optional: true, reloadOnChange: true)
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
             var logger = CreateLogger(builder);
@@ -51,6 +53,7 @@ namespace Consilient.BackgroundHost
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
                 builder.Services.RegisterVisitServices();
+                builder.Services.AddDoctorAssignmentsServices();
                 builder.Services.AddExcelImporter();
                 builder.Services.AddWorkers();
                 builder.Services.RegisterLogging(logger);
@@ -81,8 +84,14 @@ namespace Consilient.BackgroundHost
         {
             var loggingConfiguration =
                 builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)
-                    .Get<LoggingConfiguration>() ??
-                throw new NullReferenceException($"{ApplicationConstants.ConfigurationFiles.AppSettings} missing");
+                    .Get<LoggingConfiguration>();
+
+            if (loggingConfiguration == null)
+            {
+                // Fallback to console logger when LoggingConfiguration is not available
+                // (e.g., local development without full config, or before AAC loads)
+                return CreateTrivialLogger(builder);
+            }
 
             var labels = new Dictionary<string, string>
             {
@@ -91,6 +100,17 @@ namespace Consilient.BackgroundHost
             };
             var logger = LoggerFactory.Create(loggingConfiguration, labels);
             return logger;
+        }
+
+        private static Serilog.Core.Logger CreateTrivialLogger(WebApplicationBuilder builder)
+        {
+            return new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .Enrich.FromLogContext()
+                .Enrich.WithProperty(LabelConstants.App, builder.Environment.ApplicationName)
+                .Enrich.WithProperty(LabelConstants.Env, builder.Environment.EnvironmentName.ToLower())
+                .WriteTo.Console()
+                .CreateLogger();
         }
     }
 }

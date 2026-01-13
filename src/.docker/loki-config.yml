@@ -4,6 +4,18 @@ server:
   http_listen_port: 3100
   grpc_listen_port: 9096
 
+ingester:
+  lifecycler:
+    # Disable the 15s ready delay for faster local startup
+    min_ready_duration: 0s
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  wal:
+    enabled: true
+    dir: /tmp/loki/wal
+
 # Option A: Keep boltdb-shipper (no structured metadata). Disable structured metadata and
 # set a 24h index period which boltdb-shipper expects.
 limits_config:

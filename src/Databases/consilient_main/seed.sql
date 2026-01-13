@@ -17,9 +17,12 @@ SET IDENTITY_INSERT [Identity].[Users] ON;
 
 INSERT INTO [Identity].[Users] ([Id], [UserName], [NormalizedUserName], [Email], [NormalizedEmail], [EmailConfirmed], [PasswordHash], [SecurityStamp], [ConcurrencyStamp], [AccessFailedCount], [PhoneNumberConfirmed], [TwoFactorEnabled], [LockoutEnabled])
 VALUES
-(100, N'administrator@local', N'ADMINISTRATOR@LOCAL', N'administrator@local', N'ADMINISTRATOR@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEEVonWu/1RVWSDCzUBZQEi59RYkR9JHgl48AIMnq7B/vj7694rqUlH8Kj0H+HD3U1w==', N'9d61551f-345f-4e22-b0c3-4a0b8f66a17b', N'9b3ad633-1a69-4496-aa46-c14a2e6d673d', 0, 0, 0, 0),
-(101, N'nurse@local', N'NURSE@LOCAL', N'nurse@local', N'NURSE@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEAQDAp+CRqp95qwrVJSE/9D/zp28vGRF2msMuzv47JEwtx6yAqLg0mrMooEeqgA8wQ==', N'6f785a07-c956-43e1-85f9-c1d150bf3cfb', N'e1e670fd-ecfa-4b5c-a75d-588d63a65c28', 0, 0, 0, 0),
-(102, N'provider@local', N'PROVIDER@LOCAL', N'provider@local', N'PROVIDER@LOCAL', CAST(1 AS bit), N'AQAAAAIAAYagAAAAEHQ+HMgotyBZSsNsCG3wug9vImtL5gZDMi2wiTyVd3A0hTZF8AM+g9mYrOvdoK9J+g==', N'04c3e172-298d-4007-8aa5-6c8e9118ffbd', N'1cc6803b-097b-4167-b10f-801b0f86493f', 0, 0, 0, 0)
+-- Password: administrator@local
+(100, N'administrator@local', N'ADMINISTRATOR@LOCAL', N'administrator@local', N'ADMINISTRATOR@LOCAL', CAST(1 AS bit), N'AQAAAAEAACcQAAAAEKl07TabjxL9p6ByiHvF3Udyy+aSHN1zQH/AdoK+EfFL/hRex/aGihC0HHeM4z2GTQ==', N'9d61551f-345f-4e22-b0c3-4a0b8f66a17b', N'9b3ad633-1a69-4496-aa46-c14a2e6d673d', 0, 0, 0, 0),
+-- Password: nurse@local
+(101, N'nurse@local', N'NURSE@LOCAL', N'nurse@local', N'NURSE@LOCAL', CAST(1 AS bit), N'AQAAAAEAACcQAAAAEKNdIRR39rS90gt0bYW3X4DcE8Cscowru324VMuBYSoJwM+cyqYmTyKPeK90EZSUEw==', N'6f785a07-c956-43e1-85f9-c1d150bf3cfb', N'e1e670fd-ecfa-4b5c-a75d-588d63a65c28', 0, 0, 0, 0),
+-- Password: provider@local
+(102, N'provider@local', N'PROVIDER@LOCAL', N'provider@local', N'PROVIDER@LOCAL', CAST(1 AS bit), N'AQAAAAEAACcQAAAAEHUeaoXRBoSo+uSIbEYPLRw7G4bWoOiS6oU2KlLt1z2ocGsT4jxJ3d5v/qk/G6/iZw==', N'04c3e172-298d-4007-8aa5-6c8e9118ffbd', N'1cc6803b-097b-4167-b10f-801b0f86493f', 0, 0, 0, 0)
 
 SET IDENTITY_INSERT [Identity].[Users] OFF;
 GO

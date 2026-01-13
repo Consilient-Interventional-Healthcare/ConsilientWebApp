@@ -10,7 +10,10 @@
         "loki": "StartWithoutDebugging",
         "promtail": "StartWithoutDebugging",
         "grafana": "StartWithoutDebugging"
-      }
+      },
+      "httpPort": 0,
+      "sslPort": 8091,
+      "useSSL": true
     },
     "Docker Compose - No LLM": {
       "commandName": "DockerCompose",
@@ -22,7 +25,10 @@
         "loki": "StartWithoutDebugging",
         "promtail": "StartWithoutDebugging",
         "grafana": "StartWithoutDebugging"
-      }
+      },
+      "httpPort": 0,
+      "sslPort": 8091,
+      "useSSL": true
     },
     "Docker Compose - Logging": {
       "commandName": "DockerCompose",

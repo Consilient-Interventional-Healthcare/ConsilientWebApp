@@ -6,16 +6,23 @@
     <DockerPublishLocally>False</DockerPublishLocally>
     <ProjectGuid>81dded9d-158b-e303-5f62-77a2896d2a5a</ProjectGuid>
   </PropertyGroup>
+
+  <!-- Stop existing containers before starting new ones to avoid port conflicts -->
+  <Target Name="StopExistingContainers" BeforeTargets="PrepareForBuild;Build;DockerComposeBuild;DockerComposeUp">
+    <!-- Stop and remove any consilient containers by name pattern -->
+    <Exec Command="powershell -NoProfile -Command &quot;docker ps -aq --filter 'name=consilient' | ForEach-Object { docker stop $_ 2>$null; docker rm -f $_ 2>$null }&quot;" ContinueOnError="true" IgnoreStandardErrorWarningFormat="true" />
+    <!-- Also run compose down for good measure -->
+    <Exec Command="docker-compose -f &quot;$(MSBuildProjectDirectory)\docker-compose.yml&quot; -f &quot;$(MSBuildProjectDirectory)\docker-compose.override.yml&quot; down --remove-orphans 2>&amp;1" ContinueOnError="true" IgnoreStandardErrorWarningFormat="true" />
+  </Target>
+  <ItemGroup>
+    <None Remove="Databases\**" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="docker-compose.override.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
     <None Include="docker-compose.yml" />
-    <None Include="Databases\Dockerfile" />
-    <None Include="Databases\entrypoint.sh" />
     <None Include="grafana\provisioning\datasources\loki.yml" />
-    <None Include="KillContainers.ps1" />
     <None Include="loki-config.yml" />
-    <None Include="promtail-config.yml" />
   </ItemGroup>
 </Project>

@@ -23,19 +23,6 @@ services:
       - consilient-net
     restart: unless-stopped
 
-  promtail:
-    image: grafana/promtail:latest
-    container_name: consilient.logging.promtail.container
-    volumes:
-      - ./promtail-config.yml:/etc/promtail/config.yml:ro
-      - /var/log:/var/log:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro  # Add this
-      - /var/run/docker.sock:/var/run/docker.sock:ro              # Add this
-    command: -config.file=/etc/promtail/config.yml
-    networks:
-      - consilient-net
-    restart: unless-stopped
-
   grafana:
     image: grafana/grafana
     container_name: consilient.logging.grafana.container
@@ -56,8 +43,8 @@ services:
     image: ${DOCKER_REGISTRY-}consilientdb
     container_name: consilient.dbs.container
     build:
-      context: .
-      dockerfile: Db/Dockerfile
+      context: ..
+      dockerfile: Databases/Dockerfile
     ports:
       - "1434:1433"
     env_file:
@@ -89,12 +76,13 @@ services:
       - ./ollama/ollama:/root/.ollama
     pull_policy: always
     tty: true
-    restart: always
+    restart: unless-stopped
     environment:
       - OLLAMA_KEEP_ALIVE=24h
       - OLLAMA_HOST=0.0.0.0
     networks:
       - ollama-docker
+      - consilient-net
 
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -109,32 +97,14 @@ services:
       - OLLAMA_BASE_URLS=http://ollama:11434 #comma separated ollama hosts
       - ENV=dev
       - WEBUI_AUTH=False
-      - WEBUI_NAME=valiantlynx AI
+      - WEBUI_NAME=Consilient AI
       - WEBUI_URL=http://localhost:8070
-      - WEBUI_SECRET_KEY=t0p-s3cr3t
+      - WEBUI_SECRET_KEY=${OLLAMA_WEBUI_SECRET_KEY}
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
     networks:
       - ollama-docker
-
-  # consilient.webapp:
-  #   image: ${DOCKER_REGISTRY-}consilientwebapp
-  #   container_name: consilient.apps.webapp.container
-  #   build:
-  #     context: ..
-  #     dockerfile: Consilient.WebApp/Dockerfile
-  #     args:
-  #       BUILD_CONFIGURATION: "Debug"
-  #   environment:
-  #     ASPNETCORE_ENVIRONMENT: "Development"
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   networks:
-  #     - consilient-net
 
   consilient.webapp2:
     image: ${DOCKER_REGISTRY-}consilientwebapp2
@@ -144,6 +114,12 @@ services:
       dockerfile: Dockerfile
       args:
         BUILD_CONFIGURATION: "Debug"
+    environment:
+      APP_API_BASE_URL: "https://localhost:8091"
+      APP_ENV: "development"
+      APP_ENABLE_DEBUG_MODE: "true"
+      APP_USE_MOCK_SERVICES: "false"
+      APP_ENABLE_EXTERNAL_LOGIN_MOCK: "false"
     ports:
       - "8082:80"
     networks:
@@ -160,17 +136,19 @@ services:
         BUILD_CONFIGURATION: "Debug"
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
-      ASPNETCORE_HTTP_PORTS: "8090"
-      ASPNETCORE_HTTPS_PORTS: "8091"
-      ASPNETCORE_URLS: "http://+:8090;https://+:8091"
+      ASPNETCORE_URLS: "https://+:8091"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: "/https/consilient-api.pfx"
+      ASPNETCORE_Kestrel__Certificates__Default__Password: "${DEV_CERT_PASSWORD}"
+    volumes:
+      - ${USERPROFILE}/.aspnet/https:/https:ro
     ports:
-      - "8090:8090"
       - "8091:8091"
     depends_on:
       db:
         condition: service_healthy
     networks:
       - consilient-net
+    restart: unless-stopped
 
   consilient.backgroundhost:
     image: ${DOCKER_REGISTRY-}consilientbackgroundhost
@@ -180,7 +158,11 @@ services:
       dockerfile: Consilient.BackgroundHost/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
-      ASPNETCORE_URLS: "http://+:8092"
+      ASPNETCORE_URLS: "https://+:8092"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: "/https/consilient-api.pfx"
+      ASPNETCORE_Kestrel__Certificates__Default__Password: "${DEV_CERT_PASSWORD}"
+    volumes:
+      - ${USERPROFILE}/.aspnet/https:/https:ro
     ports:
       - "8092:8092"
     depends_on:

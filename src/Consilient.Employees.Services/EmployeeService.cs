@@ -89,7 +89,7 @@ namespace Consilient.Employees.Services
                     F.Id AS FacilityId,
                     F.Abbreviation AS FacilityAbbreviation,
                     P.Id AS PatientId,
-                    P.MRN AS PatientMRN,
+                    PF.Mrn AS PatientMRN,
                     P.LastName AS PatientLastName,
                     P.FirstName AS PatientFirstName,
                     V.Id AS VisitId,
@@ -97,16 +97,18 @@ namespace Consilient.Employees.Services
                     V.Room,
                     V.Bed
                 FROM Compensation.Employees AS E
-                INNER JOIN Clinical.VisitAttendants AS VA 
+                INNER JOIN Clinical.VisitAttendants AS VA
                     ON E.Id = VA.EmployeeId
-                INNER JOIN Clinical.Visits AS V 
+                INNER JOIN Clinical.Visits AS V
                     ON VA.VisitID = V.Id
                 INNER JOIN Clinical.Hospitalizations AS H
                     ON H.Id = V.HospitalizationId
-                INNER JOIN Clinical.Facilities AS F 
+                INNER JOIN Clinical.Facilities AS F
                     ON F.Id = H.FacilityId
                 INNER JOIN Clinical.Patients AS P
                     ON P.Id = H.PatientId
+                INNER JOIN Clinical.PatientFacilities AS PF
+                    ON PF.PatientId = P.Id AND PF.FacilityId = F.Id
                 WHERE V.DateServiced = @date
                 ORDER BY V.DateServiced, E.LastName, E.FirstName, P.LastName, P.FirstName
             ", new SqlParameter("@date", date)).ToListAsync();

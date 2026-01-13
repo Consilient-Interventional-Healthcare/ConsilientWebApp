@@ -3,6 +3,8 @@
 **/.env
 **/.git
 **/.gitignore
+**/.docker/ollama
+**/.docker/grafana
 **/.project
 **/.settings
 **/.toolstarget

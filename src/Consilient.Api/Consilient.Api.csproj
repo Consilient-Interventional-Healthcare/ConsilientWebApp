@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>de14f06b-bfcd-468a-bffd-4c4abb31ef3f</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <!-- Docker volume mount for HTTPS certificate -->
+    <DockerfileRunArguments>-v "$(USERPROFILE)/.aspnet/https:/https:ro"</DockerfileRunArguments>
   </PropertyGroup>
 
   <ItemGroup>

@@ -45,6 +45,7 @@ namespace Consilient.Api
             builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
                 .AddJsonFile(ApplicationConstants.ConfigurationFiles.AppSettings, optional: true, reloadOnChange: true)
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
             // NEW: Add Azure App Configuration as primary source for runtime configuration
@@ -136,8 +137,8 @@ namespace Consilient.Api
             {
                 Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
 
-                var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new Exception($"Connection String messing: '{ApplicationConstants.ConnectionStrings.Default}'");
-                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"Connection String messing: '{ApplicationConstants.ConnectionStrings.Hangfire}'");
+                var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new Exception($"Connection String missing: '{ApplicationConstants.ConnectionStrings.Default}'");
+                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"Connection String missing: '{ApplicationConstants.ConnectionStrings.Hangfire}'");
                 if (loggingConfiguration != null)
                 {
                     builder.Services.AddSingleton(loggingConfiguration);
@@ -196,7 +197,7 @@ namespace Consilient.Api
                     options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
                 }).AddNewtonsoftJson();
 
-                builder.Services.ConfigureHealthChecks();
+                builder.Services.ConfigureHealthChecks(applicationSettings.Authentication.UserService);
 
                 // Configure Data Protection with proper cryptographic algorithms
                 // Note: In Azure App Service containers, data protection keys are ephemeral by design.

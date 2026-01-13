@@ -430,3 +430,6 @@ FodyWeavers.xsd
 # Scripts secrets files
 /scripts/.env.local
 /scripts/.env.dev
+
+# Local app settings (machine-specific, not committed)
+**/appsettings.local.json
