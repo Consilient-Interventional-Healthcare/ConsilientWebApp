@@ -390,6 +390,15 @@ APPCONFIG_ID="${RG_ID}/providers/Microsoft.AppConfiguration/configurationStores/
 import_resource "azurerm_app_configuration.main" "${APPCONFIG_ID}" "App Configuration"
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "16b. App Configuration Keys"
+APPCONFIG_ENDPOINT="https://${APPCONFIG_NAME}.azconfig.io"
+
+# Import app configuration keys that may exist outside Terraform state
+import_resource "azurerm_app_configuration_key.auth_cookie_expiry" \
+  "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ApplicationSettings:Authentication:CookieExpiryMinutes?label=${TF_VAR_environment}" \
+  "Auth Cookie Expiry Config Key"
+
+[[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "17. Key Vault Role Assignments"
 if [ -n "$API_PRINCIPAL_ID" ]; then
   [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "  Found API app service principal ID: ${API_PRINCIPAL_ID}"

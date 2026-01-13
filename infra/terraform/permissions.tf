@@ -172,3 +172,12 @@ resource "azurerm_role_assignment" "grafana_admins" {
   role_definition_name = "Grafana Admin"
   principal_id         = each.value
 }
+
+# Grant Grafana Admin to the Terraform service principal
+# This allows the CI/CD pipeline to configure datasources via az grafana commands
+resource "azurerm_role_assignment" "terraform_grafana_admin" {
+  count                = var.grafana_enabled ? 1 : 0
+  scope                = azurerm_dashboard_grafana.main[0].id
+  role_definition_name = "Grafana Admin"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
