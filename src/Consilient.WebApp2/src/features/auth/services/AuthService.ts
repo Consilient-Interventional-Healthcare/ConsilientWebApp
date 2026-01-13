@@ -54,10 +54,19 @@ export class AuthService implements IAuthService {
         userClaims: null
       };
     }
+    // Validate that userClaims exists and is a non-empty array
+    const claims = response.data.userClaims;
+    if (!claims || !Array.isArray(claims) || claims.length === 0) {
+      return {
+        succeeded: false,
+        errors: ['Invalid response: missing user claims'],
+        userClaims: null
+      };
+    }
     return {
       succeeded: true,
       errors: [],
-      userClaims: response.data.userClaims,
+      userClaims: claims,
     };
   }
 

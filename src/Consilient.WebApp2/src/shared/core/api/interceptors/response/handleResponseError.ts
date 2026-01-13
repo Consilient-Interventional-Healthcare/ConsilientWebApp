@@ -8,8 +8,9 @@ import { getAuthService } from '@/features/auth/services/AuthServiceFactory';
 import { logger } from '@/shared/core/logging/Logger';
 import { dispatchSessionExpired } from '@/features/auth/auth.events';
 
-// Flag to prevent multiple simultaneous logout calls
-let isLoggingOut = false;
+// Promise-based lock to prevent multiple simultaneous logout calls
+// Using a promise instead of a boolean flag prevents race conditions
+let logoutPromise: Promise<void> | null = null;
 
 /**
  * Response interceptor error handler
@@ -35,19 +36,17 @@ export async function handleResponseError(
     const url = originalRequest.url ?? '';
     const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/logout') || url.includes('/auth/authenticate') || url.includes('/auth/claims');
 
-    if (!isAuthEndpoint && !isLoggingOut) {
+    if (!isAuthEndpoint && !logoutPromise) {
       logger.warn('Session expired (401), logging out user', { component: 'handleResponseError' });
 
-      // Set flag to prevent multiple simultaneous logout calls
-      isLoggingOut = true;
-
-      // Perform logout and dispatch event for navigation
+      // Create logout promise to prevent concurrent logout attempts
       const authService = getAuthService();
-      authService.logout()
-        .catch((logoutError) => {
+      logoutPromise = (async () => {
+        try {
+          await authService.logout();
+        } catch (logoutError) {
           logger.error('Failed to logout on 401', logoutError as Error, { component: 'handleResponseError' });
-        })
-        .finally(() => {
+        } finally {
           // Dispatch custom event to trigger navigation in React Router context
           // Don't redirect if already on auth pages (login, logout) to avoid loops
           const currentPath = window.location.pathname;
@@ -55,12 +54,13 @@ export async function handleResponseError(
             dispatchSessionExpired(currentPath);
           }
 
-          // Reset flag after logout process completes
+          // Reset promise after logout process completes
           // Small delay to ensure all pending requests complete
           setTimeout(() => {
-            isLoggingOut = false;
+            logoutPromise = null;
           }, 1000);
-        });
+        }
+      })();
     }
 
     return Promise.reject(new ApiError(message, status, error.code, error.response?.data));

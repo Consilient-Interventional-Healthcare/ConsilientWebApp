@@ -20,13 +20,21 @@ export default function Login() {
   const [sessionExpired, setSessionExpired] = useState(false);
   const [externalLoginEnabled, setExternalLoginEnabled] = useState(false);
 
+  // Validate redirect parameter to prevent open redirect attacks
+  const isValidRedirect = (path: string | null): boolean => {
+    if (!path) return false;
+    // Must start with / and not be a protocol-relative URL (//evil.com)
+    return path.startsWith('/') && !path.startsWith('//');
+  };
+
   // Get the redirect path from:
-  // 1. URL query parameter (from 401 error handler)
+  // 1. URL query parameter (from 401 error handler) - validated for security
   // 2. Location state (from ProtectedRoute)
   // 3. Default to dashboard
   const redirectParam = searchParams.get('redirect');
+  const validatedRedirect = isValidRedirect(redirectParam) ? redirectParam : null;
   const stateFrom = (location.state as { from?: string })?.from;
-  const from = redirectParam ?? stateFrom ?? ROUTES.DASHBOARD;
+  const from = validatedRedirect ?? stateFrom ?? ROUTES.DASHBOARD;
 
   // Check if user was redirected due to session expiration or OAuth error
   useEffect(() => {
@@ -84,10 +92,14 @@ export default function Login() {
         setError("Please enter both username and password.");
         return;
       }
-      await login({ userName: username, password });
-      // Navigate to the intended destination after successful login
-      logger.debug('Login component - Navigating after login', { component: 'Login', destination: from });
-      void navigate(from, { replace: true });
+      const result = await login({ userName: username, password });
+      if (result.succeeded) {
+        // Navigate to the intended destination after successful login
+        logger.debug('Login component - Navigating after login', { component: 'Login', destination: from });
+        void navigate(from, { replace: true });
+      } else {
+        setError(result.errors?.join(', ') || "Login failed. Please try again.");
+      }
     } catch (error) {
       logger.error("Login failed", error as Error, { component: "Login" });
       setError((error as Error).message || "Login failed. Please try again.");
