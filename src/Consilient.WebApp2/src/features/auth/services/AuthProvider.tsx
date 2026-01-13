@@ -5,9 +5,10 @@ import { logger } from "@/shared/core/logging/Logger";
 import { getAuthService } from "@/features/auth/services/AuthServiceFactory";
 import { authStateManager } from "@/features/auth/services/AuthStateManager";
 import { ROUTES, CLAIM_TYPES } from "@/constants";
+import { ApiError } from "@/shared/core/api/api.types";
 import type { SessionExpiredDetail } from "../auth.events";
 import type { Auth } from "@/types/api.generated";
-import type { CurrentUser } from "./../auth.types"; ;
+import type { CurrentUser } from "./../auth.types";
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -84,9 +85,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     } catch (error) {
       logger.error("AuthProvider - Login failed", error as Error, { component: "AuthProvider" });
+
+      // Extract detailed error messages from ApiError.details (contains response.data)
+      let errors: string[];
+      if (error instanceof ApiError && error.details) {
+        const details = error.details as { errors?: string[] };
+        errors = details.errors ?? [error.message];
+      } else {
+        errors = [error instanceof Error ? error.message : String(error)];
+      }
+
       return {
         succeeded: false,
-        errors: [error instanceof Error ? error.message : String(error)],
+        errors,
         userClaims: null,
       };
     } finally {

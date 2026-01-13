@@ -251,8 +251,8 @@ resource "azurerm_app_configuration_key" "api_logging_default_level" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Logging:LogLevel:Default"
   label                  = var.environment
-  # Debug in dev, Information in prod
-  value        = var.environment == "dev" ? "Debug" : "Information"
+  # Trace in dev logs all messages; Information in prod
+  value        = var.environment == "dev" ? "Trace" : "Information"
   type         = "kv"
   content_type = "text/plain"
 
@@ -264,21 +264,6 @@ resource "azurerm_app_configuration_key" "api_logging_default_level" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
-resource "azurerm_app_configuration_key" "api_logging_aspnetcore_level" {
-  configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:Logging:LogLevel:Microsoft.AspNetCore"
-  label                  = var.environment
-  value                  = "Warning"
-  type                   = "kv"
-  content_type           = "text/plain"
-
-  tags = {
-    application = "ConsilientApi"
-    category    = "logging"
-  }
-
-  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
-}
 
 # Grafana Loki Configuration (push endpoint path)
 resource "azurerm_app_configuration_key" "api_loki_push_endpoint" {

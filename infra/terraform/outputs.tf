@@ -144,3 +144,24 @@ output "app_configuration_id" {
   description = "The resource ID of the Azure App Configuration"
   value       = azurerm_app_configuration.main.id
 }
+
+# --------------------------------------------------------------------------
+# LOKI OUTPUTS
+# --------------------------------------------------------------------------
+
+output "loki_basic_auth_username" {
+  description = "Loki Basic Auth username"
+  value       = var.loki_basic_auth_username
+  sensitive   = true
+}
+
+output "loki_basic_auth_password" {
+  description = "Loki Basic Auth password"
+  value       = local.loki_basic_auth_password
+  sensitive   = true
+}
+
+output "loki_url" {
+  description = "Loki endpoint URL"
+  value       = "https://${azurerm_container_app.loki.ingress[0].fqdn}"
+}

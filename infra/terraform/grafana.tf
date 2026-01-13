@@ -42,6 +42,8 @@ resource "null_resource" "grafana_loki_datasource" {
     loki_username = var.loki_basic_auth_username
     # Trigger on password change (using hash to avoid logging sensitive value)
     loki_password_hash = sha256(local.loki_basic_auth_password)
+    # Increment config_version to force re-run of datasource configuration
+    config_version = "2"
   }
 
   provisioner "local-exec" {
@@ -112,6 +114,20 @@ resource "null_resource" "grafana_loki_datasource" {
           echo "ERROR: Failed to create or update datasource"
           exit 1
         fi
+      fi
+
+      # Verify datasource was configured with basic auth
+      echo "Verifying datasource configuration..."
+      BASIC_AUTH_ENABLED=$(az grafana data-source show \
+        --name "${azurerm_dashboard_grafana.main[0].name}" \
+        --resource-group "${azurerm_resource_group.main.name}" \
+        --data-source "Loki" \
+        --query "basicAuth" -o tsv 2>/dev/null || echo "false")
+
+      if [ "$BASIC_AUTH_ENABLED" != "true" ]; then
+        echo "WARNING: basicAuth may not be enabled on datasource. Please verify in Grafana UI."
+      else
+        echo "Datasource verified: basicAuth is enabled"
       fi
     EOT
   }

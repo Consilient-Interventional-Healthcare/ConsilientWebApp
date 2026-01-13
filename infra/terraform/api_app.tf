@@ -53,8 +53,7 @@ module "api_app" {
     "ApplicationSettings__Authentication__Enabled"                         = "true"
     "Logging__GrafanaLoki__PushEndpoint"                                   = "/loki/api/v1/push"
     "Logging__GrafanaLoki__BatchPostingLimit"                              = "100"
-    "Logging__LogLevel__Default"                                           = "Information"
-    "Logging__LogLevel__Microsoft.AspNetCore"                              = "Warning"
+    # Log levels are configured in App Configuration (app_configuration.tf)
   }
 
   # Connection strings must be separate from app_settings
