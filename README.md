@@ -12,6 +12,11 @@ A comprehensive healthcare management platform for patient care coordination, pr
 | Cloud | Microsoft Azure |
 | CI/CD | GitHub Actions, Terraform |
 
+## Development Environment (Azure)
+
+- **React Application**: https://consilient-react-dev-westus2.azurewebsites.net
+- **API**: https://consilient-api-dev-westus2.azurewebsites.net
+
 ## Features
 
 - **Patient Management** - Patient records and hospitalization tracking
