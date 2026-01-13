@@ -171,6 +171,8 @@ namespace Consilient.Api.Controllers
             [FromQuery] string? error_description,
             CancellationToken cancellationToken)
         {
+            _logger.LogInformation("OAuth callback received for provider: {Provider}, code present: {CodePresent}, error: {Error}",
+                provider, !string.IsNullOrWhiteSpace(code), error);
             _logger.LogDebug("OAuth callback received for provider: {Provider}", provider);
             _logger.LogDebug("Callback parameters - Code present: {CodePresent}, State present: {StatePresent}, Error: {Error}",
                 !string.IsNullOrWhiteSpace(code), !string.IsNullOrWhiteSpace(state), error);
@@ -297,6 +299,7 @@ namespace Consilient.Api.Controllers
             [FromQuery] string? returnUrl,
             CancellationToken cancellationToken)
         {
+            _logger.LogInformation("OAuth login request received for provider: {Provider}, returnUrl: {ReturnUrl}", provider, returnUrl);
             _logger.LogDebug("OAuth login initiated for provider: {Provider}, returnUrl: {ReturnUrl}", provider, returnUrl);
 
             // Validate provider

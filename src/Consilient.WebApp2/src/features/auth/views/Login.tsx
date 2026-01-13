@@ -62,10 +62,10 @@ export default function Login() {
     setError(null);
     try {
       logger.debug('Initiating Microsoft login', { component: 'Login', destination: from });
-      // Pass login URL as returnUrl so errors come back to login page
+      // Pass login URL path as returnUrl so errors come back to login page
       // Include the intended destination in the URL so we can navigate there on success
-      const frontendBaseUrl = `${window.location.protocol}//${window.location.host}`;
-      const returnUrl = `${frontendBaseUrl}/auth/login${from !== ROUTES.DASHBOARD ? `?redirect=${encodeURIComponent(from)}` : ''}`;
+      // Note: AuthService will prepend the frontend base URL
+      const returnUrl = `/auth/login${from !== ROUTES.DASHBOARD ? `?redirect=${encodeURIComponent(from)}` : ''}`;
       authService.initiateMicrosoftLogin(returnUrl);
       // The page will redirect, no need to return anything
     } catch (err) {
