@@ -30,9 +30,10 @@ export async function handleResponseError(
 
   // Handle 401 Unauthorized - session expired
   if (status === HTTP_STATUS.UNAUTHORIZED && !originalRequest._tokenRetry) {
-    // Avoid handling 401 for login/logout endpoints to prevent infinite loops
+    // Avoid handling 401 for auth endpoints to prevent infinite loops
+    // /auth/claims is included because it's expected to return 401 when checking if user is logged in
     const url = originalRequest.url ?? '';
-    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/logout') || url.includes('/auth/authenticate');
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/logout') || url.includes('/auth/authenticate') || url.includes('/auth/claims');
 
     if (!isAuthEndpoint && !isLoggingOut) {
       logger.warn('Session expired (401), logging out user', { component: 'handleResponseError' });
