@@ -65,7 +65,9 @@ export default function Login() {
       // Pass login URL path as returnUrl so errors come back to login page
       // Include the intended destination in the URL so we can navigate there on success
       // Note: AuthService will prepend the frontend base URL
-      const returnUrl = `/auth/login${from !== ROUTES.DASHBOARD ? `?redirect=${encodeURIComponent(from)}` : ''}`;
+      // Don't include redirect if destination is dashboard or login page itself (avoids loops)
+      const shouldIncludeRedirect = from !== ROUTES.DASHBOARD && from !== ROUTES.LOGIN;
+      const returnUrl = `/auth/login${shouldIncludeRedirect ? `?redirect=${encodeURIComponent(from)}` : ''}`;
       authService.initiateMicrosoftLogin(returnUrl);
       // The page will redirect, no need to return anything
     } catch (err) {
