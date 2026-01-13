@@ -8,9 +8,11 @@ namespace Consilient.Api.Init
         {
             services.Configure<CookiePolicyOptions>(options =>
             {
-                options.MinimumSameSitePolicy = SameSiteMode.Lax; // Changed from None
+                // Use Unspecified to allow individual cookies to set their own SameSite policy.
+                // CookieOptionsFactory sets SameSite.None for auth/CSRF cookies needed for cross-origin OAuth.
+                options.MinimumSameSitePolicy = SameSiteMode.Unspecified;
                 options.HttpOnly = HttpOnlyPolicy.Always;
-                options.Secure = CookieSecurePolicy.Always; // Changed from SameAsRequest
+                options.Secure = CookieSecurePolicy.Always;
             });
 
             return services;
