@@ -6,18 +6,19 @@ namespace Consilient.Api.Infra.Authentication
     /// <remarks>
     /// <para><strong>SameSite.None Configuration Decision:</strong></para>
     /// <para>
-    /// The auth token cookie uses SameSite.None to support cross-origin scenarios where
+    /// Both auth token and CSRF cookies use SameSite.None to support cross-origin scenarios where
     /// the frontend is hosted on a different domain than the API.
     /// </para>
     /// <para><strong>When to use SameSite.None:</strong></para>
     /// <list type="bullet">
     /// <item>Frontend and API are on different domains (e.g., app.example.com and api.example.com)</item>
     /// <item>Local development with different ports (e.g., localhost:3000 and localhost:5000)</item>
+    /// <item>OAuth flows where the navigation chain crosses site boundaries</item>
     /// </list>
     /// <para><strong>Security Requirements:</strong></para>
     /// <list type="number">
     /// <item>HTTPS is required (Secure=true must be set)</item>
-    /// <item>Additional CSRF protection must be implemented (handled via oauth_csrf cookie with SameSite.Lax)</item>
+    /// <item>CSRF protection via server-side state validation during OAuth flows</item>
     /// <item>Proper CORS policies must restrict credentialed requests to trusted origins</item>
     /// </list>
     /// <para><strong>Alternative Configuration:</strong></para>
@@ -58,15 +59,24 @@ namespace Consilient.Api.Infra.Authentication
         /// Creates secure cookie options for OAuth CSRF tokens.
         /// </summary>
         /// <remarks>
-        /// Uses SameSite.Lax to provide CSRF protection while allowing GET navigation.
+        /// Uses SameSite.None to support cross-origin OAuth flows where the navigation chain
+        /// crosses site boundaries (Frontend → API → OAuth Provider → API callback).
+        /// Modern browsers (Chrome 143+) block SameSite.Lax cookies in this scenario due to
+        /// third-party cookie deprecation policies.
+        ///
+        /// Security is maintained because:
+        /// - The CSRF token is validated against server-side state
+        /// - The cookie is short-lived (15 minutes)
+        /// - The cookie is cleared immediately after OAuth completion
+        /// - Secure=true is required for SameSite.None
         /// </remarks>
         public static CookieOptions CreateCsrfTokenOptions(TimeSpan? maxAge = null)
         {
             return new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // OAuth flows always require HTTPS
-                SameSite = SameSiteMode.Lax,
+                Secure = true, // Required for SameSite.None
+                SameSite = SameSiteMode.None, // Required for cross-origin OAuth flows
                 IsEssential = true,
                 Path = "/",
                 MaxAge = maxAge,
