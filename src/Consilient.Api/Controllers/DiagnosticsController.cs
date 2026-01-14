@@ -2,7 +2,6 @@ using System.Text.Json;
 using Consilient.Infrastructure.Logging.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Serilog;
 using Serilog.Events;
 
 namespace Consilient.Api.Controllers
@@ -11,11 +10,12 @@ namespace Consilient.Api.Controllers
     [Route("api/[controller]")]
     public class DiagnosticsController(
         LoggingConfiguration? loggingConfiguration,
-        IConfiguration configuration) : ControllerBase
+        IConfiguration configuration,
+        Serilog.ILogger logger) : ControllerBase
     {
         private readonly LoggingConfiguration? _loggingConfiguration = loggingConfiguration;
         private readonly IConfiguration _configuration = configuration;
-        private readonly Serilog.ILogger _logger = Log.Logger;
+        private readonly Serilog.ILogger _logger = logger;
 
         [HttpGet("loki-config")]
         [AllowAnonymous]  // TEMPORARY - Remove in production or add auth
@@ -236,6 +236,28 @@ namespace Consilient.Api.Controllers
                     ? "SUCCESS: Log entry was written to Loki and retrieved successfully!"
                     : "Log entry was written via Serilog but not yet found in Loki. This could mean: (1) The Serilog Loki sink hasn't flushed yet, (2) The Loki URL in config doesn't match where logs are being sent, or (3) There's a network/auth issue between the API and Loki."
             });
+        }
+
+        /// <summary>
+        /// Logs a message at the specified log level. Useful for verifying Loki receives logs at all levels.
+        /// </summary>
+        /// <param name="level">Log level: Verbose, Debug, Information, Warning, Error, or Fatal</param>
+        /// <param name="message">The message to log. Defaults to a standard test message if not provided.</param>
+        [HttpGet("log")]
+        [AllowAnonymous]  // TEMPORARY - Remove in production or add auth
+        public IActionResult LogMessage([FromQuery] string level, [FromQuery] string? message = null)
+        {
+            const string defaultMessage = "Test log message from diagnostics endpoint";
+            var logMessage = string.IsNullOrWhiteSpace(message) ? defaultMessage : message;
+
+            if (!Enum.TryParse<LogEventLevel>(level, ignoreCase: true, out var logLevel))
+            {
+                return BadRequest($"Invalid log level '{level}'. Valid values: Verbose, Debug, Information, Warning, Error, Fatal");
+            }
+
+            _logger.Write(logLevel, "Diagnostic log: {Message}", logMessage);
+
+            return Ok($"[{logLevel}] {logMessage}");
         }
     }
 }
