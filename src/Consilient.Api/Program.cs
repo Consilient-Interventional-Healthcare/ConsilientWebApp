@@ -133,6 +133,7 @@ namespace Consilient.Api
             var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)?.Get<LoggingConfiguration>();
             var logger = CreateLogger(builder, loggingConfiguration);
             Log.Logger = logger;
+            builder.Host.UseSerilog(logger);
             try
             {
                 Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);

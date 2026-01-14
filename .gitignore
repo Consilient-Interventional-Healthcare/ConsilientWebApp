@@ -423,6 +423,7 @@ FodyWeavers.xsd
 /infra/terraform/*_override.tf.json
 
 /.claude
+tmpclaude-*
 /infra/terraform/tfplan
 /infra/act/.env
 .env.local
