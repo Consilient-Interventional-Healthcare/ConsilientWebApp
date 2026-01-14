@@ -251,8 +251,9 @@ resource "azurerm_app_configuration_key" "api_logging_default_level" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Logging:LogLevel:Default"
   label                  = var.environment
-  # Trace in dev logs all messages; Information in prod
-  value        = var.environment == "dev" ? "Trace" : "Information"
+  # Debug in dev for detailed logs; Information in prod
+  # Note: Trace level causes crashes due to excessive log volume with Loki sink
+  value        = var.environment == "dev" ? "Debug" : "Information"
   type         = "kv"
   content_type = "text/plain"
 

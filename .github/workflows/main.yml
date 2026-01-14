@@ -13,18 +13,6 @@ on:
       - develop
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        type: choice
-        options:
-          - dev
-          - prod
-      run-terraform:
-        description: 'Run Terraform deployment'
-        required: false
-        type: boolean
-        default: true
       run-databases:
         description: 'Run database deployment'
         required: false
@@ -32,31 +20,6 @@ on:
         default: true
       recreate-database-objects:
         description: 'Recreate all database objects (DELETE ALL DATA - dev only)'
-        required: false
-        type: boolean
-        default: false
-      allow-local-firewall:
-        description: 'Allow local firewall rule for SQL Server (act testing only - INSECURE)'
-        required: false
-        type: boolean
-        default: false
-      run-api-deployment:
-        description: 'Run .NET API deployment'
-        required: false
-        type: boolean
-        default: true
-      run-react-deployment:
-        description: 'Run React app deployment'
-        required: false
-        type: boolean
-        default: true
-      enable-debug:
-        description: 'Enable verbose debug logging and detailed workflow output'
-        required: false
-        type: boolean
-        default: false
-      enable-oauth:
-        description: 'Enable OAuth/Microsoft login (requires Azure AD App Registration to be set up)'
         required: false
         type: boolean
         default: false
@@ -100,7 +63,7 @@ jobs:
         id: initialize
         uses: ./.github/actions/initialize
         with:
-          environment: ${{ github.event.inputs.environment || 'dev' }}
+          environment: 'dev'
 
       - name: Discover databases
         id: discover
@@ -197,28 +160,27 @@ jobs:
       always() &&
       (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.any_changes == 'true') &&
       (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.infrastructure == 'true') &&
-      (github.event_name != 'workflow_dispatch' || inputs.run-terraform != false) &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       (needs.warm-docker-cache.result == 'success' || needs.warm-docker-cache.result == 'skipped')
     uses: ./.github/workflows/terraform.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
-      allow-local-firewall: ${{ inputs.allow-local-firewall || false }}
-      enable-debug: ${{ inputs.enable-debug || false }}
-      enable-oauth: ${{ inputs.enable-oauth || false }}
+      allow-local-firewall: false
+      enable-debug: false
+      enable-oauth: false
       runner_image: ${{ needs.build-runner-image.outputs.image_tag }}
     secrets: inherit
 
   terraform-outputs:
     name: Terraform Outputs
     needs: [initialize-workflow, detect-changes, build-runner-image]
-    # Run when: NOT manual dispatch AND no infrastructure changes detected (but some other changes exist)
+    # Run when: recreate-database-objects is true OR (not manual dispatch AND changes detected but no infra changes)
     if: |
       always() &&
-      github.event_name != 'workflow_dispatch' &&
-      needs.detect-changes.outputs.any_changes == 'true' &&
-      needs.detect-changes.outputs.infrastructure != 'true' &&
-      (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped')
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.recreate-database-objects == true) ||
+        (github.event_name != 'workflow_dispatch' && needs.detect-changes.outputs.any_changes == 'true' && needs.detect-changes.outputs.infrastructure != 'true')
+      )
     uses: ./.github/workflows/terraform-outputs.yml
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
@@ -254,7 +216,7 @@ jobs:
     needs: [initialize-workflow, detect-changes, terraform-consolidation, build-runner-image, warm-docker-cache]
     if: |
       (github.event_name != 'workflow_dispatch' || inputs.run-databases != false) &&
-      (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.databases == 'true') &&
+      (inputs.recreate-database-objects == true || github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.databases == 'true') &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
       needs.terraform-consolidation.result == 'success' &&
@@ -274,7 +236,6 @@ jobs:
     name: Deploy API
     needs: [initialize-workflow, detect-changes, terraform-consolidation, deploy-databases, warm-docker-cache]
     if: |
-      (github.event_name != 'workflow_dispatch' || inputs.run-api-deployment != false) &&
       (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.dotnet == 'true') &&
       always() &&
       needs.terraform-consolidation.result == 'success' &&
@@ -294,7 +255,6 @@ jobs:
     name: Deploy React
     needs: [initialize-workflow, detect-changes, terraform-consolidation, deploy-databases, build-runner-image, warm-docker-cache]
     if: |
-      (github.event_name != 'workflow_dispatch' || inputs.run-react-deployment != false) &&
       (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.react == 'true') &&
       always() &&
       (needs.build-runner-image.result == 'success' || needs.build-runner-image.result == 'skipped') &&
