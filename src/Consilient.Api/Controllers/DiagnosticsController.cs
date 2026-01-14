@@ -2,7 +2,6 @@ using System.Text.Json;
 using Consilient.Infrastructure.Logging.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Serilog.Events;
 
 namespace Consilient.Api.Controllers
 {
@@ -11,11 +10,11 @@ namespace Consilient.Api.Controllers
     public class DiagnosticsController(
         LoggingConfiguration? loggingConfiguration,
         IConfiguration configuration,
-        Serilog.ILogger logger) : ControllerBase
+        ILogger<DiagnosticsController> logger) : ControllerBase
     {
         private readonly LoggingConfiguration? _loggingConfiguration = loggingConfiguration;
         private readonly IConfiguration _configuration = configuration;
-        private readonly Serilog.ILogger _logger = logger;
+        private readonly ILogger<DiagnosticsController> _logger = logger;
 
         [HttpGet("loki-config")]
         [AllowAnonymous]  // TEMPORARY - Remove in production or add auth
@@ -140,9 +139,8 @@ namespace Consilient.Api.Controllers
             var testMarker = $"LOKI_TEST_{Guid.NewGuid():N}";
             var timestamp = DateTimeOffset.UtcNow;
 
-            // Write the test log using Fatal level to ensure it bypasses any filtering
-            _logger.Write(LogEventLevel.Fatal,
-                "Loki connectivity test: {TestMarker} at {Timestamp}",
+            // Write the test log using Critical level to ensure it bypasses any filtering
+            _logger.LogCritical("Loki connectivity test: {TestMarker} at {Timestamp}",
                 testMarker,
                 timestamp);
 
@@ -241,7 +239,7 @@ namespace Consilient.Api.Controllers
         /// <summary>
         /// Logs a message at the specified log level. Useful for verifying Loki receives logs at all levels.
         /// </summary>
-        /// <param name="level">Log level: Verbose, Debug, Information, Warning, Error, or Fatal</param>
+        /// <param name="level">Log level: Trace, Debug, Information, Warning, Error, or Critical</param>
         /// <param name="message">The message to log. Defaults to a standard test message if not provided.</param>
         [HttpGet("log")]
         [AllowAnonymous]  // TEMPORARY - Remove in production or add auth
@@ -250,12 +248,12 @@ namespace Consilient.Api.Controllers
             const string defaultMessage = "Test log message from diagnostics endpoint";
             var logMessage = string.IsNullOrWhiteSpace(message) ? defaultMessage : message;
 
-            if (!Enum.TryParse<LogEventLevel>(level, ignoreCase: true, out var logLevel))
+            if (!Enum.TryParse<LogLevel>(level, ignoreCase: true, out var logLevel))
             {
-                return BadRequest($"Invalid log level '{level}'. Valid values: Verbose, Debug, Information, Warning, Error, Fatal");
+                return BadRequest($"Invalid log level '{level}'. Valid values: Trace, Debug, Information, Warning, Error, Critical");
             }
 
-            _logger.Write(logLevel, "Diagnostic log: {Message}", logMessage);
+            _logger.Log(logLevel, "Diagnostic log: {Message}", logMessage);
 
             return Ok($"[{logLevel}] {logMessage}");
         }
