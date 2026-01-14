@@ -76,11 +76,13 @@ jobs:
     needs: [initialize-workflow]
     runs-on: ubuntu-latest
     outputs:
-      infrastructure: ${{ steps.filter.outputs.infrastructure }}
-      databases: ${{ steps.filter.outputs.databases }}
-      dotnet: ${{ steps.filter.outputs.dotnet }}
-      react: ${{ steps.filter.outputs.react }}
-      any_changes: ${{ steps.filter.outputs.infrastructure == 'true' || steps.filter.outputs.databases == 'true' || steps.filter.outputs.dotnet == 'true' || steps.filter.outputs.react == 'true' }}
+      # For workflow_dispatch: force databases=true, others=false (database-only deployment)
+      # For push/PR: use actual file change detection
+      infrastructure: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.infrastructure }}
+      databases: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.databases }}
+      dotnet: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.dotnet }}
+      react: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.react }}
+      any_changes: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.infrastructure == 'true' || steps.filter.outputs.databases == 'true' || steps.filter.outputs.dotnet == 'true' || steps.filter.outputs.react == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3

@@ -398,6 +398,10 @@ import_resource "azurerm_app_configuration_key.auth_cookie_expiry" \
   "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ApplicationSettings:Authentication:CookieExpiryMinutes?label=${TF_VAR_environment}" \
   "Auth Cookie Expiry Config Key"
 
+import_resource "azurerm_app_configuration_key.user_auto_provision" \
+  "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ApplicationSettings:Authentication:UserService:AutoProvisionUser?label=${TF_VAR_environment}" \
+  "User Auto Provision Config Key"
+
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "17. Key Vault Role Assignments"
 if [ -n "$API_PRINCIPAL_ID" ]; then
