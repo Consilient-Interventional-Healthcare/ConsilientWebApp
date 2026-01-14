@@ -2,6 +2,7 @@
 using Consilient.BackgroundHost.Configuration;
 using Consilient.BackgroundHost.Infra.Security;
 using Consilient.BackgroundHost.Init;
+using Consilient.Common.Services;
 using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Employees.Services;
@@ -18,6 +19,7 @@ using Consilient.DoctorAssignments.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -44,6 +46,11 @@ namespace Consilient.BackgroundHost
                 var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
                 var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
                 var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
+
+                // Register user context for background jobs (must be before DbContext registration)
+                builder.Services.AddScoped<SettableUserContext>();
+                builder.Services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<SettableUserContext>());
+                builder.Services.AddScoped<IUserContextSetter>(sp => sp.GetRequiredService<SettableUserContext>());
 
                 builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterEmailMonitorServices(applicationSettings.Email.Monitor);

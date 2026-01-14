@@ -2,7 +2,7 @@
 {
     public class ApplicationSettings
     {
-        public required FileUploadSettings FileUpload { get; init; }
+        public required FileUploadSettings DoctorAssignmentsUploads { get; init; }
         public required AuthenticationSettings Authentication { get; init; }
     }
 }

@@ -126,6 +126,27 @@ services:
       - consilient-net
     restart: unless-stopped
 
+  consilient.webapp2.dev:
+    image: ${DOCKER_REGISTRY-}consilientwebapp2-dev
+    container_name: consilient.apps.webapp2.dev.container
+    build:
+      context: ../Consilient.WebApp2
+      dockerfile: Dockerfile.dev
+    environment:
+      APP_API_BASE_URL: "https://localhost:8091"
+      APP_ENV: "development"
+      APP_ENABLE_DEBUG_MODE: "true"
+    volumes:
+      - ../Consilient.WebApp2/src:/app/src
+      - ../Consilient.WebApp2/public:/app/public
+      - /app/node_modules
+    ports:
+      - "8083:5173"
+    networks:
+      - consilient-net
+    profiles:
+      - dev
+
   consilient.api:
     image: ${DOCKER_REGISTRY-}consilientapi
     container_name: consilient.apps.api.container

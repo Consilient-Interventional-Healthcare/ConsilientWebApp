@@ -1,18 +1,22 @@
 ﻿using Consilient.Background.Workers.Contracts;
 using Consilient.Background.Workers.Models;
+using Consilient.Common.Services;
 using Consilient.DoctorAssignments.Contracts;
 using Hangfire;
 using Hangfire.Server;
 
 namespace Consilient.Background.Workers.DoctorAssignments
 {
-    public class DoctorAssignmentsImportWorker(IImporterFactory importerFactory) : IBackgroundWorker
+    public class DoctorAssignmentsImportWorker(IImporterFactory importerFactory, IUserContextSetter userContextSetter) : IBackgroundWorker
     {
         // Event for progress reporting using the reusable WorkerProgressEventArgs
         public event EventHandler<WorkerProgressEventArgs>? ProgressChanged;
 
-        public async Task<Guid> Import(string filePath, int facilityId, DateOnly serviceDate, PerformContext context)
+        public async Task<Guid> Import(string filePath, int facilityId, DateOnly serviceDate, int enqueuedByUserId, PerformContext context)
         {
+            // Set the user context for this job scope
+            userContextSetter.SetUser(enqueuedByUserId);
+
             var jobId = context.BackgroundJob.Id;
 
             // Create importer using factory

@@ -6,9 +6,9 @@ namespace Consilient.Background.Workers.DoctorAssignments
 {
     internal class DoctorAssignmentsResolutionWorker(IDoctorAssignmentsResolver resolver) : IBackgroundWorker
     {
-        public async Task ResolveAsync([FromResult] Guid batchId, CancellationToken cancellationToken = default)
+        public void Resolve([FromResult] Guid batchId)
         {
-            await resolver.ResolveAsync(batchId, cancellationToken);
+            resolver.ResolveAsync(batchId, CancellationToken.None).GetAwaiter().GetResult();
         }
     }
 }

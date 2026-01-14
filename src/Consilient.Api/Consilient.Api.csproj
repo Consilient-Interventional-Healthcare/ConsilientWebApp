@@ -54,10 +54,18 @@
     <ProjectReference Include="..\Consilient.DoctorAssignments.Services\Consilient.DoctorAssignments.Services.csproj" />
   </ItemGroup>
 
-  <!-- NSwag TypeScript Generation Target -->
-  <!-- Run this manually with: dotnet msbuild /t:GenerateTypeScript -->
-  <Target Name="GenerateTypeScript">
-    <Exec WorkingDirectory="$(ProjectDir)" EnvironmentVariables="ASPNETCORE_ENVIRONMENT=Development" Command="$(NSwagExe_Net90) run nswag.json /variables:Configuration=$(Configuration)" ContinueOnError="true" />
+  <!-- TypeScript Generation Target -->
+  <!-- Automatic: Runs after Rebuild only -->
+  <!-- Manual: dotnet msbuild /t:GenerateTypeScript -->
+  <Target Name="GenerateTypeScript" AfterTargets="Rebuild">
+    <PropertyGroup>
+      <TypeScriptGenScript>$(SolutionDir)Scripts\typescript-type-generation\Generate-ApiTypes.ps1</TypeScriptGenScript>
+    </PropertyGroup>
+    <Exec
+      WorkingDirectory="$(SolutionDir)Scripts\typescript-type-generation"
+      Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(TypeScriptGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)"
+      ContinueOnError="true"
+      IgnoreExitCode="true" />
   </Target>
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="https://www.schemastore.org/appsscript.json" /></VisualStudio></ProjectExtensions>

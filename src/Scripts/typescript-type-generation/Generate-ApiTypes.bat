@@ -1,5 +1,5 @@
 @echo off
-REM Wrapper to run Generate-ApiTypes.ps1 with PowerShell 7
+REM Generates TypeScript interfaces from Consilient.Api
 
 echo ========================================
 echo   Consilient.Api TypeScript Generation

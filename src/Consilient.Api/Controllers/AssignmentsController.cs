@@ -1,6 +1,8 @@
 ﻿using Consilient.Api.Configuration;
 using Consilient.Api.Helpers;
 using Consilient.Background.Workers.DoctorAssignments;
+using Consilient.Common.Services;
+using Consilient.DoctorAssignments.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Consilient.Api.Controllers
@@ -9,15 +11,17 @@ namespace Consilient.Api.Controllers
     [ApiController]
     public class AssignmentsController(
         DoctorAssignmentsImportWorkerEnqueuer importWorkerEnqueuer,
-        ApplicationSettings applicationSettings) : ControllerBase
+        ApplicationSettings applicationSettings,
+        ICurrentUserService currentUserService) : ControllerBase
     {
         private readonly DoctorAssignmentsImportWorkerEnqueuer _importWorkerEnqueuer = importWorkerEnqueuer;
-        private readonly FileUploadSettings _fileUploadSettings = applicationSettings.FileUpload;
+        private readonly FileUploadSettings _fileUploadSettings = applicationSettings.DoctorAssignmentsUploads;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
 
 
         [HttpPost("upload")]
-        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        [ProducesResponseType<FileUploadResult>(StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> UploadFile(
             IFormFile file,
@@ -37,15 +41,7 @@ namespace Consilient.Api.Controllers
             var filePath = await fileUploaderHelper.SaveFileAsync(file, cancellationToken).ConfigureAwait(false);
 
             // Queue the import job (which will automatically chain the resolution job)
-            _importWorkerEnqueuer.Import(filePath, facilityId, serviceDate);
-
-            var result = new
-            {
-                file.FileName,
-                ServiceDate = serviceDate,
-                FacilityId = facilityId,
-                Message = "File uploaded successfully and queued for processing."
-            };
+            var result = _importWorkerEnqueuer.Import(filePath, facilityId, serviceDate, _currentUserService.UserId);
 
             return Accepted(result);
         }

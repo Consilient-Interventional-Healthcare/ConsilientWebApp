@@ -58,8 +58,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorConfig = .editorConfig
 		infra\01_setup.sh = infra\01_setup.sh
 		infra\03_setup_database.sh = infra\03_setup_database.sh
-		..\.github\workflows\deploy-api-azure.yml = ..\.github\workflows\deploy-api-azure.yml
-		..\.github\workflows\deploy-webapp2-azure.yml = ..\.github\workflows\deploy-webapp2-azure.yml
 		..\docs\docfx.json = ..\docs\docfx.json
 	EndProjectSection
 EndProject

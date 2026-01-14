@@ -153,6 +153,12 @@ namespace Consilient.Api
                 builder.Services.Configure<UserServiceConfiguration>(
                     builder.Configuration.GetSection("ApplicationSettings:Authentication:UserService"));
 
+                // Register ICurrentUserService BEFORE DbContext (required by HospitalizationStatusChangeInterceptor)
+                builder.Services.AddHttpContextAccessor();
+                builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+                // NoOp setter for Hangfire dependency resolution (actual setting happens in BackgroundHost)
+                builder.Services.AddScoped<IUserContextSetter, NoOpUserContextSetter>();
+
                 builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterUserDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterGraphQlServices();
