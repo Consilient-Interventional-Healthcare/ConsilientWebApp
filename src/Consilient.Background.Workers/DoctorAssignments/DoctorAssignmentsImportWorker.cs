@@ -1,18 +1,22 @@
-﻿using Consilient.Background.Workers.Contracts;
+using Consilient.Background.Workers.Contracts;
 using Consilient.Background.Workers.Models;
 using Consilient.Common.Services;
 using Consilient.DoctorAssignments.Contracts;
+using Consilient.Infrastructure.Storage.Contracts;
 using Hangfire;
 using Hangfire.Server;
 
 namespace Consilient.Background.Workers.DoctorAssignments
 {
-    public class DoctorAssignmentsImportWorker(IImporterFactory importerFactory, IUserContextSetter userContextSetter) : IBackgroundWorker
+    public class DoctorAssignmentsImportWorker(
+        IImporterFactory importerFactory,
+        IUserContextSetter userContextSetter,
+        IFileStorage fileStorage) : IBackgroundWorker
     {
         // Event for progress reporting using the reusable WorkerProgressEventArgs
         public event EventHandler<WorkerProgressEventArgs>? ProgressChanged;
 
-        public async Task<Guid> Import(string filePath, int facilityId, DateOnly serviceDate, int enqueuedByUserId, PerformContext context)
+        public async Task<Guid> Import(string fileReference, int facilityId, DateOnly serviceDate, int enqueuedByUserId, PerformContext context)
         {
             // Set the user context for this job scope
             userContextSetter.SetUser(enqueuedByUserId);
@@ -40,8 +44,11 @@ namespace Consilient.Background.Workers.DoctorAssignments
 
             try
             {
-                // Import using the new pipeline
-                var result = await importer.ImportAsync(filePath, CancellationToken.None);
+                // Get file stream from storage
+                await using var fileStream = await fileStorage.GetAsync(fileReference, CancellationToken.None);
+
+                // Import using the stream-based pipeline
+                var result = await importer.ImportAsync(fileStream, CancellationToken.None);
 
                 var batchId = result.BatchId ?? throw new InvalidOperationException("BatchId was not generated during import");
 
@@ -56,7 +63,7 @@ namespace Consilient.Background.Workers.DoctorAssignments
                     ProcessedItems = result.TotalRowsWritten,
                     AdditionalData = new Dictionary<string, object>
                     {
-                        ["FileName"] = Path.GetFileName(filePath),
+                        ["FileReference"] = fileReference,
                         ["ServiceDate"] = serviceDate.ToString("yyyy-MM-dd"),
                         ["FacilityId"] = facilityId,
                         ["BatchId"] = batchId.ToString(),
@@ -67,6 +74,10 @@ namespace Consilient.Background.Workers.DoctorAssignments
                         ["ValidationErrors"] = result.ValidationErrors.Count
                     }
                 });
+
+                // Optionally clean up the file after successful import
+                await fileStorage.DeleteAsync(fileReference, CancellationToken.None);
+
                 return batchId;
             }
             catch (Exception ex)
@@ -82,7 +93,7 @@ namespace Consilient.Background.Workers.DoctorAssignments
                     {
                         ["ErrorMessage"] = ex.Message,
                         ["ErrorType"] = ex.GetType().Name,
-                        ["FileName"] = Path.GetFileName(filePath)
+                        ["FileReference"] = fileReference
                     }
                 });
 

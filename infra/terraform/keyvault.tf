@@ -131,3 +131,19 @@ resource "azurerm_key_vault_secret" "loki_basic_auth_password" {
   })
 }
 
+# File Uploads Storage Connection String
+resource "azurerm_key_vault_secret" "uploads_storage_connection" {
+  name         = "uploads-storage-connection-string"
+  value        = azurerm_storage_account.uploads.primary_connection_string
+  key_vault_id = azurerm_key_vault.main.id
+
+  depends_on = [
+    azurerm_role_assignment.terraform_keyvault_secrets_officer,
+    azurerm_storage_account.uploads
+  ]
+
+  tags = merge(local.tags, {
+    description = "Connection string for file uploads storage account"
+  })
+}
+

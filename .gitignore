@@ -434,3 +434,4 @@ tmpclaude-*
 
 # Local app settings (machine-specific, not committed)
 **/appsettings.local.json
+/src/Consilient.Api/uploads

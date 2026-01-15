@@ -23,7 +23,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
             ProgressChanged?.Invoke(this, progress);
         }
 
-        public async Task<ImportResult> ImportAsync(string sourceFile, CancellationToken cancellationToken = default)
+        public async Task<ImportResult> ImportAsync(Stream stream, CancellationToken cancellationToken = default)
         {
             var stopwatch = Stopwatch.StartNew();
             var stats = new ImportStats();
@@ -31,16 +31,14 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
 
             try
             {
-                logger.LogInformation("Starting import from {SourceFile}", sourceFile);
                 OnProgressChanged(new ImportProgressEventArgs { Stage = "Initializing" });
                 await destination.InitializeAsync(cancellationToken);
 
                 OnProgressChanged(new ImportProgressEventArgs { Stage = "Reading", CurrentOperation = "Opening file" });
-                await using var fileStream = File.OpenRead(sourceFile);
 
                 var batch = new List<TRow>(options.BatchSize);
 
-                await foreach (var excelRow in reader.ReadRowsAsync(fileStream, options.Sheet, cancellationToken))
+                await foreach (var excelRow in reader.ReadRowsAsync(stream, options.Sheet, cancellationToken))
                 {
                     stats.TotalRowsRead++;
 
@@ -164,7 +162,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
             }
             catch (Exception ex) when (ex is not ImportValidationException)
             {
-                logger.LogError(ex, "Import failed for file {FileName}", sourceFile);
+                logger.LogError(ex, "Import failed");
                 throw;
             }
         }

@@ -24,7 +24,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 
 
             // Act
-            var result = await importer.ImportAsync(filePath, CancellationToken.None);
+            await using var stream = File.OpenRead(filePath);
+            var result = await importer.ImportAsync(stream, CancellationToken.None);
 
             // Assert
             Assert.IsNotNull(result);
@@ -57,7 +58,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             try
             {
                 // Act
-                var result = await importer.ImportAsync(filePath, CancellationToken.None);
+                await using var stream = File.OpenRead(filePath);
+                var result = await importer.ImportAsync(stream, CancellationToken.None);
 
                 // Assert
                 Assert.IsNotNull(result);
@@ -87,7 +89,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(null!), facilityId, serviceDate);
 
             // Act
-            var result = await importer.ImportAsync(filePath, CancellationToken.None);
+            await using var stream = File.OpenRead(filePath);
+            var result = await importer.ImportAsync(stream, CancellationToken.None);
 
             // Assert
             Assert.IsGreaterThan(0, result.TotalRowsWritten, "Should have received progress reports");
@@ -109,7 +112,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(null!), facilityId, serviceDate);
 
             // Act
-            var result = await importer.ImportAsync(filePath, CancellationToken.None);
+            await using var stream = File.OpenRead(filePath);
+            var result = await importer.ImportAsync(stream, CancellationToken.None);
 
             // Assert
             Assert.IsNotNull(result);
@@ -130,7 +134,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 
 
             // Act
-            var result = await importer.ImportAsync(filePath, CancellationToken.None);
+            await using var stream = File.OpenRead(filePath);
+            var result = await importer.ImportAsync(stream, CancellationToken.None);
 
             // Assert
             Assert.IsNotNull(result);

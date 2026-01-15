@@ -54,7 +54,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             try
             {
                 // Act
-                var result = await importer.ImportAsync(filePath, CancellationToken.None);
+                await using var stream = File.OpenRead(filePath);
+                var result = await importer.ImportAsync(stream, CancellationToken.None);
 
                 // Assert
                 Assert.IsNotNull(result);

@@ -14,9 +14,9 @@ namespace Consilient.DoctorAssignments.Services.Importer
             remove => _innerImporter.ProgressChanged -= value;
         }
 
-        public async Task<ImportResult> ImportAsync(string filePath, CancellationToken cancellationToken = default)
+        public async Task<ImportResult> ImportAsync(Stream stream, CancellationToken cancellationToken = default)
         {
-            var result = await _innerImporter.ImportAsync(filePath, cancellationToken);
+            var result = await _innerImporter.ImportAsync(stream, cancellationToken);
             return result;
         }
     }

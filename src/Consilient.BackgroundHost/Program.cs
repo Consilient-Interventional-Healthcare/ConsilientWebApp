@@ -16,6 +16,7 @@ using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Visits.Services;
 using Consilient.DoctorAssignments.Services;
+using Consilient.Infrastructure.Storage;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -61,6 +62,7 @@ namespace Consilient.BackgroundHost
                 builder.Services.RegisterSharedServices();
                 builder.Services.RegisterVisitServices();
                 builder.Services.AddDoctorAssignmentsServices();
+                builder.Services.AddFileStorage(builder.Configuration);
                 builder.Services.AddExcelImporter();
                 builder.Services.AddWorkers();
                 builder.Services.RegisterLogging(logger);

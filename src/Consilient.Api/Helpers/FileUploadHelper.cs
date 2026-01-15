@@ -31,20 +31,5 @@ namespace Consilient.Api.Helpers
 
             return FileValidationResult.Success();
         }
-
-        public async Task<string> SaveFileAsync(IFormFile file, CancellationToken cancellationToken = default)
-        {
-            var uploadsPath = _settings.UploadPath;
-            Directory.CreateDirectory(uploadsPath);
-
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var fileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(uploadsPath, fileName);
-
-            await using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true);
-            await file.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
-
-            return filePath;
-        }
     }
 }

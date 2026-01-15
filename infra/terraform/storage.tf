@@ -32,3 +32,38 @@ resource "azurerm_private_endpoint" "loki_storage" {
     subresource_names              = ["blob"]
   }
 }
+
+# ============================================================================
+# FILE UPLOADS STORAGE
+# ============================================================================
+# Azure Storage Account for file uploads (Doctor Assignments, etc.)
+# Used by both ConsilientApi and BackgroundHost
+
+resource "azurerm_storage_account" "uploads" {
+  name                          = local.uploads_storage.account_name
+  resource_group_name           = azurerm_resource_group.main.name
+  location                      = azurerm_resource_group.main.location
+  account_tier                  = "Standard"
+  account_replication_type      = "LRS" # Cheapest: Locally Redundant Storage
+  public_network_access_enabled = true  # Required for App Service access
+  min_tls_version               = "TLS1_2"
+  tags                          = local.tags
+}
+
+resource "azurerm_storage_container" "uploads" {
+  name                  = local.uploads_storage.container_name
+  storage_account_id    = azurerm_storage_account.uploads.id
+  container_access_type = "private"
+}
+
+# Import block for existing storage account (if exists in Azure but not in TF state)
+# Uncomment and run `terraform plan` to check if import is needed
+# import {
+#   to = azurerm_storage_account.uploads
+#   id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.resource_group_name}/providers/Microsoft.Storage/storageAccounts/${local.uploads_storage.account_name}"
+# }
+
+# import {
+#   to = azurerm_storage_container.uploads
+#   id = "https://${local.uploads_storage.account_name}.blob.core.windows.net/uploads"
+# }
