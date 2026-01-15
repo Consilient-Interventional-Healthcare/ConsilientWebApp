@@ -299,6 +299,16 @@ locals {
   }
 
   # --------------------------------------------------------------------------
+  # FILE UPLOADS STORAGE
+  # --------------------------------------------------------------------------
+  uploads_storage = {
+    account_name               = "${var.project_name}uploads${var.environment}${local.unique_suffix}"
+    container_name             = "uploads"
+    private_endpoint           = "${var.project_name}-pe-uploads-storage-${var.environment}"
+    private_service_connection = "${var.project_name}-psc-uploads-storage-${var.environment}"
+  }
+
+  # --------------------------------------------------------------------------
   # MONITORING - GRAFANA
   # --------------------------------------------------------------------------
   grafana = {

@@ -159,6 +159,22 @@ resource "azurerm_role_assignment" "loki_blob" {
 }
 
 # ============================================================================
+# UPLOADS STORAGE PERMISSIONS
+# ============================================================================
+# API and BackgroundHost need access to file uploads storage
+
+# Grant API App Service "Storage Blob Data Contributor" role
+# Allows API to write uploaded files
+resource "azurerm_role_assignment" "api_uploads_blob" {
+  scope                = azurerm_storage_account.uploads.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = module.api_app.app_service_principal_id
+}
+
+# Grant BackgroundHost permission (when added as separate App Service)
+# For now, if BackgroundHost runs in same container as API, this is not needed
+
+# ============================================================================
 # GRAFANA PERMISSIONS
 # ============================================================================
 # Grant users/groups admin access to Grafana dashboards

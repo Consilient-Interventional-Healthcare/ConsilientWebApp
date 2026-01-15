@@ -797,6 +797,183 @@ resource "azurerm_app_configuration_key" "allowed_origins" {
 }
 
 # ============================================================================
+# SHARED CONFIGURATION KEYS (Application-Agnostic)
+# ============================================================================
+# These keys store values that are shared across multiple applications.
+# App-specific keys reference these shared keys instead of duplicating values.
+# Prefix: Shared: (not tied to any specific application)
+
+# File Storage Provider (Local or AzureBlob)
+resource "azurerm_app_configuration_key" "shared_filestorage_provider" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "Shared:FileStorage:Provider"
+  label                  = var.environment
+  value                  = "AzureBlob" # Use Azure Blob in deployed environments
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "Shared"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# File Storage Container Name
+resource "azurerm_app_configuration_key" "shared_filestorage_container" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "Shared:FileStorage:ContainerName"
+  label                  = var.environment
+  value                  = local.uploads_storage.container_name
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "Shared"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# File Storage Connection String (Key Vault Reference - Shared)
+resource "azurerm_app_configuration_key" "shared_filestorage_connection" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "Shared:FileStorage:AzureBlobConnectionString"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/uploads-storage-connection-string"
+
+  tags = {
+    application = "Shared"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.uploads_storage_connection
+  ]
+}
+
+# ============================================================================
+# CONFIGURATION KEYS - FILE STORAGE (ConsilientApi)
+# ============================================================================
+# These keys reference the shared FileStorage configuration
+# The API will load these and resolve the Shared: references at runtime
+
+# ConsilientApi FileStorage Provider - references Shared
+resource "azurerm_app_configuration_key" "api_filestorage_provider" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:FileStorage:Provider"
+  label                  = var.environment
+  value                  = "AzureBlob" # Matches Shared:FileStorage:Provider
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# ConsilientApi FileStorage ContainerName
+resource "azurerm_app_configuration_key" "api_filestorage_container" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:FileStorage:ContainerName"
+  label                  = var.environment
+  value                  = local.uploads_storage.container_name
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# ConsilientApi FileStorage Connection String (Key Vault Reference)
+resource "azurerm_app_configuration_key" "api_filestorage_connection" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:FileStorage:AzureBlobConnectionString"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/uploads-storage-connection-string"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.uploads_storage_connection
+  ]
+}
+
+# ============================================================================
+# CONFIGURATION KEYS - FILE STORAGE (BackgroundHost)
+# ============================================================================
+# BackgroundHost uses same configuration prefix pattern
+
+# BackgroundHost FileStorage Provider
+resource "azurerm_app_configuration_key" "bghost_filestorage_provider" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:FileStorage:Provider"
+  label                  = var.environment
+  value                  = "AzureBlob"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# BackgroundHost FileStorage ContainerName
+resource "azurerm_app_configuration_key" "bghost_filestorage_container" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:FileStorage:ContainerName"
+  label                  = var.environment
+  value                  = local.uploads_storage.container_name
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# BackgroundHost FileStorage Connection String (Key Vault Reference)
+resource "azurerm_app_configuration_key" "bghost_filestorage_connection" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:FileStorage:AzureBlobConnectionString"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/uploads-storage-connection-string"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.uploads_storage_connection
+  ]
+}
+
+# ============================================================================
 # SENTINEL KEY FOR CONFIGURATION REFRESH (Production Only)
 # ============================================================================
 
