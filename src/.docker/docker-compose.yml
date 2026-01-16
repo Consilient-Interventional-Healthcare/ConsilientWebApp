@@ -107,28 +107,8 @@ services:
       - ollama-docker
 
   consilient.webapp2:
-    image: ${DOCKER_REGISTRY-}consilientwebapp2
-    container_name: consilient.apps.webapp2.container
-    build:
-      context: ../Consilient.WebApp2
-      dockerfile: Dockerfile
-      args:
-        BUILD_CONFIGURATION: "Debug"
-    environment:
-      APP_API_BASE_URL: "https://localhost:8091"
-      APP_ENV: "development"
-      APP_ENABLE_DEBUG_MODE: "true"
-      APP_USE_MOCK_SERVICES: "false"
-      APP_ENABLE_EXTERNAL_LOGIN_MOCK: "false"
-    ports:
-      - "8082:80"
-    networks:
-      - consilient-net
-    restart: unless-stopped
-
-  consilient.webapp2.dev:
     image: ${DOCKER_REGISTRY-}consilientwebapp2-dev
-    container_name: consilient.apps.webapp2.dev.container
+    container_name: consilient.apps.webapp2.container
     build:
       context: ../Consilient.WebApp2
       dockerfile: Dockerfile.dev
@@ -136,16 +116,21 @@ services:
       APP_API_BASE_URL: "https://localhost:8091"
       APP_ENV: "development"
       APP_ENABLE_DEBUG_MODE: "true"
+      APP_USE_MOCK_SERVICES: "false"
+      APP_ENABLE_EXTERNAL_LOGIN_MOCK: "false"
+      NODE_ENV: "development"
     volumes:
       - ../Consilient.WebApp2/src:/app/src
       - ../Consilient.WebApp2/public:/app/public
+      - ./certs:/app/.local:ro
+      - ../Consilient.WebApp2/vite.config.ts:/app/vite.config.ts
+      - ../Consilient.WebApp2/index.html:/app/index.html
       - /app/node_modules
     ports:
-      - "8083:5173"
+      - "8082:5173"
     networks:
       - consilient-net
-    profiles:
-      - dev
+    restart: unless-stopped
 
   consilient.api:
     image: ${DOCKER_REGISTRY-}consilientapi
@@ -158,10 +143,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_URLS: "https://+:8091"
-      ASPNETCORE_Kestrel__Certificates__Default__Path: "/https/consilient-api.pfx"
-      ASPNETCORE_Kestrel__Certificates__Default__Password: "${DEV_CERT_PASSWORD}"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: "/certs/localhost.pem"
+      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: "/certs/localhost-key.pem"
+      AllowedOrigins__0: "https://localhost:8091"
+      AllowedOrigins__1: "https://localhost:8082"
     volumes:
-      - ${USERPROFILE}/.aspnet/https:/https:ro
+      - ./certs:/certs:ro
       - ../_tmp:/app/uploads
     ports:
       - "8091:8091"
@@ -181,10 +168,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
       ASPNETCORE_URLS: "https://+:8092"
-      ASPNETCORE_Kestrel__Certificates__Default__Path: "/https/consilient-api.pfx"
-      ASPNETCORE_Kestrel__Certificates__Default__Password: "${DEV_CERT_PASSWORD}"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: "/certs/localhost.pem"
+      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: "/certs/localhost-key.pem"
     volumes:
-      - ${USERPROFILE}/.aspnet/https:/https:ro
+      - ./certs:/certs:ro
       - ../_tmp:/app/uploads
     ports:
       - "8092:8092"

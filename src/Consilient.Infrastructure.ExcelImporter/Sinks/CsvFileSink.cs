@@ -29,7 +29,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
             return Task.CompletedTask;
         }
 
-        public async Task<Guid?> WriteBatchAsync<TRow>(IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
+        public async Task WriteBatchAsync<TRow>(Guid batchId, IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
             where TRow : class
         {
             if (_csv == null)
@@ -49,7 +49,6 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
                 _csv.WriteRecord(row);
                 await _csv.NextRecordAsync();
             }
-            return Guid.NewGuid();
         }
 
         public async Task FinalizeAsync(CancellationToken cancellationToken = default)

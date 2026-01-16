@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, type ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/shared/hooks/useToast';
-import { assignmentsService } from '../services/AssignmentsService';
+import { assignmentsService } from '../../assignments/services/AssignmentsService';
 import type { Visit } from '../types/visit.types';
 import { VisitServiceImpl } from '../services/VisitService';
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/shared/components/ui/table";
@@ -13,6 +14,7 @@ export default function Visits() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { success, error } = useToast();
+  const navigate = useNavigate();
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -29,6 +31,7 @@ export default function Visits() {
     try {
       const result = await assignmentsService.uploadFile(file, today, facilityId);
       success(result.message ?? 'File uploaded successfully');
+      navigate(`/clinical/assignments/${result.batchId}`);
     } catch {
       error('Failed to upload file. Please try again.');
     } finally {
@@ -54,7 +57,7 @@ export default function Visits() {
           disabled={isUploading}
           className="bg-blue-600 text-white px-5 py-2 rounded font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isUploading ? 'Uploading...' : 'Import From Assignments'}
+          {isUploading ? 'Uploading...' : 'Import Provider Assignment'}
         </button>
         <input
           ref={fileInputRef}

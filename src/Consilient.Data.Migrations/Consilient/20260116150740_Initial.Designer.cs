@@ -334,10 +334,7 @@ namespace Consilient.Data.Migrations.Consilient
                     b.HasIndex("NewStatusId")
                         .HasDatabaseName("IX_HospitalizationStatusHistories_NewStatusId");
 
-                    b.ToTable("HospitalizationStatusHistories", "Clinical", t =>
-                        {
-                            t.HasCheckConstraint("FK_HospitalizationStatusHistories_Users_ChangedByUserId", "([ChangedByUserId] IS NULL) OR EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [ChangedByUserId])");
-                        });
+                    b.ToTable("HospitalizationStatusHistories", "Clinical");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Insurance", b =>
@@ -939,10 +936,7 @@ namespace Consilient.Data.Migrations.Consilient
                     b.HasIndex("VisitId")
                         .HasDatabaseName("IX_VisitEvents_VisitId");
 
-                    b.ToTable("VisitEvents", "Clinical", t =>
-                        {
-                            t.HasCheckConstraint("FK_VisitEvents_Users_EnteredByUserId", "EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [EnteredByUserId])");
-                        });
+                    b.ToTable("VisitEvents", "Clinical");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.VisitEventType", b =>

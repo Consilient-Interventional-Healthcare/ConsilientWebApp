@@ -22,12 +22,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
             return Task.CompletedTask;
         }
 
-        public Task<Guid?> WriteBatchAsync<TRow>(IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
+        public Task WriteBatchAsync<TRow>(Guid batchId, IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
             where TRow : class
         {
-            var guid = Guid.NewGuid();
             _buffer.AddRange(batch);
-            return Task.FromResult<Guid?>(guid);
+            return Task.CompletedTask;
         }
 
         public async Task FinalizeAsync(CancellationToken cancellationToken = default)

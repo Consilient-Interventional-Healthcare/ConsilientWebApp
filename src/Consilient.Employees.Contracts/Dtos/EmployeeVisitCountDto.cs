@@ -2,14 +2,14 @@
 {
     public class EmployeeVisitCountDto
     {
-        public int EmployeeId { get; set; }
-        public string EmployeeLastName { get; set; } = string.Empty;
-        public string EmployeeFirstName { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;
+        public int ProviderId { get; set; }
+        public string ProviderLastName { get; set; } = string.Empty;
+        public string ProviderFirstName { get; set; } = string.Empty;
+        public int ProviderType { get; set; }
         public int FacilityId { get; set; }
         public string FacilityAbbreviation { get; set; } = string.Empty;
         public int PatientId { get; set; }
-        public int PatientMRN { get; set; }
+        public string PatientMRN { get; set; } = string.Empty;
         public string PatientLastName { get; set; } = string.Empty;
         public string PatientFirstName { get; set; } = string.Empty;
         public int VisitId { get; set; }

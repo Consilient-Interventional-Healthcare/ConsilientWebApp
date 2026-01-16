@@ -81,36 +81,38 @@ namespace Consilient.Employees.Services
         public async Task<List<EmployeeVisitCountDto>> GetEmployeesWithVisitCountPerDayAsync(DateOnly date)
         {
             var result = await dataContext.Database.SqlQueryRaw<EmployeeVisitCountDto>(@"
-                SELECT
-                    E.Id AS EmployeeId,
-                    E.LastName AS EmployeeLastName,
-                    E.FirstName AS EmployeeFirstName,
-                    E.Role,
-                    F.Id AS FacilityId,
-                    F.Abbreviation AS FacilityAbbreviation,
-                    P.Id AS PatientId,
-                    PF.Mrn AS PatientMRN,
-                    P.LastName AS PatientLastName,
-                    P.FirstName AS PatientFirstName,
-                    V.Id AS VisitId,
-                    V.DateServiced,
-                    V.Room,
-                    V.Bed
-                FROM Compensation.Employees AS E
-                INNER JOIN Clinical.VisitAttendants AS VA
-                    ON E.Id = VA.EmployeeId
-                INNER JOIN Clinical.Visits AS V
-                    ON VA.VisitID = V.Id
-                INNER JOIN Clinical.Hospitalizations AS H
-                    ON H.Id = V.HospitalizationId
-                INNER JOIN Clinical.Facilities AS F
-                    ON F.Id = H.FacilityId
-                INNER JOIN Clinical.Patients AS P
-                    ON P.Id = H.PatientId
-                INNER JOIN Clinical.PatientFacilities AS PF
-                    ON PF.PatientId = P.Id AND PF.FacilityId = F.Id
-                WHERE V.DateServiced = @date
-                ORDER BY V.DateServiced, E.LastName, E.FirstName, P.LastName, P.FirstName
+                SELECT * FROM (
+                    SELECT
+                        PR.Id AS ProviderId,
+                        PR.LastName AS ProviderLastName,
+                        PR.FirstName AS ProviderFirstName,
+                        PR.Type AS ProviderType,
+                        F.Id AS FacilityId,
+                        F.Abbreviation AS FacilityAbbreviation,
+                        P.Id AS PatientId,
+                        PF.Mrn AS PatientMRN,
+                        P.LastName AS PatientLastName,
+                        P.FirstName AS PatientFirstName,
+                        V.Id AS VisitId,
+                        V.DateServiced,
+                        V.Room,
+                        V.Bed
+                    FROM Clinical.Providers AS PR
+                    INNER JOIN Clinical.VisitAttendants AS VA
+                        ON PR.Id = VA.ProviderId
+                    INNER JOIN Clinical.Visits AS V
+                        ON VA.VisitId = V.Id
+                    INNER JOIN Clinical.Hospitalizations AS H
+                        ON H.Id = V.HospitalizationId
+                    INNER JOIN Clinical.Facilities AS F
+                        ON F.Id = H.FacilityId
+                    INNER JOIN Clinical.Patients AS P
+                        ON P.Id = H.PatientId
+                    INNER JOIN Clinical.PatientFacilities AS PF
+                        ON PF.PatientId = P.Id AND PF.FacilityId = F.Id
+                    WHERE V.DateServiced = @date
+                ) AS Result
+                ORDER BY DateServiced, ProviderLastName, ProviderFirstName, PatientLastName, PatientFirstName
             ", new SqlParameter("@date", date)).ToListAsync();
             return result;
         }

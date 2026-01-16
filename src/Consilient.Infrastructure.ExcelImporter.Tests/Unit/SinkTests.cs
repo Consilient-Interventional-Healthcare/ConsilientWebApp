@@ -22,8 +22,9 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
+            var batchId = Guid.NewGuid();
             await sink.InitializeAsync(TestContext.CancellationToken);
-            await sink.WriteBatchAsync(patients, TestContext.CancellationToken);
+            await sink.WriteBatchAsync(batchId, patients, TestContext.CancellationToken);
             await sink.FinalizeAsync(TestContext.CancellationToken);
 
             // Assert
@@ -37,15 +38,16 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public async Task InMemorySink_InitializeClearsExistingRows()
         {
             // Arrange
+            var batchId = Guid.NewGuid();
             var sink = new InMemorySink<ExternalProviderAssignment>();
-            await sink.WriteBatchAsync(new List<ExternalProviderAssignment>
+            await sink.WriteBatchAsync(batchId, new List<ExternalProviderAssignment>
             {
                 new() { Name = "Old Patient", HospitalNumber = "000", Mrn = "M000", Age = 20, Admit = DateTime.Now }
             }, TestContext.CancellationToken);
 
             // Act
             await sink.InitializeAsync(TestContext.CancellationToken); // Should clear
-            await sink.WriteBatchAsync(new List<ExternalProviderAssignment>
+            await sink.WriteBatchAsync(batchId, new List<ExternalProviderAssignment>
             {
                 new() { Name = "New Patient", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now }
             }, TestContext.CancellationToken);
@@ -77,8 +79,9 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             try
             {
                 // Act
+                var batchId = Guid.NewGuid();
                 await sink.InitializeAsync(TestContext.CancellationToken);
-                await sink.WriteBatchAsync(patients, TestContext.CancellationToken);
+                await sink.WriteBatchAsync(batchId, patients, TestContext.CancellationToken);
                 await sink.FinalizeAsync(TestContext.CancellationToken);
 
                 // Assert
@@ -123,9 +126,10 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             try
             {
                 // Act
+                var batchId = Guid.NewGuid();
                 await sink.InitializeAsync(TestContext.CancellationToken);
-                await sink.WriteBatchAsync(batch1, TestContext.CancellationToken);
-                await sink.WriteBatchAsync(batch2, TestContext.CancellationToken);
+                await sink.WriteBatchAsync(batchId, batch1, TestContext.CancellationToken);
+                await sink.WriteBatchAsync(batchId, batch2, TestContext.CancellationToken);
                 await sink.FinalizeAsync(TestContext.CancellationToken);
 
                 // Assert
@@ -153,8 +157,9 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             try
             {
                 // Act
+                var batchId = Guid.NewGuid();
                 await sink.InitializeAsync(TestContext.CancellationToken);
-                await sink.WriteBatchAsync(emptyBatch, TestContext.CancellationToken);
+                await sink.WriteBatchAsync(batchId, emptyBatch, TestContext.CancellationToken);
                 await sink.FinalizeAsync(TestContext.CancellationToken);
 
                 // Assert
@@ -183,8 +188,9 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             try
             {
                 // Act
+                var batchId = Guid.NewGuid();
                 await sink.InitializeAsync(TestContext.CancellationToken);
-                await sink.WriteBatchAsync(patients, TestContext.CancellationToken);
+                await sink.WriteBatchAsync(batchId, patients, TestContext.CancellationToken);
                 await sink.FinalizeAsync(TestContext.CancellationToken);
 
                 // Assert

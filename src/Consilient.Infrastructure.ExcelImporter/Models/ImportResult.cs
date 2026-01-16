@@ -7,7 +7,7 @@
         public required int TotalRowsSkipped { get; init; }
         public required TimeSpan Duration { get; init; }
         public List<ValidationError> ValidationErrors { get; init; } = [];
-        public Guid? BatchId { get; init; }
+        public required Guid BatchId { get; init; }
         //public bool HasErrors => ValidationErrors.Any(e => e.Severity == ValidationSeverity.Error);
     }
 }

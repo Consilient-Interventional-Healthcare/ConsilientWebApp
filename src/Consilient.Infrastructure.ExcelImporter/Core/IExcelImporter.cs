@@ -9,6 +9,6 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
         /// <summary>
         /// Imports data from a stream.
         /// </summary>
-        Task<ImportResult> ImportAsync(Stream stream, CancellationToken cancellationToken = default);
+        Task<ImportResult> ImportAsync(Guid batchId, Stream stream, CancellationToken cancellationToken = default);
     }
 }

@@ -25,7 +25,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 
             // Act
             await using var stream = File.OpenRead(filePath);
-            var result = await importer.ImportAsync(stream, CancellationToken.None);
+            var batchId = Guid.NewGuid();
+            var result = await importer.ImportAsync(batchId, stream, CancellationToken.None);
 
             // Assert
             Assert.IsNotNull(result);
@@ -59,7 +60,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             {
                 // Act
                 await using var stream = File.OpenRead(filePath);
-                var result = await importer.ImportAsync(stream, CancellationToken.None);
+                var batchId = Guid.NewGuid();
+                var result = await importer.ImportAsync(batchId, stream, CancellationToken.None);
 
                 // Assert
                 Assert.IsNotNull(result);
@@ -90,7 +92,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 
             // Act
             await using var stream = File.OpenRead(filePath);
-            var result = await importer.ImportAsync(stream, CancellationToken.None);
+            var batchId = Guid.NewGuid();
+            var result = await importer.ImportAsync(batchId, stream, CancellationToken.None);
 
             // Assert
             Assert.IsGreaterThan(0, result.TotalRowsWritten, "Should have received progress reports");
@@ -113,7 +116,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 
             // Act
             await using var stream = File.OpenRead(filePath);
-            var result = await importer.ImportAsync(stream, CancellationToken.None);
+            var batchId = Guid.NewGuid();
+            var result = await importer.ImportAsync(batchId, stream, CancellationToken.None);
 
             // Assert
             Assert.IsNotNull(result);
@@ -135,7 +139,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 
             // Act
             await using var stream = File.OpenRead(filePath);
-            var result = await importer.ImportAsync(stream, CancellationToken.None);
+            var batchId = Guid.NewGuid();
+            var result = await importer.ImportAsync(batchId, stream, CancellationToken.None);
 
             // Assert
             Assert.IsNotNull(result);

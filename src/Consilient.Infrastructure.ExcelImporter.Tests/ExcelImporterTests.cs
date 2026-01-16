@@ -55,7 +55,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             {
                 // Act
                 await using var stream = File.OpenRead(filePath);
-                var result = await importer.ImportAsync(stream, CancellationToken.None);
+                var batchId = Guid.NewGuid();
+                var result = await importer.ImportAsync(batchId, stream, CancellationToken.None);
 
                 // Assert
                 Assert.IsNotNull(result);
@@ -109,8 +110,9 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             try
             {
                 // Act
+                var batchId = Guid.NewGuid();
                 await sink.InitializeAsync(TestContext.CancellationToken);
-                await sink.WriteBatchAsync(patients, TestContext.CancellationToken);
+                await sink.WriteBatchAsync(batchId, patients, TestContext.CancellationToken);
                 await sink.FinalizeAsync(TestContext.CancellationToken);
 
                 // Assert

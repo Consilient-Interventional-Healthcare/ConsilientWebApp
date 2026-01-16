@@ -9,26 +9,23 @@ namespace Consilient.ProviderAssignments.Services.Importer
     internal class EFCoreStagingProviderAssignmentSink(ConsilientDbContext dbContext) : IDataSink
     {
         private readonly ConsilientDbContext _dbContext = dbContext;
-        private Guid? _batchId;
 
         public Task InitializeAsync(CancellationToken cancellationToken = default)
         {
-            _batchId = Guid.NewGuid();
             return Task.CompletedTask;
         }
 
-        public async Task<Guid?> WriteBatchAsync<TRow>(IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
+        public async Task WriteBatchAsync<TRow>(Guid batchId, IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
             where TRow : class
         {
             if (batch.Count == 0)
             {
-                return null;
+                return;
             }
 
             // Map from ExternalProviderAssignment to StagingProviderAssignment
             if (batch is IReadOnlyList<ExternalProviderAssignment> externalAssignments)
             {
-                var batchId = _batchId ?? throw new InvalidOperationException("InitializeAsync must be called before WriteBatchAsync");
                 var stagingRecords = externalAssignments
                     .Select(ea => new ProviderAssignment
                     {
@@ -54,7 +51,6 @@ namespace Consilient.ProviderAssignments.Services.Importer
 
                 // Use BulkInsertAsync for optimal performance
                 await _dbContext.BulkInsertAsync(stagingRecords, cancellationToken: cancellationToken);
-                return batchId;
             }
             else
             {

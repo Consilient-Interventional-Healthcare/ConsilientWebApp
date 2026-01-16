@@ -386,7 +386,6 @@ namespace Consilient.Data.Migrations.Consilient
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_HospitalizationStatusHistory", x => x.Id);
-                    table.CheckConstraint("FK_HospitalizationStatusHistories_Users_ChangedByUserId", "([ChangedByUserId] IS NULL) OR EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [ChangedByUserId])");
                     table.ForeignKey(
                         name: "FK_HospitalizationStatusHistories_HospitalizationStatuses_NewStatusId",
                         column: x => x.NewStatusId,
@@ -489,7 +488,6 @@ namespace Consilient.Data.Migrations.Consilient
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_VisitEvent", x => x.Id);
-                    table.CheckConstraint("FK_VisitEvents_Users_EnteredByUserId", "EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [EnteredByUserId])");
                     table.ForeignKey(
                         name: "FK_VisitEvents_VisitEventTypes_EventTypeId",
                         column: x => x.EventTypeId,

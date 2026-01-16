@@ -23,12 +23,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
             ProgressChanged?.Invoke(this, progress);
         }
 
-        public async Task<ImportResult> ImportAsync(Stream stream, CancellationToken cancellationToken = default)
+        public async Task<ImportResult> ImportAsync(Guid batchId, Stream stream, CancellationToken cancellationToken = default)
         {
             var stopwatch = Stopwatch.StartNew();
             var stats = new ImportStats();
             var validationErrors = new List<ValidationError>();
-            Guid? batchId = null;
 
             try
             {
@@ -105,7 +104,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
                     // Write batch when full
                     if (batch.Count >= options.BatchSize)
                     {
-                        batchId ??= await destination.WriteBatchAsync(batch, cancellationToken);
+                        await destination.WriteBatchAsync(batchId, batch, cancellationToken);
                         stats.TotalRowsWritten += batch.Count;
                         batch.Clear();
 
@@ -127,7 +126,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
                 // Write remaining
                 if (batch.Count > 0)
                 {
-                    batchId ??= await destination.WriteBatchAsync(batch, cancellationToken);
+                    await destination.WriteBatchAsync(batchId, batch, cancellationToken);
                     stats.TotalRowsWritten += batch.Count;
 
                     OnProgressChanged(new ImportProgressEventArgs

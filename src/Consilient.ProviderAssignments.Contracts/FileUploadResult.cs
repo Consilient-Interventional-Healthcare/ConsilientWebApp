@@ -6,5 +6,6 @@ namespace Consilient.ProviderAssignments.Contracts
         public DateOnly ServiceDate { get; set; }
         public int FacilityId { get; set; }
         public string Message { get; set; } = null!;
+        public Guid BatchId { get; set; }
     }
 }

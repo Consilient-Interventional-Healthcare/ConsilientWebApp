@@ -19,6 +19,7 @@ export namespace Assignments {
       serviceDate: string;
       facilityId: number;
       message: string;
+      batchId: string;
   }
 
 }
@@ -106,14 +107,14 @@ export namespace Employees {
   }
 
   export interface EmployeeVisitCountDto {
-      employeeId: number;
-      employeeLastName: string;
-      employeeFirstName: string;
-      role: string;
+      providerId: number;
+      providerLastName: string;
+      providerFirstName: string;
+      providerType: number;
       facilityId: number;
       facilityAbbreviation: string;
       patientId: number;
-      patientMRN: number;
+      patientMRN: string;
       patientLastName: string;
       patientFirstName: string;
       visitId: number;
@@ -224,6 +225,15 @@ export namespace Insurances {
       codeAndDescription: string;
   }
 
+  export interface ProblemDetails {
+      type?: string | null;
+      title?: string | null;
+      status?: number | null;
+      detail?: string | null;
+      instance?: string | null;
+      [key: string]: any;
+  }
+
   export interface UpdateInsuranceRequest {
       insuranceCode?: string | null;
       insuranceDescription?: string | null;
@@ -291,15 +301,6 @@ export namespace VisitEvents {
       eventTypeId: number;
       eventOccurredAt: string;
       description: string;
-  }
-
-  export interface ProblemDetails {
-      type?: string | null;
-      title?: string | null;
-      status?: number | null;
-      detail?: string | null;
-      instance?: string | null;
-      [key: string]: any;
   }
 
   export interface VisitEventDto {

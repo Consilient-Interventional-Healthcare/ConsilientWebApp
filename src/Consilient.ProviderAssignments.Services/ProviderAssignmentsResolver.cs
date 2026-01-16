@@ -120,7 +120,7 @@ namespace Consilient.ProviderAssignments.Services
 
             foreach (var record in records)
             {
-                _dbContext.Set<ProviderAssignment>().Attach(record);
+                _dbContext.StagingProviderAssignments.Attach(record);
                 _dbContext.Entry(record).State = EntityState.Modified;
             }
 
@@ -129,7 +129,7 @@ namespace Consilient.ProviderAssignments.Services
 
         private async Task<List<ProviderAssignment>> GetStagingRecordsForResolution(Guid batchId, CancellationToken cancellationToken = default)
         {
-            return await _dbContext.Set<ProviderAssignment>()
+            return await _dbContext.StagingProviderAssignments
                 .Where(x => x.BatchId == batchId
                     && string.IsNullOrEmpty(x.ValidationErrorsJson)
                     && !x.ShouldImport

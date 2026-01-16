@@ -8,6 +8,8 @@ namespace Consilient.Infrastructure.Storage.Tests
     [TestClass]
     public class LocalFileStorageTests
     {
+        public TestContext TestContext { get; set; } = null!;
+
         private string _testBasePath = null!;
         private ILogger<LocalFileStorage> _logger = null!;
         private LocalFileStorage _storage = null!;
@@ -45,12 +47,12 @@ namespace Consilient.Infrastructure.Storage.Tests
             using var stream = new MemoryStream(content);
 
             // Act
-            var fileReference = await _storage.SaveAsync(fileName, stream);
+            var fileReference = await _storage.SaveAsync(fileName, stream, TestContext.CancellationToken);
 
             // Assert
             Assert.IsNotNull(fileReference);
-            Assert.IsTrue(fileReference.Contains('/'));
-            Assert.IsTrue(fileReference.EndsWith("test-file.txt"));
+            Assert.Contains('/', fileReference);
+            Assert.EndsWith("test-file.txt", fileReference);
         }
 
         [TestMethod]
@@ -62,10 +64,10 @@ namespace Consilient.Infrastructure.Storage.Tests
             using var stream = new MemoryStream(content);
 
             // Act
-            var fileReference = await _storage.SaveAsync(fileName, stream);
+            var fileReference = await _storage.SaveAsync(fileName, stream, TestContext.CancellationToken);
 
             // Assert
-            var exists = await _storage.ExistsAsync(fileReference);
+            var exists = await _storage.ExistsAsync(fileReference, TestContext.CancellationToken);
             Assert.IsTrue(exists);
         }
 
@@ -76,12 +78,12 @@ namespace Consilient.Infrastructure.Storage.Tests
             var fileName = "test-file.txt";
             var expectedContent = "Hello, World!";
             using var saveStream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(expectedContent));
-            var fileReference = await _storage.SaveAsync(fileName, saveStream);
+            var fileReference = await _storage.SaveAsync(fileName, saveStream, TestContext.CancellationToken);
 
             // Act
-            await using var retrievedStream = await _storage.GetAsync(fileReference);
+            await using var retrievedStream = await _storage.GetAsync(fileReference, TestContext.CancellationToken);
             using var reader = new StreamReader(retrievedStream);
-            var actualContent = await reader.ReadToEndAsync();
+            var actualContent = await reader.ReadToEndAsync(TestContext.CancellationToken);
 
             // Assert
             Assert.AreEqual(expectedContent, actualContent);
@@ -95,7 +97,7 @@ namespace Consilient.Infrastructure.Storage.Tests
 
             // Act & Assert
             var exception = await Assert.ThrowsExactlyAsync<FileNotFoundException>(
-                async () => await _storage.GetAsync(nonExistentReference));
+                async () => await _storage.GetAsync(nonExistentReference, TestContext.CancellationToken));
             Assert.IsNotNull(exception);
         }
 
@@ -105,10 +107,10 @@ namespace Consilient.Infrastructure.Storage.Tests
             // Arrange
             var fileName = "test-file.txt";
             using var stream = new MemoryStream("content"u8.ToArray());
-            var fileReference = await _storage.SaveAsync(fileName, stream);
+            var fileReference = await _storage.SaveAsync(fileName, stream, TestContext.CancellationToken);
 
             // Act
-            var exists = await _storage.ExistsAsync(fileReference);
+            var exists = await _storage.ExistsAsync(fileReference, TestContext.CancellationToken);
 
             // Assert
             Assert.IsTrue(exists);
@@ -121,7 +123,7 @@ namespace Consilient.Infrastructure.Storage.Tests
             var nonExistentReference = $"{Guid.NewGuid()}/non-existent.txt";
 
             // Act
-            var exists = await _storage.ExistsAsync(nonExistentReference);
+            var exists = await _storage.ExistsAsync(nonExistentReference, TestContext.CancellationToken);
 
             // Assert
             Assert.IsFalse(exists);
@@ -133,13 +135,13 @@ namespace Consilient.Infrastructure.Storage.Tests
             // Arrange
             var fileName = "test-file.txt";
             using var stream = new MemoryStream("content"u8.ToArray());
-            var fileReference = await _storage.SaveAsync(fileName, stream);
+            var fileReference = await _storage.SaveAsync(fileName, stream, TestContext.CancellationToken);
 
             // Act
-            await _storage.DeleteAsync(fileReference);
+            await _storage.DeleteAsync(fileReference, TestContext.CancellationToken);
 
             // Assert
-            var exists = await _storage.ExistsAsync(fileReference);
+            var exists = await _storage.ExistsAsync(fileReference, TestContext.CancellationToken);
             Assert.IsFalse(exists);
         }
 
@@ -150,7 +152,7 @@ namespace Consilient.Infrastructure.Storage.Tests
             var nonExistentReference = $"{Guid.NewGuid()}/non-existent.txt";
 
             // Act & Assert (should not throw)
-            await _storage.DeleteAsync(nonExistentReference);
+            await _storage.DeleteAsync(nonExistentReference, TestContext.CancellationToken);
         }
 
         [TestMethod]
@@ -161,14 +163,14 @@ namespace Consilient.Infrastructure.Storage.Tests
             using var stream = new MemoryStream("content"u8.ToArray());
 
             // Act
-            var fileReference = await _storage.SaveAsync(unsafeFileName, stream);
+            var fileReference = await _storage.SaveAsync(unsafeFileName, stream, TestContext.CancellationToken);
 
             // Assert
             Assert.IsNotNull(fileReference);
-            Assert.IsFalse(fileReference.Contains('<'));
-            Assert.IsFalse(fileReference.Contains('>'));
-            Assert.IsFalse(fileReference.Contains(':'));
-            Assert.IsFalse(fileReference.Contains('?'));
+            Assert.DoesNotContain('<', fileReference);
+            Assert.DoesNotContain('>', fileReference);
+            Assert.DoesNotContain(':', fileReference);
+            Assert.DoesNotContain('?', fileReference);
         }
 
         [TestMethod]
@@ -177,15 +179,15 @@ namespace Consilient.Infrastructure.Storage.Tests
             // Arrange - Save a file
             var fileName = "test-file.txt";
             using var stream = new MemoryStream("content"u8.ToArray());
-            var fileReference = await _storage.SaveAsync(fileName, stream);
+            var fileReference = await _storage.SaveAsync(fileName, stream, TestContext.CancellationToken);
 
             // Act - Try to retrieve using forward slashes (portable format)
-            var exists = await _storage.ExistsAsync(fileReference);
+            var exists = await _storage.ExistsAsync(fileReference, TestContext.CancellationToken);
 
             // Assert
             Assert.IsTrue(exists);
             // The file reference uses forward slashes but should work on any OS
-            Assert.IsTrue(fileReference.Contains('/'));
+            Assert.Contains('/', fileReference);
         }
 
         [TestMethod]
@@ -196,11 +198,11 @@ namespace Consilient.Infrastructure.Storage.Tests
             using var stream = new MemoryStream("content"u8.ToArray());
 
             // Act
-            var fileReference = await _storage.SaveAsync(emptyFileName, stream);
+            var fileReference = await _storage.SaveAsync(emptyFileName, stream, TestContext.CancellationToken);
 
             // Assert
             Assert.IsNotNull(fileReference);
-            Assert.IsTrue(fileReference.EndsWith("/file"));
+            Assert.EndsWith("/file", fileReference);
         }
 
         [TestMethod]
@@ -226,14 +228,14 @@ namespace Consilient.Infrastructure.Storage.Tests
             // Arrange
             var fileName = "test-file.txt";
             using var stream = new MemoryStream("content"u8.ToArray());
-            var fileReference = await _storage.SaveAsync(fileName, stream);
+            var fileReference = await _storage.SaveAsync(fileName, stream, TestContext.CancellationToken);
 
             // Get the parent directory path
             var guidPart = fileReference.Split('/')[0];
             var parentDir = Path.Combine(_testBasePath, guidPart);
 
             // Act
-            await _storage.DeleteAsync(fileReference);
+            await _storage.DeleteAsync(fileReference, TestContext.CancellationToken);
 
             // Assert - Parent directory should be cleaned up
             Assert.IsFalse(Directory.Exists(parentDir));
@@ -249,16 +251,16 @@ namespace Consilient.Infrastructure.Storage.Tests
             using var stream = new MemoryStream(largeContent);
 
             // Act
-            var fileReference = await _storage.SaveAsync(fileName, stream);
+            var fileReference = await _storage.SaveAsync(fileName, stream, TestContext.CancellationToken);
 
             // Assert
-            var exists = await _storage.ExistsAsync(fileReference);
+            var exists = await _storage.ExistsAsync(fileReference, TestContext.CancellationToken);
             Assert.IsTrue(exists);
 
             // Verify content
-            await using var retrievedStream = await _storage.GetAsync(fileReference);
+            await using var retrievedStream = await _storage.GetAsync(fileReference, TestContext.CancellationToken);
             using var memStream = new MemoryStream();
-            await retrievedStream.CopyToAsync(memStream);
+            await retrievedStream.CopyToAsync(memStream, TestContext.CancellationToken);
             CollectionAssert.AreEqual(largeContent, memStream.ToArray());
         }
 
@@ -274,12 +276,12 @@ namespace Consilient.Infrastructure.Storage.Tests
             stream.Position = 5;
 
             // Act
-            var fileReference = await _storage.SaveAsync("test.txt", stream);
+            var fileReference = await _storage.SaveAsync("test.txt", stream, TestContext.CancellationToken);
 
             // Assert - File should contain the full content, not just from position 5
-            await using var retrievedStream = await _storage.GetAsync(fileReference);
+            await using var retrievedStream = await _storage.GetAsync(fileReference, TestContext.CancellationToken);
             using var reader = new StreamReader(retrievedStream);
-            var actualContent = await reader.ReadToEndAsync();
+            var actualContent = await reader.ReadToEndAsync(TestContext.CancellationToken);
 
             Assert.AreEqual(expectedContent, actualContent);
         }
@@ -293,16 +295,16 @@ namespace Consilient.Infrastructure.Storage.Tests
             using var stream = new MemoryStream(content);
 
             // Read entire stream to move position to end
-            _ = await new StreamReader(stream).ReadToEndAsync();
+            _ = await new StreamReader(stream).ReadToEndAsync(TestContext.CancellationToken);
             Assert.AreEqual(stream.Length, stream.Position); // Verify we're at end
 
             // Act
-            var fileReference = await _storage.SaveAsync("test.txt", stream);
+            var fileReference = await _storage.SaveAsync("test.txt", stream, TestContext.CancellationToken);
 
             // Assert - File should contain the full content
-            await using var retrievedStream = await _storage.GetAsync(fileReference);
+            await using var retrievedStream = await _storage.GetAsync(fileReference, TestContext.CancellationToken);
             using var reader = new StreamReader(retrievedStream);
-            var actualContent = await reader.ReadToEndAsync();
+            var actualContent = await reader.ReadToEndAsync(TestContext.CancellationToken);
 
             Assert.AreEqual(expectedContent, actualContent);
         }

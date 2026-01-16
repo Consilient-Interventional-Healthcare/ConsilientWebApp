@@ -13,7 +13,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
             return Task.CompletedTask;
         }
 
-        public Task<Guid?> WriteBatchAsync<T>(IReadOnlyList<T> batch, CancellationToken cancellationToken = default)
+        public Task WriteBatchAsync<T>(Guid batchId, IReadOnlyList<T> batch, CancellationToken cancellationToken = default)
             where T : class
         {
             if (batch is IReadOnlyList<TRow> typedBatch)
@@ -21,7 +21,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Sinks
                 Rows.AddRange(typedBatch);
             }
 
-            return Task.FromResult<Guid?>(Guid.NewGuid());
+            return Task.CompletedTask;
         }
 
         public Task FinalizeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

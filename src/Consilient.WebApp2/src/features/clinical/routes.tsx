@@ -6,6 +6,7 @@ function getTodayDate() {
 }
 
 const Visits = lazy(() => import("@/features/clinical/visits/views/Visits"));
+const Assignments = lazy(() => import("@/features/clinical/assignments/views/Assignments"));
 
 export const clinicalRoutes: RouteObject[] = [
   {
@@ -24,9 +25,17 @@ export const clinicalRoutes: RouteObject[] = [
       {
         path: "visits",
         element: <Visits />,
-        handle: { 
+        handle: {
           label: "Visits",
           title: "Visits",
+          protected: true,
+        }
+      },
+      {
+        path: "assignments/:id",
+        element: <Assignments />,
+        handle: {
+          title: "Assignment",
           protected: true,
         }
       },

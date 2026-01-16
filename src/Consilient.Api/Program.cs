@@ -180,7 +180,7 @@ namespace Consilient.Api
                 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
                 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
-                builder.Services.ConfigureCors(allowedOrigins!);
+                builder.Services.ConfigureCors(allowedOrigins);
 
                 // Register redirect validation options (uses same origins as CORS for consistency)
                 builder.Services.Configure<RedirectValidationOptions>(options =>

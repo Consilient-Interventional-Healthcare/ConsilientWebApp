@@ -16,7 +16,7 @@ namespace Consilient.Background.Workers.ProviderAssignments
         // Event for progress reporting using the reusable WorkerProgressEventArgs
         public event EventHandler<WorkerProgressEventArgs>? ProgressChanged;
 
-        public async Task<Guid> Import(string fileReference, int facilityId, DateOnly serviceDate, int enqueuedByUserId, PerformContext context)
+        public async Task<Guid> Import(string fileReference, int facilityId, DateOnly serviceDate, int enqueuedByUserId, Guid batchId, PerformContext context)
         {
             // Set the user context for this job scope
             userContextSetter.SetUser(enqueuedByUserId);
@@ -48,9 +48,7 @@ namespace Consilient.Background.Workers.ProviderAssignments
                 await using var fileStream = await fileStorage.GetAsync(fileReference, CancellationToken.None);
 
                 // Import using the stream-based pipeline
-                var result = await importer.ImportAsync(fileStream, CancellationToken.None);
-
-                var batchId = result.BatchId ?? throw new InvalidOperationException("BatchId was not generated during import");
+                var result = await importer.ImportAsync(batchId, fileStream, CancellationToken.None);
 
                 // Report completion
                 OnProgressChanged(new WorkerProgressEventArgs
