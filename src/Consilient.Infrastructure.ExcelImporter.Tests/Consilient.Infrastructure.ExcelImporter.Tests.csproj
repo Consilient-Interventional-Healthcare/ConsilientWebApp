@@ -27,7 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Consilient.DoctorAssignments.Services\Consilient.DoctorAssignments.Services.csproj" />
+    <ProjectReference Include="..\Consilient.ProviderAssignments.Contracts\Consilient.ProviderAssignments.Contracts.csproj" />
+    <ProjectReference Include="..\Consilient.ProviderAssignments.Services\Consilient.ProviderAssignments.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.ExcelImporter\Consilient.Infrastructure.ExcelImporter.csproj" />
   </ItemGroup>
 

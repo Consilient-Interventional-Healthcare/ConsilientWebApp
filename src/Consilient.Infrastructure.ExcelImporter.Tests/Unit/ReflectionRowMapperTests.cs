@@ -1,4 +1,4 @@
-using Consilient.DoctorAssignments.Contracts;
+using Consilient.ProviderAssignments.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Mappers;
 using Consilient.Infrastructure.ExcelImporter.Models;
 using Microsoft.Extensions.Logging;
@@ -9,19 +9,19 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
     [TestClass]
     public class ReflectionRowMapperTests
     {
-        private ILogger<ReflectionRowMapper<ExternalDoctorAssignment>> _logger = null!;
+        private ILogger<ReflectionRowMapper<ExternalProviderAssignment>> _logger = null!;
 
         [TestInitialize]
         public void Setup()
         {
-            _logger = NullLogger<ReflectionRowMapper<ExternalDoctorAssignment>>.Instance;
+            _logger = NullLogger<ReflectionRowMapper<ExternalProviderAssignment>>.Instance;
         }
 
         [TestMethod]
         public void Map_WithValidData_ReturnsSuccess()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalDoctorAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["Name↓"] = "Wymer, Mias",
@@ -34,12 +34,12 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("Name↓", nameof(ExternalDoctorAssignment.Name))
-                .Map("Location", nameof(ExternalDoctorAssignment.Location))
-                .Map("Hospital Number", nameof(ExternalDoctorAssignment.HospitalNumber))
-                .Map("MRN", nameof(ExternalDoctorAssignment.Mrn))
-                .Map("Age", nameof(ExternalDoctorAssignment.Age))
-                .Map("Admit", nameof(ExternalDoctorAssignment.Admit))
+                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
+                .Map("Location", nameof(ExternalProviderAssignment.Location))
+                .Map("Hospital Number", nameof(ExternalProviderAssignment.HospitalNumber))
+                .Map("MRN", nameof(ExternalProviderAssignment.Mrn))
+                .Map("Age", nameof(ExternalProviderAssignment.Age))
+                .Map("Admit", nameof(ExternalProviderAssignment.Admit))
                 .Build();
 
             // Act
@@ -59,7 +59,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithMissingRequiredColumn_ReturnsFailure()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalDoctorAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["Location"] = "101A"
@@ -67,8 +67,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .MapRequired("Name↓", nameof(ExternalDoctorAssignment.Name))
-                .Map("Location", nameof(ExternalDoctorAssignment.Location))
+                .MapRequired("Name↓", nameof(ExternalProviderAssignment.Name))
+                .Map("Location", nameof(ExternalProviderAssignment.Location))
                 .Build();
 
             // Act
@@ -85,7 +85,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithInvalidTypeConversion_ReturnsFailure()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalDoctorAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["Age"] = "not a number"
@@ -93,7 +93,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("Age", nameof(ExternalDoctorAssignment.Age))
+                .Map("Age", nameof(ExternalProviderAssignment.Age))
                 .Build();
 
             // Act
@@ -109,7 +109,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithNullableDateTime_HandlesNull()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalDoctorAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["DOB"] = "",
@@ -118,8 +118,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("DOB", nameof(ExternalDoctorAssignment.Dob))
-                .Map("Name↓", nameof(ExternalDoctorAssignment.Name))
+                .Map("DOB", nameof(ExternalProviderAssignment.Dob))
+                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
                 .Build();
 
             // Act
@@ -132,11 +132,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         }
 
         [TestMethod]
-        public void Map_WithNullableDateTime_ParsesValidDate()
+        public void Map_WithNullableDateOnly_ParsesValidDate()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalDoctorAssignment>(_logger);
-            var expectedDate = new DateTime(2007, 10, 13);
+            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
+            var expectedDate = new DateOnly(2007, 10, 13);
             var cells = new Dictionary<string, string>
             {
                 ["DOB"] = "2007-10-13",
@@ -145,8 +145,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("DOB", nameof(ExternalDoctorAssignment.Dob))
-                .Map("Name↓", nameof(ExternalDoctorAssignment.Name))
+                .Map("DOB", nameof(ExternalProviderAssignment.Dob))
+                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
                 .Build();
 
             // Act
@@ -162,7 +162,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithDateOnly_ParsesCorrectly()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalDoctorAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
             var expectedDate = new DateOnly(2025, 11, 22);
             var cells = new Dictionary<string, string>
             {
@@ -172,8 +172,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("ServiceDate", nameof(ExternalDoctorAssignment.ServiceDate))
-                .Map("Name↓", nameof(ExternalDoctorAssignment.Name))
+                .Map("ServiceDate", nameof(ExternalProviderAssignment.ServiceDate))
+                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
                 .Build();
 
             // Act
@@ -189,7 +189,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithUnmappedColumn_IgnoresIt()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalDoctorAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["Name↓"] = "Test",
@@ -198,7 +198,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("Name↓", nameof(ExternalDoctorAssignment.Name))
+                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
                 .Build();
 
             // Act

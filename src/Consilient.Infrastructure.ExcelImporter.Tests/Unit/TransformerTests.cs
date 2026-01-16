@@ -1,5 +1,5 @@
-using Consilient.DoctorAssignments.Contracts;
-using Consilient.DoctorAssignments.Services;
+using Consilient.ProviderAssignments.Contracts;
+using Consilient.ProviderAssignments.Services;
 using Consilient.Infrastructure.ExcelImporter.Transformers;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
@@ -11,8 +11,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void TrimStringsTransformer_TrimsAllStringProperties()
         {
             // Arrange
-            var transformer = new TrimStringsTransformer<ExternalDoctorAssignment>();
-            var patientData = new ExternalDoctorAssignment
+            var transformer = new TrimStringsTransformer<ExternalProviderAssignment>();
+            var patientData = new ExternalProviderAssignment
             {
                 Name = "  Wymer, Mias  ",
                 Location = "  101A  ",
@@ -34,8 +34,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void TrimStringsTransformer_HandlesEmptyStrings()
         {
             // Arrange
-            var transformer = new TrimStringsTransformer<ExternalDoctorAssignment>();
-            var patientData = new ExternalDoctorAssignment
+            var transformer = new TrimStringsTransformer<ExternalProviderAssignment>();
+            var patientData = new ExternalProviderAssignment
             {
                 Name = "",
                 Location = "   ",

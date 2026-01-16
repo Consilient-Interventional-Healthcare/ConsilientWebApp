@@ -21,7 +21,8 @@ using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Users.Services;
 using Consilient.Visits.Services;
-using Consilient.DoctorAssignments.Services;
+using Consilient.ProviderAssignments.Services;
+using Consilient.Infrastructure.Storage;
 using GraphQL.Server.Ui.GraphiQL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -153,6 +154,12 @@ namespace Consilient.Api
                 builder.Services.Configure<UserServiceConfiguration>(
                     builder.Configuration.GetSection("ApplicationSettings:Authentication:UserService"));
 
+                // Register ICurrentUserService BEFORE DbContext (required by HospitalizationStatusChangeInterceptor)
+                builder.Services.AddHttpContextAccessor();
+                builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+                // NoOp setter for Hangfire dependency resolution (actual setting happens in BackgroundHost)
+                builder.Services.AddScoped<IUserContextSetter, NoOpUserContextSetter>();
+
                 builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterUserDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterGraphQlServices();
@@ -165,7 +172,8 @@ namespace Consilient.Api
                     useDistributedCache: builder.Environment.IsProduction());
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterHospitalizationServices();
-                builder.Services.AddDoctorAssignmentsServices();
+                builder.Services.AddProviderAssignmentsServices();
+                builder.Services.AddFileStorage(builder.Configuration);
                 builder.Services.RegisterLogging(logger);
                 builder.Services.ConfigureHangfire(hangfireConnectionString);
                 builder.Services.AddWorkers();

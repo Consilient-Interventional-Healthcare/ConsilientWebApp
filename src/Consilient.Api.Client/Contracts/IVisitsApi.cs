@@ -14,7 +14,7 @@ namespace Consilient.Api.Client.Contracts
         Task<ApiResponse<bool>> DeleteAsync(int id);
 
         Task<ApiResponse<IEnumerable<TDto>>> GetByDateAsync(DateOnly date);
-        Task<ApiResponse<IEnumerable<TDto>>> GetByEmployeeAsync(int employeeId);
+        Task<ApiResponse<IEnumerable<TDto>>> GetByProviderAsync(int providerId);
         Task<ApiResponse<TDto?>> GetByIdAsync(int id);
         Task<ApiResponse<TDto?>> UpdateAsync(int id, TUpdate request);
     }

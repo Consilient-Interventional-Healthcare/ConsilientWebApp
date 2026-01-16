@@ -23,9 +23,6 @@ namespace Consilient.Api.Init
 
                 c.SupportNonNullableReferenceTypes();
 
-                // Add this to preserve enum names
-                c.UseInlineDefinitionsForEnums();
-
                 // Stable, readable schema ids that avoid collisions:
                 // - Keep simple DTO/contract type names (for readability)
                 // - For other types use a sanitized FullName fallback (namespace + name) with generics expanded
@@ -36,8 +33,15 @@ namespace Consilient.Api.Init
                         return string.Empty;
                     }
 
-                    // Prefer short names for types inside *Contracts* namespaces to keep generated TS clean
-                    if (!string.IsNullOrEmpty(type.Namespace) && type.Namespace.Contains(".Contracts"))
+                    // Prefer short names for types inside *Contracts* or Common namespaces to keep generated TS clean
+                    if (!string.IsNullOrEmpty(type.Namespace) &&
+                        (type.Namespace.Contains(".Contracts") || type.Namespace.EndsWith(".Common")))
+                    {
+                        return type.Name;
+                    }
+
+                    // Use short names for Microsoft.AspNetCore.Mvc types (e.g., ProblemDetails)
+                    if (!string.IsNullOrEmpty(type.Namespace) && type.Namespace.StartsWith("Microsoft.AspNetCore.Mvc"))
                     {
                         return type.Name;
                     }

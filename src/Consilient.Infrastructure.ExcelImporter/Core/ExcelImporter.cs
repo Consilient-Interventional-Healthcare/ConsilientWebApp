@@ -23,24 +23,23 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
             ProgressChanged?.Invoke(this, progress);
         }
 
-        public async Task<ImportResult> ImportAsync(string sourceFile, CancellationToken cancellationToken = default)
+        public async Task<ImportResult> ImportAsync(Stream stream, CancellationToken cancellationToken = default)
         {
             var stopwatch = Stopwatch.StartNew();
             var stats = new ImportStats();
             var validationErrors = new List<ValidationError>();
+            Guid? batchId = null;
 
             try
             {
-                logger.LogInformation("Starting import from {SourceFile}", sourceFile);
                 OnProgressChanged(new ImportProgressEventArgs { Stage = "Initializing" });
                 await destination.InitializeAsync(cancellationToken);
 
                 OnProgressChanged(new ImportProgressEventArgs { Stage = "Reading", CurrentOperation = "Opening file" });
-                await using var fileStream = File.OpenRead(sourceFile);
 
                 var batch = new List<TRow>(options.BatchSize);
 
-                await foreach (var excelRow in reader.ReadRowsAsync(fileStream, options.Sheet, cancellationToken))
+                await foreach (var excelRow in reader.ReadRowsAsync(stream, options.Sheet, cancellationToken))
                 {
                     stats.TotalRowsRead++;
 
@@ -106,7 +105,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
                     // Write batch when full
                     if (batch.Count >= options.BatchSize)
                     {
-                        await destination.WriteBatchAsync(batch, cancellationToken);
+                        batchId ??= await destination.WriteBatchAsync(batch, cancellationToken);
                         stats.TotalRowsWritten += batch.Count;
                         batch.Clear();
 
@@ -128,7 +127,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
                 // Write remaining
                 if (batch.Count > 0)
                 {
-                    await destination.WriteBatchAsync(batch, cancellationToken);
+                    batchId ??= await destination.WriteBatchAsync(batch, cancellationToken);
                     stats.TotalRowsWritten += batch.Count;
 
                     OnProgressChanged(new ImportProgressEventArgs
@@ -150,7 +149,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
                     TotalRowsWritten = stats.TotalRowsWritten,
                     TotalRowsSkipped = stats.TotalRowsSkipped,
                     Duration = stopwatch.Elapsed,
-                    ValidationErrors = validationErrors
+                    ValidationErrors = validationErrors,
+                    BatchId = batchId
                 };
 
                 logger.LogInformation(
@@ -164,7 +164,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
             }
             catch (Exception ex) when (ex is not ImportValidationException)
             {
-                logger.LogError(ex, "Import failed for file {FileName}", sourceFile);
+                logger.LogError(ex, "Import failed");
                 throw;
             }
         }

@@ -16,7 +16,7 @@ namespace Consilient.Visits.Contracts
 
         Task<IEnumerable<TVisit>> GetByDateAsync(DateOnly date);
 
-        Task<IEnumerable<TVisit>> GetByEmployeeAsync(int employeeId);
+        Task<IEnumerable<TVisit>> GetByProviderAsync(int providerId);
 
         Task<TVisit?> GetByIdAsync(int id);
 

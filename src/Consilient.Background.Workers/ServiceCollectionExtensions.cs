@@ -1,4 +1,4 @@
-﻿using Consilient.Background.Workers.DoctorAssignments;
+﻿using Consilient.Background.Workers.ProviderAssignments;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.Background.Workers
@@ -7,9 +7,9 @@ namespace Consilient.Background.Workers
     {
         public static IServiceCollection AddWorkers(this IServiceCollection services)
         {
-            services.AddScoped<DoctorAssignmentsImportWorker>();
-            services.AddScoped<DoctorAssignmentsResolutionWorker>();
-            services.AddScoped<DoctorAssignmentsImportWorkerEnqueuer>();
+            services.AddScoped<ProviderAssignmentsImportWorker>();
+            services.AddScoped<ProviderAssignmentsResolutionWorker>();
+            services.AddScoped<ProviderAssignmentsImportWorkerEnqueuer>();
             return services;
         }
     }

@@ -14,13 +14,11 @@
 
 export namespace Assignments {
 
-  export interface Microsoft_AspNetCore_Mvc_ProblemDetails {
-      type?: string | null;
-      title?: string | null;
-      status?: number | null;
-      detail?: string | null;
-      instance?: string | null;
-      [key: string]: any;
+  export interface FileUploadResult {
+      fileName: string;
+      serviceDate: string;
+      facilityId: number;
+      message: string;
   }
 
 }
@@ -101,6 +99,12 @@ export namespace Employees {
       canApproveVisits: boolean;
   }
 
+  export enum EmployeeRole {
+      _0 = 0,
+      _1 = 1,
+      _2 = 2,
+  }
+
   export interface EmployeeVisitCountDto {
       employeeId: number;
       employeeLastName: string;
@@ -119,12 +123,10 @@ export namespace Employees {
   }
 
   export interface UpdateEmployeeRequest {
-      firstName?: string | null;
-      lastName?: string | null;
+      firstName: string;
+      lastName: string;
       titleExtension?: string | null;
-      isProvider: boolean;
-      role?: string | null;
-      isAdministrator: boolean;
+      role: EmployeeRole;
       canApproveVisits: boolean;
   }
 
@@ -191,11 +193,11 @@ export namespace Hospitalizations {
       billingCode: string;
       color: string;
       displayOrder: number;
-      type: HospitalizationStatusDtoType;
+      type: HospitalizationStatusType;
       iconName?: string | null;
   }
 
-  export enum HospitalizationStatusDtoType {
+  export enum HospitalizationStatusType {
       _0 = 0,
       _1 = 1,
   }
@@ -236,10 +238,17 @@ export namespace Insurances {
 export namespace Patients {
 
   export interface CreatePatientRequest {
-      mrn: number;
-      firstName?: string | null;
-      lastName?: string | null;
+      firstName: string;
+      lastName: string;
       patientBirthDate?: string | null;
+      facilityId?: number | null;
+      mrn?: string | null;
+  }
+
+  export enum Gender {
+      _1 = 1,
+      _2 = 2,
+      _3 = 3,
   }
 
   export interface PatientDto {
@@ -248,13 +257,7 @@ export namespace Patients {
       firstName?: string | null;
       lastName?: string | null;
       dateOfBirth?: string | null;
-      gender?: PatientDtoGender | null;
-  }
-
-  export enum PatientDtoGender {
-      _1 = 1,
-      _2 = 2,
-      _3 = 3,
+      gender?: Gender;
   }
 
 }
@@ -288,6 +291,15 @@ export namespace VisitEvents {
       eventTypeId: number;
       eventOccurredAt: string;
       description: string;
+  }
+
+  export interface ProblemDetails {
+      type?: string | null;
+      title?: string | null;
+      status?: number | null;
+      detail?: string | null;
+      instance?: string | null;
+      [key: string]: any;
   }
 
   export interface VisitEventDto {

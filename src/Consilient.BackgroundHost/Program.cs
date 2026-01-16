@@ -2,6 +2,7 @@
 using Consilient.BackgroundHost.Configuration;
 using Consilient.BackgroundHost.Infra.Security;
 using Consilient.BackgroundHost.Init;
+using Consilient.Common.Services;
 using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Employees.Services;
@@ -14,10 +15,12 @@ using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Visits.Services;
-using Consilient.DoctorAssignments.Services;
+using Consilient.ProviderAssignments.Services;
+using Consilient.Infrastructure.Storage;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -45,6 +48,11 @@ namespace Consilient.BackgroundHost
                 var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
                 var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
 
+                // Register user context for background jobs (must be before DbContext registration)
+                builder.Services.AddScoped<SettableUserContext>();
+                builder.Services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<SettableUserContext>());
+                builder.Services.AddScoped<IUserContextSetter>(sp => sp.GetRequiredService<SettableUserContext>());
+
                 builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterEmailMonitorServices(applicationSettings.Email.Monitor);
                 builder.Services.RegisterEmployeeServices();
@@ -53,7 +61,8 @@ namespace Consilient.BackgroundHost
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
                 builder.Services.RegisterVisitServices();
-                builder.Services.AddDoctorAssignmentsServices();
+                builder.Services.AddProviderAssignmentsServices();
+                builder.Services.AddFileStorage(builder.Configuration);
                 builder.Services.AddExcelImporter();
                 builder.Services.AddWorkers();
                 builder.Services.RegisterLogging(logger);

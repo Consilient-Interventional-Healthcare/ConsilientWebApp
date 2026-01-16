@@ -25,6 +25,26 @@ if [ ${#DATABASES[@]} -eq 0 ]; then
   exit 1
 fi
 
+# --- Check for reset markers and drop databases if requested ---
+for DB_NAME in "${DATABASES[@]}"; do
+    if [ -f "/var/opt/mssql/.reset-${DB_NAME}" ]; then
+        echo "Reset marker found for $DB_NAME. Dropping database..."
+        # Wait a bit more for SQL Server to be fully ready for DDL operations
+        sleep 5
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -Q "
+            IF EXISTS (SELECT 1 FROM sys.databases WHERE name = '$DB_NAME')
+            BEGIN
+                ALTER DATABASE [$DB_NAME] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                DROP DATABASE [$DB_NAME];
+            END
+        "
+        # Clean up data files in case DROP didn't fully succeed
+        rm -f /var/opt/mssql/data/${DB_NAME}.mdf /var/opt/mssql/data/${DB_NAME}_log.ldf
+        rm "/var/opt/mssql/.reset-${DB_NAME}"
+        echo "Database $DB_NAME dropped. Will be recreated."
+    fi
+done
+
 # --- Script Execution Loop ---
 for DB_NAME in "${DATABASES[@]}"; do
   echo "--- Processing database: $DB_NAME ---"
@@ -46,7 +66,7 @@ for DB_NAME in "${DATABASES[@]}"; do
     # Execute all other .sql files
     find "$SCRIPT_DIR" -type f -name "*.sql" | sort | while read -r sql_file; do
         echo "Executing script: $sql_file on database: $DB_NAME"
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -d "$DB_NAME" -C -i "$sql_file"
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -d "$DB_NAME" -C -I -i "$sql_file"
         if [ $? -ne 0 ]; then
             echo "Error executing script: $sql_file"
             exit 1

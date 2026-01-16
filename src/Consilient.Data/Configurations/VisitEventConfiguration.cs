@@ -37,11 +37,6 @@ namespace Consilient.Data.Configurations
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_VisitEvents_VisitEventTypes_EventTypeId");
 
-            entity.ToTable(tb => tb.HasCheckConstraint(
-                "FK_VisitEvents_Users_EnteredByUserId",
-                "EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [EnteredByUserId])"
-            ));
-
             entity.HasIndex(e => e.VisitId)
                 .HasDatabaseName("IX_VisitEvents_VisitId");
 

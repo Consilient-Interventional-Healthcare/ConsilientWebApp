@@ -5,6 +5,10 @@ namespace Consilient.Infrastructure.ExcelImporter.Core
     public interface IExcelImporter<TRow> where TRow : class
     {
         event EventHandler<ImportProgressEventArgs>? ProgressChanged;
-        Task<ImportResult> ImportAsync(string sourceFile, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Imports data from a stream.
+        /// </summary>
+        Task<ImportResult> ImportAsync(Stream stream, CancellationToken cancellationToken = default);
     }
 }

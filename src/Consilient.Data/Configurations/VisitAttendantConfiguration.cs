@@ -10,9 +10,9 @@ namespace Consilient.Data.Configurations
         {
             base.Configure(entity);
             entity.ToTable("VisitAttendants", ConsilientDbContext.Schemas.Clinical);
-            entity.HasAlternateKey(e => new { e.VisitId, e.EmployeeId })
-                  .HasName("AK_VisitAttendants_VisitId_EmployeeId");
-            entity.Property(m => m.EmployeeId).IsRequired();
+            entity.HasAlternateKey(e => new { e.VisitId, e.ProviderId })
+                  .HasName("AK_VisitAttendants_VisitId_ProviderId");
+            entity.Property(m => m.ProviderId).IsRequired();
             entity.Property(m => m.VisitId).IsRequired();
 
             entity.HasOne(e => e.Visit)
@@ -21,17 +21,17 @@ namespace Consilient.Data.Configurations
                   .OnDelete(DeleteBehavior.Restrict)
                   .HasConstraintName("FK_VisitAttendants_Visits_VisitId");
 
-            entity.HasOne(e => e.Employee)
+            entity.HasOne(e => e.Provider)
                   .WithMany()
-                  .HasForeignKey(e => e.EmployeeId)
+                  .HasForeignKey(e => e.ProviderId)
                   .OnDelete(DeleteBehavior.Restrict)
-                  .HasConstraintName("FK_VisitAttendants_Employees_EmployeeId");
+                  .HasConstraintName("FK_VisitAttendants_Providers_ProviderId");
 
             entity.HasIndex(e => e.VisitId)
                   .HasDatabaseName("IX_VisitAttendants_VisitId");
 
-            entity.HasIndex(e => e.EmployeeId)
-                  .HasDatabaseName("IX_VisitAttendants_EmployeeId");
+            entity.HasIndex(e => e.ProviderId)
+                  .HasDatabaseName("IX_VisitAttendants_ProviderId");
         }
     }
 }
