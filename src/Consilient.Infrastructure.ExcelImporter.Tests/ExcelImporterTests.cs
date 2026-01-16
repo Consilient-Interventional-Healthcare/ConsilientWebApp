@@ -1,5 +1,5 @@
-﻿using Consilient.DoctorAssignments.Contracts;
-using Consilient.DoctorAssignments.Services;
+﻿using Consilient.ProviderAssignments.Contracts;
+using Consilient.ProviderAssignments.Services;
 using Consilient.Infrastructure.ExcelImporter.Models;
 using Consilient.Infrastructure.ExcelImporter.Readers;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
@@ -85,14 +85,14 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             // Arrange
             var outputFilePath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-writer-test");
 
-            var patients = new List<ExternalDoctorAssignment>
+            var patients = new List<ExternalProviderAssignment>
             {
                 new() {
                     HospitalNumber = "2504322",
                     Name = "Wymer, Mias",
                     Mrn = "127116",
                     Age = 18,
-                    Dob = new DateTime(2007, 10, 13),
+                    Dob = new DateOnly(2007, 10, 13),
                     Location = "101A",
                     Admit = new DateTime(2025, 11, 22, 19, 49, 0),
                     AttendingMD = "Dr Hasija (201) 286-3100",

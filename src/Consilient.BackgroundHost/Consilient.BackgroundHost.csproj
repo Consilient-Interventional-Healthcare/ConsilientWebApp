@@ -43,7 +43,7 @@
     <ProjectReference Include="..\Consilient.Patients.Services\Consilient.Patients.Services.csproj" />
     <ProjectReference Include="..\Consilient.Shared.Services\Consilient.Shared.Services.csproj" />
     <ProjectReference Include="..\Consilient.Visits.Service\Consilient.Visits.Services.csproj" />
-    <ProjectReference Include="..\Consilient.DoctorAssignments.Services\Consilient.DoctorAssignments.Services.csproj" />
+    <ProjectReference Include="..\Consilient.ProviderAssignments.Services\Consilient.ProviderAssignments.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Storage\Consilient.Infrastructure.Storage.csproj" />
   </ItemGroup>
 

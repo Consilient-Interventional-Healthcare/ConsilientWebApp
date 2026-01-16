@@ -301,8 +301,10 @@ locals {
   # --------------------------------------------------------------------------
   # FILE UPLOADS STORAGE
   # --------------------------------------------------------------------------
+  # Storage account name must be 3-24 chars, lowercase letters and numbers only
+  # Using shorter prefix: "csuploads" (9 chars) + env (3-4 chars) + suffix (6 chars) = 18-19 chars
   uploads_storage = {
-    account_name               = "${var.project_name}uploads${var.environment}${local.unique_suffix}"
+    account_name               = "csuploads${var.environment}${local.unique_suffix}"
     container_name             = "uploads"
     private_endpoint           = "${var.project_name}-pe-uploads-storage-${var.environment}"
     private_service_connection = "${var.project_name}-psc-uploads-storage-${var.environment}"

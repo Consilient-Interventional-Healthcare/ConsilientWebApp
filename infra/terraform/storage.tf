@@ -36,7 +36,7 @@ resource "azurerm_private_endpoint" "loki_storage" {
 # ============================================================================
 # FILE UPLOADS STORAGE
 # ============================================================================
-# Azure Storage Account for file uploads (Doctor Assignments, etc.)
+# Azure Storage Account for file uploads (Provider Assignments, etc.)
 # Used by both ConsilientApi and BackgroundHost
 
 resource "azurerm_storage_account" "uploads" {

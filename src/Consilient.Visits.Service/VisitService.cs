@@ -20,13 +20,13 @@ namespace Consilient.Visits.Services
             // Avoid duplicates
             var alreadyAttached = await dataContext.Set<VisitAttendant>()
                 .AsNoTracking()
-                .AnyAsync(va => va.VisitId == visitId && va.EmployeeId == attendantId);
+                .AnyAsync(va => va.VisitId == visitId && va.ProviderId == attendantId);
             if (alreadyAttached)
             {
                 return false;
             }
 
-            // Ensure referenced Visit and Employee exist
+            // Ensure referenced Visit and Provider exist
             var visitExists = await dataContext.Visits
                 .AsNoTracking()
                 .AnyAsync(v => v.Id == visitId);
@@ -35,10 +35,10 @@ namespace Consilient.Visits.Services
                 return false;
             }
 
-            var employeeExists = await dataContext.Employees
+            var providerExists = await dataContext.Providers
                 .AsNoTracking()
-                .AnyAsync(e => e.Id == attendantId);
-            if (!employeeExists)
+                .AnyAsync(p => p.Id == attendantId);
+            if (!providerExists)
             {
                 return false;
             }
@@ -46,7 +46,7 @@ namespace Consilient.Visits.Services
             var entity = new VisitAttendant
             {
                 VisitId = visitId,
-                EmployeeId = attendantId
+                ProviderId = attendantId
             };
 
             try
@@ -102,11 +102,11 @@ namespace Consilient.Visits.Services
             return Visits;
         }
 
-        public async Task<IEnumerable<VisitDto>> GetByEmployeeAsync(int employeeId)
+        public async Task<IEnumerable<VisitDto>> GetByProviderAsync(int providerId)
         {
             var Visits = await dataContext.Visits
                     .AsNoTracking()
-                    .Where(e => e.VisitAttendants.Any(m => m.EmployeeId == employeeId))
+                    .Where(e => e.VisitAttendants.Any(m => m.ProviderId == providerId))
                     .ProjectToType<VisitDto>()
                     .ToListAsync();
             return Visits;

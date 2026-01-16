@@ -35,12 +35,6 @@ namespace Consilient.Data.Configurations
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_HospitalizationStatusHistories_HospitalizationStatuses_NewStatusId");
 
-            // Allow NULL ChangedByUserId or require user exists when provided.
-            entity.ToTable(tb => tb.HasCheckConstraint(
-                "FK_HospitalizationStatusHistories_Users_ChangedByUserId",
-                "([ChangedByUserId] IS NULL) OR EXISTS (SELECT 1 FROM [Identity].[Users] WHERE [Id] = [ChangedByUserId])"
-            ));
-
             entity.HasIndex(e => e.HospitalizationId)
                 .HasDatabaseName("IX_HospitalizationStatusHistories_HospitalizationId");
 

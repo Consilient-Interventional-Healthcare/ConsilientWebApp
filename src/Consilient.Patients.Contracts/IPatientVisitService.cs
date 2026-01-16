@@ -10,7 +10,7 @@ namespace Consilient.Patients.Contracts
     {
         Task<IEnumerable<TPatientVisit>> GetByDateAsync(DateOnly date);
         Task<TPatientVisit?> GetByIdAsync(int id);
-        Task<IEnumerable<TPatientVisit>> GetByEmployeeAsync(int employeeId);
+        Task<IEnumerable<TPatientVisit>> GetByProviderAsync(int providerId);
         Task<TPatientVisit?> CreateAsync(TCreatePatientVisit request);
         Task<TPatientVisit?> UpdateAsync(int id, TUpdatePatientVisit request);
         Task<bool> DeleteAsync(int id);

@@ -1,8 +1,8 @@
 using Consilient.Api.Configuration;
 using Consilient.Api.Helpers;
-using Consilient.Background.Workers.DoctorAssignments;
+using Consilient.Background.Workers.ProviderAssignments;
 using Consilient.Common.Services;
-using Consilient.DoctorAssignments.Contracts;
+using Consilient.ProviderAssignments.Contracts;
 using Consilient.Infrastructure.Storage.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +11,13 @@ namespace Consilient.Api.Controllers
     [Route("[controller]")]
     [ApiController]
     public class AssignmentsController(
-        DoctorAssignmentsImportWorkerEnqueuer importWorkerEnqueuer,
+        ProviderAssignmentsImportWorkerEnqueuer importWorkerEnqueuer,
         ApplicationSettings applicationSettings,
         ICurrentUserService currentUserService,
         IFileStorage fileStorage) : ControllerBase
     {
-        private readonly DoctorAssignmentsImportWorkerEnqueuer _importWorkerEnqueuer = importWorkerEnqueuer;
-        private readonly FileUploadSettings _fileUploadSettings = applicationSettings.DoctorAssignmentsUploads;
+        private readonly ProviderAssignmentsImportWorkerEnqueuer _importWorkerEnqueuer = importWorkerEnqueuer;
+        private readonly FileUploadSettings _fileUploadSettings = applicationSettings.ProviderAssignmentsUploads;
         private readonly ICurrentUserService _currentUserService = currentUserService;
         private readonly IFileStorage _fileStorage = fileStorage;
 
@@ -33,7 +33,7 @@ namespace Consilient.Api.Controllers
             CancellationToken cancellationToken = default)
         {
             // Validate file
-            var fileValidator = new FileUploadHelper(_fileUploadSettings);
+            var fileValidator = new FileValidator(_fileUploadSettings);
             var validationResult = fileValidator.ValidateFile(file);
             if (!validationResult.IsValid)
             {

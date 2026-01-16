@@ -21,7 +21,7 @@ using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Users.Services;
 using Consilient.Visits.Services;
-using Consilient.DoctorAssignments.Services;
+using Consilient.ProviderAssignments.Services;
 using Consilient.Infrastructure.Storage;
 using GraphQL.Server.Ui.GraphiQL;
 using Microsoft.AspNetCore.Authorization;
@@ -172,7 +172,7 @@ namespace Consilient.Api
                     useDistributedCache: builder.Environment.IsProduction());
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterHospitalizationServices();
-                builder.Services.AddDoctorAssignmentsServices();
+                builder.Services.AddProviderAssignmentsServices();
                 builder.Services.AddFileStorage(builder.Configuration);
                 builder.Services.RegisterLogging(logger);
                 builder.Services.ConfigureHangfire(hangfireConnectionString);

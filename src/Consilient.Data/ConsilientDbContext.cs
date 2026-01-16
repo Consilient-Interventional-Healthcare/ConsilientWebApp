@@ -28,10 +28,11 @@ namespace Consilient.Data
         public virtual DbSet<Patient> Patients { get; set; } = null!;
 
         public virtual DbSet<PatientFacility> PatientFacilities { get; set; } = null!;
+        public virtual DbSet<Provider> Providers { get; set; } = null!;
 
         public virtual DbSet<ServiceType> ServiceTypes { get; set; } = null!;
 
-        public virtual DbSet<DoctorAssignment> StagingDoctorAssignments { get; set; } = null!;
+        public virtual DbSet<ProviderAssignment> StagingProviderAssignments { get; set; } = null!;
 
         public virtual DbSet<VisitEvent> VisitEvents { get; set; } = null!;
 

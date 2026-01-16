@@ -13,7 +13,5 @@ namespace Consilient.Data.Entities
         public EmployeeRole Role { get; set; }
 
         public string Email { get; set; } = string.Empty;
-
-        //public bool CanApproveVisits { get; set; }
     }
 }

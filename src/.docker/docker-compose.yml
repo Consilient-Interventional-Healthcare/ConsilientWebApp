@@ -162,6 +162,7 @@ services:
       ASPNETCORE_Kestrel__Certificates__Default__Password: "${DEV_CERT_PASSWORD}"
     volumes:
       - ${USERPROFILE}/.aspnet/https:/https:ro
+      - ../_tmp:/app/uploads
     ports:
       - "8091:8091"
     depends_on:
@@ -184,6 +185,7 @@ services:
       ASPNETCORE_Kestrel__Certificates__Default__Password: "${DEV_CERT_PASSWORD}"
     volumes:
       - ${USERPROFILE}/.aspnet/https:/https:ro
+      - ../_tmp:/app/uploads
     ports:
       - "8092:8092"
     depends_on:

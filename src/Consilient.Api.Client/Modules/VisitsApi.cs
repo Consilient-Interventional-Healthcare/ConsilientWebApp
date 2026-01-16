@@ -25,9 +25,9 @@ namespace Consilient.Api.Client.Modules
             return await CreateApiResponse<IEnumerable<VisitDto>>(resp);
         }
 
-        public async Task<ApiResponse<IEnumerable<VisitDto>>> GetByEmployeeAsync(int employeeId)
+        public async Task<ApiResponse<IEnumerable<VisitDto>>> GetByProviderAsync(int providerId)
         {
-            var resp = await GetAsync(Routes.GetByEmployee(employeeId)).ConfigureAwait(false);
+            var resp = await GetAsync(Routes.GetByProvider(providerId)).ConfigureAwait(false);
             return await CreateApiResponse<IEnumerable<VisitDto>>(resp);
         }
 
@@ -49,7 +49,7 @@ namespace Consilient.Api.Client.Modules
             public static string Create() => $"{_base}";
             public static string Delete(int id) => $"{_base}/{id}";
             public static string GetByDate(DateOnly date) => $"{_base}/date/{date:yyyyMMdd}";
-            public static string GetByEmployee(int employeeId) => $"{_base}/employee/{employeeId}";
+            public static string GetByProvider(int providerId) => $"{_base}/provider/{providerId}";
             public static string GetById(int id) => $"{_base}/{id}";
             public static string Update(int id) => $"{_base}/{id}";
         }

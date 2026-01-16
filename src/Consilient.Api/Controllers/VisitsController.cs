@@ -40,11 +40,11 @@ namespace Consilient.Api.Controllers
             return Ok(results);
         }
 
-        [HttpGet("employee/{id:int}")]
+        [HttpGet("provider/{id:int}")]
         [ProducesResponseType(typeof(IEnumerable<VisitDto>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetByEmployee(int id)
+        public async Task<IActionResult> GetByProvider(int id)
         {
-            var visit = await visitService.GetByEmployeeAsync(id).ConfigureAwait(false);
+            var visit = await visitService.GetByProviderAsync(id).ConfigureAwait(false);
             return Ok(visit);
         }
 

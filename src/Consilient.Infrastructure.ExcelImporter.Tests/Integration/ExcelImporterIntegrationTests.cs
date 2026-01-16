@@ -1,5 +1,5 @@
-using Consilient.DoctorAssignments.Contracts;
-using Consilient.DoctorAssignments.Services;
+using Consilient.ProviderAssignments.Contracts;
+using Consilient.ProviderAssignments.Services;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
 using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
 
@@ -17,7 +17,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             // Arrange
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
 
-            var sink = new InMemorySink<ExternalDoctorAssignment>();
+            var sink = new InMemorySink<ExternalProviderAssignment>();
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
             var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(sink), facilityId, serviceDate);
@@ -127,7 +127,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             // Arrange
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
 
-            var sink = new InMemorySink<ExternalDoctorAssignment>();
+            var sink = new InMemorySink<ExternalProviderAssignment>();
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
             var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(sink), facilityId, serviceDate);

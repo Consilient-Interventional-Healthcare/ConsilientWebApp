@@ -299,25 +299,45 @@ GO
 SET IDENTITY_INSERT [Compensation].[Employees] ON;
 GO
 
-INSERT INTO [Compensation].[Employees] ([ID], [FirstName], [LastName], [TitleExtension], [IsProvider], [Role], [IsAdministrator], [Email], [CanApproveVisits])
+-- Role enum: Provider=0, NursePractitioner=1, Staff=2
+INSERT INTO [Compensation].[Employees] ([ID], [FirstName], [LastName], [TitleExtension], [Role], [Email])
 VALUES
-    (1, 'Emma', 'Harrison', 'MD', 1, 'Physician', 0, NULL, 0),
-    (2, 'Liam', 'Turner', 'MD', 1, 'Physician', 0, NULL, 0),
-    (3, 'Olivia', 'Bennett', 'MD', 1, 'Physician', 0, NULL, 0),
-    (4, 'Noah', 'Foster', 'MD', 1, 'Physician', 0, NULL, 0),
-    (5, 'Ava', 'Graham', 'NP', 1, 'Nurse Practitioner', 0, NULL, 0),
-    (6, 'Elijah', 'Coleman', 'NP', 1, 'Nurse Practitioner', 0, NULL, 0),
-    (7, 'Sophia', 'Reed', NULL, 0, 'Scribe', 0, NULL, 0),
-    (8, 'James', 'Perry', NULL, 0, 'Scribe', 0, NULL, 0),
-    (9, 'Isabella', 'Powell', NULL, 0, 'Scribe', 0, NULL, 0),
-    (10, 'Benjamin', 'Russell', NULL, 0, 'Scribe', 0, NULL, 0),
-    (11, 'Charlotte', 'Griffin', NULL, 0, 'Scribe', 0, NULL, 0),
-    (12, 'William', 'Hayes', NULL, 0, 'IT', 1, NULL, 0),
-    (13, 'Amelia', 'Price', NULL, 0, 'Admin', 1, NULL, 0),
-	(14, 'Hernan', 'Marano', NULL, 0, 'Admin', 1, 'hernanmarano@consilientivh.com', 0);
+    (1, 'Emma', 'Harrison', 'MD', 0, 'emma.harrison@consilientivh.com'),
+    (2, 'Liam', 'Turner', 'MD', 0, 'liam.turner@consilientivh.com'),
+    (3, 'Olivia', 'Bennett', 'MD', 0, 'olivia.bennett@consilientivh.com'),
+    (4, 'Noah', 'Foster', 'MD', 0, 'noah.foster@consilientivh.com'),
+    (5, 'Ava', 'Graham', 'NP', 1, 'ava.graham@consilientivh.com'),
+    (6, 'Elijah', 'Coleman', 'NP', 1, 'elijah.coleman@consilientivh.com'),
+    (7, 'Sophia', 'Reed', NULL, 2, 'sophia.reed@consilientivh.com'),
+    (8, 'James', 'Perry', NULL, 2, 'james.perry@consilientivh.com'),
+    (9, 'Isabella', 'Powell', NULL, 2, 'isabella.powell@consilientivh.com'),
+    (10, 'Benjamin', 'Russell', NULL, 2, 'benjamin.russell@consilientivh.com'),
+    (11, 'Charlotte', 'Griffin', NULL, 2, 'charlotte.griffin@consilientivh.com'),
+    (12, 'William', 'Hayes', NULL, 2, 'william.hayes@consilientivh.com'),
+    (13, 'Amelia', 'Price', NULL, 2, 'amelia.price@consilientivh.com'),
+    (14, 'Hernan', 'Marano', NULL, 2, 'hernanmarano@consilientivh.com');
 GO
 
 SET IDENTITY_INSERT [Compensation].[Employees] OFF;
+GO
+
+SET IDENTITY_INSERT [Clinical].[Providers] ON;
+GO
+
+-- Type enum: Physician=0, NursePractitioner=1
+INSERT INTO [Clinical].[Providers] ([Id], [FirstName], [LastName], [TitleExtension], [Type], [Email], [EmployeeId])
+VALUES
+    (1, 'Emma', 'Harrison', 'MD', 0, 'emma.harrison@consilientivh.com', 1),
+    (2, 'Liam', 'Turner', 'MD', 0, 'liam.turner@consilientivh.com', 2),
+    (3, 'Olivia', 'Bennett', 'MD', 0, 'olivia.bennett@consilientivh.com', 3),
+    (4, 'Noah', 'Foster', 'MD', 0, 'noah.foster@consilientivh.com', 4),
+    (5, 'Ava', 'Graham', 'NP', 1, 'ava.graham@consilientivh.com', 5),
+    (6, 'Elijah', 'Coleman', 'NP', 1, 'elijah.coleman@consilientivh.com', 6),
+    (8, 'James', 'Perry', NULL, 0, 'james.perry@consilientivh.com', 8),
+    (10, 'Benjamin', 'Russell', NULL, 0, 'benjamin.russell@consilientivh.com', 10);
+GO
+
+SET IDENTITY_INSERT [Clinical].[Providers] OFF;
 GO
 
 SET IDENTITY_INSERT [Clinical].[Hospitalizations] ON;
@@ -805,7 +825,7 @@ SET IDENTITY_INSERT [Clinical].[Visits] OFF;
 GO
 
 
-INSERT INTO [Clinical].[VisitAttendants] ([VisitId], [EmployeeId])
+INSERT INTO [Clinical].[VisitAttendants] ([VisitId], [ProviderId])
 VALUES
 (23, 1),
 (26, 1),
