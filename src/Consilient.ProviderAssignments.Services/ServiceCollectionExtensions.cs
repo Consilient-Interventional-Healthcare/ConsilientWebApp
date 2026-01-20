@@ -45,6 +45,9 @@ namespace Consilient.ProviderAssignments.Services
 
         private static void AddResolutionServices(IServiceCollection services)
         {
+            // Register resolution cache
+            services.AddScoped<IResolutionCache, ResolutionCache>();
+
             // Register individual resolvers with their marker interfaces
             services.AddScoped<IPhysicianResolver, PhysicianResolver>();
             services.AddScoped<INursePractitionerResolver, NursePractitionerResolver>();

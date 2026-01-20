@@ -65,6 +65,16 @@
     <Exec WorkingDirectory="$(SolutionDir)Scripts\typescript-type-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(TypeScriptGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
   </Target>
 
+  <!-- OpenAPI Documentation Generation Target -->
+  <!-- Automatic: Runs after Rebuild only (local development) -->
+  <!-- Manual: dotnet msbuild /t:GenerateOpenApiDoc -->
+  <Target Name="GenerateOpenApiDoc" AfterTargets="Rebuild">
+    <PropertyGroup>
+      <OpenApiGenScript>$(SolutionDir)Scripts\openapi-generation\Generate-OpenApiDoc.ps1</OpenApiGenScript>
+    </PropertyGroup>
+    <Exec WorkingDirectory="$(SolutionDir)Scripts\openapi-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(OpenApiGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
+  </Target>
+
   <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 
 </Project>

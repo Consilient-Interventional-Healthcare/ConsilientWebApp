@@ -9,8 +9,8 @@ namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers
     /// <summary>
     /// Resolves nurse practitioners from provider assignments.
     /// </summary>
-    internal class NursePractitionerResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger logger)
-        : ProviderResolver(cache, dbContext, logger), INursePractitionerResolver
+    internal class NursePractitionerResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger<NursePractitionerResolver> logger)
+        : ProviderResolver<NursePractitionerResolver>(cache, dbContext, logger), INursePractitionerResolver
     {
         protected override ProviderType TargetProviderType => ProviderType.NursePractitioner;
 

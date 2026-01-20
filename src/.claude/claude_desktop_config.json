@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "consilient-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${REPO_ROOT}/docs"
+      ]
+    },
+    "consilient-api": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${REPO_ROOT}/src/Consilient.Api"
+      ]
+    },
+    "consilient-scripts": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${REPO_ROOT}/src/Scripts"
+      ]
+    }
+  }
+}

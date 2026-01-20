@@ -6,8 +6,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers
 {
-    internal class HospitalizationResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger logger)
-        : BaseResolver<Hospitalization>(cache, dbContext, logger), IHospitalizationResolver
+    internal class HospitalizationResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger<HospitalizationResolver> logger)
+        : BaseResolver<Hospitalization, HospitalizationResolver>(cache, dbContext, logger), IHospitalizationResolver
     {
         protected override IReadOnlyCollection<Hospitalization> LoadEntities(int facilityId, DateOnly date)
         {

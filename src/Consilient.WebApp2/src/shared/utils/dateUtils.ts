@@ -234,3 +234,47 @@ export function formatDateLong(
 export function getToday(): string {
   return formatDate(new Date());
 }
+
+/**
+ * Convert a URL date format (YYYYMMDD) to ISO format (YYYY-MM-DD)
+ *
+ * @param urlDate - Date string in YYYYMMDD format
+ * @returns Date string in YYYY-MM-DD format
+ *
+ * @example
+ * ```typescript
+ * formatDateFromUrl('20251114') // '2025-11-14'
+ * ```
+ */
+export function formatDateFromUrl(urlDate: string): string {
+  return `${urlDate.slice(0, 4)}-${urlDate.slice(4, 6)}-${urlDate.slice(6, 8)}`;
+}
+
+/**
+ * Convert an ISO date format (YYYY-MM-DD) to URL format (YYYYMMDD)
+ *
+ * @param isoDate - Date string in YYYY-MM-DD format
+ * @returns Date string in YYYYMMDD format
+ *
+ * @example
+ * ```typescript
+ * formatDateToUrl('2025-11-14') // '20251114'
+ * ```
+ */
+export function formatDateToUrl(isoDate: string): string {
+  return isoDate.replace(/-/g, '');
+}
+
+/**
+ * Get today's date in URL format (YYYYMMDD)
+ *
+ * @returns Today's date in YYYYMMDD format
+ *
+ * @example
+ * ```typescript
+ * getTodayYYYYMMDD() // '20251114' if today is Nov 14, 2025
+ * ```
+ */
+export function getTodayYYYYMMDD(): string {
+  return getToday().replace(/-/g, '');
+}

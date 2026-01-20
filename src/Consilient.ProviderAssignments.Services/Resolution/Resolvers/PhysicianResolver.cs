@@ -9,8 +9,8 @@ namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers
     /// <summary>
     /// Resolves attending physicians from provider assignments.
     /// </summary>
-    internal class PhysicianResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger logger)
-        : ProviderResolver(cache, dbContext, logger), IPhysicianResolver
+    internal class PhysicianResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger<PhysicianResolver> logger)
+        : ProviderResolver<PhysicianResolver>(cache, dbContext, logger), IPhysicianResolver
     {
         protected override ProviderType TargetProviderType => ProviderType.Physician;
 

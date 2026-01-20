@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers
 {
-    internal class VisitResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger logger)
-        : BaseResolver<Visit>(cache, dbContext, logger), IVisitResolver
+    internal class VisitResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger<VisitResolver> logger)
+        : BaseResolver<Visit, VisitResolver>(cache, dbContext, logger), IVisitResolver
     {
         protected override IReadOnlyCollection<Visit> LoadEntities(int facilityId, DateOnly date)
         {

@@ -10,8 +10,8 @@ namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers
     /// <summary>
     /// Abstract base class for provider resolution with shared lookup/matching logic.
     /// </summary>
-    internal abstract class ProviderResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger logger)
-        : BaseResolver<ProviderRow>(cache, dbContext, logger)
+    internal abstract class ProviderResolver<TResolver>(IResolutionCache cache, ConsilientDbContext dbContext, ILogger<TResolver> logger)
+        : BaseResolver<ProviderRow, TResolver>(cache, dbContext, logger)
     {
         /// <summary>
         /// The provider type this resolver targets (Physician or NursePractitioner).

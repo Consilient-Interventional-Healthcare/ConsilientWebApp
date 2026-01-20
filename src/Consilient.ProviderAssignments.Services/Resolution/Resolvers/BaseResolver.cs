@@ -5,11 +5,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers
 {
-    internal abstract class BaseResolver<TEntity>(IResolutionCache cache, ConsilientDbContext dbContext, ILogger logger) : IResolver<TEntity> where TEntity : class
+    internal abstract class BaseResolver<TEntity, TResolver>(IResolutionCache cache, ConsilientDbContext dbContext, ILogger<TResolver> logger) : IResolver<TEntity> where TEntity : class
     {
         protected IResolutionCache Cache { get; } = cache;
         protected ConsilientDbContext DbContext { get; } = dbContext;
-        protected ILogger Logger { get; } = logger;
+        protected ILogger<TResolver> Logger { get; } = logger;
 
         public async Task ResolveAsync(int facilityId, DateOnly date, List<ProviderAssignment> records)
         {
