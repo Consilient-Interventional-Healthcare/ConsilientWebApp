@@ -11,7 +11,7 @@ GO
 BEGIN TRANSACTION;
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     IF SCHEMA_ID(N'Compensation') IS NULL EXEC(N'CREATE SCHEMA [Compensation];');
@@ -19,7 +19,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     IF SCHEMA_ID(N'Clinical') IS NULL EXEC(N'CREATE SCHEMA [Clinical];');
@@ -27,15 +27,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
-)
-BEGIN
-    IF SCHEMA_ID(N'staging') IS NULL EXEC(N'CREATE SCHEMA [staging];');
-END;
-
-IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Compensation].[Employees] (
@@ -54,7 +46,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[Facilities] (
@@ -70,7 +62,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[HospitalizationStatuses] (
@@ -89,7 +81,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[Insurances] (
@@ -107,7 +99,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[Patients] (
@@ -125,48 +117,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
-)
-BEGIN
-    CREATE TABLE [staging].[ProviderAssignments] (
-        [Id] int NOT NULL IDENTITY,
-        [Age] int NOT NULL,
-        [AttendingMD] nvarchar(255) NOT NULL,
-        [HospitalNumber] nvarchar(50) NOT NULL,
-        [Admit] smalldatetime NOT NULL,
-        [Dob] date NULL,
-        [FacilityId] int NOT NULL,
-        [Mrn] nvarchar(50) NOT NULL,
-        [Name] nvarchar(255) NOT NULL,
-        [Insurance] nvarchar(255) NOT NULL,
-        [NursePractitioner] nvarchar(255) NOT NULL,
-        [IsCleared] nvarchar(50) NOT NULL,
-        [Location] nvarchar(255) NOT NULL,
-        [ServiceDate] date NOT NULL,
-        [H_P] nvarchar(255) NOT NULL,
-        [PsychEval] nvarchar(255) NOT NULL,
-        [ResolvedProviderId] int NULL,
-        [ResolvedHospitalizationId] int NULL,
-        [ResolvedPatientId] int NULL,
-        [ResolvedNursePracticionerId] int NULL,
-        [BatchId] uniqueidentifier NOT NULL,
-        [Imported] bit NOT NULL DEFAULT CAST(0 AS bit),
-        [ValidationErrors] nvarchar(max) NULL,
-        [ExclusionReason] nvarchar(500) NULL,
-        [ShouldImport] bit NOT NULL DEFAULT CAST(0 AS bit),
-        [NeedsNewPatient] bit NOT NULL DEFAULT CAST(0 AS bit),
-        [NeedsNewHospitalization] bit NOT NULL DEFAULT CAST(0 AS bit),
-        [ResolvedVisitId] int NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
-        [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_ProviderAssignments] PRIMARY KEY ([Id])
-    );
-END;
-
-IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[ServiceTypes] (
@@ -182,7 +133,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[VisitEventTypes] (
@@ -198,7 +149,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[Providers] (
@@ -219,7 +170,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Compensation].[ProviderContracts] (
@@ -239,33 +190,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
-)
-BEGIN
-    CREATE TABLE [Clinical].[Hospitalizations] (
-        [Id] int NOT NULL IDENTITY,
-        [PatientId] int NOT NULL,
-        [CaseId] int NOT NULL,
-        [FacilityId] int NOT NULL,
-        [PsychEvaluation] bit NOT NULL,
-        [AdmissionDate] datetime2 NOT NULL,
-        [DischargeDate] datetime2 NULL,
-        [HospitalizationStatusId] int NOT NULL,
-        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
-        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
-        [RowVersion] rowversion NOT NULL,
-        CONSTRAINT [PK_Hospitalization] PRIMARY KEY ([Id]),
-        CONSTRAINT [AK_Hospitalizations_CaseId] UNIQUE ([CaseId]),
-        CONSTRAINT [AK_Hospitalizations_CaseId_PatientId] UNIQUE ([CaseId], [PatientId]),
-        CONSTRAINT [FK_Hospitalizations_Facilities_FacilityId] FOREIGN KEY ([FacilityId]) REFERENCES [Clinical].[Facilities] ([Id]) ON DELETE NO ACTION,
-        CONSTRAINT [FK_Hospitalizations_HospitalizationStatuses_HospitalizationStatusId] FOREIGN KEY ([HospitalizationStatusId]) REFERENCES [Clinical].[HospitalizationStatuses] ([Id]) ON DELETE NO ACTION,
-        CONSTRAINT [FK_Hospitalizations_Patients_PatientId] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([Id]) ON DELETE NO ACTION
-    );
-END;
-
-IF NOT EXISTS (
-    SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[PatientFacilities] (
@@ -284,7 +209,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[HospitalizationInsurances] (
@@ -303,7 +228,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[HospitalizationStatusHistories] (
@@ -323,7 +248,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[Visits] (
@@ -345,7 +270,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[VisitAttendants] (
@@ -364,7 +289,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE TABLE [Clinical].[VisitEvents] (
@@ -385,7 +310,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_HospitalizationInsurances_HospitalizationId] ON [Clinical].[HospitalizationInsurances] ([HospitalizationId]);
@@ -393,7 +318,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_HospitalizationInsurances_InsuranceId] ON [Clinical].[HospitalizationInsurances] ([InsuranceId]);
@@ -401,7 +326,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_Hospitalizations_FacilityId] ON [Clinical].[Hospitalizations] ([FacilityId]);
@@ -409,7 +334,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_Hospitalizations_HospitalizationStatusId] ON [Clinical].[Hospitalizations] ([HospitalizationStatusId]);
@@ -417,7 +342,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_Hospitalizations_PatientId] ON [Clinical].[Hospitalizations] ([PatientId]);
@@ -425,7 +350,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_HospitalizationStatusHistories_ChangedAt] ON [Clinical].[HospitalizationStatusHistories] ([ChangedAt]);
@@ -433,7 +358,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_HospitalizationStatusHistories_ChangedByUserId] ON [Clinical].[HospitalizationStatusHistories] ([ChangedByUserId]);
@@ -441,7 +366,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_HospitalizationStatusHistories_HospitalizationId] ON [Clinical].[HospitalizationStatusHistories] ([HospitalizationId]);
@@ -449,7 +374,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_HospitalizationStatusHistories_NewStatusId] ON [Clinical].[HospitalizationStatusHistories] ([NewStatusId]);
@@ -457,7 +382,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE UNIQUE INDEX [IX_PatientFacilities_FacilityId_MRN] ON [Clinical].[PatientFacilities] ([FacilityId], [MRN]);
@@ -465,7 +390,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_PatientFacilities_PatientId] ON [Clinical].[PatientFacilities] ([PatientId]);
@@ -473,7 +398,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_ProviderContracts_EmployeeID] ON [Compensation].[ProviderContracts] ([EmployeeID]);
@@ -481,7 +406,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_ProviderContracts_FacilityId] ON [Compensation].[ProviderContracts] ([FacilityId]);
@@ -489,7 +414,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     EXEC(N'CREATE UNIQUE INDEX [IX_Providers_EmployeeId] ON [Clinical].[Providers] ([EmployeeId]) WHERE [EmployeeId] IS NOT NULL');
@@ -497,7 +422,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_VisitAttendants_ProviderId] ON [Clinical].[VisitAttendants] ([ProviderId]);
@@ -505,7 +430,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_VisitAttendants_VisitId] ON [Clinical].[VisitAttendants] ([VisitId]);
@@ -513,7 +438,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_VisitEvents_EnteredByUserId] ON [Clinical].[VisitEvents] ([EnteredByUserId]);
@@ -521,7 +446,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_VisitEvents_EventOccurredAt] ON [Clinical].[VisitEvents] ([EventOccurredAt]);
@@ -529,7 +454,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_VisitEvents_EventTypeId] ON [Clinical].[VisitEvents] ([EventTypeId]);
@@ -537,7 +462,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_VisitEvents_VisitId] ON [Clinical].[VisitEvents] ([VisitId]);
@@ -545,7 +470,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE UNIQUE INDEX [IX_VisitEventTypes_Code] ON [Clinical].[VisitEventTypes] ([Code]);
@@ -553,7 +478,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_Visits_DateServiced] ON [Clinical].[Visits] ([DateServiced]);
@@ -561,7 +486,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_Visits_HospitalizationId] ON [Clinical].[Visits] ([HospitalizationId]);
@@ -569,7 +494,7 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     CREATE INDEX [IX_Visits_ServiceTypeId] ON [Clinical].[Visits] ([ServiceTypeId]);
@@ -577,11 +502,11 @@ END;
 
 IF NOT EXISTS (
     SELECT * FROM [__EFMigrationsHistory]
-    WHERE [MigrationId] = N'20260116154956_Initial'
+    WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-    VALUES (N'20260116154956_Initial', N'9.0.11');
+    VALUES (N'20260116150740_Initial', N'9.0.11');
 END;
 
 COMMIT;

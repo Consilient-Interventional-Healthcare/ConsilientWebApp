@@ -21,7 +21,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
     <ProjectReference Include="..\Consilient.ProviderAssignments.Contracts\Consilient.ProviderAssignments.Contracts.csproj" />
-    <ProjectReference Include="..\Consilient.Infrastructure.EmailMonitor\Consilient.Infrastructure.EmailMonitor.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.ExcelImporter\Consilient.Infrastructure.ExcelImporter.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Storage\Consilient.Infrastructure.Storage.csproj" />
   </ItemGroup>

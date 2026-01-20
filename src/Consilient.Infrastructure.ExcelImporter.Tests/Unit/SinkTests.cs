@@ -13,8 +13,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public async Task InMemorySink_StoresAllRows()
         {
             // Arrange
-            var sink = new InMemorySink<ExternalProviderAssignment>();
-            var patients = new List<ExternalProviderAssignment>
+            var sink = new InMemorySink<ExcelProviderAssignmentRow>();
+            var patients = new List<ExcelProviderAssignmentRow>
             {
                 new() { Name = "Patient 1", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now },
                 new() { Name = "Patient 2", HospitalNumber = "002", Mrn = "M002", Age = 30, Admit = DateTime.Now },
@@ -39,15 +39,15 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         {
             // Arrange
             var batchId = Guid.NewGuid();
-            var sink = new InMemorySink<ExternalProviderAssignment>();
-            await sink.WriteBatchAsync(batchId, new List<ExternalProviderAssignment>
+            var sink = new InMemorySink<ExcelProviderAssignmentRow>();
+            await sink.WriteBatchAsync(batchId, new List<ExcelProviderAssignmentRow>
             {
                 new() { Name = "Old Patient", HospitalNumber = "000", Mrn = "M000", Age = 20, Admit = DateTime.Now }
             }, TestContext.CancellationToken);
 
             // Act
             await sink.InitializeAsync(TestContext.CancellationToken); // Should clear
-            await sink.WriteBatchAsync(batchId, new List<ExternalProviderAssignment>
+            await sink.WriteBatchAsync(batchId, new List<ExcelProviderAssignmentRow>
             {
                 new() { Name = "New Patient", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now }
             }, TestContext.CancellationToken);
@@ -63,7 +63,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             // Arrange
             var outputPath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-sink-test");
             var sink = new CsvFileSink(outputPath);
-            var patients = new List<ExternalProviderAssignment>
+            var patients = new List<ExcelProviderAssignmentRow>
             {
                 new() {
                     Name = "Wymer, Mias",
@@ -114,11 +114,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             // Arrange
             var outputPath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-multi-batch");
             var sink = new CsvFileSink(outputPath);
-            var batch1 = new List<ExternalProviderAssignment>
+            var batch1 = new List<ExcelProviderAssignmentRow>
             {
                 new() { Name = "Patient 1", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now }
             };
-            var batch2 = new List<ExternalProviderAssignment>
+            var batch2 = new List<ExcelProviderAssignmentRow>
             {
                 new() { Name = "Patient 2", HospitalNumber = "002", Mrn = "M002", Age = 30, Admit = DateTime.Now }
             };
@@ -152,7 +152,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             // Arrange
             var outputPath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-empty");
             var sink = new CsvFileSink(outputPath);
-            var emptyBatch = new List<ExternalProviderAssignment>();
+            var emptyBatch = new List<ExcelProviderAssignmentRow>();
 
             try
             {
@@ -180,7 +180,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
             var outputPath = Path.Combine(tempDir, "test.csv");
             var sink = new CsvFileSink(outputPath);
-            var patients = new List<ExternalProviderAssignment>
+            var patients = new List<ExcelProviderAssignmentRow>
             {
                 new() { Name = "Test", HospitalNumber = "001", Mrn = "M001", Age = 25, Admit = DateTime.Now }
             };

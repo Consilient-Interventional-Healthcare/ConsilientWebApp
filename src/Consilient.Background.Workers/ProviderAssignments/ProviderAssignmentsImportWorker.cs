@@ -1,10 +1,11 @@
 using Consilient.Background.Workers.Contracts;
 using Consilient.Background.Workers.Models;
 using Consilient.Common.Services;
-using Consilient.ProviderAssignments.Contracts;
 using Consilient.Infrastructure.Storage.Contracts;
 using Hangfire;
 using Hangfire.Server;
+using System.ComponentModel;
+using Consilient.ProviderAssignments.Contracts.Import;
 
 namespace Consilient.Background.Workers.ProviderAssignments
 {
@@ -16,15 +17,16 @@ namespace Consilient.Background.Workers.ProviderAssignments
         // Event for progress reporting using the reusable WorkerProgressEventArgs
         public event EventHandler<WorkerProgressEventArgs>? ProgressChanged;
 
-        public async Task<Guid> Import(string fileReference, int facilityId, DateOnly serviceDate, int enqueuedByUserId, Guid batchId, PerformContext context)
+        [DisplayName("Import Provider Assignments (Batch: {0})")]
+        public async Task<Guid> Import(Guid batchId, ProviderAssignmentsImportInput input, PerformContext context)
         {
             // Set the user context for this job scope
-            userContextSetter.SetUser(enqueuedByUserId);
+            userContextSetter.SetUser(input.EnqueuedByUserId);
 
             var jobId = context.BackgroundJob.Id;
 
             // Create importer using factory
-            var importer = importerFactory.Create(facilityId, serviceDate);
+            var importer = importerFactory.Create(input.FacilityId, input.ServiceDate);
 
             // Wire up progress events
             importer.ProgressChanged += (sender, p) =>
@@ -45,7 +47,7 @@ namespace Consilient.Background.Workers.ProviderAssignments
             try
             {
                 // Get file stream from storage
-                await using var fileStream = await fileStorage.GetAsync(fileReference, CancellationToken.None);
+                await using var fileStream = await fileStorage.GetAsync(input.FileReference, CancellationToken.None);
 
                 // Import using the stream-based pipeline
                 var result = await importer.ImportAsync(batchId, fileStream, CancellationToken.None);
@@ -61,9 +63,9 @@ namespace Consilient.Background.Workers.ProviderAssignments
                     ProcessedItems = result.TotalRowsWritten,
                     AdditionalData = new Dictionary<string, object>
                     {
-                        ["FileReference"] = fileReference,
-                        ["ServiceDate"] = serviceDate.ToString("yyyy-MM-dd"),
-                        ["FacilityId"] = facilityId,
+                        ["FileReference"] = input.FileReference,
+                        ["ServiceDate"] = input.ServiceDate.ToString("yyyy-MM-dd"),
+                        ["FacilityId"] = input.FacilityId,
                         ["BatchId"] = batchId.ToString(),
                         ["TotalRowsRead"] = result.TotalRowsRead,
                         ["TotalRowsWritten"] = result.TotalRowsWritten,
@@ -72,9 +74,6 @@ namespace Consilient.Background.Workers.ProviderAssignments
                         ["ValidationErrors"] = result.ValidationErrors.Count
                     }
                 });
-
-                // Optionally clean up the file after successful import
-                await fileStorage.DeleteAsync(fileReference, CancellationToken.None);
 
                 return batchId;
             }
@@ -91,7 +90,7 @@ namespace Consilient.Background.Workers.ProviderAssignments
                     {
                         ["ErrorMessage"] = ex.Message,
                         ["ErrorType"] = ex.GetType().Name,
-                        ["FileReference"] = fileReference
+                        ["FileReference"] = input.FileReference
                     }
                 });
 

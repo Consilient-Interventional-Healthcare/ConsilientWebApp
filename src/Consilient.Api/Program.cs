@@ -172,7 +172,7 @@ namespace Consilient.Api
                     useDistributedCache: builder.Environment.IsProduction());
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterHospitalizationServices();
-                builder.Services.AddProviderAssignmentsServices();
+                builder.Services.AddProviderAssignmentsServices(builder.Configuration);
                 builder.Services.AddFileStorage(builder.Configuration);
                 builder.Services.RegisterLogging(logger);
                 builder.Services.ConfigureHangfire(hangfireConnectionString);

@@ -10,7 +10,7 @@ namespace Consilient.Data.Entities
 
         public string? TitleExtension { get; set; }
 
-        public EmployeeRole Role { get; set; }
+        public ProviderType Role { get; set; }
 
         public string Email { get; set; } = string.Empty;
     }

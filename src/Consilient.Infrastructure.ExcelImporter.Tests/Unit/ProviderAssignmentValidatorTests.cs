@@ -1,25 +1,56 @@
+using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.ProviderAssignments.Contracts;
-using Consilient.ProviderAssignments.Services;
-using Consilient.ProviderAssignments.Services.Importer;
+using Consilient.ProviderAssignments.Services.Import.Validation;
+using Consilient.ProviderAssignments.Services.Import.Validation.Validators;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 {
     [TestClass]
     public class ProviderAssignmentValidatorTests
     {
-        private ProviderAssignmentValidator _validator = null!;
+        private IEnumerable<IExcelRowValidator> _validators = null!;
 
         [TestInitialize]
         public void Setup()
         {
-            _validator = new ProviderAssignmentValidator();
+            // Create a test service provider with all validators registered
+            var services = new ServiceCollection();
+            services.AddScoped<IExcelRowValidator, NameRequiredValidator>();
+            services.AddScoped<IExcelRowValidator, AgeRangeValidator>();
+            services.AddScoped<IExcelRowValidator, HospitalNumberValidator>();
+            services.AddScoped<IExcelRowValidator, DateFieldsValidator>();
+            services.AddScoped<IExcelRowValidator, MrnValidator>();
+            var serviceProvider = services.BuildServiceProvider();
+
+            var validatorProvider = new ValidatorProvider(serviceProvider);
+            _validators = validatorProvider.GetValidators();
+        }
+
+        /// <summary>
+        /// Helper method to run all validators and aggregate results.
+        /// </summary>
+        private ValidationResult ValidateAll(ExcelProviderAssignmentRow row, int rowNumber)
+        {
+            var allErrors = new List<ValidationError>();
+            foreach (var validator in _validators)
+            {
+                var result = validator.Validate(row, rowNumber);
+                if (!result.IsValid)
+                {
+                    allErrors.AddRange(result.Errors);
+                }
+            }
+            return allErrors.Count > 0
+                ? ValidationResult.Failed([.. allErrors])
+                : ValidationResult.Success();
         }
 
         [TestMethod]
         public void Validate_WithValidData_ReturnsSuccess()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "Wymer, Mias",
                 HospitalNumber = "2504322",
@@ -30,7 +61,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsTrue(result.IsValid);
@@ -41,7 +72,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithMissingName_ReturnsError()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "",
                 HospitalNumber = "2504322",
@@ -51,11 +82,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalProviderAssignment.Name)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExcelProviderAssignmentRow.Name)));
             Assert.IsTrue(result.Errors.Any(e => e.Message.Contains("required")));
         }
 
@@ -63,7 +94,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithInvalidAge_ReturnsError()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -73,11 +104,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalProviderAssignment.Age)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExcelProviderAssignmentRow.Age)));
             Assert.IsTrue(result.Errors.Any(e => e.Message.Contains("0 and 150")));
         }
 
@@ -85,7 +116,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithNegativeAge_ReturnsError()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -95,18 +126,18 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalProviderAssignment.Age)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExcelProviderAssignmentRow.Age)));
         }
 
         [TestMethod]
         public void Validate_WithMissingHospitalNumber_ReturnsError()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "Test Patient",
                 HospitalNumber = "",
@@ -116,18 +147,18 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalProviderAssignment.HospitalNumber)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExcelProviderAssignmentRow.HospitalNumber)));
         }
 
         [TestMethod]
         public void Validate_WithFutureAdmitDate_ReturnsError()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -137,11 +168,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalProviderAssignment.Admit)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExcelProviderAssignmentRow.Admit)));
             Assert.IsTrue(result.Errors.Any(e => e.Message.Contains("future")));
         }
 
@@ -149,7 +180,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithFutureDob_ReturnsError()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -160,11 +191,11 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalProviderAssignment.Dob)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExcelProviderAssignmentRow.Dob)));
             Assert.IsTrue(result.Errors.Any(e => e.Message.Contains("future")));
         }
 
@@ -172,7 +203,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithMissingMrn_ReturnsError()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -182,18 +213,18 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsFalse(result.IsValid);
-            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExternalProviderAssignment.Mrn)));
+            Assert.IsTrue(result.Errors.Any(e => e.PropertyName == nameof(ExcelProviderAssignmentRow.Mrn)));
         }
 
         [TestMethod]
         public void Validate_WithMultipleErrors_ReturnsAllErrors()
         {
-            // Arrange
-            var patientData = new ExternalProviderAssignment
+            // Arrange - raw Excel row with multiple validation errors
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "",
                 HospitalNumber = "",
@@ -203,9 +234,9 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
-            // Assert
+            // Assert - expect 5 errors (Name, HospitalNumber, MRN, Age, Admit date)
             Assert.IsFalse(result.IsValid);
             Assert.IsGreaterThanOrEqualTo(5, result.Errors.Count, $"Expected at least 5 errors, got {result.Errors.Count}");
         }
@@ -214,7 +245,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Validate_WithValidNullDob_ReturnsSuccess()
         {
             // Arrange
-            var patientData = new ExternalProviderAssignment
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "Test Patient",
                 HospitalNumber = "2504322",
@@ -225,7 +256,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             };
 
             // Act
-            var result = _validator.Validate(patientData, 1);
+            var result = ValidateAll(patientData, 1);
 
             // Assert
             Assert.IsTrue(result.IsValid);

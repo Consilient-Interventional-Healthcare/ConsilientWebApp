@@ -1,4 +1,4 @@
-using Consilient.Infrastructure.ExcelImporter.Models;
+using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Readers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 

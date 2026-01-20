@@ -25,14 +25,13 @@ namespace Consilient.Infrastructure.Storage
             Directory.CreateDirectory(_basePath);
         }
 
-        public async Task<string> SaveAsync(string fileName, Stream content, CancellationToken cancellationToken = default)
+        public async Task<string> SaveAsync(string fileReference, Stream content, CancellationToken cancellationToken = default)
         {
-            var fileReference = PathHelper.GenerateFileReference(fileName);
             var fullPath = GetFullPath(fileReference);
 
-            _logger.LogDebug("Saving file: {FileName}, Reference: {FileReference}, Path: {FullPath}, " +
+            _logger.LogDebug("Saving file: Reference: {FileReference}, Path: {FullPath}, " +
                 "StreamPosition: {Position}, StreamLength: {Length}, CanSeek: {CanSeek}",
-                fileName, fileReference, fullPath,
+                fileReference, fullPath,
                 content.CanSeek ? content.Position : -1,
                 content.CanSeek ? content.Length : -1,
                 content.CanSeek);

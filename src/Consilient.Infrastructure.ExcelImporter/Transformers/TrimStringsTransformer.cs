@@ -1,4 +1,4 @@
-﻿using Consilient.Infrastructure.ExcelImporter.Core;
+﻿using Consilient.Infrastructure.ExcelImporter.Contracts;
 using System.Reflection;
 
 namespace Consilient.Infrastructure.ExcelImporter.Transformers

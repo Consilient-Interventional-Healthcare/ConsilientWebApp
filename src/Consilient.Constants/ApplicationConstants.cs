@@ -27,7 +27,7 @@
         public static class Roles
         {
             public static string Administrator { get; private set; } = "Administrator";
-            public static string NursePracticioner { get; private set; } = "Nurse Practitioner";
+            public static string NursePractitioner { get; private set; } = "Nurse Practitioner";
             public static string Physician { get; private set; } = "Physician";
             public static string Scribe { get; private set; } = "Scribe";
         }

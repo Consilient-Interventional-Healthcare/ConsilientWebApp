@@ -1,5 +1,4 @@
-﻿using Consilient.Infrastructure.ExcelImporter.Core;
-using Consilient.Infrastructure.ExcelImporter.Models;
+﻿using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Reflection;
@@ -9,7 +8,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Mappers
 
     public class ReflectionRowMapper<TRow> : IRowMapper<TRow> where TRow : class, new()
     {
-        private readonly Dictionary<string, PropertyInfo> _propertyCache = new();
+        private readonly Dictionary<string, PropertyInfo> _propertyCache = [];
         private readonly ILogger<ReflectionRowMapper<TRow>> _logger;
 
         public ReflectionRowMapper(ILogger<ReflectionRowMapper<TRow>> logger)
@@ -93,7 +92,13 @@ namespace Consilient.Infrastructure.ExcelImporter.Mappers
 
             if (underlyingType == typeof(DateOnly))
             {
-                return DateOnly.Parse(value, CultureInfo.InvariantCulture);
+                if (DateOnly.TryParse(value, CultureInfo.InvariantCulture, out var dateOnly))
+                    return dateOnly;
+
+                if (DateTime.TryParse(value, CultureInfo.InvariantCulture, out var dateTime))
+                    return DateOnly.FromDateTime(dateTime);
+
+                throw new FormatException($"Unable to parse '{value}' as DateOnly");
             }
 
             if (underlyingType == typeof(TimeOnly))

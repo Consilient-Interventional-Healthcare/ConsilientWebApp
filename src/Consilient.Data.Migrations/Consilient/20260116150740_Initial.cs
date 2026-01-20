@@ -17,9 +17,6 @@ namespace Consilient.Data.Migrations.Consilient
             migrationBuilder.EnsureSchema(
                 name: "Clinical");
 
-            migrationBuilder.EnsureSchema(
-                name: "staging");
-
             migrationBuilder.CreateTable(
                 name: "Employees",
                 schema: "Compensation",
@@ -118,49 +115,6 @@ namespace Consilient.Data.Migrations.Consilient
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Patients", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ProviderAssignments",
-                schema: "staging",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Age = table.Column<int>(type: "int", nullable: false),
-                    AttendingMD = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    HospitalNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Admit = table.Column<DateTime>(type: "smalldatetime", nullable: false),
-                    Dob = table.Column<DateOnly>(type: "date", nullable: true),
-                    FacilityId = table.Column<int>(type: "int", nullable: false),
-                    Mrn = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    Insurance = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    NursePractitioner = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    IsCleared = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Location = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    ServiceDate = table.Column<DateOnly>(type: "date", nullable: false),
-                    H_P = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    PsychEval = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    ResolvedProviderId = table.Column<int>(type: "int", nullable: true),
-                    ResolvedHospitalizationId = table.Column<int>(type: "int", nullable: true),
-                    ResolvedPatientId = table.Column<int>(type: "int", nullable: true),
-                    ResolvedNursePracticionerId = table.Column<int>(type: "int", nullable: true),
-                    BatchId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Imported = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    ValidationErrors = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ExclusionReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    ShouldImport = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    NeedsNewPatient = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    NeedsNewHospitalization = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    ResolvedVisitId = table.Column<int>(type: "int", nullable: true),
-                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ProviderAssignments", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -667,10 +621,6 @@ namespace Consilient.Data.Migrations.Consilient
             migrationBuilder.DropTable(
                 name: "PatientFacilities",
                 schema: "Clinical");
-
-            migrationBuilder.DropTable(
-                name: "ProviderAssignments",
-                schema: "staging");
 
             migrationBuilder.DropTable(
                 name: "ProviderContracts",

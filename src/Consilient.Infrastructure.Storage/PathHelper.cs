@@ -46,12 +46,16 @@ namespace Consilient.Infrastructure.Storage
         }
 
         /// <summary>
-        /// Generates a unique file reference with a GUID-based directory and sanitized file name.
+        /// Generates a file reference from sanitized path segments.
+        /// Each segment is sanitized and only non-null/non-empty segments are included.
         /// </summary>
-        public static string GenerateFileReference(string fileName)
+        public static string GenerateFileReference(params string[] tokens)
         {
-            var sanitizedFileName = SanitizeFileName(fileName);
-            return $"{Guid.NewGuid()}/{sanitizedFileName}";
+            var sanitizedSegments = tokens
+                .Where(s => !string.IsNullOrEmpty(s))
+                .Select(SanitizeFileName);
+
+            return string.Join("/", sanitizedSegments);
         }
     }
 }

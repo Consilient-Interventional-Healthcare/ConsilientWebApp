@@ -25,10 +25,10 @@ namespace Consilient.Data.Configurations
             entity.Property(e => e.Location).HasMaxLength(255);
             entity.Property(e => e.H_P).HasMaxLength(255);
             entity.Property(e => e.PsychEval).HasMaxLength(255);
-            entity.Property(e => e.ResolvedProviderId);
+            entity.Property(e => e.ResolvedPhysicianId);
             entity.Property(e => e.ResolvedHospitalizationId);
             entity.Property(e => e.ResolvedPatientId);
-            entity.Property(e => e.ResolvedNursePracticionerId);
+            entity.Property(e => e.ResolvedNursePractitionerId);
             entity.Property(e => e.BatchId).IsRequired();
             entity.Property(e => e.Imported).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.ValidationErrorsJson)
@@ -36,11 +36,20 @@ namespace Consilient.Data.Configurations
                 .HasColumnType("nvarchar(max)");
             entity.Property(e => e.ExclusionReason).HasMaxLength(500);
             entity.Property(e => e.ShouldImport).IsRequired().HasDefaultValue(false);
-            entity.Property(e => e.NeedsNewPatient).IsRequired().HasDefaultValue(false);
-            entity.Property(e => e.NeedsNewHospitalization).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.ResolvedVisitId);
-
+            entity.Property(e => e.NormalizedPatientLastName).HasMaxLength(100);
+            entity.Property(e => e.NormalizedPatientFirstName).HasMaxLength(100);
+            entity.Property(e => e.NormalizedPhysicianLastName).HasMaxLength(100);
+            entity.Property(e => e.NormalizedNursePractitionerLastName).HasMaxLength(100);
+            entity.Property(e => e.PatientFacilityWasCreated).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.HospitalizationWasCreated).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.NursePractitionerWasCreated).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.PhysicianWasCreated).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.PatientWasCreated).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.Room).HasMaxLength(20);
+            entity.Property(e => e.Bed).HasMaxLength(5);
             entity.Ignore(e => e.ValidationErrors);
+
         }
     }
 }

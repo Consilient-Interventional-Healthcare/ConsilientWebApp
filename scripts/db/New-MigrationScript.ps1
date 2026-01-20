@@ -74,25 +74,39 @@ foreach ($Ctx in $ContextsToProcess) {
     }
     $Prefix = '{0:D2}' -f $NextNumber
 
-    # Get the latest migration name from migration files (excluding Designer and Snapshot files)
-    $LatestMigration = Get-ChildItem -Path $MigrationsDir -Filter '*.cs' -ErrorAction SilentlyContinue |
+    # Get all migrations sorted by name (excluding Designer and Snapshot files)
+    $AllMigrations = Get-ChildItem -Path $MigrationsDir -Filter '*.cs' -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -match '^\d{14}_.*\.cs$' -and $_.Name -notmatch '\.Designer\.cs$' } |
-        Sort-Object Name -Descending |
-        Select-Object -First 1
+        Sort-Object Name -Descending
 
-    if ($LatestMigration) {
-        # Extract migration name from filename (e.g., "20260115155439_AddDoctorAssignmentsStaging.cs" -> "AddDoctorAssignmentsStaging")
-        $MigrationName = $LatestMigration.BaseName -replace '^\d{14}_', ''
+    if ($AllMigrations.Count -eq 0) {
+        Write-Host "No migrations found for $Ctx" -ForegroundColor Yellow
+        continue
+    }
+
+    $LatestMigration = $AllMigrations | Select-Object -First 1
+    # Extract migration name from filename (e.g., "20260115155439_AddDoctorAssignmentsStaging.cs" -> "AddDoctorAssignmentsStaging")
+    $MigrationName = $LatestMigration.BaseName -replace '^\d{14}_', ''
+    $LatestMigrationFullName = $LatestMigration.BaseName  # e.g., "20260115155439_AddDoctorAssignmentsStaging"
+
+    # Determine the 'from' migration (second-to-last, or '0' if this is the first migration)
+    if ($AllMigrations.Count -gt 1) {
+        $PreviousMigration = $AllMigrations | Select-Object -Skip 1 -First 1
+        $FromMigration = $PreviousMigration.BaseName
     } else {
-        $MigrationName = 'migration'
+        # First migration - use '0' to generate from scratch
+        $FromMigration = '0'
     }
 
     $OutputFile = Join-Path $OutputDir "${Prefix}_${MigrationName}.sql"
 
+    Write-Host "  From: $FromMigration" -ForegroundColor DarkGray
+    Write-Host "  To:   $LatestMigrationFullName" -ForegroundColor DarkGray
+
     # Run from src directory where local tools are configured
     Push-Location $SrcRoot
     try {
-        dotnet ef migrations script --idempotent `
+        dotnet ef migrations script $FromMigration $LatestMigrationFullName --idempotent `
             --context $Ctx `
             --project $MigrationsProject `
             --startup-project $MigrationsProject `

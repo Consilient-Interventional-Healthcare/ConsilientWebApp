@@ -1,4 +1,4 @@
-﻿using Consilient.Infrastructure.ExcelImporter.Core;
+﻿using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Reflection;

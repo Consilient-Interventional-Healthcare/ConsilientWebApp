@@ -1,6 +1,6 @@
 using Consilient.ProviderAssignments.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Mappers;
-using Consilient.Infrastructure.ExcelImporter.Models;
+using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -9,19 +9,19 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
     [TestClass]
     public class ReflectionRowMapperTests
     {
-        private ILogger<ReflectionRowMapper<ExternalProviderAssignment>> _logger = null!;
+        private ILogger<ReflectionRowMapper<ExcelProviderAssignmentRow>> _logger = null!;
 
         [TestInitialize]
         public void Setup()
         {
-            _logger = NullLogger<ReflectionRowMapper<ExternalProviderAssignment>>.Instance;
+            _logger = NullLogger<ReflectionRowMapper<ExcelProviderAssignmentRow>>.Instance;
         }
 
         [TestMethod]
         public void Map_WithValidData_ReturnsSuccess()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExcelProviderAssignmentRow>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["Name↓"] = "Wymer, Mias",
@@ -34,12 +34,12 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
-                .Map("Location", nameof(ExternalProviderAssignment.Location))
-                .Map("Hospital Number", nameof(ExternalProviderAssignment.HospitalNumber))
-                .Map("MRN", nameof(ExternalProviderAssignment.Mrn))
-                .Map("Age", nameof(ExternalProviderAssignment.Age))
-                .Map("Admit", nameof(ExternalProviderAssignment.Admit))
+                .Map("Name↓", nameof(ExcelProviderAssignmentRow.Name))
+                .Map("Location", nameof(ExcelProviderAssignmentRow.Location))
+                .Map("Hospital Number", nameof(ExcelProviderAssignmentRow.HospitalNumber))
+                .Map("MRN", nameof(ExcelProviderAssignmentRow.Mrn))
+                .Map("Age", nameof(ExcelProviderAssignmentRow.Age))
+                .Map("Admit", nameof(ExcelProviderAssignmentRow.Admit))
                 .Build();
 
             // Act
@@ -59,7 +59,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithMissingRequiredColumn_ReturnsFailure()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExcelProviderAssignmentRow>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["Location"] = "101A"
@@ -67,8 +67,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .MapRequired("Name↓", nameof(ExternalProviderAssignment.Name))
-                .Map("Location", nameof(ExternalProviderAssignment.Location))
+                .MapRequired("Name↓", nameof(ExcelProviderAssignmentRow.Name))
+                .Map("Location", nameof(ExcelProviderAssignmentRow.Location))
                 .Build();
 
             // Act
@@ -85,7 +85,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithInvalidTypeConversion_ReturnsFailure()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExcelProviderAssignmentRow>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["Age"] = "not a number"
@@ -93,7 +93,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("Age", nameof(ExternalProviderAssignment.Age))
+                .Map("Age", nameof(ExcelProviderAssignmentRow.Age))
                 .Build();
 
             // Act
@@ -109,7 +109,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithNullableDateTime_HandlesNull()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExcelProviderAssignmentRow>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["DOB"] = "",
@@ -118,8 +118,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("DOB", nameof(ExternalProviderAssignment.Dob))
-                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
+                .Map("DOB", nameof(ExcelProviderAssignmentRow.Dob))
+                .Map("Name↓", nameof(ExcelProviderAssignmentRow.Name))
                 .Build();
 
             // Act
@@ -135,7 +135,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithNullableDateOnly_ParsesValidDate()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExcelProviderAssignmentRow>(_logger);
             var expectedDate = new DateOnly(2007, 10, 13);
             var cells = new Dictionary<string, string>
             {
@@ -145,8 +145,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("DOB", nameof(ExternalProviderAssignment.Dob))
-                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
+                .Map("DOB", nameof(ExcelProviderAssignmentRow.Dob))
+                .Map("Name↓", nameof(ExcelProviderAssignmentRow.Name))
                 .Build();
 
             // Act
@@ -162,18 +162,18 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void Map_WithDateOnly_ParsesCorrectly()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
-            var expectedDate = new DateOnly(2025, 11, 22);
+            var mapper = new ReflectionRowMapper<ExcelProviderAssignmentRow>(_logger);
+            var expectedDate = new DateOnly(2007, 10, 13);
             var cells = new Dictionary<string, string>
             {
-                ["ServiceDate"] = "2025-11-22",
+                ["DOB"] = "2007-10-13",
                 ["Name↓"] = "Test"
             };
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("ServiceDate", nameof(ExternalProviderAssignment.ServiceDate))
-                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
+                .Map("DOB", nameof(ExcelProviderAssignmentRow.Dob))
+                .Map("Name↓", nameof(ExcelProviderAssignmentRow.Name))
                 .Build();
 
             // Act
@@ -182,14 +182,14 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             // Assert
             Assert.IsTrue(result.IsSuccess);
             Assert.IsNotNull(result.Value);
-            Assert.AreEqual(expectedDate, result.Value.ServiceDate);
+            Assert.AreEqual(expectedDate, result.Value.Dob);
         }
 
         [TestMethod]
         public void Map_WithUnmappedColumn_IgnoresIt()
         {
             // Arrange
-            var mapper = new ReflectionRowMapper<ExternalProviderAssignment>(_logger);
+            var mapper = new ReflectionRowMapper<ExcelProviderAssignmentRow>(_logger);
             var cells = new Dictionary<string, string>
             {
                 ["Name↓"] = "Test",
@@ -198,7 +198,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
             var excelRow = new ExcelRow(1, cells);
 
             var columnMapping = ColumnMapping.Builder()
-                .Map("Name↓", nameof(ExternalProviderAssignment.Name))
+                .Map("Name↓", nameof(ExcelProviderAssignmentRow.Name))
                 .Build();
 
             // Act

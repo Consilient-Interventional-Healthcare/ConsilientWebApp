@@ -11,8 +11,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void TrimStringsTransformer_TrimsAllStringProperties()
         {
             // Arrange
-            var transformer = new TrimStringsTransformer<ExternalProviderAssignment>();
-            var patientData = new ExternalProviderAssignment
+            var transformer = new TrimStringsTransformer<ExcelProviderAssignmentRow>();
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "  Wymer, Mias  ",
                 Location = "  101A  ",
@@ -34,8 +34,8 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
         public void TrimStringsTransformer_HandlesEmptyStrings()
         {
             // Arrange
-            var transformer = new TrimStringsTransformer<ExternalProviderAssignment>();
-            var patientData = new ExternalProviderAssignment
+            var transformer = new TrimStringsTransformer<ExcelProviderAssignmentRow>();
+            var patientData = new ExcelProviderAssignmentRow
             {
                 Name = "",
                 Location = "   ",

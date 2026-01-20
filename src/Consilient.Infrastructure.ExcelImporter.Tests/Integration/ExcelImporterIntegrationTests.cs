@@ -2,6 +2,7 @@ using Consilient.ProviderAssignments.Contracts;
 using Consilient.ProviderAssignments.Services;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
 using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
+using Consilient.ProviderAssignments.Services.Import.Sinks;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
 {
@@ -17,7 +18,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             // Arrange
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
 
-            var sink = new InMemorySink<ExternalProviderAssignment>();
+            var sink = new InMemorySink<ProcessedProviderAssignment>();
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
             var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(sink), facilityId, serviceDate);
@@ -34,12 +35,12 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             Assert.IsGreaterThan(0, result.TotalRowsWritten, "Should have written at least one row");
             Assert.IsNotEmpty(sink.Rows, "Sink should contain rows");
 
-            // Verify first patient
+            // Verify first patient - access raw data via .Raw
             var firstPatient = sink.Rows[0];
-            Assert.AreEqual("Wymer, Mias", firstPatient.Name);
-            Assert.AreEqual("101A", firstPatient.Location);
-            Assert.AreEqual("2504322", firstPatient.HospitalNumber);
-            Assert.AreEqual("127116", firstPatient.Mrn);
+            Assert.AreEqual("Wymer, Mias", firstPatient.Raw.Name);
+            Assert.AreEqual("101A", firstPatient.Raw.Location);
+            Assert.AreEqual("2504322", firstPatient.Raw.HospitalNumber);
+            Assert.AreEqual("127116", firstPatient.Raw.Mrn);
         }
 
         [TestMethod]
@@ -85,10 +86,10 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             // Arrange
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
 
-
+            var sink = new InMemorySink<ProcessedProviderAssignment>();
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
-            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(null!), facilityId, serviceDate);
+            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(sink), facilityId, serviceDate);
 
             // Act
             await using var stream = File.OpenRead(filePath);
@@ -109,10 +110,10 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             // Arrange
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
 
-
+            var sink = new InMemorySink<ProcessedProviderAssignment>();
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
-            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(null!), facilityId, serviceDate);
+            var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(sink), facilityId, serviceDate);
 
             // Act
             await using var stream = File.OpenRead(filePath);
@@ -131,7 +132,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Integration
             // Arrange
             var filePath = TestFileHelper.GetTestFilePath(@"Files\DoctorAssignment_SAMPLE.xlsm", TestContext);
 
-            var sink = new InMemorySink<ExternalProviderAssignment>();
+            var sink = new InMemorySink<ProcessedProviderAssignment>();
             var facilityId = 123; // Example facility ID
             var serviceDate = DateOnly.FromDateTime(DateTime.Now);
             var importer = ImporterFactoryHelper.CreateImporter(new TrivialSinkProvider(sink), facilityId, serviceDate);

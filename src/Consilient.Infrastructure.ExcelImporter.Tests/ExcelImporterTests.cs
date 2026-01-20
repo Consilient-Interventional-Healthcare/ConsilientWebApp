@@ -1,9 +1,10 @@
 ﻿using Consilient.ProviderAssignments.Contracts;
 using Consilient.ProviderAssignments.Services;
-using Consilient.Infrastructure.ExcelImporter.Models;
+using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Readers;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
 using Consilient.Infrastructure.ExcelImporter.Tests.Helpers;
+using Consilient.ProviderAssignments.Services.Import.Sinks;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests
 {
@@ -86,7 +87,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests
             // Arrange
             var outputFilePath = TestFileHelper.CreateOutputFilePathFromInput("test.csv", TestContext, "csv-writer-test");
 
-            var patients = new List<ExternalProviderAssignment>
+            var patients = new List<ExcelProviderAssignmentRow>
             {
                 new() {
                     HospitalNumber = "2504322",

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 
@@ -20,18 +21,38 @@ namespace Consilient.Data.Entities
         public DateOnly ServiceDate { get; set; }
         public string H_P { get; set; } = string.Empty;
         public string PsychEval { get; set; } = string.Empty;
-        public int? ResolvedProviderId { get; set; }
+
+
+        public Guid BatchId { get; set; }
+
+
+        /* Parsed */
+        public string? NormalizedPatientLastName { get; set; }
+        public string? NormalizedPatientFirstName { get; set; }
+        public string? NormalizedPhysicianLastName { get; set; }
+        public string? NormalizedNursePractitionerLastName { get; set; }
+        public string? Room { get; set; }
+        public string? Bed { get; set; } 
+
+        /* Resolved */
+        public int? ResolvedPhysicianId { get; set; }
         public int? ResolvedHospitalizationId { get; set; }
         public int? ResolvedPatientId { get; set; }
-        public int? ResolvedNursePracticionerId { get; set; }
-        public Guid BatchId { get; set; }
+        public int? ResolvedNursePractitionerId { get; set; }
+        public int? ResolvedVisitId { get; set; }
+
+
+        /* Import Statuses */ 
+        public bool ShouldImport { get; set; }
         public bool Imported { get; set; }
         public string? ValidationErrorsJson { get; set; }
         public string? ExclusionReason { get; set; }
-        public bool ShouldImport { get; set; }
-        public bool NeedsNewPatient { get; set; }
-        public bool NeedsNewHospitalization { get; set; }
-        public int? ResolvedVisitId { get; set; }
+        public bool PatientWasCreated { get; set; }
+        public bool PatientFacilityWasCreated { get; set; }
+        public bool PhysicianWasCreated { get; set; }
+        public bool NursePractitionerWasCreated { get; set; }
+        public bool HospitalizationWasCreated { get; set; }
+
 
         [NotMapped]
         public List<string> ValidationErrors

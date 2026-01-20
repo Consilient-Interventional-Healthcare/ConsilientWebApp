@@ -2,9 +2,10 @@ using Consilient.Api.Configuration;
 using Consilient.Api.Helpers;
 using Consilient.Background.Workers.ProviderAssignments;
 using Consilient.Common.Services;
-using Consilient.ProviderAssignments.Contracts;
 using Consilient.Infrastructure.Storage.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Consilient.Infrastructure.Storage;
+using Consilient.ProviderAssignments.Contracts.Import;
 
 namespace Consilient.Api.Controllers
 {
@@ -40,12 +41,14 @@ namespace Consilient.Api.Controllers
                 return BadRequest(validationResult.ErrorMessage);
             }
 
+            var batchId = Guid.NewGuid();
             // Save the file and get a reference
+            var filename = PathHelper.GenerateFileReference(batchId.ToString(), file.FileName);
             await using var stream = file.OpenReadStream();
-            var fileReference = await _fileStorage.SaveAsync(file.FileName, stream, cancellationToken).ConfigureAwait(false);
+            var fileReference = await _fileStorage.SaveAsync(filename, stream, cancellationToken).ConfigureAwait(false);
 
             // Queue the import job (which will automatically chain the resolution job)
-            var result = _importWorkerEnqueuer.Import(fileReference, facilityId, serviceDate, _currentUserService.UserId);
+            var result = _importWorkerEnqueuer.Import(batchId, fileReference, facilityId, serviceDate, _currentUserService.UserId);
 
             return Accepted(result);
         }

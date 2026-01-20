@@ -8,8 +8,17 @@
         "consilient.api": "StartDebugging",
         "consilient.webapp2": "StartDebugging",
         "loki": "StartWithoutDebugging",
-        "promtail": "StartWithoutDebugging",
         "grafana": "StartWithoutDebugging"
+      },
+      "httpPort": 0,
+      "sslPort": 8091,
+      "useSSL": true
+    },
+    "Docker Compose - DB": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "db": "StartWithoutDebugging"
       },
       "httpPort": 0,
       "sslPort": 8091,
@@ -23,7 +32,6 @@
         "consilient.api": "StartDebugging",
         "consilient.webapp2": "StartDebugging",
         "loki": "StartWithoutDebugging",
-        "promtail": "StartWithoutDebugging",
         "grafana": "StartWithoutDebugging"
       },
       "httpPort": 0,
@@ -35,7 +43,6 @@
       "commandVersion": "1.0",
       "serviceActions": {
         "loki": "StartWithoutDebugging",
-        "promtail": "StartWithoutDebugging",
         "grafana": "StartWithoutDebugging"
       }
     }

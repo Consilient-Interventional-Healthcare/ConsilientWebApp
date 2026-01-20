@@ -561,6 +561,10 @@ namespace Consilient.Data.Migrations.Consilient
                     b.Property<Guid>("BatchId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Bed")
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -585,6 +589,11 @@ namespace Consilient.Data.Migrations.Consilient
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("HospitalizationWasCreated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("Imported")
                         .ValueGeneratedOnAdd()
@@ -616,12 +625,23 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<bool>("NeedsNewHospitalization")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
+                    b.Property<string>("NormalizedNursePractitionerLastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("NeedsNewPatient")
+                    b.Property<string>("NormalizedPatientFirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NormalizedPatientLastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NormalizedPhysicianLastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("NursePractitionerWasCreated")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
@@ -631,25 +651,47 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<bool>("PatientFacilityWasCreated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("PatientWasCreated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("PhysicianWasCreated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("PsychEval")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int?>("ResolvedFacilityId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("ResolvedHospitalizationId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ResolvedNursePracticionerId")
+                    b.Property<int?>("ResolvedNursePractitionerId")
                         .HasColumnType("int");
 
                     b.Property<int?>("ResolvedPatientId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ResolvedProviderId")
+                    b.Property<int?>("ResolvedPhysicianId")
                         .HasColumnType("int");
 
                     b.Property<int?>("ResolvedVisitId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Room")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()

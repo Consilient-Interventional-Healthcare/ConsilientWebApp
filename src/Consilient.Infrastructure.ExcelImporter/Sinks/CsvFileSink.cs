@@ -1,4 +1,4 @@
-using Consilient.Infrastructure.ExcelImporter.Core;
+using Consilient.Infrastructure.ExcelImporter.Contracts;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;

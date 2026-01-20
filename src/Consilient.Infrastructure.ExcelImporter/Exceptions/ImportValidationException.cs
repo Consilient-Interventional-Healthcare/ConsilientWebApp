@@ -1,4 +1,4 @@
-﻿using Consilient.Infrastructure.ExcelImporter.Models;
+﻿using Consilient.Infrastructure.ExcelImporter.Contracts;
 
 namespace Consilient.Infrastructure.ExcelImporter.Exceptions
 {

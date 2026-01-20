@@ -1,5 +1,4 @@
-﻿using Consilient.Infrastructure.ExcelImporter.Core;
-using Consilient.Infrastructure.ExcelImporter.Models;
+﻿using Consilient.Infrastructure.ExcelImporter.Contracts;
 using NPOI.SS.UserModel;
 using System.Globalization;
 using System.Runtime.CompilerServices;

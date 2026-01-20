@@ -434,7 +434,7 @@ namespace Consilient.WebApp.Controllers
             viewModel.PhysiciansSelectList = physicianList;
 
             // NURSE PRACTITIONERS
-            var nurseList = employees.Where(p => p.Role == ApplicationConstants.Roles.NursePracticioner)
+            var nurseList = employees.Where(p => p.Role == ApplicationConstants.Roles.NursePractitioner)
                 .Select(p => new SelectListItem
                 {
                     Value = p.Id.ToString(),
