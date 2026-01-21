@@ -14,7 +14,7 @@ namespace Consilient.Visits.Contracts
 
         Task<bool> DeleteAsync(int id);
 
-        Task<IEnumerable<TVisit>> GetByDateAsync(DateOnly date);
+        Task<IEnumerable<TVisit>> GetByDateAndFacilityIdAsync(DateOnly date, int facilityId);
 
         Task<IEnumerable<TVisit>> GetByProviderAsync(int providerId);
 

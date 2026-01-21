@@ -1,5 +1,14 @@
 {
   "profiles": {
+    "LocalDev": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "https://localhost:8091",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "LocalDev"
+      },
+      "applicationUrl": "https://localhost:8091"
+    },
     "Container (Dockerfile)": {
       "commandName": "Docker",
       "launchUrl": "https://{ServiceHost}:{ServicePort}",

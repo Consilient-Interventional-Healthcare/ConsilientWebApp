@@ -19,7 +19,7 @@ namespace Consilient.ProviderAssignments.Services.Resolution
 
 
         // Resolution stages for progress reporting
-        private static readonly string[] ResolutionStages =
+        private static readonly string[] _resolutionStages =
         [
             "Physician",
             "NursePractitioner",
@@ -61,7 +61,7 @@ namespace Consilient.ProviderAssignments.Services.Resolution
                         await ResolveAll(cache, facilityId, date, recordsList, batchId, progress);
 
                         // Step 4: Bulk update staging table
-                        ReportProgress(progress, "BulkUpdate", recordsList.Count, recordsList.Count, batchId, 6, ResolutionStages.Length);
+                        ReportProgress(progress, "BulkUpdate", recordsList.Count, recordsList.Count, batchId, 6, _resolutionStages.Length);
                         await BulkUpdateAllChanges(recordsList, cancellationToken);
                     }
 
@@ -91,7 +91,7 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             IProgress<ResolutionProgressEventArgs>? progress)
         {
             var totalRecords = records.Count;
-            var totalSteps = ResolutionStages.Length;
+            var totalSteps = _resolutionStages.Length;
 
             ReportProgress(progress, "Physician", 0, totalRecords, batchId, 1, totalSteps);
             await RunResolvers<IPhysicianResolver>(cache, facilityId, date, records);

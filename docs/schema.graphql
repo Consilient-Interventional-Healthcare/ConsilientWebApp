@@ -1,0 +1,207 @@
+schema {
+	query: Query
+}
+
+"""Boolean scalar"""
+scalar Boolean
+"""Char scalar"""
+scalar Char
+"""Date with time scalar"""
+scalar Date
+"""Date value only scalar"""
+scalar DateOnly
+"""DateTimeOffset scalar"""
+scalar DateTimeOffset
+"""Float scalar"""
+scalar Float
+"""ID scalar"""
+scalar ID
+"""Int scalar"""
+scalar Int
+"""String scalar"""
+scalar String
+"""Time value only scalar"""
+scalar TimeOnly
+
+"""Directs the executor to include this field or fragment only when the `if` argument is true."""
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+"""Directs the executor to skip this field or fragment when the `if` argument is true."""
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""Provider type enum"""
+enum ProviderType {
+	NursePractitioner
+	Physician
+}
+
+"""Sort direction enum"""
+enum SortDirectionEnum {
+	ASC
+	DESC
+}
+
+type Query {
+	"""List of patients"""
+	patients(filter: String, sort: [QueryPatientsSortInput!]): [patient!]
+	"""List of visits for a specific date and facility"""
+	visits(dateServiced: DateOnly!, facilityId: Int!, sort: [QueryVisitsSortInput!]): [visit!]
+}
+
+"""facility object"""
+type facility {
+	"""Abbreviation"""
+	abbreviation: String
+	"""Id"""
+	id: Int!
+	"""Name"""
+	name: String
+}
+
+"""hospitalization object"""
+type hospitalization {
+	"""AdmissionDate"""
+	admissionDate: Date!
+	"""CaseId"""
+	caseId: Int!
+	"""DischargeDate"""
+	dischargeDate: Date
+	"""Facility"""
+	facility: facility
+	"""FacilityId"""
+	facilityId: Int!
+	"""HospitalizationStatus"""
+	hospitalizationStatus: hospitalizationStatus
+	"""HospitalizationStatusId"""
+	hospitalizationStatusId: Int!
+	"""Id"""
+	id: Int!
+	"""Patient"""
+	patient: patient
+	"""PatientId"""
+	patientId: Int!
+	"""PsychEvaluation"""
+	psychEvaluation: Boolean!
+}
+
+"""hospitalizationStatus object"""
+type hospitalizationStatus {
+	"""BillingCode"""
+	billingCode: String
+	"""Code"""
+	code: String
+	"""Color"""
+	color: String
+	"""DisplayOrder"""
+	displayOrder: Int!
+	"""Id"""
+	id: Int!
+	"""Name"""
+	name: String
+}
+
+"""insurance object"""
+type insurance {
+	"""Code"""
+	code: String
+	"""Description"""
+	description: String
+	"""Id"""
+	id: Int!
+}
+
+"""patient object"""
+type patient {
+	"""BirthDate"""
+	birthDate: DateOnly
+	"""FirstName"""
+	firstName: String
+	"""Id"""
+	id: Int!
+	"""LastName"""
+	lastName: String
+}
+
+"""provider object"""
+type provider {
+	"""Email"""
+	email: String
+	"""EmployeeId"""
+	employeeId: Int
+	"""FirstName"""
+	firstName: String
+	"""Id"""
+	id: Int!
+	"""LastName"""
+	lastName: String
+	"""TitleExtension"""
+	titleExtension: String
+	"""Type"""
+	type: ProviderType!
+}
+
+"""Sort arguments for patients"""
+input QueryPatientsSortInput {
+	birthDate: SortDirectionEnum
+	createdAtUtc: SortDirectionEnum
+	firstName: SortDirectionEnum
+	gender: SortDirectionEnum
+	id: SortDirectionEnum
+	lastName: SortDirectionEnum
+	updatedAtUtc: SortDirectionEnum
+}
+
+"""Sort arguments for visits"""
+input QueryVisitsSortInput {
+	bed: SortDirectionEnum
+	createdAtUtc: SortDirectionEnum
+	dateServiced: SortDirectionEnum
+	hospitalizationId: SortDirectionEnum
+	id: SortDirectionEnum
+	isScribeServiceOnly: SortDirectionEnum
+	room: SortDirectionEnum
+	serviceTypeId: SortDirectionEnum
+	updatedAtUtc: SortDirectionEnum
+}
+
+"""serviceType object"""
+type serviceType {
+	"""Cptcode"""
+	cptcode: Int
+	"""Description"""
+	description: String
+	"""Id"""
+	id: Int!
+}
+
+"""visit object"""
+type visit {
+	"""Bed"""
+	bed: String
+	"""DateServiced"""
+	dateServiced: DateOnly!
+	"""Hospitalization"""
+	hospitalization: hospitalization
+	"""Id"""
+	id: Int!
+	"""IsScribeServiceOnly"""
+	isScribeServiceOnly: Boolean!
+	"""Patient"""
+	patient: patient
+	"""Room"""
+	room: String
+	"""VisitAttendants"""
+	visitAttendants: [visitAttendant!]
+}
+
+"""visitAttendant object"""
+type visitAttendant {
+	"""Id"""
+	id: Int!
+	"""Provider"""
+	provider: provider
+	"""ProviderId"""
+	providerId: Int!
+	"""VisitId"""
+	visitId: Int!
+}
+

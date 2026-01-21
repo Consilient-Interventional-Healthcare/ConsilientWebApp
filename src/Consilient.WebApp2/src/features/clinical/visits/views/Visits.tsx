@@ -5,8 +5,8 @@ import { assignmentsService } from '../../assignments/services/AssignmentsServic
 import { visitService } from '../services/VisitService';
 import { facilityService } from '../services/FacilityService';
 import { formatDateFromUrl, formatDateToUrl, getToday } from '@/shared/utils/dateUtils';
-import type { Visit } from '../types/visit.types';
 import type { Facilities } from '@/types/api.generated';
+import type { VisitDto } from '../services/IVisitService';
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/shared/components/ui/table";
 import { HospitalizationStatusPill } from "../../daily-log/components/HospitalizationStatusPill";
 
@@ -15,7 +15,7 @@ export default function Visits() {
   const navigate = useNavigate();
   const { success, error } = useToast();
 
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const [visits, setVisits] = useState<VisitDto[]>([]);
   const [facilities, setFacilities] = useState<Facilities.FacilityDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -24,10 +24,17 @@ export default function Visits() {
   const dateISO = formatDateFromUrl(urlDate);
   const today = getToday();
 
-  // Fetch facilities on mount
+  // Fetch facilities on mount and set default if none selected
   useEffect(() => {
-    facilityService.getAll().then(setFacilities).catch(console.error);
-  }, []);
+    facilityService.getAll().then((fetchedFacilities) => {
+      setFacilities(fetchedFacilities);
+      // Auto-select the first facility if none is selected
+      const firstFacility = fetchedFacilities[0];
+      if (!facilityId && firstFacility?.id) {
+        navigate(`/clinical/visits/${urlDate}/${firstFacility.id}`, { replace: true });
+      }
+    }).catch(console.error);
+  }, [facilityId, urlDate, navigate]);
 
   // Fetch visits when date and facilityId change
   useEffect(() => {
@@ -103,7 +110,7 @@ export default function Visits() {
           </select>
           <button
             onClick={handleImportClick}
-            disabled={isUploading}
+            disabled={isUploading || !facilityId}
             className="bg-blue-600 text-white px-5 py-2 rounded font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isUploading ? 'Uploading...' : 'Import Provider Assignment'}
@@ -130,41 +137,31 @@ export default function Visits() {
               <TableRow>
                 <TableHead>Patient</TableHead>
                 <TableHead>Hospitalization Status</TableHead>
-                <TableHead>Room</TableHead>
+                <TableHead>Room / Bed</TableHead>
                 <TableHead>Admission Date</TableHead>
                 <TableHead>Physician</TableHead>
-                <TableHead>Nurse</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {visits.map((visit) => (
-                <TableRow key={visit.visitId}>
+                <TableRow key={visit.id}>
                   <TableCell>
-                    <span className="font-semibold">{visit.patientFirstName} {visit.patientLastName}</span>
-                    <span className="text-xs text-gray-500 ml-2">MRN: {visit.patientMrn}</span>
-                    <span className="text-xs text-gray-500 ml-2">Hosp ID: {visit.hospitalizationId}</span>
+                    <span className="font-semibold">{visit.patient.firstName} {visit.patient.lastName}</span>
+                    <span className="text-xs text-gray-500 ml-2">MRN: {visit.patient.mrn}</span>
+                    <span className="text-xs text-gray-500 ml-2">Hosp ID: {visit.hospitalization.id}</span>
                   </TableCell>
                   <TableCell>
-                    <HospitalizationStatusPill statusId={visit.hospitalizationStatusId} />
+                    <HospitalizationStatusPill statusId={visit.hospitalization.hospitalizationStatusId} />
                   </TableCell>
-                  <TableCell>{visit.room}</TableCell>
-                  <TableCell>{visit.admissionDate}</TableCell>
+                  <TableCell>{visit.room} {visit.bed}</TableCell>
+                  <TableCell>{new Date(visit.hospitalization.admissionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
                   <TableCell>
                     {visit.assignedProfessionals
                       .filter((prof) => prof.role === "Physician")
                       .map((prof) => (
-                        <div key={prof.providerId} className="text-xs">
-                          {prof.providerFirstName} {prof.providerLastName}
-                        </div>
-                      ))}
-                  </TableCell>
-                  <TableCell>
-                    {visit.assignedProfessionals
-                      .filter((prof) => prof.role === "Nurse")
-                      .map((prof) => (
-                        <div key={prof.providerId} className="text-xs">
-                          {prof.providerFirstName} {prof.providerLastName}
+                        <div key={prof.id} className="text-xs">
+                          {prof.lastName}, {prof.firstName}
                         </div>
                       ))}
                   </TableCell>

@@ -31,6 +31,8 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationM
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
+using Serilog.Events;
+using Prometheus;
 using Consilient.Api.Infra.HealthChecks;
 
 namespace Consilient.Api
@@ -222,7 +224,17 @@ namespace Consilient.Api
                 builder.Services.AddSignalR();
                 builder.ConfigureAuthentication(applicationSettings.Authentication.UserService.Jwt);
 
+                var prometheusConfig = builder.Configuration
+                    .GetSection("Prometheus")
+                    .Get<PrometheusConfiguration>() ?? new PrometheusConfiguration();
+
                 var app = builder.Build();
+
+                // Prometheus metrics endpoint (behind feature flag)
+                app.UsePrometheusMetrics(prometheusConfig);
+
+                // Serilog request logging with enrichment (always enabled for endpoint analytics)
+                app.UseSerilogRequestLoggingWithEnrichment();
 
                 // Configure the HTTP request pipeline.
                 if (app.Environment.IsDevelopment())

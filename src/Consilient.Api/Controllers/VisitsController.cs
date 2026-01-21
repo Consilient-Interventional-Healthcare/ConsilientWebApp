@@ -31,12 +31,13 @@ namespace Consilient.Api.Controllers
             return deleted ? NoContent() : NotFound();
         }
 
-        [HttpGet("date/{date}")]
+        [HttpGet("date/{date}/facility/{facilityId}")]
         [ProducesResponseType(typeof(IEnumerable<VisitDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByDate(
-            [ModelBinder(BinderType = typeof(YyyyMmDdDateModelBinder))] DateOnly date)
+            [ModelBinder(BinderType = typeof(YyyyMmDdDateModelBinder))] DateOnly date,
+            int facilityId)
         {
-            var results = await visitService.GetByDateAsync(date).ConfigureAwait(false);
+            var results = await visitService.GetByDateAndFacilityIdAsync(date, facilityId).ConfigureAwait(false);
             return Ok(results);
         }
 

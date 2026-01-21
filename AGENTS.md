@@ -1,0 +1,183 @@
+# Consilient Web Application - AI Assistant Instructions
+
+> **For AI Assistants:** This is the canonical documentation for understanding and working with this codebase. Tool-specific files redirect here.
+
+## Quick Reference
+
+| Resource | Location | Purpose |
+|----------|----------|---------|
+| REST API Spec | [`docs/openapi.json`](docs/openapi.json) | OpenAPI 3.0 specification |
+| GraphQL Schema | [`docs/schema.graphql`](docs/schema.graphql) | GraphQL SDL |
+| API Source | [`src/Consilient.Api/`](src/Consilient.Api/) | Controllers, configuration |
+| Frontend | [`src/Consilient.WebApp2/`](src/Consilient.WebApp2/) | React TypeScript SPA |
+
+---
+
+## API Documentation
+
+### REST API (OpenAPI)
+
+**Location:** `docs/openapi.json` (at repository root)
+
+This file contains the complete OpenAPI 3.0 specification for the Consilient API, including:
+- All REST API endpoints and routes (controllers in `src/Consilient.Api/Controllers/`)
+- HTTP verbs (GET, POST, PUT, DELETE, PATCH)
+- Request/response schemas and data models
+- Query parameters, path parameters, and request bodies
+- JWT authentication requirements
+- Error responses (including ProblemDetails)
+
+**Generation:** Auto-generated during rebuild via Swashbuckle CLI. Script: `src/Scripts/openapi-generation/Generate-OpenApiDoc.ps1`
+
+**Usage:** When discussing API endpoints, parameters, or schemas, always refer to this file for accurate, current definitions.
+
+### GraphQL API
+
+**Location:** `docs/schema.graphql` (at repository root)
+
+This file contains the GraphQL Schema Definition Language (SDL) for the EntityGraphQL API, including:
+- All GraphQL types (visit, patient, provider, hospitalization, etc.)
+- Query definitions with required parameters
+- Enum types (ProviderType, SortDirectionEnum)
+- Input types for sorting and filtering
+
+**Endpoint:** `/graphql` (with GraphiQL UI at `/ui/graphiql` in development)
+
+**Generation:** Auto-generated during rebuild via EntityGraphQL. Script: `src/Scripts/graphql-schema-generation/Generate-GraphQLSchema.ps1`
+
+**Usage:** When discussing GraphQL queries, types, or schema structure, refer to this file for accurate, current definitions.
+
+---
+
+## Project Structure
+
+### Backend (.NET 9)
+- **`src/Consilient.Api/`** - Main ASP.NET Core Web API
+  - Controllers: REST API endpoints
+  - Init: Service registration and configuration
+  - Hubs: SignalR real-time communication
+- **`src/Consilient.BackgroundHost/`** - Hangfire background job processing
+- **`src/Consilient.Data/`** - Entity Framework Core DbContext and migrations
+- **`src/Consilient.Data.GraphQL/`** - GraphQL schema configuration
+- **`src/Consilient.*.Services/`** - Business logic layer (Employee, Patient, Visit, etc.)
+- **`src/Consilient.*.Contracts/`** - DTOs and contract types for API communication
+
+### Frontend
+- **`src/Consilient.WebApp2/`** - React 18 TypeScript SPA (Vite, TanStack Query, Tailwind)
+
+### Infrastructure
+- **Database:** SQL Server with EF Core 9
+- **Background Jobs:** Hangfire with SQL Server storage
+- **Authentication:** JWT bearer tokens via custom User Service
+- **Configuration:** Azure App Configuration with Key Vault integration
+- **Logging:** Serilog with structured logging
+
+---
+
+## Code Generation Scripts
+
+All scripts run automatically after rebuild via MSBuild targets in `src/Consilient.Api/Consilient.Api.csproj`:
+
+| Script | Output | Trigger |
+|--------|--------|---------|
+| `src/Scripts/openapi-generation/Generate-OpenApiDoc.ps1` | `docs/openapi.json` | Rebuild |
+| `src/Scripts/graphql-schema-generation/Generate-GraphQLSchema.ps1` | `docs/schema.graphql` | Rebuild |
+| `src/Scripts/typescript-type-generation/Generate-ApiTypes.ps1` | TypeScript interfaces | Rebuild |
+
+All scripts use assembly reflection (no app startup).
+
+---
+
+## Coding Standards
+
+### C# (.NET 9)
+- **C# Version:** 12.0
+- **Nullable Reference Types:** Enabled (all projects)
+- **Async/Await:** Required for all I/O operations (database, HTTP, file system)
+- **Naming:**
+  - Controllers: `[EntityName]Controller` (e.g., `PatientsController`)
+  - Services: `I[EntityName]Service` interface + `[EntityName]Service` implementation
+  - DTOs: Defined in `*.Contracts` projects
+
+### API Patterns
+- **Controllers:** Use `[ApiController]` attribute, return `ActionResult<T>`
+- **Authentication:** JWT via `[Authorize]` attribute (global policy in production)
+- **Validation:** DataAnnotations on DTOs, validated automatically
+- **Error Handling:** Return `ProblemDetails` for errors (standard ASP.NET Core)
+- **Routing:** Convention: `[Route("api/[controller]")]`
+
+### Database
+- **Migrations:** Use EF Core migrations (`Add-Migration`, `Update-Database`)
+- **Relationships:** Configured via Fluent API in `src/Consilient.Data/Configuration/`
+- **Queries:** Use async methods (`ToListAsync()`, `FirstOrDefaultAsync()`, etc.)
+- **Interceptors:** Custom save changes interceptor tracks hospitalization status changes
+
+### Swagger/OpenAPI Configuration
+- **Custom Schema IDs:** Readable names for DTOs in `*.Contracts` namespaces
+- **Non-nullable Required:** Properties marked as required via `RequireNonNullablePropertiesSchemaFilter`
+- **Generics:** Expanded in schema names (e.g., `Result_User`)
+
+---
+
+## Common Workflows
+
+### Adding a New API Endpoint
+1. Create/update controller in `src/Consilient.Api/Controllers/`
+2. Add service interface in `*.Services/` project
+3. Implement service logic
+4. Add/update DTO in `*.Contracts/` project
+5. Rebuild project → OpenAPI spec and TypeScript types auto-generate
+6. Commit `docs/openapi.json` with your changes
+
+### Database Changes
+1. Update entity in `src/Consilient.Data/Entities/`
+2. Configure relationship in `src/Consilient.Data/Configuration/` if needed
+3. Run `Add-Migration [MigrationName]` in Package Manager Console
+4. Review migration, then `Update-Database`
+5. Commit migration files
+
+### Background Jobs
+- Define jobs in `src/Consilient.Background.Workers/`
+- Register in `ServiceCollectionExtensions.AddWorkers()`
+- Schedule in `src/Consilient.BackgroundHost/Program.cs`
+- Jobs run in separate process with Hangfire dashboard
+
+---
+
+## Environment Configuration
+
+### Local Development
+- **Connection strings:** User Secrets or `appsettings.local.json`
+- **Azure App Configuration:** Optional (falls back to Key Vault or local settings)
+- **HTTPS:** Self-signed certificate via `dotnet dev-certs https --trust`
+
+### Azure Deployment
+- **App Service:** Linux containers (.NET 9 runtime)
+- **Configuration:** Azure App Configuration with Key Vault references
+- **Labels:** `dev` or `prod` based on environment
+- **Data Protection:** Ephemeral keys (container restarts lose keys)
+
+---
+
+## Security
+
+- **Authentication:** Required in production (global `[Authorize]` policy)
+- **CORS:** Configured from `AllowedOrigins` setting
+- **Rate Limiting:** Configured via `ConfigureRateLimiting()`
+- **Cookie Policy:** Secure, HttpOnly, SameSite=Strict
+- **Redirect Validation:** Validated against allowed origins
+
+---
+
+## Key Dependencies
+
+- **Swashbuckle.AspNetCore:** 9.0.6 (OpenAPI generation)
+- **EntityGraphQL:** 5.7.1 (GraphQL)
+- **NSwag.MSBuild:** 14.6.3 (TypeScript generation)
+- **Hangfire:** 1.8.22 (background jobs)
+- **Serilog.AspNetCore:** 9.0.0 (logging)
+- **Microsoft.EntityFrameworkCore:** 9.0.x (data access)
+
+---
+
+*This file is the canonical source for AI assistant instructions. Tool-specific files (`src/.github/copilot-instructions.md`, etc.) redirect here.*

@@ -2654,7 +2654,7 @@
         }
       }
     },
-    "/visits/date/{date}": {
+    "/visits/date/{date}/facility/{facilityId}": {
       "get": {
         "tags": [
           "Visits"
@@ -2666,6 +2666,15 @@
             "schema": {
               "type": "string",
               "format": "date"
+            }
+          },
+          {
+            "name": "facilityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -3624,13 +3633,26 @@
       },
       "VisitDto": {
         "required": [
-          "id"
+          "id",
+          "patientFirstName",
+          "patientId",
+          "patientLastName"
         ],
         "type": "object",
         "properties": {
           "id": {
             "type": "integer",
             "format": "int32"
+          },
+          "patientId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "patientLastName": {
+            "type": "string"
+          },
+          "patientFirstName": {
+            "type": "string"
           }
         },
         "additionalProperties": false

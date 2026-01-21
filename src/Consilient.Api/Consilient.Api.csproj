@@ -34,6 +34,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.AzureAppConfiguration" Version="8.4.0" />
     <PackageReference Include="Microsoft.Azure.AppConfiguration.AspNetCore" Version="8.4.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -60,9 +61,10 @@
   <!-- Manual: dotnet msbuild /t:GenerateTypeScript -->
   <Target Name="GenerateTypeScript" AfterTargets="Rebuild">
     <PropertyGroup>
-      <TypeScriptGenScript>$(SolutionDir)Scripts\typescript-type-generation\Generate-ApiTypes.ps1</TypeScriptGenScript>
+      <ScriptsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\Scripts'))</ScriptsDir>
+      <TypeScriptGenScript>$(ScriptsDir)\typescript-type-generation\Generate-ApiTypes.ps1</TypeScriptGenScript>
     </PropertyGroup>
-    <Exec WorkingDirectory="$(SolutionDir)Scripts\typescript-type-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(TypeScriptGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="$(ScriptsDir)\typescript-type-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(TypeScriptGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
   </Target>
 
   <!-- OpenAPI Documentation Generation Target -->
@@ -70,9 +72,21 @@
   <!-- Manual: dotnet msbuild /t:GenerateOpenApiDoc -->
   <Target Name="GenerateOpenApiDoc" AfterTargets="Rebuild">
     <PropertyGroup>
-      <OpenApiGenScript>$(SolutionDir)Scripts\openapi-generation\Generate-OpenApiDoc.ps1</OpenApiGenScript>
+      <ScriptsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\Scripts'))</ScriptsDir>
+      <OpenApiGenScript>$(ScriptsDir)\openapi-generation\Generate-OpenApiDoc.ps1</OpenApiGenScript>
     </PropertyGroup>
-    <Exec WorkingDirectory="$(SolutionDir)Scripts\openapi-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(OpenApiGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
+    <Exec WorkingDirectory="$(ScriptsDir)\openapi-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(OpenApiGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
+  </Target>
+
+  <!-- GraphQL Schema Generation Target -->
+  <!-- Automatic: Runs after Rebuild only (local development) -->
+  <!-- Manual: dotnet msbuild /t:GenerateGraphQLSchema -->
+  <Target Name="GenerateGraphQLSchema" AfterTargets="Rebuild">
+    <PropertyGroup>
+      <ScriptsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\Scripts'))</ScriptsDir>
+      <GraphQLGenScript>$(ScriptsDir)\graphql-schema-generation\Generate-GraphQLSchema.ps1</GraphQLGenScript>
+    </PropertyGroup>
+    <Exec WorkingDirectory="$(ScriptsDir)\graphql-schema-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(GraphQLGenScript)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
   </Target>
 
   <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>

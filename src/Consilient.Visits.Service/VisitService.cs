@@ -92,11 +92,11 @@ namespace Consilient.Visits.Services
             }
         }
 
-        public async Task<IEnumerable<VisitDto>> GetByDateAsync(DateOnly date)
+        public async Task<IEnumerable<VisitDto>> GetByDateAndFacilityIdAsync(DateOnly date, int facilityId)
         {
             var Visits = await dataContext.Visits
                 .AsNoTracking()
-                .Where(e => e.DateServiced == date)
+                .Where(e => e.DateServiced == date && e.Hospitalization.FacilityId == facilityId)
                 .ProjectToType<VisitDto>()
                 .ToListAsync();
             return Visits;

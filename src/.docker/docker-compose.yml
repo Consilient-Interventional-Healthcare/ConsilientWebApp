@@ -8,6 +8,7 @@ networks:
 volumes:
   consilient-mssql-data:
   ollama_data:
+  prometheus_data:
 
 services:
 
@@ -22,6 +23,23 @@ services:
     networks:
       - consilient-net
     restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: consilient.monitoring.prometheus.container
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+    networks:
+      - consilient-net
+    restart: unless-stopped
+    profiles:
+      - monitoring
 
   grafana:
     image: grafana/grafana

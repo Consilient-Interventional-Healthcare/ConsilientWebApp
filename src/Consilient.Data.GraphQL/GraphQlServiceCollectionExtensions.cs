@@ -18,6 +18,13 @@ namespace Consilient.Data.GraphQL
                 options.AutoCreateInterfaceTypes = false;
                 options.AutoCreateNewComplexTypes = false;
                 options.AutoCreateNewComplexTypes = false;
+                options.PreBuildSchemaFromContext = schema =>
+                {
+                    if (!schema.HasType(typeof(DateOnly)))
+                    {
+                        schema.AddScalarType<DateOnly>("DateOnly", "Date value only scalar");
+                    }
+                };
                 options.ConfigureSchema = schema =>
                 {
                     GraphQlSchemaConfigurator.ConfigureSchema(schema);

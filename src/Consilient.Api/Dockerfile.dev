@@ -1,0 +1,17 @@
+# Development Dockerfile with hot reload support
+# Uses dotnet watch for automatic recompilation on file changes
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0
+
+WORKDIR /src
+
+# Expose development ports
+EXPOSE 8090
+EXPOSE 8091
+
+# Enable polling file watcher for Docker volume mounts (required on Windows/macOS)
+ENV DOTNET_USE_POLLING_FILE_WATCHER=true
+ENV DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=true
+
+# Start with dotnet watch for hot reload
+ENTRYPOINT ["dotnet", "watch", "run", "--project", "Consilient.Api/Consilient.Api.csproj", "--no-launch-profile"]

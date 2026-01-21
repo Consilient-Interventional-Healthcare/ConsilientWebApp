@@ -1,0 +1,54 @@
+# Development overrides for hot reload support
+# This file is automatically merged with docker-compose.yml by Docker Compose
+# To disable hot reload, rename this file or use: docker-compose -f docker-compose.yml up
+
+services:
+  consilient.api:
+    image: ${DOCKER_REGISTRY-}consilientapi-dev
+    build:
+      context: ..
+      dockerfile: Consilient.Api/Dockerfile.dev
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "https://+:8091"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: "/certs/localhost.pem"
+      ASPNETCORE_Kestrel__Certificates__Default__KeyPath: "/certs/localhost-key.pem"
+      AllowedOrigins__0: "https://localhost:8091"
+      AllowedOrigins__1: "https://localhost:8082"
+    volumes:
+      # Certificates
+      - ./certs:/certs:ro
+      # Uploads directory
+      - ../_tmp:/src/_tmp
+      # Source code mounts for hot reload (all 25 projects)
+      - ../Consilient.Api:/src/Consilient.Api
+      - ../Consilient.Background.Workers:/src/Consilient.Background.Workers
+      - ../Consilient.Common:/src/Consilient.Common
+      - ../Consilient.Constants:/src/Consilient.Constants
+      - ../Consilient.Data:/src/Consilient.Data
+      - ../Consilient.Data.GraphQL:/src/Consilient.Data.GraphQL
+      - ../Consilient.Employees.Contracts:/src/Consilient.Employees.Contracts
+      - ../Consilient.Employees.Services:/src/Consilient.Employees.Services
+      - ../Consilient.Hospitalizations.Contracts:/src/Consilient.Hospitalizations.Contracts
+      - ../Consilient.Hospitalizations.Services:/src/Consilient.Hospitalizations.Services
+      - ../Consilient.Infrastructure.ExcelImporter:/src/Consilient.Infrastructure.ExcelImporter
+      - ../Consilient.Infrastructure.Injection:/src/Consilient.Infrastructure.Injection
+      - ../Consilient.Infrastructure.Logging:/src/Consilient.Infrastructure.Logging
+      - ../Consilient.Infrastructure.Storage:/src/Consilient.Infrastructure.Storage
+      - ../Consilient.Insurances.Contracts:/src/Consilient.Insurances.Contracts
+      - ../Consilient.Insurances.Services:/src/Consilient.Insurances.Services
+      - ../Consilient.Patients.Contracts:/src/Consilient.Patients.Contracts
+      - ../Consilient.Patients.Services:/src/Consilient.Patients.Services
+      - ../Consilient.ProviderAssignments.Contracts:/src/Consilient.ProviderAssignments.Contracts
+      - ../Consilient.ProviderAssignments.Services:/src/Consilient.ProviderAssignments.Services
+      - ../Consilient.Shared.Contracts:/src/Consilient.Shared.Contracts
+      - ../Consilient.Shared.Services:/src/Consilient.Shared.Services
+      - ../Consilient.Users.Contracts:/src/Consilient.Users.Contracts
+      - ../Consilient.Users.Services:/src/Consilient.Users.Services
+      - ../Consilient.Visits.Contracts:/src/Consilient.Visits.Contracts
+      - ../Consilient.Visits.Service:/src/Consilient.Visits.Service
+      # NuGet packages cache (speeds up restores)
+      - nuget-packages:/root/.nuget/packages
+
+volumes:
+  nuget-packages:
