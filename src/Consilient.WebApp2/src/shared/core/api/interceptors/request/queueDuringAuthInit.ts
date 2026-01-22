@@ -10,7 +10,7 @@ import { logger } from '@/shared/core/logging/Logger';
  */
 export async function queueDuringAuthInit(config: AxiosRequestConfig): Promise<AxiosRequestConfig> {
   // Skip queuing for auth-related endpoints
-  const authEndpoints = ['/auth/authenticate', '/auth/claims', '/auth/logout', '/auth/link-external'];
+  const authEndpoints = ['/auth/authenticate', '/auth/claims', '/auth/logout', '/auth/link-external', '/auth/me'];
   const isAuthEndpoint = authEndpoints.some(endpoint => config.url?.includes(endpoint));
 
   if (isAuthEndpoint) {

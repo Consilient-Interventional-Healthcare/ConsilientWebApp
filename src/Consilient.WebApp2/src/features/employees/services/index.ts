@@ -15,11 +15,10 @@ export const service = appSettings.features.mockServices.employees
   : employeeService;
 
 // Re-export types for convenience
-export type { 
-  Employee, 
+export type {
   EmployeeId,
   EmployeeWithVisitCount,
   CreateEmployeeDto,
-  UpdateEmployeeDto,
   EmployeeVisitCountParams
 } from '../employee.types';
+export type { Employees } from '@/types/api.generated';

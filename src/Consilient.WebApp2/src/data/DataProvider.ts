@@ -3,7 +3,7 @@ import db from './db.json';
 import type { DbSchema } from '../types/db.types';
 import type { Visits } from '../types/api.generated';
 
-const typedDb: DbSchema = db;
+const typedDb = db as unknown as DbSchema;
 type TableName = keyof DbSchema;
 
 function getTodayDateString(): string {

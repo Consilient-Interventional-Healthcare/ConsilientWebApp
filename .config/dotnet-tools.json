@@ -29,6 +29,13 @@
         "dotnet-script"
       ],
       "rollForward": false
+    },
+    "nuke.globaltool": {
+      "version": "9.0.2",
+      "commands": [
+        "nuke"
+      ],
+      "rollForward": false
     }
   }
 }

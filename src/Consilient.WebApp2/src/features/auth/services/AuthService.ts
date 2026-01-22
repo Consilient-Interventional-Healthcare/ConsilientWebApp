@@ -51,22 +51,20 @@ export class AuthService implements IAuthService {
       return {
         succeeded: false,
         errors: response.data?.errors ?? ['Login failed'],
-        userClaims: null
       };
     }
-    // Validate that userClaims exists and is a non-empty array
-    const claims = response.data.userClaims;
-    if (!claims || !Array.isArray(claims) || claims.length === 0) {
+    // Validate that user exists
+    const user = response.data.user;
+    if (!user) {
       return {
         succeeded: false,
-        errors: ['Invalid response: missing user claims'],
-        userClaims: null
+        errors: ['Invalid response: missing user data'],
       };
     }
     return {
       succeeded: true,
       errors: [],
-      userClaims: claims,
+      user,
     };
   }
 
@@ -76,9 +74,9 @@ async logout(): Promise<void> {
     });
   }
 
-  async getCurrentUserClaims(): Promise<Auth.ClaimDto[] | null> {
+  async getCurrentUser(): Promise<Auth.CurrentUserDto | null> {
     try {
-      const response = await apiClient.get<Auth.ClaimDto[]>('/auth/claims', {
+      const response = await apiClient.get<Auth.CurrentUserDto>('/auth/me', {
         withCredentials: true
       });
       if (response.status === 200 && response.data) {
@@ -86,7 +84,7 @@ async logout(): Promise<void> {
       }
       return null;
     } catch (error) {
-      logger.error("Failed to fetch user claims", error as Error, { component: "AuthService" });
+      logger.error("Failed to fetch current user", error as Error, { component: "AuthService" });
       return null;
     }
   }

@@ -79,38 +79,6 @@
       "iconName": "fa-hospital-user"
     }
   ],
-  "users": [
-    {
-      "id": 100,
-      "email": "administrator@local",
-      "firstName": "Administrator",
-      "lastName": "Local",
-      "role": "administrator",
-      "emailConfirmed": true,
-      "password": "Hernan",
-      "externalProviders" : []
-    },
-    {
-      "id": 101,
-      "email": "nurse@local",
-      "firstName": "Nurse",
-      "lastName": "Local",
-      "role": "nurse",
-      "emailConfirmed": true,
-      "password": "Hernan",
-      "externalProviders" : []
-    },
-    {
-      "id": 102,
-      "email": "provider@local",
-      "firstName": "Provider",
-      "lastName": "Local",
-      "role": "provider",
-      "emailConfirmed": true,
-      "password": "Hernan",
-      "externalProviders" : []
-    }
-  ],
   "patients": [
     {
       "id": 1,

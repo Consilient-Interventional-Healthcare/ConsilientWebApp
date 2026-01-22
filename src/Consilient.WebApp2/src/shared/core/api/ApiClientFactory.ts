@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance, type AxiosError } from 'axios';
+import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import appSettings from '@/config/index';
 import { handleRequestError } from './interceptors/request/handleRequestError';
 import { queueDuringAuthInit } from './interceptors/request/queueDuringAuthInit';
@@ -51,7 +51,7 @@ export class ApiClientFactory {
   private static configureInterceptors(axiosInstance: AxiosInstance): void {
     // Request interceptor - queue requests during auth init and handle errors
     axiosInstance.interceptors.request.use(
-      async (config) => queueDuringAuthInit(config),
+      async (config) => queueDuringAuthInit(config) as Promise<InternalAxiosRequestConfig>,
       (error: AxiosError) => handleRequestError(error)
     );
 

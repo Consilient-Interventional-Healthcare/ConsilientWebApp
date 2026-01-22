@@ -40,8 +40,8 @@ export const DailyLogEntriesPanel: React.FC<DailyLogEntriesPanelProps> = ({
       const newEntry = await dailyLogService.insertLogEntry(
         visit.id,
         content.trim(),
-        user.id,
-        type
+        parseInt(user.id, 10),
+        parseInt(type, 10)
       );
       setLogEntries((prev) => [...prev, newEntry]);
     } catch (error) {

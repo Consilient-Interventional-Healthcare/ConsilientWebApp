@@ -1,12 +1,11 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import { service as employeeService } from '@/features/employees/services';
 import { logger } from '@/shared/core/logging/Logger';
+import type { Employees } from '@/types/api.generated';
 import type {
   EmployeeId,
-  Employee,
   EmployeeWithVisitCount,
-  CreateEmployeeDto,
-  UpdateEmployeeDto
+  CreateEmployeeDto
 } from '@/features/employees/employee.types';
 
 /**
@@ -14,7 +13,7 @@ import type {
  */
 interface UpdateEmployeeVariables {
   id: EmployeeId;
-  data: UpdateEmployeeDto;
+  data: Employees.UpdateEmployeeRequest;
 }
 
 /**
@@ -53,7 +52,7 @@ class EmployeeStore {
   /**
    * Get all employees
    */
-  useEmployees(): UseQueryResult<Employee[], Error> {
+  useEmployees(): UseQueryResult<Employees.EmployeeDto[], Error> {
     return useQuery({
       queryKey: this.keys.lists(),
       queryFn: () => employeeService.getAll(),
@@ -64,7 +63,7 @@ class EmployeeStore {
    * Get employee by ID
    * @param id - Employee ID
    */
-  useEmployee(id: EmployeeId): UseQueryResult<Employee, Error> {
+  useEmployee(id: EmployeeId): UseQueryResult<Employees.EmployeeDto, Error> {
     return useQuery({
       queryKey: this.keys.detail(id),
       queryFn: () => employeeService.getById(id),
@@ -76,7 +75,7 @@ class EmployeeStore {
    * Get employee by email
    * @param email - Employee email
    */
-  useEmployeeByEmail(email: string): UseQueryResult<Employee, Error> {
+  useEmployeeByEmail(email: string): UseQueryResult<Employees.EmployeeDto, Error> {
     return useQuery({
       queryKey: this.keys.byEmail(email),
       queryFn: () => employeeService.getByEmail(email),
@@ -99,7 +98,7 @@ class EmployeeStore {
   /**
    * Create employee mutation
    */
-  useCreateEmployee(): UseMutationResult<Employee, Error, CreateEmployeeDto> {
+  useCreateEmployee(): UseMutationResult<Employees.EmployeeDto, Error, CreateEmployeeDto> {
     const queryClient = useQueryClient();
 
     return useMutation({
@@ -116,7 +115,7 @@ class EmployeeStore {
   /**
    * Update employee mutation
    */
-  useUpdateEmployee(): UseMutationResult<Employee, Error, UpdateEmployeeVariables> {
+  useUpdateEmployee(): UseMutationResult<Employees.EmployeeDto, Error, UpdateEmployeeVariables> {
     const queryClient = useQueryClient();
 
     return useMutation({

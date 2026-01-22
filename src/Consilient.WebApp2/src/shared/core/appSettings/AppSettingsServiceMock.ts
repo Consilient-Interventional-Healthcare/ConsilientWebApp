@@ -6,9 +6,9 @@ export class AppSettingsServiceMock implements IAppSettingsService {
 
   public getAppSettings(): Promise<AppSettings> {
     this.appSettings ??= {
-      ExternalLoginEnabled: appSettings.features.enableExternalLoginMock ?? false,
+      externalLoginEnabled: appSettings.features.enableExternalLoginMock ?? false,
     }
-    return Promise.resolve(this.appSettings)
+    return Promise.resolve(this.appSettings!)
   }
 
   public setAppSettings(settings: AppSettings): void {

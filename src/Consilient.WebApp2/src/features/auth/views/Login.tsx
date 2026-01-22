@@ -4,10 +4,10 @@ import { Button } from "@/shared/components/ui/button";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { logger } from "@/shared/core/logging/Logger";
 import { ROUTES } from "@/constants";
-import { getAuthService } from "@/features/auth/services/AuthServiceFactory";
+import { AuthService } from "@/features/auth/services/AuthService";
 import { AppSettingsServiceFactory } from "@/shared/core/appSettings/AppSettingsServiceFactory";
 
-const authService = getAuthService();
+const authService = new AuthService();
 
 export default function Login() {
   const { login, isLoading, isAuthenticated } = useAuth();
@@ -109,11 +109,11 @@ export default function Login() {
         logger.debug('Login component - Navigating after login', { component: 'Login', destination: from });
         void navigate(from, { replace: true });
       } else {
-        setError(result.errors?.join(', ') || "Login failed. Please try again.");
+        setError(result.errors?.join(', ') ?? "Login failed. Please try again.");
       }
     } catch (error) {
       logger.error("Login failed", error as Error, { component: "Login" });
-      setError((error as Error).message || "Login failed. Please try again.");
+      setError((error as Error).message ?? "Login failed. Please try again.");
     } finally {
       logger.debug('Login component - Regular login attempt finished', { component: 'Login' });
     }

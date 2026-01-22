@@ -48,6 +48,33 @@ namespace Consilient.Users.Services.Helpers
         }
 
         /// <summary>
+        /// Creates a CurrentUserDto from claims, extracting common properties and preserving additional claims.
+        /// </summary>
+        /// <param name="claims">Collection of Claim objects.</param>
+        /// <returns>CurrentUserDto with extracted properties and additional claims.</returns>
+        public static CurrentUserDto MapToCurrentUserDto(IEnumerable<Claim> claims)
+        {
+            ArgumentNullException.ThrowIfNull(claims);
+
+            var claimsList = claims.ToList();
+            var knownClaimTypes = new HashSet<string>
+            {
+                ClaimTypes.NameIdentifier,
+                ClaimTypes.Name,
+                ClaimTypes.Email
+            };
+
+            return new CurrentUserDto(
+                Id: claimsList.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
+                UserName: claimsList.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? string.Empty,
+                Email: claimsList.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? string.Empty,
+                AdditionalClaims: claimsList
+                    .Where(c => !knownClaimTypes.Contains(c.Type))
+                    .Select(c => new ClaimDto(c.Type, c.Value))
+            );
+        }
+
+        /// <summary>
         /// Gets the basic claim types and their values for a user.
         /// </summary>
         /// <param name="user">The user to create claims for.</param>

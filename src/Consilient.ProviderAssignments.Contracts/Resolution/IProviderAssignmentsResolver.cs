@@ -30,10 +30,8 @@
         /// </summary>
         /// <param name="batchId">The batch ID to resolve.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <param name="progress">Optional progress reporter for tracking resolution stages.</param>
         Task ResolveAsync(
             Guid batchId,
-            CancellationToken cancellationToken = default,
-            IProgress<ResolutionProgressEventArgs>? progress = null);
+            CancellationToken cancellationToken = default);
     }
 }

@@ -6,7 +6,7 @@
             AuthenticateUserRequest request,
             CancellationToken cancellationToken = default);
 
-        Task<IEnumerable<ClaimDto>> GetClaimsAsync(
+        Task<CurrentUserDto> GetCurrentUserAsync(
             string userName,
             CancellationToken cancellationToken = default);
 

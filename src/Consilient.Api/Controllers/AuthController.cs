@@ -16,7 +16,7 @@ namespace Consilient.Api.Controllers
     public record AuthenticateUserApiResponse(
         bool Succeeded,
         IEnumerable<string>? Errors = null,
-        IEnumerable<ClaimDto>? UserClaims = null);
+        CurrentUserDto? User = null);
 
     /// <summary>
     /// Handles authentication and authorization operations.
@@ -100,11 +100,11 @@ namespace Consilient.Api.Controllers
         }
 
         /// <summary>
-        /// Gets claims for the currently authenticated user.
+        /// Gets the currently authenticated user.
         /// </summary>
-        [HttpGet("claims")]
+        [HttpGet("me")]
         [Authorize]
-        [ProducesResponseType(typeof(IEnumerable<ClaimDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(CurrentUserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetCurrentUser(
             CancellationToken cancellationToken)
@@ -114,7 +114,7 @@ namespace Consilient.Api.Controllers
                 return Unauthorized("User identity not found.");
             }
 
-            var result = await _userService.GetClaimsAsync(userName, cancellationToken);
+            var result = await _userService.GetCurrentUserAsync(userName, cancellationToken);
             return Ok(result);
         }
 
@@ -368,7 +368,7 @@ namespace Consilient.Api.Controllers
             if (result.Succeeded)
             {
                 _jwtTokenCookieService.SetAuthenticationCookie(Response, result.Token!);
-                return Ok(new AuthenticateUserApiResponse(true, null, result.Claims));
+                return Ok(new AuthenticateUserApiResponse(true, null, result.User));
             }
             return Unauthorized(new AuthenticateUserApiResponse(false, result.Errors, null));
         }

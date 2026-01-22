@@ -18,8 +18,7 @@ namespace Consilient.ProviderAssignments.Services.Resolution
 
         public async Task ResolveAsync(
             Guid batchId,
-            CancellationToken cancellationToken = default,
-            IProgress<ResolutionProgressEventArgs>? progress = null)
+            CancellationToken cancellationToken = default)
         {
             var strategy = _dbContext.Database.CreateExecutionStrategy();
 
@@ -47,11 +46,11 @@ namespace Consilient.ProviderAssignments.Services.Resolution
                         var cache = new ResolutionCache();
 
                         // Step 3: Run all resolvers in dependency order
-                        await ResolveAll(cache, batch.FacilityId, batch.Date, recordsList, batchId, progress);
+                        await ResolveAll(cache, batch.FacilityId, batch.Date, recordsList);
                     }
 
                     // Step 4: Update batch status and save all changes
-                    ReportProgress(progress, "SaveChanges", recordsList.Count, recordsList.Count, batchId);
+                    //ReportProgress(progress, "SaveChanges", recordsList.Count, recordsList.Count, batchId);
                     batch.Status = ProviderAssignmentBatchStatus.Resolved;
                     await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -75,25 +74,23 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             IResolutionCache cache,
             int facilityId,
             DateOnly date,
-            List<ProviderAssignment> records,
-            Guid batchId,
-            IProgress<ResolutionProgressEventArgs>? progress)
+            List<ProviderAssignment> records)
         {
-            var totalRecords = records.Count;
+            //var totalRecords = records.Count;
 
-            ReportProgress(progress, "Physician", 0, totalRecords, batchId);
+            //ReportProgress(progress, "Physician", 0, totalRecords, batchId);
             await RunResolvers<IPhysicianResolver>(cache, facilityId, date, records);
 
-            ReportProgress(progress, "NursePractitioner", 0, totalRecords, batchId);
+            //ReportProgress(progress, "NursePractitioner", 0, totalRecords, batchId);
             await RunResolvers<INursePractitionerResolver>(cache, facilityId, date, records);
 
-            ReportProgress(progress, "Patient", 0, totalRecords, batchId);
+            //ReportProgress(progress, "Patient", 0, totalRecords, batchId);
             await RunResolvers<IPatientResolver>(cache, facilityId, date, records);
 
-            ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId);
+            //ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId);
             await RunResolvers<IHospitalizationResolver>(cache, facilityId, date, records);
 
-            ReportProgress(progress, "Visit", 0, totalRecords, batchId);
+            //ReportProgress(progress, "Visit", 0, totalRecords, batchId);
             await RunResolvers<IVisitResolver>(cache, facilityId, date, records);
         }
 

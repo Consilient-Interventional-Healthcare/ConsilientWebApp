@@ -103,9 +103,10 @@ export const navItems: NavItem[] = protectedChildren
           // Use type guard for safe checking
           if (isRouteHandle(childHandle) && childHandle.label && child.path) {
             const routePath = route.path ?? '';
-            const childPath = child.path ?? '';
-            const fullPath = route.path 
-              ? `/${routePath}${parentPath}${childPath ? '/' + childPath : ''}` 
+            // Strip route parameters (segments starting with :) from the path for navigation
+            const childPath = child.path.split('/').filter(segment => !segment.startsWith(':')).join('/');
+            const fullPath = route.path
+              ? `/${routePath}${parentPath}${childPath ? '/' + childPath : ''}`
               : '/';
             
             subNav.push({

@@ -1,9 +1,8 @@
-import type { 
+import type { Employees } from '@/types/api.generated';
+import type {
   EmployeeId,
-  Employee, 
-  EmployeeWithVisitCount, 
-  CreateEmployeeDto, 
-  UpdateEmployeeDto 
+  EmployeeWithVisitCount,
+  CreateEmployeeDto
 } from '@/features/employees/employee.types';
 
 /**
@@ -11,48 +10,51 @@ import type {
  * Provides mock data for development and testing
  */
 class MockEmployeeService {
-  
+
   // Mock data storage
-  private mockEmployees: Employee[] = [
+  private mockEmployees: Employees.EmployeeDto[] = [
     {
-      id: 1 as EmployeeId,
+      id: 1,
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
-      createdAt: '2025-01-01T00:00:00Z',
-      updatedAt: '2025-01-01T00:00:00Z',
+      isProvider: true,
+      isAdministrator: false,
+      canApproveVisits: false,
     },
     {
-      id: 2 as EmployeeId,
+      id: 2,
       firstName: 'Jane',
       lastName: 'Smith',
       email: 'jane.smith@example.com',
-      createdAt: '2025-01-02T00:00:00Z',
-      updatedAt: '2025-01-02T00:00:00Z',
+      isProvider: true,
+      isAdministrator: false,
+      canApproveVisits: true,
     },
     {
-      id: 3 as EmployeeId,
+      id: 3,
       firstName: 'Bob',
       lastName: 'Johnson',
       email: 'bob.johnson@example.com',
-      createdAt: '2025-01-03T00:00:00Z',
-      updatedAt: '2025-01-03T00:00:00Z',
+      isProvider: false,
+      isAdministrator: true,
+      canApproveVisits: true,
     },
     {
-      id: 4 as EmployeeId,
+      id: 4,
       firstName: 'Alice',
       lastName: 'Williams',
       email: 'alice.williams@example.com',
-      createdAt: '2025-01-04T00:00:00Z',
-      updatedAt: '2025-01-04T00:00:00Z',
+      isProvider: true,
+      isAdministrator: false,
+      canApproveVisits: false,
     },
   ];
 
   /**
    * Get all employees
-   * @returns {Promise<Employee[]>} List of all employees
    */
-  async getAll(): Promise<Employee[]> {
+  async getAll(): Promise<Employees.EmployeeDto[]> {
     // Simulate API delay
     await this.delay(300);
     return [...this.mockEmployees];
@@ -60,33 +62,29 @@ class MockEmployeeService {
 
   /**
    * Get employee by ID
-   * @param {number} id - Employee ID
-   * @returns {Promise<Employee>} Employee data
    */
-  async getById(id: EmployeeId): Promise<Employee> {
+  async getById(id: EmployeeId): Promise<Employees.EmployeeDto> {
     await this.delay(200);
     const employee = this.mockEmployees.find(emp => emp.id === id);
-    
+
     if (!employee) {
       throw new Error(`Employee with ID ${id} not found`);
     }
-    
+
     return { ...employee };
   }
 
   /**
    * Get employee by email
-   * @param {string} email - Employee email
-   * @returns {Promise<Employee>} Employee data
    */
-  async getByEmail(email: string): Promise<Employee> {
+  async getByEmail(email: string): Promise<Employees.EmployeeDto> {
     await this.delay(200);
     const employee = this.mockEmployees.find(emp => emp.email === email);
-    
+
     if (!employee) {
       throw new Error(`Employee with email ${email} not found`);
     }
-    
+
     return { ...employee };
   }
 
@@ -108,9 +106,9 @@ class MockEmployeeService {
       const visitCount = this.generateVisitCount(seed);
       
       return {
-        employeeId: employee.id,
-        employeeFirstName: employee.firstName,
-        employeeLastName: employee.lastName,
+        employeeId: employee.id as EmployeeId,
+        employeeFirstName: employee.firstName ?? '',
+        employeeLastName: employee.lastName ?? '',
         visitCount,
       };
     });
@@ -118,67 +116,59 @@ class MockEmployeeService {
 
   /**
    * Create a new employee
-   * @param {CreateEmployeeDto} data - Employee data
-   * @returns {Promise<Employee>} Created employee data
    */
-  async create(data: CreateEmployeeDto): Promise<Employee> {
+  async create(data: CreateEmployeeDto): Promise<Employees.EmployeeDto> {
     await this.delay(300);
-    
+
     // Check if email already exists
     if (this.mockEmployees.some(emp => emp.email === data.email)) {
       throw new Error(`Employee with email ${data.email} already exists`);
     }
-    
-    const newEmployee: Employee = {
-      id: (Math.max(...this.mockEmployees.map(e => e.id)) + 1) as EmployeeId,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+
+    const newEmployee: Employees.EmployeeDto = {
+      id: Math.max(...this.mockEmployees.map(e => e.id)) + 1,
+      firstName: data.firstName ?? null,
+      lastName: data.lastName ?? null,
+      email: data.email ?? null,
+      isProvider: data.isProvider,
+      isAdministrator: data.isAdministrator,
+      canApproveVisits: data.canApproveVisits,
     };
-    
+
     this.mockEmployees.push(newEmployee);
     return { ...newEmployee };
   }
 
   /**
    * Update an existing employee
-   * @param {number} id - Employee ID
-   * @param {UpdateEmployeeDto} data - Updated employee data
-   * @returns {Promise<Employee>} Updated employee data
    */
-  async update(id: EmployeeId, data: UpdateEmployeeDto): Promise<Employee> {
+  async update(id: EmployeeId, data: Employees.UpdateEmployeeRequest): Promise<Employees.EmployeeDto> {
     await this.delay(300);
-    
+
     const employeeIndex = this.mockEmployees.findIndex(emp => emp.id === id);
-    
+
     if (employeeIndex === -1) {
       throw new Error(`Employee with ID ${id} not found`);
     }
-    
+
     const currentEmployee = this.mockEmployees[employeeIndex];
-    
+
     if (!currentEmployee) {
       throw new Error(`Employee with ID ${id} not found`);
     }
-    
-    // Check if email is being changed to an existing email
-    if (data.email && data.email !== currentEmployee.email) {
-      if (this.mockEmployees.some(emp => emp.email === data.email)) {
-        throw new Error(`Employee with email ${data.email} already exists`);
-      }
-    }
-    
-    const updatedEmployee: Employee = {
+
+    const updatedEmployee: Employees.EmployeeDto = {
       id: currentEmployee.id,
-      firstName: data.firstName ?? currentEmployee.firstName,
-      lastName: data.lastName ?? currentEmployee.lastName,
-      email: data.email ?? currentEmployee.email,
-      ...(currentEmployee.createdAt && { createdAt: currentEmployee.createdAt }),
-      updatedAt: new Date().toISOString(),
+      firstName: data.firstName,
+      lastName: data.lastName,
+      titleExtension: data.titleExtension ?? null,
+      role: data.role !== undefined ? String(data.role) : (currentEmployee.role ?? null),
+      canApproveVisits: data.canApproveVisits,
+      isProvider: currentEmployee.isProvider,
+      isAdministrator: currentEmployee.isAdministrator,
+      email: currentEmployee.email ?? null,
     };
-    
+
     this.mockEmployees[employeeIndex] = updatedEmployee;
     return { ...updatedEmployee };
   }
@@ -207,36 +197,40 @@ class MockEmployeeService {
   resetMockData(): void {
     this.mockEmployees = [
       {
-        id: 1 as EmployeeId,
+        id: 1,
         firstName: 'John',
         lastName: 'Doe',
         email: 'john.doe@example.com',
-        createdAt: '2025-01-01T00:00:00Z',
-        updatedAt: '2025-01-01T00:00:00Z',
+        isProvider: true,
+        isAdministrator: false,
+        canApproveVisits: false,
       },
       {
-        id: 2 as EmployeeId,
+        id: 2,
         firstName: 'Jane',
         lastName: 'Smith',
         email: 'jane.smith@example.com',
-        createdAt: '2025-01-02T00:00:00Z',
-        updatedAt: '2025-01-02T00:00:00Z',
+        isProvider: true,
+        isAdministrator: false,
+        canApproveVisits: true,
       },
       {
-        id: 3 as EmployeeId,
+        id: 3,
         firstName: 'Bob',
         lastName: 'Johnson',
         email: 'bob.johnson@example.com',
-        createdAt: '2025-01-03T00:00:00Z',
-        updatedAt: '2025-01-03T00:00:00Z',
+        isProvider: false,
+        isAdministrator: true,
+        canApproveVisits: true,
       },
       {
-        id: 4 as EmployeeId,
+        id: 4,
         firstName: 'Alice',
         lastName: 'Williams',
         email: 'alice.williams@example.com',
-        createdAt: '2025-01-04T00:00:00Z',
-        updatedAt: '2025-01-04T00:00:00Z',
+        isProvider: true,
+        isAdministrator: false,
+        canApproveVisits: false,
       },
     ];
   }

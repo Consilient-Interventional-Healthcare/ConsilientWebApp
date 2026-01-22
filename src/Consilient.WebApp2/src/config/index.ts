@@ -14,7 +14,6 @@ export enum LogLevel {
 }
 
 export interface MockServicesConfig {
-  auth: boolean;
   employees: boolean;
   dailyLog: boolean;
   appSettings: boolean;
@@ -56,7 +55,6 @@ declare global {
       APP_ENV?: string;
       APP_ENABLE_DEBUG_MODE?: string;
       APP_USE_MOCK_SERVICES?: string;
-      APP_MOCK_AUTH_SERVICE?: string;
       APP_MOCK_EMPLOYEES_SERVICE?: string;
       APP_MOCK_DAILY_LOG_SERVICE?: string;
       APP_MOCK_APP_SETTINGS_SERVICE?: string;
@@ -99,7 +97,6 @@ function createAppSettings(): AppSettings {
   // If useMockServices is true, all services use mocks unless explicitly set to false
   // If useMockServices is false, individual services can still be mocked via specific env vars
   const mockServices = {
-    auth: useMockServices || getEnv('APP_MOCK_AUTH_SERVICE') === 'true',
     employees: useMockServices || getEnv('APP_MOCK_EMPLOYEES_SERVICE') === 'true',
     dailyLog: useMockServices || getEnv('APP_MOCK_DAILY_LOG_SERVICE') === 'true',
     appSettings: useMockServices || getEnv('APP_MOCK_APP_SETTINGS_SERVICE') === 'true',

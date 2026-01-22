@@ -67,7 +67,7 @@
       "enumNameGeneratorType": null,
       "serviceHost": null,
       "serviceSchemes": null,
-      "output": "../Consilient.WebApp2/src/types/api.generated.ts"
+      "output": "../Consilient.WebApp2/src/types/.rest.temp.ts"
     }
   }
 }

@@ -435,3 +435,8 @@ tmpclaude-*
 # Local app settings (machine-specific, not committed)
 **/appsettings.local.json
 /src/_tmp
+
+# NUKE Build
+.nuke/temp/
+build/.tmp/
+/.nuke

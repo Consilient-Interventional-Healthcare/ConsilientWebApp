@@ -332,7 +332,7 @@ export default function PatientProgressGraph(): React.ReactElement {
                       Psych Eval
                     </text>
                   </g>
-                ) : null;
+                ) : <g />;
               }}
             />
 
@@ -375,7 +375,7 @@ export default function PatientProgressGraph(): React.ReactElement {
                       Discharge
                     </text>
                   </g>
-                ) : null;
+                ) : <g />;
               }}
             />
 

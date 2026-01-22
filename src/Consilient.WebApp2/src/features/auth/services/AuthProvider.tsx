@@ -2,53 +2,32 @@ import { useState, useEffect, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "@/features/auth/contexts/AuthContext";
 import { logger } from "@/shared/core/logging/Logger";
-import { getAuthService } from "@/features/auth/services/AuthServiceFactory";
+import { AuthService } from "@/features/auth/services/AuthService";
 import { authStateManager } from "@/features/auth/services/AuthStateManager";
-import { ROUTES, CLAIM_TYPES } from "@/constants";
+import { ROUTES } from "@/constants";
 import { ApiError } from "@/shared/core/api/api.types";
 import type { SessionExpiredDetail } from "../auth.events";
 import type { Auth } from "@/types/api.generated";
-import type { CurrentUser } from "./../auth.types";
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-const authService = getAuthService();
+const authService = new AuthService();
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const navigate = useNavigate();
 
-  // Helper to map claims array to CurrentUser
-  const mapClaimsToCurrentUser = (claims: Auth.ClaimDto[]): CurrentUser => {
-    const getClaimValue = (type: string) => {
-      const found = Array.isArray(claims)
-        ? claims.find((c) => c.type === type)
-        : undefined;
-      return found?.value ?? "";
-    };
-    return {
-      id: getClaimValue(CLAIM_TYPES.NAME_IDENTIFIER),
-      userName: getClaimValue(CLAIM_TYPES.NAME),
-      email: getClaimValue(CLAIM_TYPES.EMAIL),
-    };
-  };
-
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // New loading state
+  const [user, setUser] = useState<Auth.CurrentUserDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const claims = await authService.getCurrentUserClaims();
-        if (claims) {
-          const mappedUser = mapClaimsToCurrentUser(claims);
-          setUser(mappedUser);
-        } else {
-          setUser(null);
-        }
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
       } catch (error) {
-        logger.error("AuthProvider - Failed to fetch user claims on init", error as Error, { component: "AuthProvider" });
+        logger.error("AuthProvider - Failed to fetch current user on init", error as Error, { component: "AuthProvider" });
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -63,18 +42,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (
     credentials: Auth.AuthenticateUserRequest
   ): Promise<Auth.AuthenticateUserApiResponse> => {
-    setIsLoading(true); // Set loading true on login attempt
+    setIsLoading(true);
     try {
       const result = await authService.login(credentials);
-      if (result.succeeded && result.userClaims) {
-        const mappedUser = mapClaimsToCurrentUser(result.userClaims);
-        setUser(mappedUser);
+      if (result.succeeded && result.user) {
+        setUser(result.user);
         logger.debug(
-          "AuthProvider - setUser called after regular login with claims",
+          "AuthProvider - setUser called after login",
           {
             component: "AuthProvider",
-            user: mappedUser.email,
-            isAuthenticated: !!result.userClaims,
+            user: result.user.email,
+            isAuthenticated: true,
           }
         );
         return result;
@@ -98,10 +76,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return {
         succeeded: false,
         errors,
-        userClaims: null,
       };
     } finally {
-      setIsLoading(false); // Ensure loading is set to false after login attempt
+      setIsLoading(false);
     }
   };
 

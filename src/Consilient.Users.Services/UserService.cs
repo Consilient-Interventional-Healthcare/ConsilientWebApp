@@ -146,7 +146,7 @@ namespace Consilient.Users.Services
             return await CreateSuccessResultAsync(user);
         }
 
-        public async Task<IEnumerable<ClaimDto>> GetClaimsAsync(
+        public async Task<CurrentUserDto> GetCurrentUserAsync(
             string userName,
             CancellationToken cancellationToken = default)
         {
@@ -154,7 +154,7 @@ namespace Consilient.Users.Services
                 ?? throw new InvalidOperationException($"User not found: {userName}");
 
             var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            return ClaimHelper.MapToDto(ClaimHelper.MergeClaims(user, claims));
+            return ClaimHelper.MapToCurrentUserDto(ClaimHelper.MergeClaims(user, claims));
         }
 
         public async Task<LinkExternalLoginResult> LinkExternalLoginAsync(
@@ -291,8 +291,8 @@ namespace Consilient.Users.Services
             var claimsDb = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
             var claims = ClaimHelper.MergeClaims(user, claimsDb);
             var token = _tokenGenerator.GenerateToken(claims);
-            var claimDtos = ClaimHelper.MapToDto(claims);
-            return new AuthenticateUserResult(true, token, claimDtos);
+            var currentUser = ClaimHelper.MapToCurrentUserDto(claims);
+            return new AuthenticateUserResult(true, token, currentUser);
         }
 
         private async Task<(User? user, string[]? errors)> CreateUserAsync(string email)

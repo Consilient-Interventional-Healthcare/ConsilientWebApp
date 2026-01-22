@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router-dom"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ToastProvider, ToastContainer } from '@/shared/components/Toast'
+import { ApiErrorToastListener } from '@/shared/components/ApiErrorToastListener'
 import ErrorBoundary from '@/shared/components/ErrorBoundary'
 import { router } from "@/shared/routes/Router"
 import { queryClient } from '@/shared/core/query/QueryClient'
@@ -23,6 +24,7 @@ createRoot(rootElement).render(
           </Suspense>
         </ErrorBoundary>
         <ToastContainer />
+        <ApiErrorToastListener />
         <ReactQueryDevtools initialIsOpen={false} />
       </ToastProvider>
     </QueryClientProvider>

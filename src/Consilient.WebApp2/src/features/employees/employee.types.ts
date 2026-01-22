@@ -1,15 +1,7 @@
 // Employee type definitions
+import type { Employees } from '@/types/api.generated';
 
 export type EmployeeId = number & { readonly __brand: 'EmployeeId' };
-
-export interface Employee {
-  id: EmployeeId;
-  firstName: string;
-  lastName: string;
-  email: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
 
 export interface EmployeeWithVisitCount {
   employeeId: EmployeeId;
@@ -18,17 +10,8 @@ export interface EmployeeWithVisitCount {
   visitCount?: number;
 }
 
-export interface CreateEmployeeDto {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-export interface UpdateEmployeeDto {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-}
+// Re-export API type for create operations
+export type CreateEmployeeDto = Employees.CreateEmployeeRequest;
 
 export interface EmployeeVisitCountParams {
   date: string; // YYYY-MM-DD format

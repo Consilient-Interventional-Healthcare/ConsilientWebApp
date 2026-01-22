@@ -1,4 +1,4 @@
 ﻿namespace Consilient.Users.Contracts
 {
-    public record AuthenticateUserResult(bool Succeeded, string? Token, IEnumerable<ClaimDto>? Claims = null, IEnumerable<string>? Errors = null);
+    public record AuthenticateUserResult(bool Succeeded, string? Token, CurrentUserDto? User = null, IEnumerable<string>? Errors = null);
 }

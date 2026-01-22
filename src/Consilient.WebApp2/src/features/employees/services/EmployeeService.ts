@@ -1,10 +1,9 @@
 import api from '@/shared/core/api/ApiClient';
-import type { 
+import type { Employees } from '@/types/api.generated';
+import type {
   EmployeeId,
-  Employee, 
-  EmployeeWithVisitCount, 
-  CreateEmployeeDto, 
-  UpdateEmployeeDto 
+  EmployeeWithVisitCount,
+  CreateEmployeeDto
 } from '@/features/employees/employee.types';
 
 /**
@@ -16,28 +15,31 @@ class EmployeeService {
 
   /**
    * Get all employees
-   * @returns {Promise<Employee[]>} List of all employees
+   * @returns {Promise<Employees.EmployeeDto[]>} List of all employees
    */
-  async getAll(): Promise<Employee[]> {
-    return await api.get<Employee[]>(this.baseUrl);
+  async getAll(): Promise<Employees.EmployeeDto[]> {
+    const response = await api.get<Employees.EmployeeDto[]>(this.baseUrl);
+    return response.data;
   }
 
   /**
    * Get employee by ID
    * @param {number} id - Employee ID
-   * @returns {Promise<Employee>} Employee data
+   * @returns {Promise<Employees.EmployeeDto>} Employee data
    */
-  async getById(id: EmployeeId): Promise<Employee> {
-    return await api.get<Employee>(`${this.baseUrl}/${id}`);
+  async getById(id: EmployeeId): Promise<Employees.EmployeeDto> {
+    const response = await api.get<Employees.EmployeeDto>(`${this.baseUrl}/${id}`);
+    return response.data;
   }
 
   /**
    * Get employee by email
    * @param {string} email - Employee email
-   * @returns {Promise<Employee>} Employee data
+   * @returns {Promise<Employees.EmployeeDto>} Employee data
    */
-  async getByEmail(email: string): Promise<Employee> {
-    return await api.get<Employee>(`${this.baseUrl}/email/${email}`);
+  async getByEmail(email: string): Promise<Employees.EmployeeDto> {
+    const response = await api.get<Employees.EmployeeDto>(`${this.baseUrl}/email/${email}`);
+    return response.data;
   }
 
   /**
@@ -46,28 +48,28 @@ class EmployeeService {
    * @returns {Promise<EmployeeWithVisitCount[]>} List of employees with visit counts
    */
   async getEmployeesWithVisitCount(date: string): Promise<EmployeeWithVisitCount[]> {
-    return await api.get<EmployeeWithVisitCount[]>(`${this.baseUrl}/visit-counts`, {
+    const response = await api.get<EmployeeWithVisitCount[]>(`${this.baseUrl}/visit-counts`, {
       params: { date }
     });
+    return response.data;
   }
 
   /**
    * Create a new employee
    * @param {CreateEmployeeDto} data - Employee data
-   * @returns {Promise<Employee>} Created employee data
+   * @returns {Promise<Employees.EmployeeDto>} Created employee data
    */
-  async create(data: CreateEmployeeDto): Promise<Employee> {
-    return await api.post<Employee>(this.baseUrl, data);
+  async create(data: CreateEmployeeDto): Promise<Employees.EmployeeDto> {
+    const response = await api.post<Employees.EmployeeDto>(this.baseUrl, data);
+    return response.data;
   }
 
   /**
    * Update an existing employee
-   * @param {number} id - Employee ID
-   * @param {UpdateEmployeeDto} data - Updated employee data
-   * @returns {Promise<Employee>} Updated employee data
    */
-  async update(id: EmployeeId, data: UpdateEmployeeDto): Promise<Employee> {
-    return await api.put<Employee>(`${this.baseUrl}/${id}`, data);
+  async update(id: EmployeeId, data: Employees.UpdateEmployeeRequest): Promise<Employees.EmployeeDto> {
+    const response = await api.put<Employees.EmployeeDto>(`${this.baseUrl}/${id}`, data);
+    return response.data;
   }
 
   /**
@@ -76,7 +78,8 @@ class EmployeeService {
    * @returns {Promise<boolean>} True if deleted successfully
    */
   async delete(id: EmployeeId): Promise<boolean> {
-    return await api.delete<boolean>(`${this.baseUrl}/${id}`);
+    const response = await api.delete<boolean>(`${this.baseUrl}/${id}`);
+    return response.data;
   }
 }
 

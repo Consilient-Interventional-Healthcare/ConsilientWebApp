@@ -11,15 +11,19 @@ import {
   TableRow,
 } from '@/shared/components/ui/table';
 import {
-  providerAssignmentBatchService,
+  providerAssignmentsService,
   type ProviderAssignmentBatch,
   type ProviderAssignment,
-} from '../services/ProviderAssignmentBatchService';
+} from '../services/ProviderAssignmentsService';
+import { GraphQL } from '@/types/api.generated';
 
 const POLL_INTERVAL = 5000;
 
-const formatName = (person: { firstName: string | null; lastName: string | null } | null): string =>
+const formatName = (person: { firstName?: string | null; lastName?: string | null } | null): string =>
   person ? `${person.lastName ?? ''}, ${person.firstName ?? ''}`.replace(/^, |, $/g, '') : '';
+
+const isNewEntity = (resolvedId: number | null | undefined, lastName: string | null | undefined): boolean =>
+  resolvedId == null && !!lastName;
 
 export default function Assignments() {
   const { id: batchId } = useParams<{ id: string }>();
@@ -32,11 +36,11 @@ export default function Assignments() {
     if (!batchId) return;
 
     try {
-      const data = await providerAssignmentBatchService.getBatch(batchId);
+      const data = await providerAssignmentsService.getBatch(batchId);
       setBatch(data);
 
       // Stop polling if status is not Pending
-      if (data && data.status !== 'Pending' && pollingIntervalRef.current) {
+      if (data && data.status !== GraphQL.ProviderAssignmentBatchStatus.Pending && pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
       }
@@ -48,10 +52,10 @@ export default function Assignments() {
   }, [batchId]);
 
   useEffect(() => {
-    fetchBatch();
+    void fetchBatch();
 
     // Start polling
-    pollingIntervalRef.current = setInterval(fetchBatch, POLL_INTERVAL);
+    pollingIntervalRef.current = setInterval(() => void fetchBatch(), POLL_INTERVAL);
 
     return () => {
       if (pollingIntervalRef.current) {
@@ -82,32 +86,32 @@ export default function Assignments() {
   };
 
   const renderNameWithBadge = (
-    person: { firstName: string | null; lastName: string | null } | null,
-    resolvedId: number | null
+    person: { firstName?: string | null; lastName?: string | null } | null | undefined,
+    resolvedId: number | null | undefined
   ) => (
     <span className="flex items-center gap-2">
-      {formatName(person)}
-      {resolvedId === null && <Badge variant="success">new</Badge>}
+      {formatName(person ?? null)}
+      {isNewEntity(resolvedId, person?.lastName) && <Badge variant="success">new</Badge>}
     </span>
   );
 
   const renderPatientWithBadge = (
-    patient: { firstName: string | null; lastName: string | null; mrn: string | null } | null,
-    resolvedId: number | null
+    patient: { firstName?: string | null; lastName?: string | null; mrn?: string | null } | null | undefined,
+    resolvedId: number | null | undefined
   ) => (
     <span className="flex items-center gap-2">
-      {formatName(patient)}{patient?.mrn ? ` (${patient.mrn})` : ''}
-      {resolvedId === null && <Badge variant="success">new</Badge>}
+      {formatName(patient ?? null)}{patient?.mrn ? ` (${patient.mrn})` : ''}
+      {resolvedId == null && <Badge variant="success">new</Badge>}
     </span>
   );
 
   const renderCaseIdWithBadge = (
-    hospitalization: { caseId: number | null } | null,
-    resolvedId: number | null
+    hospitalization: { caseId?: string | null } | null | undefined,
+    resolvedId: number | null | undefined
   ) => (
     <span className="flex items-center gap-2">
       {hospitalization?.caseId ?? ''}
-      {resolvedId === null && <Badge variant="success">new</Badge>}
+      {resolvedId == null && <Badge variant="success">new</Badge>}
     </span>
   );
 
@@ -140,7 +144,7 @@ export default function Assignments() {
             Date: {batch.date} | Facility: {batch.facilityId} | Batch: {batch.batchId} | Items: {items.length}
           </p>
           <p className="text-gray-500 text-sm mt-1">
-            Status: <Badge variant={batch.status === 'Pending' ? 'warning' : 'default'}>{batch.status}</Badge>
+            Status: <Badge variant={batch.status === GraphQL.ProviderAssignmentBatchStatus.Pending ? 'warning' : 'default'}>{batch.status}</Badge>
           </p>
         </div>
         <Button disabled={!allSelected}>

@@ -42,7 +42,7 @@ class AuthStateManager {
     if (this.isAuthInitialized) {
       return Promise.resolve();
     }
-    return this.authInitPromise;
+    return this.authInitPromise!;
   }
 
   /**

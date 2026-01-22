@@ -1,12 +1,11 @@
 import { useEffect, useState, useRef, type ChangeEvent } from 'react';
 import { useNavigate, useLoaderData } from 'react-router-dom';
 import { useToast } from '@/shared/hooks/useToast';
-import { assignmentsService } from '../../assignments/services/AssignmentsService';
+import { providerAssignmentsService } from '../../assignments/services/ProviderAssignmentsService';
 import { visitService } from '../services/VisitService';
 import { facilityService } from '../services/FacilityService';
 import { formatDateFromUrl, formatDateToUrl, getToday } from '@/shared/utils/dateUtils';
-import type { Facilities } from '@/types/api.generated';
-import type { VisitDto } from '../services/IVisitService';
+import { GraphQL, type Facilities } from '@/types/api.generated';
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/shared/components/ui/table";
 import { HospitalizationStatusPill } from "../../daily-log/components/HospitalizationStatusPill";
 
@@ -15,7 +14,7 @@ export default function Visits() {
   const navigate = useNavigate();
   const { success, error } = useToast();
 
-  const [visits, setVisits] = useState<VisitDto[]>([]);
+  const [visits, setVisits] = useState<GraphQL.Visit[]>([]);
   const [facilities, setFacilities] = useState<Facilities.FacilityDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -31,7 +30,7 @@ export default function Visits() {
       // Auto-select the first facility if none is selected
       const firstFacility = fetchedFacilities[0];
       if (!facilityId && firstFacility?.id) {
-        navigate(`/clinical/visits/${urlDate}/${firstFacility.id}`, { replace: true });
+        void navigate(`/clinical/visits/${urlDate}/${firstFacility.id}`, { replace: true });
       }
     }).catch(console.error);
   }, [facilityId, urlDate, navigate]);
@@ -51,11 +50,11 @@ export default function Visits() {
 
   const handleDateChange = (newDateISO: string) => {
     const newUrlDate = formatDateToUrl(newDateISO);
-    navigate(`/clinical/visits/${newUrlDate}${facilityId ? `/${facilityId}` : ''}`);
+    void navigate(`/clinical/visits/${newUrlDate}${facilityId ? `/${facilityId}` : ''}`);
   };
 
   const handleFacilityChange = (newFacilityId: number | null) => {
-    navigate(`/clinical/visits/${urlDate}${newFacilityId ? `/${newFacilityId}` : ''}`);
+    void navigate(`/clinical/visits/${urlDate}${newFacilityId ? `/${newFacilityId}` : ''}`);
   };
 
   const handleImportClick = () => {
@@ -73,9 +72,9 @@ export default function Visits() {
 
     setIsUploading(true);
     try {
-      const result = await assignmentsService.uploadFile(file, dateISO, facilityId);
+      const result = await providerAssignmentsService.uploadFile(file, dateISO, facilityId);
       success(result.message ?? 'File uploaded successfully');
-      navigate(`/clinical/assignments/${result.batchId}`);
+      void navigate(`/clinical/assignments/${result.batchId}`);
     } catch {
       error('Failed to upload file. Please try again.');
     } finally {
@@ -147,21 +146,21 @@ export default function Visits() {
               {visits.map((visit) => (
                 <TableRow key={visit.id}>
                   <TableCell>
-                    <span className="font-semibold">{visit.patient.firstName} {visit.patient.lastName}</span>
-                    <span className="text-xs text-gray-500 ml-2">MRN: {visit.patient.mrn}</span>
-                    <span className="text-xs text-gray-500 ml-2">Hosp ID: {visit.hospitalization.id}</span>
+                    <span className="font-semibold">{visit.patient?.firstName} {visit.patient?.lastName}</span>
+                    <span className="text-xs text-gray-500 ml-2">MRN: {visit.patient?.mrn}</span>
+                    <span className="text-xs text-gray-500 ml-2">Hosp ID: {visit.hospitalization?.id}</span>
                   </TableCell>
                   <TableCell>
-                    <HospitalizationStatusPill statusId={visit.hospitalization.hospitalizationStatusId} />
+                    <HospitalizationStatusPill statusId={visit.hospitalization?.hospitalizationStatusId ?? 0} />
                   </TableCell>
                   <TableCell>{visit.room} {visit.bed}</TableCell>
-                  <TableCell>{new Date(visit.hospitalization.admissionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</TableCell>
+                  <TableCell>{visit.hospitalization?.admissionDate ? new Date(visit.hospitalization.admissionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</TableCell>
                   <TableCell>
-                    {visit.assignedProfessionals
-                      .filter((prof) => prof.role === "Physician")
-                      .map((prof) => (
-                        <div key={prof.id} className="text-xs">
-                          {prof.lastName}, {prof.firstName}
+                    {(visit.visitAttendants ?? [])
+                      .filter((attendant) => attendant.provider?.type === GraphQL.ProviderType.Physician)
+                      .map((attendant) => (
+                        <div key={attendant.id} className="text-xs">
+                          {attendant.provider?.lastName}, {attendant.provider?.firstName}
                         </div>
                       ))}
                   </TableCell>

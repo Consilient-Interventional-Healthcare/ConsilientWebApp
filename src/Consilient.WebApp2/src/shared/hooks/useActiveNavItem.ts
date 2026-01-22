@@ -23,7 +23,7 @@ export function useActiveNavItem(): UseActiveNavItemReturn {
     });
   }, [location.pathname]);
 
-  const subNavItems = activeNavItem?.subNav?.map(({ href, label, icon }) => ({ href, label, icon })) ?? [];
+  const subNavItems = activeNavItem?.subNav?.map(({ href, label, icon }) => ({ href, label, ...(icon && { icon }) })) ?? [];
 
   return { activeNavItem, subNavItems };
 }

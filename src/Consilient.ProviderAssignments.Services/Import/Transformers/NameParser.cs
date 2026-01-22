@@ -1,3 +1,4 @@
+using Consilient.ProviderAssignments.Services.Import.Validation.Validators;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -16,11 +17,11 @@ namespace Consilient.ProviderAssignments.Services.Import.Transformers
         /// </summary>
         public static (string lastName, string firstName) SplitPatientName(string? fullName)
         {
-            if (string.IsNullOrWhiteSpace(fullName))
+            if (!NameRequiredValidator.IsValidName(fullName))
                 return (string.Empty, string.Empty);
 
             // Try "Last, First" format first
-            var parts = fullName.Split(',', 2);
+            var parts = fullName!.Split(',', 2);
             if (parts.Length == 2)
             {
                 var lastName = parts[0].Trim();
@@ -47,10 +48,10 @@ namespace Consilient.ProviderAssignments.Services.Import.Transformers
         /// </summary>
         public static string NormalizeCase(string? name)
         {
-            if (string.IsNullOrWhiteSpace(name))
+            if (!NameRequiredValidator.IsValidName(name))
                 return string.Empty;
 
-            var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var parts = name!.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < parts.Length; i++)
             {
                 parts[i] = NormalizeNamePart(parts[i]);
@@ -108,6 +109,8 @@ namespace Consilient.ProviderAssignments.Services.Import.Transformers
             return char.ToUpper(part[0]) + part[1..].ToLower();
         }
 
+
+
         #endregion
 
         #region Provider Name Extraction
@@ -123,16 +126,17 @@ namespace Consilient.ProviderAssignments.Services.Import.Transformers
         /// </summary>
         public static string? ExtractProviderLastName(string? providerField)
         {
-            if (string.IsNullOrWhiteSpace(providerField))
+            if (!NameRequiredValidator.IsValidName(providerField))
                 return null;
 
-            var trimmed = providerField.Trim();
+            var trimmed = providerField!.Trim();
 
             // Try prefix patterns first: "Dr. Smith", "NP Jones", "Doctor Smith"
             var prefixMatch = ProviderPrefixRegex().Match(trimmed);
             if (prefixMatch.Success)
             {
-                return NormalizeCase(prefixMatch.Groups[1].Value);
+                var lastName = prefixMatch.Groups[1].Value;
+                return NameRequiredValidator.IsValidName(lastName) ? NormalizeCase(lastName) : null;
             }
 
             // Try suffix patterns: "Smith, MD", "Smith MD", "John Smith MD"
@@ -146,20 +150,21 @@ namespace Consilient.ProviderAssignments.Services.Import.Transformers
                 var lastName = lastSpace >= 0 ? namePart[(lastSpace + 1)..] : namePart;
                 // Remove trailing comma if present
                 lastName = lastName.TrimEnd(',').Trim();
-                return NormalizeCase(lastName);
+                return NameRequiredValidator.IsValidName(lastName) ? NormalizeCase(lastName) : null;
             }
 
             // Fallback: if it's a single word, treat it as the last name
             if (!trimmed.Contains(' '))
             {
-                return NormalizeCase(trimmed);
+                return NameRequiredValidator.IsValidName(trimmed) ? NormalizeCase(trimmed) : null;
             }
 
             // Multiple words without recognized pattern - take the last word
             var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length > 0)
             {
-                return NormalizeCase(parts[^1]);
+                var lastName = parts[^1];
+                return NameRequiredValidator.IsValidName(lastName) ? NormalizeCase(lastName) : null;
             }
 
             return null;

@@ -4,9 +4,10 @@ import { ApiError, type RetryableRequestConfig } from '../../api.types';
 import { shouldRetryRequest } from './shouldRetryRequest';
 import { retryRequest } from './retryRequest';
 import { logFailedRequest } from './logFailedRequest';
-import { getAuthService } from '@/features/auth/services/AuthServiceFactory';
+import { AuthService } from '@/features/auth/services/AuthService';
 import { logger } from '@/shared/core/logging/Logger';
 import { dispatchSessionExpired } from '@/features/auth/auth.events';
+import { dispatchApiError, categorizeApiError } from '../../api.events';
 
 // Promise-based lock to prevent multiple simultaneous logout calls
 // Using a promise instead of a boolean flag prevents race conditions
@@ -40,7 +41,7 @@ export async function handleResponseError(
       logger.warn('Session expired (401), logging out user', { component: 'handleResponseError' });
 
       // Create logout promise to prevent concurrent logout attempts
-      const authService = getAuthService();
+      const authService = new AuthService();
       logoutPromise = (async () => {
         try {
           await authService.logout();
@@ -73,6 +74,18 @@ export async function handleResponseError(
   
   // Log all failed requests
   logFailedRequest(error, originalRequest, status);
-  
+
+  // Dispatch API error event for toast notifications
+  // Excludes 401 (handled by session expiration) and 4xx (business logic errors)
+  const errorType = categorizeApiError(status, error.code);
+  if (errorType !== 'unknown') {
+    dispatchApiError({
+      type: errorType,
+      message,
+      ...(status !== undefined && { status }),
+      ...(error.code !== undefined && { code: error.code }),
+    });
+  }
+
   return Promise.reject(new ApiError(message, status, error.code, error.response?.data));
 }

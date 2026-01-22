@@ -286,7 +286,7 @@
         }
       }
     },
-    "/Auth/claims": {
+    "/Auth/me": {
       "get": {
         "tags": [
           "Auth"
@@ -297,26 +297,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ClaimDto"
-                  }
+                  "$ref": "#/components/schemas/CurrentUserDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ClaimDto"
-                  }
+                  "$ref": "#/components/schemas/CurrentUserDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ClaimDto"
-                  }
+                  "$ref": "#/components/schemas/CurrentUserDto"
                 }
               }
             }
@@ -2811,12 +2802,8 @@
             },
             "nullable": true
           },
-          "userClaims": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ClaimDto"
-            },
-            "nullable": true
+          "user": {
+            "$ref": "#/components/schemas/CurrentUserDto"
           }
         },
         "additionalProperties": false
@@ -3018,6 +3005,33 @@
           },
           "isScribeServiceOnly": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CurrentUserDto": {
+        "required": [
+          "additionalClaims",
+          "email",
+          "id",
+          "userName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "additionalClaims": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaimDto"
+            }
           }
         },
         "additionalProperties": false

@@ -56,38 +56,9 @@
     <ProjectReference Include="..\Consilient.Infrastructure.Storage\Consilient.Infrastructure.Storage.csproj" />
   </ItemGroup>
 
-  <!-- TypeScript Generation Target -->
-  <!-- Automatic: Runs after Rebuild only -->
-  <!-- Manual: dotnet msbuild /t:GenerateTypeScript -->
-  <Target Name="GenerateTypeScript" AfterTargets="Rebuild">
-    <PropertyGroup>
-      <ScriptsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\Scripts'))</ScriptsDir>
-      <TypeScriptGenScript>$(ScriptsDir)\typescript-type-generation\Generate-ApiTypes.ps1</TypeScriptGenScript>
-    </PropertyGroup>
-    <Exec WorkingDirectory="$(ScriptsDir)\typescript-type-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(TypeScriptGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
-  </Target>
-
-  <!-- OpenAPI Documentation Generation Target -->
-  <!-- Automatic: Runs after Rebuild only (local development) -->
-  <!-- Manual: dotnet msbuild /t:GenerateOpenApiDoc -->
-  <Target Name="GenerateOpenApiDoc" AfterTargets="Rebuild">
-    <PropertyGroup>
-      <ScriptsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\Scripts'))</ScriptsDir>
-      <OpenApiGenScript>$(ScriptsDir)\openapi-generation\Generate-OpenApiDoc.ps1</OpenApiGenScript>
-    </PropertyGroup>
-    <Exec WorkingDirectory="$(ScriptsDir)\openapi-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(OpenApiGenScript)&quot; -ProjectFile &quot;$(ProjectPath)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
-  </Target>
-
-  <!-- GraphQL Schema Generation Target -->
-  <!-- Automatic: Runs after Rebuild only (local development) -->
-  <!-- Manual: dotnet msbuild /t:GenerateGraphQLSchema -->
-  <Target Name="GenerateGraphQLSchema" AfterTargets="Rebuild">
-    <PropertyGroup>
-      <ScriptsDir>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\Scripts'))</ScriptsDir>
-      <GraphQLGenScript>$(ScriptsDir)\graphql-schema-generation\Generate-GraphQLSchema.ps1</GraphQLGenScript>
-    </PropertyGroup>
-    <Exec WorkingDirectory="$(ScriptsDir)\graphql-schema-generation" Command="pwsh -NoProfile -ExecutionPolicy Bypass -File &quot;$(GraphQLGenScript)&quot; -SkipBuild -Configuration $(Configuration)" ContinueOnError="true" IgnoreExitCode="true" />
-  </Target>
+  <!-- Code generation is now handled by NUKE Build -->
+  <!-- Run manually: build.cmd GenerateAllTypes -->
+  <!-- Or specific targets: build.cmd GenerateGraphQL / GenerateApi -->
 
   <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 

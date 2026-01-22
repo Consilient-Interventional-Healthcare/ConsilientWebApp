@@ -26,6 +26,7 @@ export function DailyLogEntriesHeader({
   const options = [
     { label: "All", value: "all" },
     ...dataProvider.getTable<VisitEvents.VisitEventTypeDto>('visitEventTypes')
+      .map(t => ({ label: t.name ?? '', value: t.code ?? '' }))
   ];
   
   return (
