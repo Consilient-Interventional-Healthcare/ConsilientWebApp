@@ -1,5 +1,19 @@
 {
   "profiles": {
+    "Docker Compose - Fast": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "consilient.backgroundhost": "StartWithoutDebugging",
+        "consilient.api": "StartWithoutDebugging",
+        "consilient.webapp2": "StartWithoutDebugging",
+        "loki": "StartWithoutDebugging",
+        "grafana": "StartWithoutDebugging"
+      },
+      "httpPort": 0,
+      "sslPort": 8091,
+      "useSSL": true
+    },
     "Docker Compose": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",

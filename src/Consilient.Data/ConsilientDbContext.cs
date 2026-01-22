@@ -34,6 +34,8 @@ namespace Consilient.Data
 
         public virtual DbSet<ProviderAssignment> StagingProviderAssignments { get; set; } = null!;
 
+        public virtual DbSet<ProviderAssignmentBatch> StagingProviderAssignmentBatches { get; set; } = null!;
+
         public virtual DbSet<VisitEvent> VisitEvents { get; set; } = null!;
 
         public virtual DbSet<VisitEventType> VisitEventTypes { get; set; } = null!;

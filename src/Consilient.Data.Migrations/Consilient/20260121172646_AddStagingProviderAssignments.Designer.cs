@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Consilient.Data.Migrations.Consilient
 {
     [DbContext(typeof(ConsilientDbContext))]
-    [Migration("20260119231310_AddStagingProviderAssignments")]
+    [Migration("20260121172646_AddStagingProviderAssignments")]
     partial class AddStagingProviderAssignments
     {
         /// <inheritdoc />
@@ -644,15 +644,15 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("NursePractitionerWasCreated")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.Property<string>("NursePractitioner")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("NursePractitionerWasCreated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("PatientFacilityWasCreated")
                         .ValueGeneratedOnAdd()
@@ -673,9 +673,6 @@ namespace Consilient.Data.Migrations.Consilient
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
-
-                    b.Property<int?>("ResolvedFacilityId")
-                        .HasColumnType("int");
 
                     b.Property<int?>("ResolvedHospitalizationId")
                         .HasColumnType("int");
@@ -722,7 +719,64 @@ namespace Consilient.Data.Migrations.Consilient
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("ResolvedHospitalizationId");
+
+                    b.HasIndex("ResolvedNursePractitionerId");
+
+                    b.HasIndex("ResolvedPatientId");
+
+                    b.HasIndex("ResolvedPhysicianId");
+
+                    b.HasIndex("ResolvedVisitId");
+
                     b.ToTable("ProviderAssignments", "staging");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.ProviderAssignmentBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<int>("FacilityId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<int>("Status")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id")
+                        .HasName("PK_ProviderAssignmentBatches");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("IX_ProviderAssignmentBatches_Status");
+
+                    b.HasIndex("FacilityId", "Date")
+                        .HasDatabaseName("IX_ProviderAssignmentBatches_FacilityId_Date");
+
+                    b.ToTable("ProviderAssignmentBatches", "staging");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.ProviderContract", b =>
@@ -1119,6 +1173,50 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasConstraintName("FK_Providers_Employees_EmployeeId");
                 });
 
+            modelBuilder.Entity("Consilient.Data.Entities.ProviderAssignment", b =>
+                {
+                    b.HasOne("Consilient.Data.Entities.ProviderAssignmentBatch", null)
+                        .WithMany("ProviderAssignments")
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Consilient.Data.Entities.Hospitalization", "ResolvedHospitalization")
+                        .WithMany()
+                        .HasForeignKey("ResolvedHospitalizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Consilient.Data.Entities.Provider", "ResolvedNursePractitioner")
+                        .WithMany()
+                        .HasForeignKey("ResolvedNursePractitionerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Consilient.Data.Entities.Patient", "ResolvedPatient")
+                        .WithMany()
+                        .HasForeignKey("ResolvedPatientId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Consilient.Data.Entities.Provider", "ResolvedPhysician")
+                        .WithMany()
+                        .HasForeignKey("ResolvedPhysicianId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Consilient.Data.Entities.Visit", "ResolvedVisit")
+                        .WithMany()
+                        .HasForeignKey("ResolvedVisitId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ResolvedHospitalization");
+
+                    b.Navigation("ResolvedNursePractitioner");
+
+                    b.Navigation("ResolvedPatient");
+
+                    b.Navigation("ResolvedPhysician");
+
+                    b.Navigation("ResolvedVisit");
+                });
+
             modelBuilder.Entity("Consilient.Data.Entities.ProviderContract", b =>
                 {
                     b.HasOne("Consilient.Data.Entities.Employee", null)
@@ -1199,6 +1297,11 @@ namespace Consilient.Data.Migrations.Consilient
             modelBuilder.Entity("Consilient.Data.Entities.Patient", b =>
                 {
                     b.Navigation("PatientFacilities");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.ProviderAssignmentBatch", b =>
+                {
+                    b.Navigation("ProviderAssignments");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Visit", b =>

@@ -1,12 +1,14 @@
 networks:
   consilient-net:
-    driver: bridge
+    external: true
     name: consilient-net
   ollama-docker:
     external: false
 
 volumes:
   consilient-mssql-data:
+    external: true
+    name: consilient-mssql-data
   ollama_data:
   prometheus_data:
 
@@ -23,6 +25,8 @@ services:
     networks:
       - consilient-net
     restart: unless-stopped
+    profiles:
+      - monitoring
 
   prometheus:
     image: prom/prometheus:v2.50.1
@@ -56,6 +60,8 @@ services:
     networks:
       - consilient-net
     restart: unless-stopped
+    profiles:
+      - monitoring
 
   db:
     image: ${DOCKER_REGISTRY-}consilientdb
@@ -74,11 +80,13 @@ services:
     command: -databases consilient_hangfire consilient_main
     volumes:
         - consilient-mssql-data:/var/opt/mssql
+        - ../Databases/consilient_main:/app/consilient_main:ro
+        - ../Databases/consilient_hangfire:/app/consilient_hangfire:ro
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SA_PASSWORD}\" -C -Q \"SELECT 1\""]
-      interval: 10s
-      retries: 10
-      start_period: 60s
+      interval: 5s
+      retries: 12
+      start_period: 30s
       timeout: 3s
     networks:
       - consilient-net
@@ -101,6 +109,8 @@ services:
     networks:
       - ollama-docker
       - consilient-net
+    profiles:
+      - ai
 
   ollama-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -123,6 +133,8 @@ services:
     restart: unless-stopped
     networks:
       - ollama-docker
+    profiles:
+      - ai
 
   consilient.webapp2:
     image: ${DOCKER_REGISTRY-}consilientwebapp2-dev

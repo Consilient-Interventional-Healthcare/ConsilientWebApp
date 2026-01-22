@@ -19,8 +19,8 @@ namespace Consilient.Background.Workers.ProviderAssignments
             // Enqueue the import job
             var importJobId = backgroundJobClient.Enqueue<ProviderAssignmentsImportWorker>(worker => worker.Import(batchId, input, null!));
 
-            // Chain the resolution job to run after import completes, passing the BatchId from the import result
-            backgroundJobClient.ContinueJobWith<ProviderAssignmentsResolutionWorker>(importJobId, x => x.Resolve(batchId, facilityId, dateService), JobContinuationOptions.OnlyOnSucceededState);
+            // Chain the resolution job to run after import completes
+            backgroundJobClient.ContinueJobWith<ProviderAssignmentsResolutionWorker>(importJobId, x => x.Resolve(batchId), JobContinuationOptions.OnlyOnSucceededState);
 
             return new FileUploadResult
             {

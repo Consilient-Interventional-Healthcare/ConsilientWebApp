@@ -29,14 +29,10 @@
         /// Resolves staging records by matching them to existing database entities.
         /// </summary>
         /// <param name="batchId">The batch ID to resolve.</param>
-        /// <param name="facilityId">The facility ID for the import.</param>
-        /// <param name="date">The service date for the import.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <param name="progress">Optional progress reporter for tracking resolution stages.</param>
         Task ResolveAsync(
             Guid batchId,
-            int facilityId,
-            DateOnly date,
             CancellationToken cancellationToken = default,
             IProgress<ResolutionProgressEventArgs>? progress = null);
     }

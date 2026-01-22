@@ -2,7 +2,11 @@
 param(
     [Parameter(Mandatory = $false)]
     [ValidateSet('ConsilientDbContext', 'UsersDbContext', 'Both')]
-    [string]$Context
+    [string]$Context,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 99)]
+    [int]$SequenceNumber  # Override auto-discovered prefix (e.g., -SequenceNumber 3 for 03_*)
 )
 
 Set-StrictMode -Version Latest
@@ -62,17 +66,21 @@ foreach ($Ctx in $ContextsToProcess) {
     }
 
     # Find the next sequence number based on existing files (e.g., 01_*, 02_*, etc.)
-    $ExistingFiles = Get-ChildItem -Path $OutputDir -Filter '*.sql' -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -match '^\d{2}_' } |
-        Sort-Object Name -Descending
-
-    if ($ExistingFiles) {
-        $LastNumber = [int]($ExistingFiles[0].Name.Substring(0, 2))
-        $NextNumber = $LastNumber + 1
+    if ($SequenceNumber) {
+        $Prefix = '{0:D2}' -f $SequenceNumber
     } else {
-        $NextNumber = 1
+        $ExistingFiles = Get-ChildItem -Path $OutputDir -Filter '*.sql' -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '^\d{2}_' } |
+            Sort-Object Name -Descending
+
+        if ($ExistingFiles) {
+            $LastNumber = [int]($ExistingFiles[0].Name.Substring(0, 2))
+            $NextNumber = $LastNumber + 1
+        } else {
+            $NextNumber = 1
+        }
+        $Prefix = '{0:D2}' -f $NextNumber
     }
-    $Prefix = '{0:D2}' -f $NextNumber
 
     # Get all migrations sorted by name (excluding Designer and Snapshot files)
     $AllMigrations = Get-ChildItem -Path $MigrationsDir -Filter '*.cs' -ErrorAction SilentlyContinue |

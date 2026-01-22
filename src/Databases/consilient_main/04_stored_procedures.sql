@@ -87,6 +87,22 @@ BEGIN
         END
 
         -- ===========================================
+        -- SECTION 1.5: Validate Batch Status
+        -- ===========================================
+
+        -- Ensure batch exists and is in Resolved status before processing
+        IF NOT EXISTS (
+            SELECT 1 FROM [staging].[ProviderAssignmentBatches]
+            WHERE [Id] = @BatchId AND [Status] = 2  -- Resolved
+        )
+        BEGIN
+            SET @ErrorMessage = 'Batch must be in Resolved status to process. BatchId: ' + CAST(@BatchId AS NVARCHAR(36));
+            IF @OwnTransaction = 1
+                COMMIT TRANSACTION;
+            RETURN -1;
+        END
+
+        -- ===========================================
         -- SECTION 2: Load Eligible Staging Records
         -- ===========================================
 
@@ -576,6 +592,16 @@ BEGIN
         FROM #StagingRecords
         WHERE IsValid = 0 OR NewVisitId IS NULL;
 
+        -- ===========================================
+        -- SECTION 13: Update Batch Status to Processed
+        -- ===========================================
+
+        UPDATE [staging].[ProviderAssignmentBatches]
+        SET
+            [Status] = 3,  -- Processed
+            [UpdatedAtUtc] = SYSUTCDATETIME()
+        WHERE [Id] = @BatchId;
+
         -- Only commit if we started the transaction
         IF @OwnTransaction = 1
             COMMIT TRANSACTION;
@@ -807,6 +833,16 @@ BEGIN
             spa.UpdatedAtUtc = SYSUTCDATETIME()
         FROM [staging].[ProviderAssignments] spa
         INNER JOIN #StagingRecords sr ON spa.Id = sr.StagingId;
+
+        -- ===========================================
+        -- SECTION 11: Reset Batch Status to Resolved
+        -- ===========================================
+
+        UPDATE [staging].[ProviderAssignmentBatches]
+        SET
+            [Status] = 2,  -- Resolved (ready for re-processing)
+            [UpdatedAtUtc] = SYSUTCDATETIME()
+        WHERE [Id] = @BatchId;
 
         -- Only commit if we started the transaction
         IF @OwnTransaction = 1

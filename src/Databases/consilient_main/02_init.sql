@@ -212,6 +212,32 @@ IF NOT EXISTS (
     WHERE [MigrationId] = N'20260116150740_Initial'
 )
 BEGIN
+    CREATE TABLE [Clinical].[Hospitalizations] (
+        [Id] int NOT NULL IDENTITY,
+        [PatientId] int NOT NULL,
+        [FacilityId] int NOT NULL,
+        [CaseId] int NOT NULL,
+        [AdmissionDate] datetime2 NOT NULL,
+        [DischargeDate] datetime2 NULL,
+        [HospitalizationStatusId] int NOT NULL,
+        [PsychEvaluation] bit NOT NULL,
+        [CreatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [UpdatedAtUtc] datetime2 NOT NULL DEFAULT (SYSUTCDATETIME()),
+        [RowVersion] rowversion NOT NULL,
+        CONSTRAINT [PK_Hospitalization] PRIMARY KEY ([Id]),
+        CONSTRAINT [AK_Hospitalizations_CaseId] UNIQUE ([CaseId]),
+        CONSTRAINT [AK_Hospitalizations_CaseId_PatientId] UNIQUE ([CaseId], [PatientId]),
+        CONSTRAINT [FK_Hospitalizations_Facilities_FacilityId] FOREIGN KEY ([FacilityId]) REFERENCES [Clinical].[Facilities] ([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_Hospitalizations_HospitalizationStatuses_HospitalizationStatusId] FOREIGN KEY ([HospitalizationStatusId]) REFERENCES [Clinical].[HospitalizationStatuses] ([Id]) ON DELETE NO ACTION,
+        CONSTRAINT [FK_Hospitalizations_Patients_PatientId] FOREIGN KEY ([PatientId]) REFERENCES [Clinical].[Patients] ([Id]) ON DELETE NO ACTION
+    );
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260116150740_Initial'
+)
+BEGIN
     CREATE TABLE [Clinical].[HospitalizationInsurances] (
         [Id] int NOT NULL IDENTITY,
         [HospitalizationId] int NOT NULL,

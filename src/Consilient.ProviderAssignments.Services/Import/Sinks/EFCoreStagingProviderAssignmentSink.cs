@@ -1,122 +1,128 @@
 using System.Text.Json;
 using Consilient.Data;
 using Consilient.Data.Entities;
-using Consilient.ProviderAssignments.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Contracts;
-using EFCore.BulkExtensions;
+using Consilient.ProviderAssignments.Contracts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
-namespace Consilient.ProviderAssignments.Services.Import.Sinks
+namespace Consilient.ProviderAssignments.Services.Import.Sinks;
+
+/// <summary>
+/// Writes provider assignment data to the staging tables in the database.
+/// Each WriteBatchAsync call persists the batch record, items, and updates status atomically.
+/// </summary>
+internal class EFCoreStagingProviderAssignmentSink(
+    ConsilientDbContext dbContext,
+    ILogger<EFCoreStagingProviderAssignmentSink> logger) : IDataSink
 {
-    internal class EFCoreStagingProviderAssignmentSink(ConsilientDbContext dbContext) : IDataSink
+    public Task InitializeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public async Task WriteBatchAsync<TRow>(Guid batchId, IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
+        where TRow : class
     {
-        private readonly ConsilientDbContext _dbContext = dbContext;
-
-        public Task InitializeAsync(CancellationToken cancellationToken = default)
+        if (batch.Count == 0)
         {
-            return Task.CompletedTask;
+            return;
         }
 
-        public async Task WriteBatchAsync<TRow>(Guid batchId, IReadOnlyList<TRow> batch, CancellationToken cancellationToken = default)
-            where TRow : class
+        if (batch is not IReadOnlyList<ValidatedRow<ProcessedProviderAssignment>> validatedRows)
         {
-            if (batch.Count == 0)
-            {
-                return;
-            }
-
-            // Map from ValidatedRow<ProcessedProviderAssignment> to ProviderAssignment entity
-            if (batch is IReadOnlyList<ValidatedRow<ProcessedProviderAssignment>> validatedRows)
-            {
-                var stagingRecords = validatedRows
-                    .Select(vr => new ProviderAssignment
-                    {
-                        BatchId = batchId,
-                        // Raw data from vr.Row.Raw
-                        Age = vr.Row.Raw.Age,
-                        AttendingMD = vr.Row.Raw.AttendingMD ?? string.Empty,
-                        HospitalNumber = vr.Row.Raw.HospitalNumber ?? string.Empty,
-                        Admit = vr.Row.Raw.Admit,
-                        Dob = vr.Row.Raw.Dob,
-                        Mrn = vr.Row.Raw.Mrn ?? string.Empty,
-                        Name = vr.Row.Raw.Name ?? string.Empty,
-                        Insurance = vr.Row.Raw.Insurance ?? string.Empty,
-                        NursePractitioner = vr.Row.Raw.NursePractitioner ?? string.Empty,
-                        IsCleared = vr.Row.Raw.IsCleared ?? string.Empty,
-                        Location = vr.Row.Raw.Location ?? string.Empty,
-                        H_P = vr.Row.Raw.H_P ?? string.Empty,
-                        PsychEval = vr.Row.Raw.PsychEval ?? string.Empty,
-                        // Processed data from vr.Row
-                        FacilityId = vr.Row.FacilityId,
-                        ServiceDate = vr.Row.ServiceDate,
-                        Bed = vr.Row.Bed,
-                        Room = vr.Row.Room,
-                        NormalizedNursePractitionerLastName = vr.Row.NormalizedNursePractitionerLastName,
-                        NormalizedPatientFirstName = vr.Row.NormalizedPatientFirstName,
-                        NormalizedPatientLastName = vr.Row.NormalizedPatientLastName,
-                        NormalizedPhysicianLastName = vr.Row.NormalizedPhysicianLastName,
-                        // Validation state from wrapper
-                        ValidationErrorsJson = vr.Errors.Count > 0
-                            ? JsonSerializer.Serialize(vr.Errors)
-                            : null,
-                        ShouldImport = vr.IsValid
-                    })
-                    .ToList();
-
-                // Use BulkInsertAsync for optimal performance
-                await _dbContext.BulkInsertAsync(stagingRecords, cancellationToken: cancellationToken);
-            }
-            // Backward compatibility: support old ExternalProviderAssignment type
-#pragma warning disable CS0618 // Type or member is obsolete
-            else if (batch is IReadOnlyList<ExternalProviderAssignment> externalAssignments)
-#pragma warning restore CS0618
-            {
-                var stagingRecords = externalAssignments
-                    .Select(ea => new ProviderAssignment
-                    {
-                        BatchId = batchId,
-                        Age = ea.Age,
-                        AttendingMD = ea.AttendingMD ?? string.Empty,
-                        HospitalNumber = ea.HospitalNumber ?? string.Empty,
-                        Admit = ea.Admit,
-                        Dob = ea.Dob,
-                        FacilityId = ea.FacilityId,
-                        Mrn = ea.Mrn ?? string.Empty,
-                        Name = ea.Name ?? string.Empty,
-                        Insurance = ea.Insurance ?? string.Empty,
-                        NursePractitioner = ea.NursePractitioner ?? string.Empty,
-                        IsCleared = ea.IsCleared ?? string.Empty,
-                        Location = ea.Location ?? string.Empty,
-                        ServiceDate = ea.ServiceDate,
-                        H_P = ea.H_P ?? string.Empty,
-                        PsychEval = ea.PsychEval ?? string.Empty,
-                        ValidationErrorsJson = ea.ValidationErrors.Count > 0
-                            ? JsonSerializer.Serialize(ea.ValidationErrors)
-                            : null,
-                        Bed = ea.Bed,
-                        Room = ea.Room,
-                        NormalizedNursePractitionerLastName = ea.NormalizedNursePractitionerLastName,
-                        NormalizedPatientFirstName = ea.NormalizedPatientFirstName,
-                        NormalizedPatientLastName = ea.NormalizedPatientLastName,
-                        NormalizedPhysicianLastName = ea.NormalizedPhysicianLastName,
-                        ShouldImport = true
-                    })
-                    .ToList();
-
-                await _dbContext.BulkInsertAsync(stagingRecords, cancellationToken: cancellationToken);
-            }
-            else
-            {
-#pragma warning disable CS0618 // Type or member is obsolete
-                throw new InvalidOperationException(
-                    $"Expected batch of type {nameof(ValidatedRow<ProcessedProviderAssignment>)} or {nameof(ExternalProviderAssignment)}, got {typeof(TRow).Name}");
-#pragma warning restore CS0618
-            }
+            throw new InvalidOperationException(
+                $"Expected {nameof(ValidatedRow<ProcessedProviderAssignment>)}, got {typeof(TRow).Name}");
         }
 
-        public Task FinalizeAsync(CancellationToken cancellationToken = default)
+        var facilityId = validatedRows[0].Row.FacilityId;
+        var serviceDate = validatedRows[0].Row.ServiceDate;
+
+        logger.LogInformation(
+            "Persisting batch {BatchId} for facility {FacilityId} on {ServiceDate} with {Count} records",
+            batchId, facilityId, serviceDate, validatedRows.Count);
+
+        var records = validatedRows.Select(vr => MapToEntity(batchId, vr)).ToList();
+
+        var strategy = dbContext.Database.CreateExecutionStrategy();
+
+        await strategy.ExecuteAsync(async () =>
         {
-            // No cleanup needed for EF Core
-            return Task.CompletedTask;
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                // Create batch record
+                var batchRecord = new ProviderAssignmentBatch
+                {
+                    Date = serviceDate,
+                    FacilityId = facilityId,
+                    Status = ProviderAssignmentBatchStatus.Pending
+                };
+                dbContext.StagingProviderAssignmentBatches.Add(batchRecord);
+                dbContext.Entry(batchRecord).Property(e => e.Id).CurrentValue = batchId;
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                // Insert all records using standard EF Core
+                dbContext.StagingProviderAssignments.AddRange(records);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                // Update batch status
+                batchRecord.Status = ProviderAssignmentBatchStatus.Imported;
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+                logger.LogInformation("Batch {BatchId} committed successfully", batchId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to persist batch {BatchId}, rolling back", batchId);
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
+    }
+
+    public Task FinalizeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    // SQL Server smalldatetime minimum value (1900-01-01)
+    private static readonly DateTime SqlSmallDateTimeMin = new(1900, 1, 1);
+
+    private static ProviderAssignment MapToEntity(Guid batchId, ValidatedRow<ProcessedProviderAssignment> vr)
+    {
+        // Coerce invalid DateTime values to SQL-compatible minimum
+        var admit = vr.Row.Raw.Admit;
+        if (admit < SqlSmallDateTimeMin)
+        {
+            admit = SqlSmallDateTimeMin;
         }
+
+        return new ProviderAssignment
+        {
+            BatchId = batchId,
+            // Raw data
+            Age = vr.Row.Raw.Age,
+            AttendingMD = vr.Row.Raw.AttendingMD ?? string.Empty,
+            HospitalNumber = vr.Row.Raw.HospitalNumber ?? string.Empty,
+            Admit = admit,
+            Dob = vr.Row.Raw.Dob,
+            Mrn = vr.Row.Raw.Mrn ?? string.Empty,
+            Name = vr.Row.Raw.Name ?? string.Empty,
+            Insurance = vr.Row.Raw.Insurance ?? string.Empty,
+            NursePractitioner = vr.Row.Raw.NursePractitioner ?? string.Empty,
+            IsCleared = vr.Row.Raw.IsCleared ?? string.Empty,
+            Location = vr.Row.Raw.Location ?? string.Empty,
+            H_P = vr.Row.Raw.H_P ?? string.Empty,
+            PsychEval = vr.Row.Raw.PsychEval ?? string.Empty,
+            // Processed data
+            FacilityId = vr.Row.FacilityId,
+            ServiceDate = vr.Row.ServiceDate,
+            Bed = vr.Row.Bed,
+            Room = vr.Row.Room,
+            NormalizedNursePractitionerLastName = vr.Row.NormalizedNursePractitionerLastName,
+            NormalizedPatientFirstName = vr.Row.NormalizedPatientFirstName,
+            NormalizedPatientLastName = vr.Row.NormalizedPatientLastName,
+            NormalizedPhysicianLastName = vr.Row.NormalizedPhysicianLastName,
+            // Validation
+            ValidationErrorsJson = vr.Errors.Count > 0 ? JsonSerializer.Serialize(vr.Errors) : null,
+            ShouldImport = vr.IsValid
+        };
     }
 }

@@ -56,6 +56,15 @@ namespace Consilient.Infrastructure.ExcelImporter
                         break;
                     }
 
+                    // Check if we should stop reading based on custom predicate
+                    if (options.ShouldStopReading?.Invoke(excelRow, options.ColumnMapping) == true)
+                    {
+                        logger.LogInformation(
+                            "Stopping import at row {RowNumber}: ShouldStopReading predicate returned true",
+                            excelRow.RowNumber);
+                        break;
+                    }
+
                     // Step 1: Map Excel row to TRaw
                     var mappingResult = mapper.Map(excelRow, options.ColumnMapping);
                     if (!mappingResult.IsSuccess)

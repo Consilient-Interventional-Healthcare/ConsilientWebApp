@@ -13,6 +13,14 @@ if (-not $Force) {
 
 $composeFile = Join-Path $PSScriptRoot "../../src/.docker/docker-compose.yml"
 
+# Rebuild the database image to ensure latest SQL scripts are included
+Write-Host "Rebuilding database image with latest scripts..."
+docker compose -f $composeFile build --no-cache db
+
+# Remove existing container to avoid naming conflicts
+Write-Host "Removing existing database container..."
+docker rm -f consilient.dbs.container 2>$null
+
 # Ensure the container is running first
 Write-Host "Ensuring database container is running..."
 docker compose -f $composeFile up -d db

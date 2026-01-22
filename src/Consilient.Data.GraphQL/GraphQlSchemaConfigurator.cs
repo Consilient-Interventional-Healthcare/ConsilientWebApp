@@ -22,6 +22,8 @@ namespace Consilient.Data.GraphQL
         {
             schema.AddEnum<ProviderType>(nameof(ProviderType), "Provider type enum");
 
+            AddProviderAssignmentTypes(schema);
+
             var visitType = schema.AddType<Visit>(ToGraphQlName(nameof(Visit)), $"{ToGraphQlName(nameof(Visit))} object");
             visitType.AddField(m => m.DateServiced, nameof(Visit.DateServiced));
             visitType.AddField(m => m.Hospitalization, nameof(Visit.Hospitalization));
@@ -131,6 +133,19 @@ namespace Consilient.Data.GraphQL
                     "List of visits for a specific date and facility")
                 .UseSort();
 
+            query
+                .AddField(
+                    "providerAssignmentBatch",
+                    new
+                    {
+                        batchId = ArgumentHelper.Required<Guid>()
+                    },
+                    (ctx, args) => ctx.StagingProviderAssignmentBatches
+                        .Where(b => b.Id == args.batchId)
+                        .Select(b => b)
+                        .FirstOrDefault(),
+                    "Provider assignment batch with metadata and items");
+
             //var employeesField = ToGraphQlName(nameof(ConsilientDbContext.Employees));
             //query
             //    .AddField(employeesField, (ctx) => ctx.Employees.AsNoTracking().OrderBy(p => p.Id), $"List of {employeesField}")
@@ -145,6 +160,106 @@ namespace Consilient.Data.GraphQL
         }
 
         private static string ToGraphQlName(string pascalName) => string.IsNullOrEmpty(pascalName) ? pascalName : char.ToLowerInvariant(pascalName[0]) + pascalName[1..];
+
+        private static void AddProviderAssignmentTypes(SchemaProvider<ConsilientDbContext> schema)
+        {
+            // Register the batch status enum
+            schema.AddEnum<ProviderAssignmentBatchStatus>("providerAssignmentBatchStatus", "Status of a provider assignment batch");
+
+            // Register the nested types
+            var providerAssignmentPatientType = schema.AddType<ProviderAssignmentPatient>("providerAssignmentPatient", "Patient data from resolved patient or staging");
+            providerAssignmentPatientType.AddField(m => m.FirstName, nameof(ProviderAssignmentPatient.FirstName));
+            providerAssignmentPatientType.AddField(m => m.LastName, nameof(ProviderAssignmentPatient.LastName));
+            providerAssignmentPatientType.AddField(m => m.Mrn, nameof(ProviderAssignmentPatient.Mrn));
+
+            var providerAssignmentProviderType = schema.AddType<ProviderAssignmentProvider>("providerAssignmentProvider", "Provider data from resolved provider or staging");
+            providerAssignmentProviderType.AddField(m => m.FirstName, nameof(ProviderAssignmentProvider.FirstName));
+            providerAssignmentProviderType.AddField(m => m.LastName, nameof(ProviderAssignmentProvider.LastName));
+
+            var providerAssignmentHospitalizationType = schema.AddType<ProviderAssignmentHospitalization>("providerAssignmentHospitalization", "Hospitalization data from resolved hospitalization or staging");
+            providerAssignmentHospitalizationType.AddField(m => m.CaseId, nameof(ProviderAssignmentHospitalization.CaseId));
+            providerAssignmentHospitalizationType.AddField(m => m.AdmissionDate, nameof(ProviderAssignmentHospitalization.AdmissionDate));
+
+            var providerAssignmentVisitType = schema.AddType<ProviderAssignmentVisit>("providerAssignmentVisit", "Visit data from resolved visit or staging");
+            providerAssignmentVisitType.AddField(m => m.Room, nameof(ProviderAssignmentVisit.Room));
+            providerAssignmentVisitType.AddField(m => m.Bed, nameof(ProviderAssignmentVisit.Bed));
+            providerAssignmentVisitType.AddField(m => m.Imported, nameof(ProviderAssignmentVisit.Imported));
+
+            // Register the ProviderAssignment entity as a GraphQL type
+            var paType = schema.AddType<ProviderAssignment>("providerAssignment", "Provider assignment staging record");
+
+            // Scalar fields - always cheap to fetch
+            paType.AddField(m => m.Id, "Id");
+            paType.AddField(m => m.BatchId, "BatchId");
+            paType.AddField("date", m => m.ServiceDate, "Service date");
+            paType.AddField(m => m.FacilityId, "FacilityId");
+
+            // Resolved IDs - expose separately so client can check if resolved
+            paType.AddField(m => m.ResolvedPatientId, "ResolvedPatientId");
+            paType.AddField(m => m.ResolvedPhysicianId, "ResolvedPhysicianId");
+            paType.AddField(m => m.ResolvedNursePractitionerId, "ResolvedNursePractitionerId");
+            paType.AddField(m => m.ResolvedHospitalizationId, "ResolvedHospitalizationId");
+            paType.AddField(m => m.ResolvedVisitId, "ResolvedVisitId");
+
+            // IsNew flags
+            paType.AddField(m => m.PatientWasCreated, "PatientWasCreated");
+            paType.AddField(m => m.PhysicianWasCreated, "PhysicianWasCreated");
+            paType.AddField(m => m.NursePractitionerWasCreated, "NursePractitionerWasCreated");
+            paType.AddField(m => m.HospitalizationWasCreated, "HospitalizationWasCreated");
+
+            // Computed fields - only fetched when requested
+            // Patient: uses navigation property when resolved, falls back to staging data
+            paType.AddField("patient", pa => new ProviderAssignmentPatient
+            {
+                FirstName = pa.ResolvedPatient != null ? pa.ResolvedPatient.FirstName : (pa.NormalizedPatientFirstName ?? string.Empty),
+                LastName = pa.ResolvedPatient != null ? pa.ResolvedPatient.LastName : (pa.NormalizedPatientLastName ?? string.Empty),
+                Mrn = pa.Mrn
+            }, "Patient data - from Patient table if resolved, otherwise from staging");
+
+            // Physician: uses navigation property when resolved, falls back to staging data
+            paType.AddField("physician", pa => new ProviderAssignmentProvider
+            {
+                FirstName = pa.ResolvedPhysician != null ? pa.ResolvedPhysician.FirstName : string.Empty,
+                LastName = pa.ResolvedPhysician != null ? pa.ResolvedPhysician.LastName : (pa.NormalizedPhysicianLastName ?? string.Empty)
+            }, "Physician data - from Provider table if resolved, otherwise from staging");
+
+            // Nurse Practitioner: uses navigation property when resolved, falls back to staging data
+            paType.AddField("nursePractitioner", pa => new ProviderAssignmentProvider
+            {
+                FirstName = pa.ResolvedNursePractitioner != null ? pa.ResolvedNursePractitioner.FirstName : string.Empty,
+                LastName = pa.ResolvedNursePractitioner != null ? pa.ResolvedNursePractitioner.LastName : (pa.NormalizedNursePractitionerLastName ?? string.Empty)
+            }, "Nurse practitioner data - from Provider table if resolved, otherwise from staging");
+
+            // Hospitalization: uses navigation property when resolved, falls back to staging data
+            paType.AddField("hospitalization", pa => new ProviderAssignmentHospitalization
+            {
+                CaseId = pa.ResolvedHospitalization != null ? pa.ResolvedHospitalization.CaseId.ToString() : pa.HospitalNumber,
+                AdmissionDate = pa.ResolvedHospitalization != null ? pa.ResolvedHospitalization.AdmissionDate : pa.Admit
+            }, "Hospitalization data - from Hospitalization table if resolved, otherwise from staging");
+
+            // Visit: uses navigation property when resolved, falls back to staging data
+            paType.AddField("visit", pa => new ProviderAssignmentVisit
+            {
+                Room = pa.ResolvedVisit != null ? pa.ResolvedVisit.Room : pa.Room,
+                Bed = pa.ResolvedVisit != null ? pa.ResolvedVisit.Bed : pa.Bed,
+                Imported = pa.ResolvedVisitId != null
+            }, "Visit data - from Visit table if resolved, otherwise from staging");
+
+            // Register the batch type
+            var batchType = schema.AddType<ProviderAssignmentBatch>(
+                "providerAssignmentBatch",
+                "Provider assignment batch with metadata and items");
+
+            batchType.AddField("batchId", m => m.Id, "Batch ID");
+            batchType.AddField(m => m.Date, "Date");
+            batchType.AddField(m => m.FacilityId, "FacilityId");
+            batchType.AddField(m => m.Status, "Status");
+
+            batchType.AddField("items", "Provider assignment items in this batch")
+                .Resolve<ConsilientDbContext>((batch, ctx) => ctx.StagingProviderAssignments
+                    .Where(pa => pa.BatchId == batch.Id)
+                    .OrderBy(pa => pa.ServiceDate));
+        }
     }
 
 }

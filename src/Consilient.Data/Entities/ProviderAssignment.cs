@@ -41,6 +41,13 @@ namespace Consilient.Data.Entities
         public int? ResolvedNursePractitionerId { get; set; }
         public int? ResolvedVisitId { get; set; }
 
+        /* Navigation Properties */
+        public virtual Patient? ResolvedPatient { get; set; }
+        public virtual Provider? ResolvedPhysician { get; set; }
+        public virtual Provider? ResolvedNursePractitioner { get; set; }
+        public virtual Hospitalization? ResolvedHospitalization { get; set; }
+        public virtual Visit? ResolvedVisit { get; set; }
+
 
         /* Import Statuses */ 
         public bool ShouldImport { get; set; }

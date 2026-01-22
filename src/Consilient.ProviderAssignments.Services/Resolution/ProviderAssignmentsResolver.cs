@@ -1,8 +1,6 @@
 ﻿using Consilient.Data;
 using Consilient.Data.Entities;
 using Consilient.ProviderAssignments.Contracts.Resolution;
-using Consilient.ProviderAssignments.Services.Resolution.Resolvers;
-using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -18,21 +16,8 @@ namespace Consilient.ProviderAssignments.Services.Resolution
         private readonly ILogger<ProviderAssignmentsResolver> _logger = logger;
 
 
-        // Resolution stages for progress reporting
-        private static readonly string[] _resolutionStages =
-        [
-            "Physician",
-            "NursePractitioner",
-            "Patient",
-            "Hospitalization",
-            "Visit",
-            "BulkUpdate"
-        ];
-
         public async Task ResolveAsync(
             Guid batchId,
-            int facilityId,
-            DateOnly date,
             CancellationToken cancellationToken = default,
             IProgress<ResolutionProgressEventArgs>? progress = null)
         {
@@ -44,8 +29,12 @@ namespace Consilient.ProviderAssignments.Services.Resolution
 
                 try
                 {
-                    // Step 0: Validate batch exists and belongs to the specified facility
-                    await ValidateBatchAsync(batchId, facilityId, cancellationToken);
+                    // Step 0: Load and validate batch
+                    var batch = await LoadAndValidateBatchAsync(batchId, cancellationToken);
+                    if (batch == null)
+                    {
+                        return;
+                    }
 
                     // Step 1: Load staging records
                     var recordsList = await GetStagingRecordsForResolution(batchId, cancellationToken);
@@ -58,12 +47,13 @@ namespace Consilient.ProviderAssignments.Services.Resolution
                         var cache = new ResolutionCache();
 
                         // Step 3: Run all resolvers in dependency order
-                        await ResolveAll(cache, facilityId, date, recordsList, batchId, progress);
-
-                        // Step 4: Bulk update staging table
-                        ReportProgress(progress, "BulkUpdate", recordsList.Count, recordsList.Count, batchId, 6, _resolutionStages.Length);
-                        await BulkUpdateAllChanges(recordsList, cancellationToken);
+                        await ResolveAll(cache, batch.FacilityId, batch.Date, recordsList, batchId, progress);
                     }
+
+                    // Step 4: Update batch status and save all changes
+                    ReportProgress(progress, "SaveChanges", recordsList.Count, recordsList.Count, batchId);
+                    batch.Status = ProviderAssignmentBatchStatus.Resolved;
+                    await _dbContext.SaveChangesAsync(cancellationToken);
 
                     _logger.LogInformation("Batch {BatchId}: Resolution completed", batchId);
 
@@ -72,7 +62,6 @@ namespace Consilient.ProviderAssignments.Services.Resolution
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Batch {BatchId}: Resolution failed, rolling back", batchId);
-                    await transaction.RollbackAsync(cancellationToken);
                     throw;
                 }
             });
@@ -91,21 +80,20 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             IProgress<ResolutionProgressEventArgs>? progress)
         {
             var totalRecords = records.Count;
-            var totalSteps = _resolutionStages.Length;
 
-            ReportProgress(progress, "Physician", 0, totalRecords, batchId, 1, totalSteps);
+            ReportProgress(progress, "Physician", 0, totalRecords, batchId);
             await RunResolvers<IPhysicianResolver>(cache, facilityId, date, records);
 
-            ReportProgress(progress, "NursePractitioner", 0, totalRecords, batchId, 2, totalSteps);
+            ReportProgress(progress, "NursePractitioner", 0, totalRecords, batchId);
             await RunResolvers<INursePractitionerResolver>(cache, facilityId, date, records);
 
-            ReportProgress(progress, "Patient", 0, totalRecords, batchId, 3, totalSteps);
+            ReportProgress(progress, "Patient", 0, totalRecords, batchId);
             await RunResolvers<IPatientResolver>(cache, facilityId, date, records);
 
-            ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId, 4, totalSteps);
+            ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId);
             await RunResolvers<IHospitalizationResolver>(cache, facilityId, date, records);
 
-            ReportProgress(progress, "Visit", 0, totalRecords, batchId, 5, totalSteps);
+            ReportProgress(progress, "Visit", 0, totalRecords, batchId);
             await RunResolvers<IVisitResolver>(cache, facilityId, date, records);
         }
 
@@ -118,11 +106,6 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             }
         }
 
-        private async Task BulkUpdateAllChanges(List<ProviderAssignment> records, CancellationToken cancellationToken)
-        {
-            await _dbContext.BulkUpdateAsync(records, cancellationToken: cancellationToken);
-        }
-
         private async Task<List<ProviderAssignment>> GetStagingRecordsForResolution(Guid batchId, CancellationToken cancellationToken = default)
         {
             // Only load records without validation errors - validation happens during import
@@ -131,23 +114,26 @@ namespace Consilient.ProviderAssignments.Services.Resolution
                 .ToListAsync(cancellationToken);
         }
 
-        private async Task ValidateBatchAsync(Guid batchId, int facilityId, CancellationToken cancellationToken)
+        private async Task<ProviderAssignmentBatch?> LoadAndValidateBatchAsync(Guid batchId, CancellationToken cancellationToken)
         {
-            var batchExists = await _dbContext.StagingProviderAssignments
-                .AnyAsync(x => x.BatchId == batchId, cancellationToken);
+            var batch = await _dbContext.StagingProviderAssignmentBatches.FindAsync([batchId], cancellationToken);
 
-            if (!batchExists)
+            if (batch == null)
             {
-                throw new InvalidOperationException($"Batch {batchId} not found in staging table");
+                _logger.LogWarning("Batch {BatchId}: Batch not found, skipping resolution", batchId);
+                return null;
             }
 
-            var facilityMismatch = await _dbContext.StagingProviderAssignments
-                .AnyAsync(x => x.BatchId == batchId && x.FacilityId != facilityId, cancellationToken);
-
-            if (facilityMismatch)
+            if (batch.Status != ProviderAssignmentBatchStatus.Imported)
             {
-                throw new InvalidOperationException($"Batch {batchId} contains records for a different facility than {facilityId}");
+                _logger.LogWarning(
+                    "Batch {BatchId}: Skipping resolution because batch status is '{ActualStatus}' (expected '{ExpectedStatus}'). " +
+                    "This batch may have already been resolved or is still being imported.",
+                    batchId, batch.Status, ProviderAssignmentBatchStatus.Imported);
+                return null;
             }
+
+            return batch;
         }
 
         private static void ReportProgress(
@@ -155,18 +141,14 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             string stage,
             int processedRecords,
             int totalRecords,
-            Guid batchId,
-            int currentStep,
-            int totalSteps)
+            Guid batchId)
         {
             progress?.Report(new ResolutionProgressEventArgs
             {
                 Stage = stage,
                 ProcessedRecords = processedRecords,
                 TotalRecords = totalRecords,
-                BatchId = batchId,
-                CurrentStep = currentStep,
-                TotalSteps = totalSteps
+                BatchId = batchId
             });
         }
     }

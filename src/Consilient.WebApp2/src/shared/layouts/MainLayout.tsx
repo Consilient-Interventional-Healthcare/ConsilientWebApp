@@ -6,7 +6,7 @@ const MainLayout: FC = () => {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopNavBar />
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
     </div>

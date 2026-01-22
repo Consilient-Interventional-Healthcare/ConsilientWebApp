@@ -28,6 +28,14 @@ directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 """Directs the executor to skip this field or fragment when the `if` argument is true."""
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
+"""Status of a provider assignment batch"""
+enum providerAssignmentBatchStatus {
+	Imported
+	Pending
+	Processed
+	Resolved
+}
+
 """Provider type enum"""
 enum ProviderType {
 	NursePractitioner
@@ -43,8 +51,10 @@ enum SortDirectionEnum {
 type Query {
 	"""List of patients"""
 	patients(filter: String, sort: [QueryPatientsSortInput!]): [patient!]
+	"""Provider assignment batch with metadata and items"""
+	providerAssignmentBatch(batchId: ID!): providerAssignmentBatch
 	"""List of visits for a specific date and facility"""
-	visits(dateServiced: DateOnly!, facilityId: Int!, sort: [QueryVisitsSortInput!]): [visit!]
+	visits(dateServiced: String!, facilityId: Int!, sort: [QueryVisitsSortInput!]): [visit!]
 }
 
 """facility object"""
@@ -139,6 +149,96 @@ type provider {
 	type: ProviderType!
 }
 
+"""Provider assignment staging record"""
+type providerAssignment {
+	"""BatchId"""
+	batchId: ID!
+	"""Service date"""
+	date: DateOnly!
+	"""FacilityId"""
+	facilityId: Int!
+	"""Hospitalization data - from Hospitalization table if resolved, otherwise from staging"""
+	hospitalization: providerAssignmentHospitalization
+	"""HospitalizationWasCreated"""
+	hospitalizationWasCreated: Boolean!
+	"""Id"""
+	id: Int!
+	"""Nurse practitioner data - from Provider table if resolved, otherwise from staging"""
+	nursePractitioner: providerAssignmentProvider
+	"""NursePractitionerWasCreated"""
+	nursePractitionerWasCreated: Boolean!
+	"""Patient data - from Patient table if resolved, otherwise from staging"""
+	patient: providerAssignmentPatient
+	"""PatientWasCreated"""
+	patientWasCreated: Boolean!
+	"""Physician data - from Provider table if resolved, otherwise from staging"""
+	physician: providerAssignmentProvider
+	"""PhysicianWasCreated"""
+	physicianWasCreated: Boolean!
+	"""ResolvedHospitalizationId"""
+	resolvedHospitalizationId: Int
+	"""ResolvedNursePractitionerId"""
+	resolvedNursePractitionerId: Int
+	"""ResolvedPatientId"""
+	resolvedPatientId: Int
+	"""ResolvedPhysicianId"""
+	resolvedPhysicianId: Int
+	"""ResolvedVisitId"""
+	resolvedVisitId: Int
+	"""Visit data - from Visit table if resolved, otherwise from staging"""
+	visit: providerAssignmentVisit
+}
+
+"""Provider assignment batch with metadata and items"""
+type providerAssignmentBatch {
+	"""Batch ID"""
+	batchId: ID!
+	"""Date"""
+	date: DateOnly!
+	"""FacilityId"""
+	facilityId: Int!
+	"""Provider assignment items in this batch"""
+	items: [providerAssignment!]
+	"""Status"""
+	status: providerAssignmentBatchStatus!
+}
+
+"""Hospitalization data from resolved hospitalization or staging"""
+type providerAssignmentHospitalization {
+	"""AdmissionDate"""
+	admissionDate: Date
+	"""CaseId"""
+	caseId: String
+}
+
+"""Patient data from resolved patient or staging"""
+type providerAssignmentPatient {
+	"""FirstName"""
+	firstName: String
+	"""LastName"""
+	lastName: String
+	"""Mrn"""
+	mrn: String
+}
+
+"""Provider data from resolved provider or staging"""
+type providerAssignmentProvider {
+	"""FirstName"""
+	firstName: String
+	"""LastName"""
+	lastName: String
+}
+
+"""Visit data from resolved visit or staging"""
+type providerAssignmentVisit {
+	"""Bed"""
+	bed: String
+	"""Imported"""
+	imported: Boolean!
+	"""Room"""
+	room: String
+}
+
 """Sort arguments for patients"""
 input QueryPatientsSortInput {
 	birthDate: SortDirectionEnum
@@ -185,8 +285,8 @@ type visit {
 	id: Int!
 	"""IsScribeServiceOnly"""
 	isScribeServiceOnly: Boolean!
-	"""Patient"""
-	patient: patient
+	"""Patient with MRN at facility"""
+	patient: visitPatient
 	"""Room"""
 	room: String
 	"""VisitAttendants"""
@@ -203,5 +303,19 @@ type visitAttendant {
 	providerId: Int!
 	"""VisitId"""
 	visitId: Int!
+}
+
+"""Patient object with facility-specific MRN"""
+type visitPatient {
+	"""BirthDate"""
+	birthDate: DateOnly
+	"""FirstName"""
+	firstName: String
+	"""Id"""
+	id: Int!
+	"""LastName"""
+	lastName: String
+	"""Mrn"""
+	mrn: String
 }
 

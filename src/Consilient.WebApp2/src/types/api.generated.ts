@@ -62,6 +62,15 @@ export namespace Auth {
       errors?: string[] | null;
   }
 
+  export interface ProblemDetails {
+      type?: string | null;
+      title?: string | null;
+      status?: number | null;
+      detail?: string | null;
+      instance?: string | null;
+      [key: string]: any;
+  }
+
 }
 
 
@@ -200,15 +209,6 @@ export namespace Hospitalizations {
   export enum HospitalizationStatusType {
       _0 = 0,
       _1 = 1,
-  }
-
-  export interface ProblemDetails {
-      type?: string | null;
-      title?: string | null;
-      status?: number | null;
-      detail?: string | null;
-      instance?: string | null;
-      [key: string]: any;
   }
 
 }

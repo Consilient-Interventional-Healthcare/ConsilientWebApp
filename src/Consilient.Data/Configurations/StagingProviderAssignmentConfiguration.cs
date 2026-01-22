@@ -50,6 +50,43 @@ namespace Consilient.Data.Configurations
             entity.Property(e => e.Bed).HasMaxLength(5);
             entity.Ignore(e => e.ValidationErrors);
 
+            // Navigation property relationships
+            entity.HasOne(e => e.ResolvedPatient)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedPatientId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ResolvedPhysician)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedPhysicianId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ResolvedNursePractitioner)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedNursePractitionerId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ResolvedHospitalization)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedHospitalizationId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ResolvedVisit)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedVisitId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // FK relationship to batch (without navigation property on this side)
+            entity.HasOne<ProviderAssignmentBatch>()
+                .WithMany(b => b.ProviderAssignments)
+                .HasForeignKey(e => e.BatchId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

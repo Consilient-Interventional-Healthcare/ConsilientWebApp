@@ -24,6 +24,11 @@ namespace Consilient.ProviderAssignments.Services.Processing
 
             var connection = _dbContext.Database.GetDbConnection();
 
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+
             using var command = connection.CreateCommand();
             command.CommandText = ProcessStoredProcedure;
             command.CommandType = CommandType.StoredProcedure;

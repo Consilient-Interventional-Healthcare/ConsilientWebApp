@@ -6,7 +6,7 @@ namespace Consilient.ProviderAssignments.Contracts.Resolution
     public class ResolutionProgressEventArgs : EventArgs
     {
         /// <summary>
-        /// Current stage of resolution (e.g., "Physician", "Patient", "BulkUpdate").
+        /// Current stage of resolution (e.g., "Physician", "Patient", "SaveChanges").
         /// </summary>
         public required string Stage { get; init; }
 
@@ -24,20 +24,5 @@ namespace Consilient.ProviderAssignments.Contracts.Resolution
         /// The batch ID being resolved.
         /// </summary>
         public Guid BatchId { get; init; }
-
-        /// <summary>
-        /// Current step number (1-based) out of total steps.
-        /// </summary>
-        public int CurrentStep { get; init; }
-
-        /// <summary>
-        /// Total number of steps in the resolution process.
-        /// </summary>
-        public int TotalSteps { get; init; }
-
-        /// <summary>
-        /// Progress percentage (0-100).
-        /// </summary>
-        public int PercentComplete => TotalSteps > 0 ? (CurrentStep * 100) / TotalSteps : 0;
     }
 }

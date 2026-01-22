@@ -74,7 +74,13 @@ namespace Consilient.ProviderAssignments.Services.Import
                 BatchSize = settings.Value.BatchSize,
                 FailOnValidationError = false,
                 SkipEmptyRows = true,
-                MaxRows = int.MaxValue
+                MaxRows = int.MaxValue,
+                ShouldStopReading = (excelRow, columnMapping) =>
+                {
+                    // Stop when Hospital Number (column C) is empty
+                    return excelRow.Cells.TryGetValue("Hospital Number", out var hospitalNumber) && 
+                           string.IsNullOrWhiteSpace(hospitalNumber);
+                }
             };
         }
     }
