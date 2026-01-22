@@ -311,6 +311,16 @@ locals {
   }
 
   # --------------------------------------------------------------------------
+  # FILE UPLOAD SETTINGS (Provider Assignments)
+  # --------------------------------------------------------------------------
+  # Configuration for file upload validation in the API
+  file_upload = {
+    upload_path         = "uploads"
+    max_file_size_bytes = 10485760 # 10MB
+    allowed_extensions  = [".xls", ".xlsm", ".xlsx"]
+  }
+
+  # --------------------------------------------------------------------------
   # MONITORING - GRAFANA
   # --------------------------------------------------------------------------
   grafana = {

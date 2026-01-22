@@ -916,6 +916,65 @@ resource "azurerm_app_configuration_key" "api_filestorage_connection" {
 }
 
 # ============================================================================
+# CONFIGURATION KEYS - FILE UPLOAD SETTINGS (Provider Assignments)
+# ============================================================================
+# Settings for file upload validation (allowed extensions, max size, etc.)
+
+# Upload Path - directory/prefix for storing uploaded files
+resource "azurerm_app_configuration_key" "api_file_upload_path" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:UploadPath"
+  label                  = var.environment
+  value                  = local.file_upload.upload_path
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# Max File Size in Bytes
+resource "azurerm_app_configuration_key" "api_file_upload_max_size" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:MaxFileSizeBytes"
+  label                  = var.environment
+  value                  = tostring(local.file_upload.max_file_size_bytes)
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# Allowed Extensions - array of file extensions
+# .NET Configuration binds arrays using indexed keys (AllowedExtensions:0, AllowedExtensions:1, etc.)
+resource "azurerm_app_configuration_key" "api_file_upload_extensions" {
+  for_each = { for idx, ext in local.file_upload.allowed_extensions : idx => ext }
+
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:AllowedExtensions:${each.key}"
+  label                  = var.environment
+  value                  = each.value
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# ============================================================================
 # CONFIGURATION KEYS - FILE STORAGE (BackgroundHost)
 # ============================================================================
 # BackgroundHost uses same configuration prefix pattern

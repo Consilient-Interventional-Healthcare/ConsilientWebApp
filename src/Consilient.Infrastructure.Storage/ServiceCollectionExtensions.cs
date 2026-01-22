@@ -19,7 +19,8 @@ namespace Consilient.Infrastructure.Storage
 
             if (string.Equals(options.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase))
             {
-                services.AddSingleton<IFileStorage, AzureBlobFileStorage>();
+                services.AddSingleton<AzureBlobFileStorage>();
+                services.AddSingleton<IFileStorage>(sp => sp.GetRequiredService<AzureBlobFileStorage>());
             }
             else
             {

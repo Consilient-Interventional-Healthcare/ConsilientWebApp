@@ -208,7 +208,7 @@ namespace Consilient.Api
                     options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
                 }).AddNewtonsoftJson();
 
-                builder.Services.ConfigureHealthChecks(applicationSettings.Authentication.UserService);
+                builder.Services.ConfigureHealthChecks(builder.Configuration, applicationSettings.Authentication.UserService);
 
                 // Configure Data Protection with proper cryptographic algorithms
                 // Note: In Azure App Service containers, data protection keys are ephemeral by design.
