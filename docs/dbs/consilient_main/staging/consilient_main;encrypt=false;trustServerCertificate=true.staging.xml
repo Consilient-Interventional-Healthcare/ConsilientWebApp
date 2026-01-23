@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<database name="consilient_main;encrypt=false;trustServerCertificate=true" schema="staging" type="Microsoft SQL Server - 16.00.4230">
+   <tables>
+      <table catalog="consilient_main" name="ProviderAssignmentBatches" remarks="" schema="staging" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="16" type="uniqueidentifier" typeCode="1">
+            <child catalog="consilient_main" column="BatchId" foreignKey="FK_ProviderAssignments_ProviderAssignmentBatches_BatchId" implied="false" onDeleteCascade="true" schema="staging" table="ProviderAssignments"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Date" nullable="false" remarks="" size="6" type="date" typeCode="91"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="FacilityId" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="((0))" digits="0" id="3" name="Status" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_ProviderAssignmentBatches" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="IX_ProviderAssignmentBatches_FacilityId_Date" unique="false">
+            <column ascending="true" name="FacilityId"/>
+            <column ascending="true" name="Date"/>
+         </index>
+         <index name="IX_ProviderAssignmentBatches_Status" unique="false">
+            <column ascending="true" name="Status"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="ProviderAssignments" remarks="" schema="staging" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Age" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="AttendingMD" nullable="false" remarks="" size="510" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="HospitalNumber" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="Admit" nullable="false" remarks="" size="16" type="smalldatetime" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="Dob" nullable="true" remarks="" size="6" type="date" typeCode="91"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="FacilityId" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="Mrn" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="Name" nullable="false" remarks="" size="510" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="Insurance" nullable="false" remarks="" size="510" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="NursePractitioner" nullable="false" remarks="" size="510" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="IsCleared" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="Location" nullable="false" remarks="" size="510" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="13" name="ServiceDate" nullable="false" remarks="" size="6" type="date" typeCode="91"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="14" name="H_P" nullable="false" remarks="" size="510" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="15" name="PsychEval" nullable="false" remarks="" size="510" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="16" name="BatchId" nullable="false" remarks="" size="16" type="uniqueidentifier" typeCode="1">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderAssignments_ProviderAssignmentBatches_BatchId" implied="false" onDeleteCascade="true" schema="staging" table="ProviderAssignmentBatches"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="17" name="NormalizedPatientLastName" nullable="true" remarks="" size="200" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="18" name="NormalizedPatientFirstName" nullable="true" remarks="" size="200" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="19" name="NormalizedPhysicianLastName" nullable="true" remarks="" size="200" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="20" name="NormalizedNursePractitionerLastName" nullable="true" remarks="" size="200" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="21" name="Room" nullable="true" remarks="" size="40" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="22" name="Bed" nullable="true" remarks="" size="10" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="23" name="ResolvedPhysicianId" nullable="true" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderAssignments_Providers_ResolvedPhysicianId" implied="false" onDeleteCascade="false" schema="Clinical" table="Providers"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="24" name="ResolvedHospitalizationId" nullable="true" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderAssignments_Hospitalizations_ResolvedHospitalizationId" implied="false" onDeleteCascade="false" schema="Clinical" table="Hospitalizations"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="25" name="ResolvedPatientId" nullable="true" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderAssignments_Patients_ResolvedPatientId" implied="false" onDeleteCascade="false" schema="Clinical" table="Patients"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="26" name="ResolvedNursePractitionerId" nullable="true" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderAssignments_Providers_ResolvedNursePractitionerId" implied="false" onDeleteCascade="false" schema="Clinical" table="Providers"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="27" name="ResolvedVisitId" nullable="true" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderAssignments_Visits_ResolvedVisitId" implied="false" onDeleteCascade="false" schema="Clinical" table="Visits"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="28" name="ResolvedHospitalizationStatusId" nullable="true" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderAssignments_HospitalizationStatuses_ResolvedHospitalizationStatusId" implied="false" onDeleteCascade="false" schema="Clinical" table="HospitalizationStatuses"/>
+         </column>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="29" name="ShouldImport" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="30" name="Imported" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="31" name="ValidationErrors" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="32" name="ExclusionReason" nullable="true" remarks="" size="1000" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="33" name="PatientWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="34" name="PatientFacilityWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="35" name="PhysicianWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="36" name="NursePractitionerWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="37" name="HospitalizationWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="38" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="39" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="40" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_ProviderAssignments" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="IX_ProviderAssignments_BatchId" unique="false">
+            <column ascending="true" name="BatchId"/>
+         </index>
+         <index name="IX_ProviderAssignments_ResolvedHospitalizationId" unique="false">
+            <column ascending="true" name="ResolvedHospitalizationId"/>
+         </index>
+         <index name="IX_ProviderAssignments_ResolvedHospitalizationStatusId" unique="false">
+            <column ascending="true" name="ResolvedHospitalizationStatusId"/>
+         </index>
+         <index name="IX_ProviderAssignments_ResolvedNursePractitionerId" unique="false">
+            <column ascending="true" name="ResolvedNursePractitionerId"/>
+         </index>
+         <index name="IX_ProviderAssignments_ResolvedPatientId" unique="false">
+            <column ascending="true" name="ResolvedPatientId"/>
+         </index>
+         <index name="IX_ProviderAssignments_ResolvedPhysicianId" unique="false">
+            <column ascending="true" name="ResolvedPhysicianId"/>
+         </index>
+         <index name="IX_ProviderAssignments_ResolvedVisitId" unique="false">
+            <column ascending="true" name="ResolvedVisitId"/>
+         </index>
+      </table>
+   </tables>
+   <routines>
+      <routine dataAccess="MODIFIES" deterministic="false" name="usp_ProcessProviderAssignments" type="PROCEDURE">
+         <comment/>
+         <definition language="SQL"><![CDATA[Redacted, use --include-routine-definition]]></definition>
+         <parameters>
+            <parameter mode="IN" name="@BatchId" type="uniqueidentifier"/>
+            <parameter mode="INOUT" name="@ProcessedCount" type="int"/>
+            <parameter mode="INOUT" name="@ErrorCount" type="int"/>
+            <parameter mode="INOUT" name="@ErrorMessage" type="nvarchar"/>
+         </parameters>
+      </routine>
+      <routine dataAccess="MODIFIES" deterministic="false" name="usp_UndoProviderAssignments" type="PROCEDURE">
+         <comment/>
+         <definition language="SQL"><![CDATA[Redacted, use --include-routine-definition]]></definition>
+         <parameters>
+            <parameter mode="IN" name="@BatchId" type="uniqueidentifier"/>
+            <parameter mode="INOUT" name="@UndoneCount" type="int"/>
+            <parameter mode="INOUT" name="@ErrorMessage" type="nvarchar"/>
+         </parameters>
+      </routine>
+   </routines>
+</database>

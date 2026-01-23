@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<database name="consilient_main;encrypt=false;trustServerCertificate=true" schema="identity" type="Microsoft SQL Server - 16.00.4230">
+   <tables>
+      <table catalog="consilient_main" name="RoleClaims" remarks="" schema="Identity" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="1" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="2" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="RoleId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_RoleClaims_Roles_RoleId" implied="false" onDeleteCascade="true" schema="Identity" table="Roles"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="ClaimType" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="ClaimValue" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_RoleClaims" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="IX_RoleClaims_RoleId" unique="false">
+            <column ascending="true" name="RoleId"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="Roles" remarks="" schema="Identity" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4">
+            <child catalog="consilient_main" column="RoleId" foreignKey="FK_RoleClaims_Roles_RoleId" implied="false" onDeleteCascade="true" schema="Identity" table="RoleClaims"/>
+            <child catalog="consilient_main" column="RoleId" foreignKey="FK_UserRoles_Roles_RoleId" implied="false" onDeleteCascade="true" schema="Identity" table="UserRoles"/>
+         </column>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="1" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="2" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="Name" nullable="true" remarks="" size="512" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="NormalizedName" nullable="true" remarks="" size="512" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="ConcurrencyStamp" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_Roles" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="RoleNameIndex" unique="true">
+            <column ascending="true" name="NormalizedName"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="UserClaims" remarks="" schema="Identity" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="1" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="2" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="UserId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_UserClaims_Users_UserId" implied="false" onDeleteCascade="true" schema="Identity" table="Users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="ClaimType" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="ClaimValue" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_UserClaims" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="IX_UserClaims_UserId" unique="false">
+            <column ascending="true" name="UserId"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="UserLogins" remarks="" schema="Identity" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="LoginProvider" nullable="false" remarks="" size="256" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="ProviderKey" nullable="false" remarks="" size="256" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="2" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="3" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="ProviderDisplayName" nullable="true" remarks="" size="512" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="UserId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_UserLogins_Users_UserId" implied="false" onDeleteCascade="true" schema="Identity" table="Users"/>
+         </column>
+         <primaryKey column="LoginProvider" sequenceNumberInPK="1"/>
+         <primaryKey column="ProviderKey" sequenceNumberInPK="2"/>
+         <index name="PK_UserLogins" unique="true">
+            <column ascending="true" name="LoginProvider"/>
+            <column ascending="true" name="ProviderKey"/>
+         </index>
+         <index name="IX_UserLogins_UserId" unique="false">
+            <column ascending="true" name="UserId"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="UserRoles" remarks="" schema="Identity" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="UserId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_UserRoles_Users_UserId" implied="false" onDeleteCascade="true" schema="Identity" table="Users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="RoleId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_UserRoles_Roles_RoleId" implied="false" onDeleteCascade="true" schema="Identity" table="Roles"/>
+         </column>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="2" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="3" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <primaryKey column="UserId" sequenceNumberInPK="1"/>
+         <primaryKey column="RoleId" sequenceNumberInPK="2"/>
+         <index name="PK_UserRoles" unique="true">
+            <column ascending="true" name="UserId"/>
+            <column ascending="true" name="RoleId"/>
+         </index>
+         <index name="IX_UserRoles_RoleId" unique="false">
+            <column ascending="true" name="RoleId"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="Users" remarks="" schema="Identity" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4">
+            <child catalog="consilient_main" column="UserId" foreignKey="FK_UserClaims_Users_UserId" implied="false" onDeleteCascade="true" schema="Identity" table="UserClaims"/>
+            <child catalog="consilient_main" column="UserId" foreignKey="FK_UserLogins_Users_UserId" implied="false" onDeleteCascade="true" schema="Identity" table="UserLogins"/>
+            <child catalog="consilient_main" column="UserId" foreignKey="FK_UserRoles_Users_UserId" implied="false" onDeleteCascade="true" schema="Identity" table="UserRoles"/>
+            <child catalog="consilient_main" column="UserId" foreignKey="FK_UserTokens_Users_UserId" implied="false" onDeleteCascade="true" schema="Identity" table="UserTokens"/>
+         </column>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="1" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="2" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="UserName" nullable="true" remarks="" size="512" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="NormalizedUserName" nullable="true" remarks="" size="512" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="Email" nullable="true" remarks="" size="512" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="NormalizedEmail" nullable="true" remarks="" size="512" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="EmailConfirmed" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="PasswordHash" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="SecurityStamp" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="ConcurrencyStamp" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="PhoneNumber" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="13" name="PhoneNumberConfirmed" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="14" name="TwoFactorEnabled" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="7" id="15" name="LockoutEnd" nullable="true" remarks="" size="20" type="datetimeoffset" typeCode="-155"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="16" name="LockoutEnabled" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="17" name="AccessFailedCount" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_Users" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="UQ_Identity_Users_NormalizedEmail" unique="true">
+            <column ascending="true" name="NormalizedEmail"/>
+         </index>
+         <index name="UQ_Identity_Users_NormalizedUserName" unique="true">
+            <column ascending="true" name="NormalizedUserName"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="UserTokens" remarks="" schema="Identity" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="UserId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_UserTokens_Users_UserId" implied="false" onDeleteCascade="true" schema="Identity" table="Users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="LoginProvider" nullable="false" remarks="" size="256" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="Name" nullable="false" remarks="" size="256" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="3" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="Value" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
+         <primaryKey column="UserId" sequenceNumberInPK="1"/>
+         <primaryKey column="LoginProvider" sequenceNumberInPK="2"/>
+         <primaryKey column="Name" sequenceNumberInPK="3"/>
+         <index name="PK_UserTokens" unique="true">
+            <column ascending="true" name="UserId"/>
+            <column ascending="true" name="LoginProvider"/>
+            <column ascending="true" name="Name"/>
+         </index>
+      </table>
+   </tables>
+</database>

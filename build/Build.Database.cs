@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -17,10 +19,10 @@ partial class Build
 {
     // Database container configuration
     const string DatabaseContainerName = "consilient.dbs.container";
-    const string DatabaseConnectionString = "Server=localhost,1434;Database=consilient_main;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;";
 
     // Database paths (MigrationsProject is defined in Build.cs)
     static AbsolutePath DatabaseScriptsDir => SourceDirectory / "Databases";
+    static AbsolutePath EnvLocalFile => RootDirectory / "scripts" / ".env.local";
 
     // Parameters
     [Parameter("Migration name (required for AddMigration)")]
@@ -31,6 +33,79 @@ partial class Build
 
     [Parameter("Target database name")]
     readonly string Database = "consilient_main";
+
+    [Parameter("Database server host")]
+    readonly string? DbHost;
+
+    [Parameter("Database server port")]
+    readonly int? DbPort;
+
+    [Parameter("Database username")]
+    readonly string? DbUser;
+
+    [Parameter("Database password")]
+    readonly string? DbPassword;
+
+    [Parameter("Database runs in a Docker container")]
+    readonly bool? DbDocker;
+
+    [Parameter("Docker container name")]
+    readonly string? DbContainerName;
+
+    [Parameter("Path to docker-compose file (relative to root)")]
+    readonly string? DbComposeFile;
+
+    [Parameter("Docker service name in compose file")]
+    readonly string? DbServiceName;
+
+    [Parameter("Auto-start container if not running, stop after completion")]
+    readonly bool? DbAutoStart;
+
+    // ============================================
+    // DATABASE CONFIGURATION
+    // ============================================
+
+    Dictionary<string, string>? _envLocalCache;
+    Dictionary<string, string> EnvLocal => _envLocalCache ??= LoadEnvLocal();
+
+    Dictionary<string, string> LoadEnvLocal()
+    {
+        var env = new Dictionary<string, string>();
+        if (!EnvLocalFile.FileExists())
+        {
+            Log.Debug("Environment file not found at {Path}, using defaults", EnvLocalFile);
+            return env;
+        }
+
+        foreach (var line in File.ReadAllLines(EnvLocalFile))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+            var idx = line.IndexOf('=');
+            if (idx > 0)
+                env[line[..idx].Trim()] = line[(idx + 1)..].Trim();
+        }
+
+        Log.Debug("Loaded {Count} variables from {Path}", env.Count, EnvLocalFile);
+        return env;
+    }
+
+    string ResolvedDbHost => DbHost ?? "localhost";
+    int ResolvedDbPort => DbPort ?? 1434;
+    string ResolvedDbUser => DbUser ?? EnvLocal.GetValueOrDefault("SQL_ADMIN_USERNAME", "sa");
+    string ResolvedDbPassword => DbPassword ?? EnvLocal.GetValueOrDefault("SQL_ADMIN_PASSWORD", "YourStrong!Passw0rd");
+
+    string ResolvedConnectionString =>
+        $"Server={ResolvedDbHost},{ResolvedDbPort};Database={Database};User Id={ResolvedDbUser};Password={ResolvedDbPassword};TrustServerCertificate=True;";
+
+    // Docker configuration resolved properties
+    bool ResolvedDbDocker => DbDocker ?? bool.TryParse(EnvLocal.GetValueOrDefault("DB_DOCKER", "true"), out var v) && v;
+    string ResolvedDbContainerName => DbContainerName ?? EnvLocal.GetValueOrDefault("DB_CONTAINER_NAME", "consilient.dbs.container");
+    AbsolutePath ResolvedDbComposeFile => RootDirectory / (DbComposeFile ?? EnvLocal.GetValueOrDefault("DB_COMPOSE_FILE", "src/.docker/docker-compose.yml"));
+    string ResolvedDbServiceName => DbServiceName ?? EnvLocal.GetValueOrDefault("DB_SERVICE_NAME", "db");
+    bool ResolvedDbAutoStart => DbAutoStart ?? bool.TryParse(EnvLocal.GetValueOrDefault("DB_AUTO_START", "false"), out var v) && v;
+
+    // Track if we started the container so we know to stop it
+    bool _containerStartedByBuild = false;
 
     // ============================================
     // DATABASE HEALTH TARGETS
@@ -46,6 +121,7 @@ partial class Build
                 "docker",
                 $"inspect {DatabaseContainerName} --format=\"{{{{.State.Health.Status}}}}\"",
                 workingDirectory: RootDirectory);
+            process.WaitForExit();
 
             if (process.ExitCode != 0)
             {
@@ -83,7 +159,7 @@ partial class Build
                 Log.Information("Applying migrations for {Context}...", ctx);
 
                 DotNet(
-                    $"ef database update --context {ctx} --project \"{MigrationsProject}\" --startup-project \"{MigrationsProject}\" --connection \"{DatabaseConnectionString}\" --verbose",
+                    $"ef database update --context {ctx} --project \"{MigrationsProject}\" --startup-project \"{MigrationsProject}\" --connection \"{ResolvedConnectionString}\" --verbose",
                     workingDirectory: SourceDirectory);
 
                 Log.Information("Migrations applied successfully for {Context}", ctx);
@@ -104,7 +180,7 @@ partial class Build
                 Log.Information("Checking pending migrations for {Context}...", ctx);
 
                 DotNet(
-                    $"ef migrations list --context {ctx} --project \"{MigrationsProject}\" --startup-project \"{MigrationsProject}\" --connection \"{DatabaseConnectionString}\"",
+                    $"ef migrations list --context {ctx} --project \"{MigrationsProject}\" --startup-project \"{MigrationsProject}\" --connection \"{ResolvedConnectionString}\"",
                     workingDirectory: SourceDirectory);
             }
         });
@@ -120,6 +196,7 @@ partial class Build
                 "docker",
                 $"inspect {DatabaseContainerName} --format=\"{{{{.State.Running}}}}\"",
                 workingDirectory: RootDirectory);
+            inspectProcess.WaitForExit();
 
             bool containerRunning = inspectProcess.ExitCode == 0 &&
                 string.Join("", inspectProcess.Output.Select(o => o.Text)).Contains("true");
@@ -146,7 +223,7 @@ partial class Build
             {
                 Log.Information("Applying migrations for {Context}...", ctx);
                 DotNet(
-                    $"ef database update --context {ctx} --project \"{MigrationsProject}\" --startup-project \"{MigrationsProject}\" --connection \"{DatabaseConnectionString}\"",
+                    $"ef database update --context {ctx} --project \"{MigrationsProject}\" --startup-project \"{MigrationsProject}\" --connection \"{ResolvedConnectionString}\"",
                     workingDirectory: SourceDirectory);
             }
 
@@ -320,6 +397,7 @@ namespace {migrationNamespace}
                 "docker",
                 $"rm -f {DatabaseContainerName}",
                 workingDirectory: RootDirectory);
+            removeProcess.WaitForExit();
             // Ignore exit code - container may not exist
 
             // Ensure the container is running first
@@ -344,6 +422,7 @@ namespace {migrationNamespace}
                 "docker",
                 $"exec {DatabaseContainerName} bash -c \"echo 'SELECT COUNT(*) FROM {Database}.INFORMATION_SCHEMA.TABLES' | /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -C -h -1\"",
                 workingDirectory: RootDirectory);
+            verifyProcess.WaitForExit();
 
             if (verifyProcess.ExitCode == 0)
             {
@@ -365,6 +444,282 @@ namespace {migrationNamespace}
         });
 
     // ============================================
+    // DATABASE DOCUMENTATION TARGETS
+    // ============================================
+
+    [Parameter("Use Docker for SchemaSpy (default: true)")]
+    readonly bool UseDocker = true;
+
+    [Parameter("Environment name for docs")]
+    readonly string Environment = "local";
+
+    static AbsolutePath DatabaseDocsTemplateDir => RootDirectory / "build" / "database-docs" / "templates";
+    static AbsolutePath DatabaseDocsOutputDir => DocsDirectory / "dbs";
+    static AbsolutePath SchemaSpyDriversDir => RootDirectory / "src" / ".docker" / "schemaspy-drivers";
+
+    const string MssqlJdbcDriverVersion = "12.6.1.jre11";
+    const string MssqlJdbcDriverFileName = $"mssql-jdbc-{MssqlJdbcDriverVersion}.jar";
+    const string MssqlJdbcDriverUrl = $"https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.6.1.jre11/mssql-jdbc-{MssqlJdbcDriverVersion}.jar";
+
+    Target GenerateDatabaseDocs => _ => _
+        .Description("Generate SchemaSpy database documentation")
+        .Executes(() =>
+        {
+            Log.Information("Generating database documentation...");
+
+            // Ensure output directory exists
+            DatabaseDocsOutputDir.CreateDirectory();
+
+            // Get databases to document - all schemas
+            var databases = new[] { ("consilient_main", "consilient_main", new[] { "clinical", "compensation", "identity", "staging" }) };
+
+            try
+            {
+                // Handle container lifecycle
+                if (ResolvedDbDocker && ResolvedDbAutoStart)
+                {
+                    EnsureContainerRunning();
+                }
+                else if (ResolvedDbDocker)
+                {
+                    CheckContainerHealth();
+                }
+
+                foreach (var (dbName, actualDbName, schemas) in databases)
+                {
+                    var dbOutputDir = DatabaseDocsOutputDir / dbName.ToLower();
+                    dbOutputDir.CreateDirectory();
+
+                    foreach (var schema in schemas)
+                    {
+                        var schemaOutputDir = dbOutputDir / schema.ToLower();
+                        schemaOutputDir.CreateDirectory();
+
+                        Log.Information("Generating docs for {Database}.{Schema}...", actualDbName, schema);
+
+                        if (ResolvedDbDocker)
+                        {
+                            RunSchemaSpyViaDockerCompose(actualDbName, schema, schemaOutputDir);
+                        }
+                        else if (UseDocker)
+                        {
+                            RunSchemaSpyViaDocker(actualDbName, schema, schemaOutputDir);
+                        }
+                        else
+                        {
+                            RunSchemaSpyDirect(actualDbName, schema, schemaOutputDir);
+                        }
+                    }
+
+                    // Generate per-database index page
+                    GenerateDatabaseIndexPage(dbName, actualDbName, schemas, dbOutputDir);
+                }
+
+                // Generate main index page
+                GenerateMainIndexPage(databases);
+
+                // Create root redirect
+                var rootRedirect = DocsDirectory / "index.html";
+                if (!rootRedirect.FileExists() || File.ReadAllText(rootRedirect).Contains("Redirecting to"))
+                {
+                    File.WriteAllText(rootRedirect, @"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta http-equiv=""refresh"" content=""0; url=dbs/"">
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to <a href=""dbs/"">database documentation</a>...</p>
+</body>
+</html>");
+                }
+
+                Log.Information("Database documentation generated at {Path}", DatabaseDocsOutputDir);
+            }
+            finally
+            {
+                // Stop container if we started it
+                if (ResolvedDbDocker && ResolvedDbAutoStart)
+                {
+                    StopContainerIfStartedByBuild();
+                }
+            }
+        });
+
+    void RunSchemaSpyViaDockerCompose(string database, string schema, AbsolutePath outputDir)
+    {
+        Log.Information("Running SchemaSpy via docker-compose for {Database}.{Schema}...", database, schema);
+
+        var composeDir = ResolvedDbComposeFile.Parent;
+        var composeFileName = ResolvedDbComposeFile.Name;
+
+        // Calculate relative output path from compose file location
+        var relativeOutputPath = outputDir.ToString().Replace(RootDirectory.ToString(), "").TrimStart('\\', '/');
+        var dockerOutputPath = $"/output/{database}/{schema}";
+
+        // Set environment variables for this run
+        var envVars = new Dictionary<string, string>
+        {
+            ["SCHEMASPY_SCHEMA"] = schema,
+            ["SCHEMASPY_OUTPUT"] = dockerOutputPath,
+            ["SA_PASSWORD"] = ResolvedDbPassword
+        };
+
+        // Use --no-deps since we already verified db is healthy (avoids container name conflicts)
+        var args = $"compose -f \"{composeFileName}\" --profile tools run --rm --no-deps schemaspy";
+
+        Log.Debug("Running: docker {Args} with SCHEMASPY_SCHEMA={Schema}, SCHEMASPY_OUTPUT={Output}",
+            args, schema, dockerOutputPath);
+
+        RunDockerComposeWithEnv(args, composeDir, envVars);
+
+        Log.Information("SchemaSpy completed for {Database}.{Schema}", database, schema);
+    }
+
+    void RunSchemaSpyViaDocker(string database, string schema, AbsolutePath outputDir)
+    {
+        Log.Information("Running SchemaSpy via Docker for {Database}.{Schema}...", database, schema);
+
+        // Note: On Windows, we need to use the host.docker.internal to reach the host's localhost
+        var hostAddress = OperatingSystem.IsWindows() ? "host.docker.internal" : "localhost";
+
+        var args = $"run --rm " +
+            $"-v \"{outputDir}:/output\" " +
+            $"schemaspy/schemaspy:latest " +
+            $"-t mssql17 " +
+            $"-host {hostAddress} -port {ResolvedDbPort} " +
+            $"-db {database} " +
+            $"-u {ResolvedDbUser} -p {ResolvedDbPassword} " +
+            $"-s {schema} " +
+            $"-connprops \"encrypt=false;trustServerCertificate=true\" " +
+            $"-norows -vizjs -imageformat svg";
+
+        var process = ProcessTasks.StartProcess("docker", args, workingDirectory: RootDirectory);
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            Log.Warning("SchemaSpy failed for {Database}.{Schema}. Check if database is running and accessible.", database, schema);
+        }
+    }
+
+    void RunSchemaSpyDirect(string database, string schema, AbsolutePath outputDir)
+    {
+        Log.Information("Running SchemaSpy directly for {Database}.{Schema}...", database, schema);
+
+        var schemaSpyJar = RootDirectory / "build" / "tools" / "schemaspy.jar";
+        var jdbcDriver = RootDirectory / "build" / "tools" / "mssql-jdbc.jar";
+
+        if (!schemaSpyJar.FileExists())
+        {
+            Log.Error("SchemaSpy JAR not found at {Path}. Download it or use --use-docker", schemaSpyJar);
+            throw new Exception($"SchemaSpy JAR not found: {schemaSpyJar}");
+        }
+
+        var args = $"-jar \"{schemaSpyJar}\" " +
+            $"-t mssql17 " +
+            $"-dp \"{jdbcDriver.Parent}\" " +
+            $"-host {ResolvedDbHost} -port {ResolvedDbPort} " +
+            $"-db {database} " +
+            $"-u {ResolvedDbUser} -p {ResolvedDbPassword} " +
+            $"-s {schema} " +
+            $"-o \"{outputDir}\" " +
+            $"-connprops \"encrypt=false;trustServerCertificate=true\" " +
+            $"-norows -vizjs -imageformat svg";
+
+        var process = ProcessTasks.StartProcess("java", args, workingDirectory: RootDirectory);
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            Log.Warning("SchemaSpy failed for {Database}.{Schema}. Ensure Java 17+ is installed.", database, schema);
+        }
+    }
+
+    void GenerateMainIndexPage((string dbName, string actualDbName, string[] schemas)[] databases)
+    {
+        var templatePath = DatabaseDocsTemplateDir / "index.template.html";
+        if (!templatePath.FileExists())
+        {
+            Log.Warning("Index template not found at {Path}, skipping index generation", templatePath);
+            return;
+        }
+
+        var template = File.ReadAllText(templatePath);
+
+        // Build database cards HTML
+        var databaseCards = new System.Text.StringBuilder();
+        foreach (var (dbName, actualDbName, schemas) in databases)
+        {
+            var schemaList = string.Join("", schemas.Select(s => $"<li>{HtmlEncode(s)}</li>"));
+            databaseCards.AppendLine($@"<div class=""database-card"">
+      <h2>🗄️ {HtmlEncode(dbName)}</h2>
+      <p><strong>Physical Database:</strong> {HtmlEncode(actualDbName)}</p>
+      <p><strong>Schemas ({schemas.Length}):</strong></p>
+      <ul>{schemaList}</ul>
+      <a href=""./{dbName.ToLower()}/index.html"" class=""btn"">View Documentation →</a>
+    </div>");
+        }
+
+        var content = template
+            .Replace("{{CURRENT_DATE}}", HtmlEncode(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC")))
+            .Replace("{{DATABASE_COUNT}}", databases.Length.ToString())
+            .Replace("{{ENVIRONMENT}}", HtmlEncode(Environment))
+            .Replace("{{DATABASE_CARDS}}", databaseCards.ToString());
+
+        var outputPath = DatabaseDocsOutputDir / "index.html";
+        File.WriteAllText(outputPath, content);
+        Log.Information("Generated main index at {Path}", outputPath);
+    }
+
+    void GenerateDatabaseIndexPage(string dbName, string actualDbName, string[] schemas, AbsolutePath outputDir)
+    {
+        var templatePath = DatabaseDocsTemplateDir / "database.template.html";
+        if (!templatePath.FileExists())
+        {
+            Log.Warning("Database template not found at {Path}, skipping database index", templatePath);
+            return;
+        }
+
+        var template = File.ReadAllText(templatePath);
+
+        // Build schema cards HTML
+        var schemaCards = new System.Text.StringBuilder();
+        foreach (var schema in schemas)
+        {
+            schemaCards.AppendLine($@"<div class=""schema-card"">
+          <h2>📋 {HtmlEncode(schema)}</h2>
+          <p>View tables, relationships, and constraints for the <strong>{HtmlEncode(schema)}</strong> schema.</p>
+          <a href=""./{schema.ToLower()}/index.html"" class=""btn"">View Schema →</a>
+        </div>");
+        }
+
+        var content = template
+            .Replace("{{DB_NAME}}", HtmlEncode(dbName))
+            .Replace("{{ACTUAL_DB_NAME}}", HtmlEncode(actualDbName))
+            .Replace("{{SCHEMA_COUNT}}", schemas.Length.ToString())
+            .Replace("{{ENVIRONMENT}}", HtmlEncode(Environment))
+            .Replace("{{CURRENT_DATE}}", HtmlEncode(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC")))
+            .Replace("{{SCHEMA_CARDS}}", schemaCards.ToString());
+
+        var outputPath = outputDir / "index.html";
+        File.WriteAllText(outputPath, content);
+        Log.Information("Generated database index at {Path}", outputPath);
+    }
+
+    static string HtmlEncode(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+        return input
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&#39;");
+    }
+
+    // ============================================
     // HELPER METHODS
     // ============================================
 
@@ -379,6 +734,7 @@ namespace {migrationNamespace}
                 "docker",
                 $"inspect {DatabaseContainerName} --format=\"{{{{.State.Health.Status}}}}\"",
                 workingDirectory: RootDirectory);
+            process.WaitForExit();
 
             if (process.ExitCode == 0)
             {
@@ -402,5 +758,169 @@ namespace {migrationNamespace}
         }
 
         throw new Exception($"Database did not become healthy after {retries} attempts ({retries * intervalSeconds}s)");
+    }
+
+    bool IsContainerRunning(string containerName)
+    {
+        var process = ProcessTasks.StartProcess(
+            "docker",
+            $"inspect {containerName} --format=\"{{{{.State.Running}}}}\"",
+            workingDirectory: RootDirectory);
+        process.WaitForExit();
+
+        return process.ExitCode == 0 &&
+            string.Join("", process.Output.Select(o => o.Text)).Contains("true");
+    }
+
+    void EnsureContainerRunning()
+    {
+        if (!ResolvedDbDocker)
+        {
+            Log.Debug("Docker mode disabled, skipping container check");
+            return;
+        }
+
+        if (IsContainerRunning(ResolvedDbContainerName))
+        {
+            Log.Information("Database container {Container} is already running", ResolvedDbContainerName);
+            return;
+        }
+
+        Log.Information("Starting database container via docker-compose...");
+        var composeDir = ResolvedDbComposeFile.Parent;
+        var composeFileName = ResolvedDbComposeFile.Name;
+
+        var process = ProcessTasks.StartProcess(
+            "docker",
+            $"compose -f \"{composeFileName}\" up -d {ResolvedDbServiceName}",
+            workingDirectory: composeDir);
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            throw new Exception($"Failed to start database container. Exit code: {process.ExitCode}");
+        }
+
+        _containerStartedByBuild = true;
+        Log.Information("Database container started");
+
+        // Wait for healthy status
+        WaitForDatabaseHealthy(retries: 15, intervalSeconds: 5);
+    }
+
+    void StopContainerIfStartedByBuild()
+    {
+        if (!_containerStartedByBuild)
+        {
+            Log.Debug("Container was not started by build, skipping stop");
+            return;
+        }
+
+        Log.Information("Stopping database container (was started by build)...");
+        var composeDir = ResolvedDbComposeFile.Parent;
+        var composeFileName = ResolvedDbComposeFile.Name;
+
+        var process = ProcessTasks.StartProcess(
+            "docker",
+            $"compose -f \"{composeFileName}\" stop {ResolvedDbServiceName}",
+            workingDirectory: composeDir);
+        process.WaitForExit();
+
+        _containerStartedByBuild = false;
+        Log.Information("Database container stopped");
+    }
+
+    void CheckContainerHealth()
+    {
+        if (!ResolvedDbDocker)
+        {
+            Log.Debug("Docker mode disabled, skipping health check");
+            return;
+        }
+
+        if (!IsContainerRunning(ResolvedDbContainerName))
+        {
+            throw new Exception($"Database container '{ResolvedDbContainerName}' is not running. Start it with: docker compose up -d {ResolvedDbServiceName}");
+        }
+
+        Log.Information("Checking database container health...");
+        var process = ProcessTasks.StartProcess(
+            "docker",
+            $"inspect {ResolvedDbContainerName} --format=\"{{{{.State.Health.Status}}}}\"",
+            workingDirectory: RootDirectory);
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            throw new Exception($"Failed to check container health for '{ResolvedDbContainerName}'");
+        }
+
+        var status = string.Join("", process.Output.Select(o => o.Text)).Trim().Trim('"');
+        if (status != "healthy")
+        {
+            throw new Exception($"Database container is not healthy. Current status: {status}");
+        }
+
+        Log.Information("Database container is healthy");
+    }
+
+    void RunDockerComposeWithEnv(string arguments, AbsolutePath workingDirectory, Dictionary<string, string>? envVars = null)
+    {
+        Log.Debug("Running docker {Arguments}", arguments);
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "docker",
+            Arguments = arguments,
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        // Add environment variables
+        if (envVars != null)
+        {
+            foreach (var (key, value) in envVars)
+            {
+                startInfo.EnvironmentVariables[key] = value;
+            }
+        }
+
+        using var process = new Process { StartInfo = startInfo };
+
+        var output = new List<string>();
+        var errors = new List<string>();
+
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (e.Data != null)
+            {
+                output.Add(e.Data);
+                Log.Debug(e.Data);
+            }
+        };
+
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (e.Data != null)
+            {
+                errors.Add(e.Data);
+                Log.Debug(e.Data);
+            }
+        };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            var errorOutput = string.Join("\n", errors);
+            Log.Error("Docker command failed: {Error}", errorOutput);
+            throw new Exception($"Docker command failed with exit code {process.ExitCode}");
+        }
     }
 }

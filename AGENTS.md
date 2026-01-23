@@ -112,6 +112,7 @@ build.cmd Compile --configuration Release
 | | `AddMigration` | Add a new EF Core migration |
 | | `GenerateMigrationScript` | Generate SQL script from latest migration |
 | | `ResetDatabase` | Reset local database (destroys all data) |
+| | `GenerateDatabaseDocs` | Generate SchemaSpy database documentation |
 | **Docker** | `DockerUp` | Start all Docker services |
 | | `DockerDown` | Stop all Docker services |
 | | `DockerBuild` | Build Docker images |
@@ -132,6 +133,8 @@ build.cmd Compile --configuration Release
 | `--migration-name` | Migration name (required for `AddMigration`) |
 | `--sequence-number` | Override sequence number for SQL script (1-99) |
 | `--database` | Target database name (default: `consilient_main`) |
+| `--use-docker` | Use Docker for SchemaSpy (default: true) |
+| `--environment` | Environment name for docs (default: `local`) |
 
 ---
 

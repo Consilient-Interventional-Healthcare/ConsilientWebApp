@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<database name="consilient_main;encrypt=false;trustServerCertificate=true" schema="compensation" type="Microsoft SQL Server - 16.00.4230">
+   <tables>
+      <table catalog="consilient_main" name="Employees" remarks="" schema="Compensation" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4">
+            <child catalog="consilient_main" column="EmployeeId" foreignKey="FK_Providers_Employees_EmployeeId" implied="false" onDeleteCascade="false" schema="Clinical" table="Providers"/>
+            <child catalog="consilient_main" column="EmployeeID" foreignKey="FK_ProviderContracts_Employee" implied="false" onDeleteCascade="false" schema="Compensation" table="ProviderContracts"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="FirstName" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="LastName" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="TitleExtension" nullable="true" remarks="" size="4" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="Role" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="Email" nullable="false" remarks="" size="200" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="6" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="7" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_Employees" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="ProviderContracts" remarks="" schema="Compensation" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="EmployeeID" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderContracts_Employee" implied="false" onDeleteCascade="false" schema="Compensation" table="Employees"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="FacilityId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderContracts_Facility" implied="false" onDeleteCascade="false" schema="Clinical" table="Facilities"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="StartDate" nullable="false" remarks="" size="6" type="date" typeCode="91"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="EndDate" nullable="false" remarks="" size="6" type="date" typeCode="91"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="6" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_ProviderContract" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="IX_ProviderContracts_EmployeeID" unique="false">
+            <column ascending="true" name="EmployeeID"/>
+         </index>
+         <index name="IX_ProviderContracts_FacilityId" unique="false">
+            <column ascending="true" name="FacilityId"/>
+         </index>
+      </table>
+   </tables>
+</database>

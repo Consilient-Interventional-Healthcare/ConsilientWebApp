@@ -440,3 +440,6 @@ tmpclaude-*
 .nuke/temp/
 build/.tmp/
 /.nuke
+
+# SchemaSpy JDBC drivers (downloaded at build time)
+/src/.docker/schemaspy-drivers/*.jar

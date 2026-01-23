@@ -95,6 +95,42 @@ services:
       - consilient-net
     restart: unless-stopped
 
+  schemaspy:
+    image: schemaspy/schemaspy:latest
+    container_name: consilient.tools.schemaspy.container
+    profiles:
+      - tools
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - SCHEMASPY_SCHEMA=${SCHEMASPY_SCHEMA:-clinical}
+      - SCHEMASPY_OUTPUT=${SCHEMASPY_OUTPUT:-/output}
+    volumes:
+      - ../../docs/dbs:/output
+      - ./schemaspy-drivers:/drivers_inc
+    command:
+      - "-t"
+      - "mssql17"
+      - "-host"
+      - "db"
+      - "-port"
+      - "1433"
+      - "-db"
+      - "consilient_main;encrypt=false;trustServerCertificate=true"
+      - "-u"
+      - "sa"
+      - "-p"
+      - "${SA_PASSWORD}"
+      - "-s"
+      - "${SCHEMASPY_SCHEMA:-clinical}"
+      - "-norows"
+      - "-vizjs"
+      - "-imageformat"
+      - "svg"
+    networks:
+      - consilient-net
+
   ollama:
     image: docker.io/ollama/ollama:latest
     container_name: consilient.ai.ollama.container
