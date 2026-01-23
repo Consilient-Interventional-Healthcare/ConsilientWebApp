@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Nuke.Common;
@@ -467,6 +468,9 @@ namespace {migrationNamespace}
         {
             Log.Information("Generating database documentation...");
 
+            // Ensure JDBC driver is available for SchemaSpy
+            EnsureJdbcDriver();
+
             // Ensure output directory exists
             DatabaseDocsOutputDir.CreateDirectory();
 
@@ -921,6 +925,38 @@ namespace {migrationNamespace}
             var errorOutput = string.Join("\n", errors);
             Log.Error("Docker command failed: {Error}", errorOutput);
             throw new Exception($"Docker command failed with exit code {process.ExitCode}");
+        }
+    }
+
+    void EnsureJdbcDriver()
+    {
+        var driverPath = SchemaSpyDriversDir / MssqlJdbcDriverFileName;
+
+        if (driverPath.FileExists())
+        {
+            Log.Debug("JDBC driver already exists at {Path}", driverPath);
+            return;
+        }
+
+        Log.Information("Downloading MSSQL JDBC driver {Version}...", MssqlJdbcDriverVersion);
+        SchemaSpyDriversDir.CreateDirectory();
+
+        using var httpClient = new HttpClient();
+        httpClient.Timeout = TimeSpan.FromMinutes(5);
+
+        try
+        {
+            var response = httpClient.GetAsync(MssqlJdbcDriverUrl).GetAwaiter().GetResult();
+            response.EnsureSuccessStatusCode();
+
+            using var fileStream = File.Create(driverPath);
+            response.Content.CopyToAsync(fileStream).GetAwaiter().GetResult();
+
+            Log.Information("JDBC driver downloaded to {Path}", driverPath);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to download JDBC driver from {MssqlJdbcDriverUrl}: {ex.Message}", ex);
         }
     }
 }
