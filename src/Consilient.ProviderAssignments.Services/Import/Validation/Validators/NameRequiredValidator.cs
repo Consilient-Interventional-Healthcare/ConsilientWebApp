@@ -9,7 +9,7 @@ namespace Consilient.ProviderAssignments.Services.Import.Validation.Validators
     {
         public override ValidationResult Validate(ExcelProviderAssignmentRow row, int rowNumber)
         {
-            if (IsValidName(row.Name))
+            if (!IsValidName(row.Name))
                 return ValidationResult.Failed(Error(rowNumber, nameof(row.Name), "Name is required"));
 
             return ValidationResult.Success();

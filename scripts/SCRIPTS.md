@@ -13,9 +13,10 @@ Central index of all scripts for debugging, troubleshooting, and automation.
 | Docker | KillContainers.ps1 | Stop/remove Docker containers |
 | Terraform | Run-TerraformPlan.ps1 | Run terraform plan locally |
 | Loki | Get-LokiLogs.ps1 | Query logs from Loki using LogCLI |
-| Database | AddMigration.ps1 | Add new EF migration |
-| Database | CreateScript.ps1 | Generate idempotent SQL script |
-| Database | UpdateDatabase.ps1 | Add migrations + generate scripts for all contexts |
+| Database | Add-Migration.ps1 | Add new EF migration |
+| Database | New-MigrationScript.ps1 | Generate idempotent SQL script |
+| Database | Update-LocalDatabase.ps1 | Apply migrations to local database |
+| Database | Reset-LocalDatabase.ps1 | Reset local database container with fresh schema |
 
 ## Secrets Management
 
@@ -107,9 +108,10 @@ EF Core migration utilities.
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| **AddMigration.ps1** | Add new EF migration | `.\AddMigration.ps1 -MigrationName "AddUserTable"` |
-| **CreateScript.ps1** | Generate idempotent SQL script | `.\CreateScript.ps1` |
-| **UpdateDatabase.ps1** | Add migrations + generate scripts for all contexts | `.\UpdateDatabase.ps1 -MigrationName "AddUserTable"` |
+| **Add-Migration.ps1** | Add new EF migration | `.\Add-Migration.ps1 -MigrationName "AddUserTable"` |
+| **New-MigrationScript.ps1** | Generate idempotent SQL script | `.\New-MigrationScript.ps1` |
+| **Update-LocalDatabase.ps1** | Apply migrations to local database | `.\Update-LocalDatabase.ps1 -Context Both` |
+| **Reset-LocalDatabase.ps1** | Reset local database container with fresh schema | `.\Reset-LocalDatabase.ps1 -Force` |
 
 ### Placeholders
 

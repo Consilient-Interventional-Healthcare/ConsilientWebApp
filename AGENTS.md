@@ -74,17 +74,67 @@ This file contains the GraphQL Schema Definition Language (SDL) for the EntityGr
 
 ---
 
-## Code Generation Scripts
+## Build System
 
-All scripts run automatically after rebuild via MSBuild targets in `src/Consilient.Api/Consilient.Api.csproj`:
+The repository uses a NUKE build system via `build.cmd` at the repository root. This is the primary way to build, test, and generate code.
 
-| Script | Output | Trigger |
-|--------|--------|---------|
-| `src/Scripts/openapi-generation/Generate-OpenApiDoc.ps1` | `docs/openapi.json` | Rebuild |
-| `src/Scripts/graphql-schema-generation/Generate-GraphQLSchema.ps1` | `docs/schema.graphql` | Rebuild |
-| `src/Scripts/typescript-type-generation/Generate-ApiTypes.ps1` | TypeScript interfaces | Rebuild |
+### Usage
 
-All scripts use assembly reflection (no app startup).
+```bash
+# Run the default target (Compile)
+build.cmd
+
+# Run a specific target
+build.cmd GenerateAllTypes
+
+# Force regeneration even if outputs are up-to-date
+build.cmd GenerateAllTypes --force
+
+# Run with specific configuration
+build.cmd Compile --configuration Release
+```
+
+### Available Targets
+
+| Category | Target | Description |
+|----------|--------|-------------|
+| **Build** | `Compile` | Build all projects (default) |
+| | `Clean` | Clean build outputs |
+| | `Restore` | Restore NuGet packages |
+| | `Test` | Run all backend tests |
+| **Code Generation** | `GenerateAllTypes` | Generate all types (GraphQL + REST merged) |
+| | `GenerateGraphQL` | Generate GraphQL schema + TypeScript types |
+| | `GenerateApi` | Generate OpenAPI doc + TypeScript types |
+| **Database** | `EnsureDatabase` | Start DB container + apply migrations |
+| | `UpdateLocalDatabase` | Apply pending EF migrations |
+| | `CheckMigrations` | List pending migrations |
+| **Docker** | `DockerUp` | Start all Docker services |
+| | `DockerDown` | Stop all Docker services |
+| | `DockerBuild` | Build Docker images |
+| **Frontend** | `BuildFrontend` | Build frontend for production |
+| | `TestFrontend` | Run frontend tests (Vitest) |
+| | `LintFrontend` | Run ESLint on frontend |
+
+### Parameters
+
+| Parameter | Description |
+|-----------|-------------|
+| `--configuration` | Build configuration (`Debug` or `Release`) |
+| `--force` | Force regeneration even if outputs are up-to-date |
+| `--skip-database` | Skip database operations |
+| `--db-context` | Target context (`ConsilientDbContext`, `UsersDbContext`, or `Both`) |
+
+---
+
+## Code Generation Outputs
+
+Code generation is handled by the NUKE build system. Run `build.cmd GenerateAllTypes` to regenerate all types.
+
+| Output | Source | Target |
+|--------|--------|--------|
+| `docs/openapi.json` | REST API controllers | OpenAPI 3.0 spec |
+| `docs/schema.graphql` | EntityGraphQL schema | GraphQL SDL |
+| `src/Consilient.WebApp2/src/types/api.generated.ts` | Both specs | TypeScript interfaces |
 
 ---
 

@@ -66,6 +66,7 @@ namespace Consilient.Data.Migrations.Consilient
                     ResolvedPatientId = table.Column<int>(type: "int", nullable: true),
                     ResolvedNursePractitionerId = table.Column<int>(type: "int", nullable: true),
                     ResolvedVisitId = table.Column<int>(type: "int", nullable: true),
+                    ResolvedHospitalizationStatusId = table.Column<int>(type: "int", nullable: true),
                     ShouldImport = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     Imported = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
                     ValidationErrors = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -82,6 +83,13 @@ namespace Consilient.Data.Migrations.Consilient
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ProviderAssignments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProviderAssignments_HospitalizationStatuses_ResolvedHospitalizationStatusId",
+                        column: x => x.ResolvedHospitalizationStatusId,
+                        principalSchema: "Clinical",
+                        principalTable: "HospitalizationStatuses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ProviderAssignments_Hospitalizations_ResolvedHospitalizationId",
                         column: x => x.ResolvedHospitalizationId,
@@ -149,6 +157,12 @@ namespace Consilient.Data.Migrations.Consilient
                 schema: "staging",
                 table: "ProviderAssignments",
                 column: "ResolvedHospitalizationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProviderAssignments_ResolvedHospitalizationStatusId",
+                schema: "staging",
+                table: "ProviderAssignments",
+                column: "ResolvedHospitalizationStatusId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ProviderAssignments_ResolvedNursePractitionerId",

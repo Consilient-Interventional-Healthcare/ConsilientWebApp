@@ -53,6 +53,7 @@ namespace Consilient.ProviderAssignments.Services
             services.AddScoped<INursePractitionerResolver, NursePractitionerResolver>();
             services.AddScoped<IPatientResolver, PatientResolver>();
             services.AddScoped<IHospitalizationResolver, HospitalizationResolver>();
+            services.AddScoped<IHospitalizationStatusResolver, HospitalizationStatusResolver>();
             services.AddScoped<IVisitResolver, VisitResolver>();
 
             // Register resolver provider (creates resolvers with explicit cache/dbContext)

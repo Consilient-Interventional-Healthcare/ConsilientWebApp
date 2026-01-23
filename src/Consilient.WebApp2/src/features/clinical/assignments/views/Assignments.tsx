@@ -170,6 +170,7 @@ export default function Assignments() {
               <TableHead>Physician</TableHead>
               <TableHead>Nurse Practitioner</TableHead>
               <TableHead>Hospitalization</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Room</TableHead>
               <TableHead>Imported</TableHead>
             </TableRow>
@@ -190,6 +191,7 @@ export default function Assignments() {
                 <TableCell>{renderNameWithBadge(item.physician, item.resolvedPhysicianId)}</TableCell>
                 <TableCell>{renderNameWithBadge(item.nursePractitioner, item.resolvedNursePractitionerId)}</TableCell>
                 <TableCell>{renderCaseIdWithBadge(item.hospitalization, item.resolvedHospitalizationId)}</TableCell>
+                <TableCell>{item.resolvedHospitalizationStatusId != null ? item.hospitalizationStatus?.code : ''}</TableCell>
                 <TableCell>{`${item.visit?.room ?? ''} ${item.visit?.bed ?? ''}`.trim()}</TableCell>
                 <TableCell>{item.visit?.imported ? 'Yes' : 'No'}</TableCell>
               </TableRow>

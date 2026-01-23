@@ -90,8 +90,11 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             //ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId);
             await RunResolvers<IHospitalizationResolver>(cache, facilityId, date, records);
 
+            await RunResolvers<IHospitalizationStatusResolver>(cache, facilityId, date, records);
+
             //ReportProgress(progress, "Visit", 0, totalRecords, batchId);
             await RunResolvers<IVisitResolver>(cache, facilityId, date, records);
+
         }
 
         private async Task RunResolvers<TResolver>(IResolutionCache cache, int facilityId, DateOnly date, List<ProviderAssignment> records)

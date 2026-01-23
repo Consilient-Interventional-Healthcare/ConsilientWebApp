@@ -28,5 +28,6 @@ namespace Consilient.ProviderAssignments.Services.Resolution
     internal interface INursePractitionerResolver : IResolver { }
     internal interface IPatientResolver : IResolver { }
     internal interface IHospitalizationResolver : IResolver { }
+    internal interface IHospitalizationStatusResolver : IResolver { }
     internal interface IVisitResolver : IResolver { }
 }

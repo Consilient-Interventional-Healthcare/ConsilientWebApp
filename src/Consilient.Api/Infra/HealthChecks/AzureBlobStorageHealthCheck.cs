@@ -1,6 +1,5 @@
 using Azure;
 using Consilient.Infrastructure.Storage;
-using Consilient.Infrastructure.Storage.Contracts;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 
@@ -13,20 +12,14 @@ namespace Consilient.Api.Infra.HealthChecks;
 /// 3. Read access - can retrieve the test blob
 /// 4. Cleanup - can delete the test blob
 /// </summary>
-internal class AzureBlobStorageHealthCheck : IHealthCheck
+internal class AzureBlobStorageHealthCheck(AzureBlobFileStorage fileStorage) : IHealthCheck
 {
-    private readonly AzureBlobFileStorage _fileStorage;
-    private readonly Serilog.ILogger _logger;
+    private readonly AzureBlobFileStorage _fileStorage = fileStorage;
+    private readonly Serilog.ILogger _logger = Log.Logger;
 
     // Cache the last successful check to avoid excessive operations
     private static DateTime _lastSuccessfulCheck = DateTime.MinValue;
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
-
-    public AzureBlobStorageHealthCheck(AzureBlobFileStorage fileStorage)
-    {
-        _fileStorage = fileStorage;
-        _logger = Log.Logger;
-    }
+    private static readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(5);
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context,
@@ -35,7 +28,7 @@ internal class AzureBlobStorageHealthCheck : IHealthCheck
         var data = new Dictionary<string, object>();
 
         // Return cached result if recent check was successful
-        if (DateTime.UtcNow - _lastSuccessfulCheck < CacheDuration)
+        if (DateTime.UtcNow - _lastSuccessfulCheck < _cacheDuration)
         {
             data["status"] = "cached";
             data["lastCheck"] = _lastSuccessfulCheck.ToString("o");
@@ -117,7 +110,7 @@ internal class AzureBlobStorageHealthCheck : IHealthCheck
         catch (RequestFailedException ex)
         {
             data["error"] = ex.Message;
-            data["errorCode"] = ex.ErrorCode;
+            data["errorCode"] = ex.ErrorCode ?? string.Empty;
             data["status"] = ex.Status;
 
             _logger.Warning(ex, "Azure Blob Storage health check failed with RequestFailedException");

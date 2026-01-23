@@ -40,6 +40,7 @@ namespace Consilient.Data.Entities
         public int? ResolvedPatientId { get; set; }
         public int? ResolvedNursePractitionerId { get; set; }
         public int? ResolvedVisitId { get; set; }
+        public int? ResolvedHospitalizationStatusId { get; set; }
 
         /* Navigation Properties */
         public virtual Patient? ResolvedPatient { get; set; }
@@ -47,9 +48,9 @@ namespace Consilient.Data.Entities
         public virtual Provider? ResolvedNursePractitioner { get; set; }
         public virtual Hospitalization? ResolvedHospitalization { get; set; }
         public virtual Visit? ResolvedVisit { get; set; }
+        public virtual HospitalizationStatus? ResolvedHospitalizationStatus { get; set; }
 
-
-        /* Import Statuses */ 
+        /* Import Statuses */
         public bool ShouldImport { get; set; }
         public bool Imported { get; set; }
         public string? ValidationErrorsJson { get; set; }

@@ -39,6 +39,8 @@ class ProviderAssignmentsService {
           resolvedPhysicianId
           resolvedNursePractitionerId
           resolvedHospitalizationId
+          resolvedHospitalizationStatusId
+          hospitalizationStatus { code }
         }
       }
     }`;

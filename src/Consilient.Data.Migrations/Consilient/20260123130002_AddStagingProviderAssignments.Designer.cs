@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Consilient.Data.Migrations.Consilient
 {
     [DbContext(typeof(ConsilientDbContext))]
-    [Migration("20260121172646_AddStagingProviderAssignments")]
+    [Migration("20260123130002_AddStagingProviderAssignments")]
     partial class AddStagingProviderAssignments
     {
         /// <inheritdoc />
@@ -677,6 +677,9 @@ namespace Consilient.Data.Migrations.Consilient
                     b.Property<int?>("ResolvedHospitalizationId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ResolvedHospitalizationStatusId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("ResolvedNursePractitionerId")
                         .HasColumnType("int");
 
@@ -722,6 +725,8 @@ namespace Consilient.Data.Migrations.Consilient
                     b.HasIndex("BatchId");
 
                     b.HasIndex("ResolvedHospitalizationId");
+
+                    b.HasIndex("ResolvedHospitalizationStatusId");
 
                     b.HasIndex("ResolvedNursePractitionerId");
 
@@ -1186,6 +1191,11 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasForeignKey("ResolvedHospitalizationId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Consilient.Data.Entities.HospitalizationStatus", "ResolvedHospitalizationStatus")
+                        .WithMany()
+                        .HasForeignKey("ResolvedHospitalizationStatusId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Consilient.Data.Entities.Provider", "ResolvedNursePractitioner")
                         .WithMany()
                         .HasForeignKey("ResolvedNursePractitionerId")
@@ -1207,6 +1217,8 @@ namespace Consilient.Data.Migrations.Consilient
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ResolvedHospitalization");
+
+                    b.Navigation("ResolvedHospitalizationStatus");
 
                     b.Navigation("ResolvedNursePractitioner");
 

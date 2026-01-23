@@ -29,6 +29,7 @@ namespace Consilient.Data.Configurations
             entity.Property(e => e.ResolvedHospitalizationId);
             entity.Property(e => e.ResolvedPatientId);
             entity.Property(e => e.ResolvedNursePractitionerId);
+            entity.Property(e => e.ResolvedHospitalizationStatusId);
             entity.Property(e => e.BatchId).IsRequired();
             entity.Property(e => e.Imported).IsRequired().HasDefaultValue(false);
             entity.Property(e => e.ValidationErrorsJson)
@@ -78,6 +79,12 @@ namespace Consilient.Data.Configurations
             entity.HasOne(e => e.ResolvedVisit)
                 .WithMany()
                 .HasForeignKey(e => e.ResolvedVisitId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ResolvedHospitalizationStatus)
+                .WithMany()
+                .HasForeignKey(e => e.ResolvedHospitalizationStatusId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
