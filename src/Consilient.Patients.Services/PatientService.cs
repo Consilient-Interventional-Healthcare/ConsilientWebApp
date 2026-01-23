@@ -1,5 +1,5 @@
 ﻿using Consilient.Data;
-using Consilient.Data.Entities;
+using Consilient.Data.Entities.Clinical;
 using Consilient.Patients.Contracts;
 using Consilient.Patients.Contracts.Models;
 using Consilient.Patients.Contracts.Models.Requests;

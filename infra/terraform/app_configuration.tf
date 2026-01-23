@@ -1033,6 +1033,237 @@ resource "azurerm_app_configuration_key" "bghost_filestorage_connection" {
 }
 
 # ============================================================================
+# CONFIGURATION KEYS - CONNECTION STRINGS (BackgroundHost)
+# ============================================================================
+# BackgroundHost connection strings referencing same Key Vault secrets as API
+
+# BackgroundHost Main Database Connection String (Key Vault Reference)
+resource "azurerm_app_configuration_key" "bghost_connection_default" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:ConnectionStrings:DefaultConnection"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/sql-connection-string-main"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.sql_connection_main
+  ]
+}
+
+# BackgroundHost Hangfire Database Connection String (Key Vault Reference)
+resource "azurerm_app_configuration_key" "bghost_connection_hangfire" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:ConnectionStrings:HangfireConnection"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/sql-connection-string-hangfire"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.sql_connection_hangfire
+  ]
+}
+
+# ============================================================================
+# CONFIGURATION KEYS - AUTHENTICATION (BackgroundHost)
+# ============================================================================
+# BackgroundHost dashboard authentication settings (uses same JWT as API)
+
+# Dashboard Auth Enabled flag
+resource "azurerm_app_configuration_key" "bghost_auth_enabled" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:ApplicationSettings:Authentication:DashboardAuthEnabled"
+  label                  = var.environment
+  value                  = var.backgroundhost_dashboard_auth_enabled ? "true" : "false"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# JWT Secret (Key Vault Reference - same as API)
+resource "azurerm_app_configuration_key" "bghost_jwt_secret" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:ApplicationSettings:Authentication:UserService:Jwt:Secret"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/jwt-signing-secret"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.jwt_signing_secret
+  ]
+}
+
+# JWT Issuer (same as API)
+resource "azurerm_app_configuration_key" "bghost_jwt_issuer" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:ApplicationSettings:Authentication:UserService:Jwt:Issuer"
+  label                  = var.environment
+  value                  = "https://${local.api.service_name}.azurewebsites.net"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# JWT Audience (same as API)
+resource "azurerm_app_configuration_key" "bghost_jwt_audience" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:ApplicationSettings:Authentication:UserService:Jwt:Audience"
+  label                  = var.environment
+  value                  = "https://${local.api.service_name}.azurewebsites.net"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# ============================================================================
+# CONFIGURATION KEYS - LOGGING (BackgroundHost)
+# ============================================================================
+# BackgroundHost logging configuration for Grafana Loki
+
+# Logging Level
+resource "azurerm_app_configuration_key" "bghost_logging_level" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Logging:LogLevel:Default"
+  label                  = var.environment
+  value                  = var.environment == "dev" ? "Debug" : "Information"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "logging"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# Loki URL (Key Vault Reference)
+resource "azurerm_app_configuration_key" "bghost_loki_url" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Logging:GrafanaLoki:Url"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/grafana-loki-url"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.grafana_loki_url
+  ]
+}
+
+# Loki Push Endpoint
+resource "azurerm_app_configuration_key" "bghost_loki_endpoint" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Logging:GrafanaLoki:PushEndpoint"
+  label                  = var.environment
+  value                  = "/loki/api/v1/push"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "logging"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# Loki Batch Posting Limit
+resource "azurerm_app_configuration_key" "bghost_loki_batch_limit" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Logging:GrafanaLoki:BatchPostingLimit"
+  label                  = var.environment
+  value                  = "100"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "logging"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# Loki Username (Key Vault Reference)
+resource "azurerm_app_configuration_key" "bghost_loki_username" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Logging:GrafanaLoki:Username"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/loki-basic-auth-username"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.loki_basic_auth_username
+  ]
+}
+
+# Loki Password (Key Vault Reference)
+resource "azurerm_app_configuration_key" "bghost_loki_password" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Logging:GrafanaLoki:Password"
+  label                  = var.environment
+  type                   = "vault"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/loki-basic-auth-password"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "secrets"
+  }
+
+  depends_on = [
+    azurerm_role_assignment.terraform_appconfig_owner,
+    azurerm_key_vault_secret.loki_basic_auth_password
+  ]
+}
+
+# ============================================================================
 # SENTINEL KEY FOR CONFIGURATION REFRESH (Production Only)
 # ============================================================================
 

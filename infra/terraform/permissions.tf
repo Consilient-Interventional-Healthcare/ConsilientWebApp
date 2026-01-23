@@ -45,6 +45,13 @@ resource "azurerm_role_assignment" "react_acr_pull" {
   principal_id         = module.react_app.app_service_principal_id
 }
 
+# Grant BackgroundHost App Service permission to pull images from ACR
+resource "azurerm_role_assignment" "backgroundhost_acr_pull" {
+  scope                = azurerm_container_registry.main.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_linux_web_app.backgroundhost.identity[0].principal_id
+}
+
 # ============================================================================
 # KEY VAULT PERMISSIONS
 # ============================================================================
@@ -82,6 +89,16 @@ resource "azurerm_role_assignment" "appconfig_keyvault_secrets_user" {
     azurerm_app_configuration.main,
     azurerm_key_vault.main
   ]
+}
+
+# Grant BackgroundHost App Service "Key Vault Secrets User" role (read-only access)
+# Allows BackgroundHost to read secrets at runtime via its managed identity
+resource "azurerm_role_assignment" "backgroundhost_keyvault_secrets_user" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_linux_web_app.backgroundhost.identity[0].principal_id
+
+  depends_on = [azurerm_linux_web_app.backgroundhost]
 }
 
 # Grant user "Key Vault Secrets Officer" role (manage secrets)
@@ -145,6 +162,19 @@ resource "azurerm_role_assignment" "api_appconfig_reader" {
   ]
 }
 
+# Grant BackgroundHost App Service "App Configuration Data Reader" role
+# Allows BackgroundHost to read configuration at runtime via its managed identity
+resource "azurerm_role_assignment" "backgroundhost_appconfig_reader" {
+  scope                = azurerm_app_configuration.main.id
+  role_definition_name = "App Configuration Data Reader"
+  principal_id         = azurerm_linux_web_app.backgroundhost.identity[0].principal_id
+
+  depends_on = [
+    azurerm_app_configuration.main,
+    azurerm_linux_web_app.backgroundhost
+  ]
+}
+
 # ============================================================================
 # STORAGE PERMISSIONS
 # ============================================================================
@@ -171,8 +201,13 @@ resource "azurerm_role_assignment" "api_uploads_blob" {
   principal_id         = module.api_app.app_service_principal_id
 }
 
-# Grant BackgroundHost permission (when added as separate App Service)
-# For now, if BackgroundHost runs in same container as API, this is not needed
+# Grant BackgroundHost App Service "Storage Blob Data Contributor" role
+# Allows BackgroundHost to read uploaded files for background processing
+resource "azurerm_role_assignment" "backgroundhost_uploads_blob" {
+  scope                = azurerm_storage_account.uploads.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_linux_web_app.backgroundhost.identity[0].principal_id
+}
 
 # ============================================================================
 # GRAFANA PERMISSIONS

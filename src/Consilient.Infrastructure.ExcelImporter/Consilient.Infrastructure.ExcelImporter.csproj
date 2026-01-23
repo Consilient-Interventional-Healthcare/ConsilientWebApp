@@ -30,8 +30,8 @@
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="ExcelDataReader" Version="3.8.0" />
     <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.3" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.12" />
     <PackageReference Include="NPOI" Version="2.7.5" />
   </ItemGroup>
 

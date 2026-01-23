@@ -111,6 +111,30 @@ output "react_app_service_principal_id" {
 }
 
 # --------------------------------------------------------------------------
+# BACKGROUNDHOST APP SERVICE OUTPUTS
+# --------------------------------------------------------------------------
+
+output "backgroundhost_app_service_name" {
+  description = "The name of the BackgroundHost App Service"
+  value       = azurerm_linux_web_app.backgroundhost.name
+}
+
+output "backgroundhost_app_service_hostname" {
+  description = "The default hostname of the BackgroundHost App Service"
+  value       = azurerm_linux_web_app.backgroundhost.default_hostname
+}
+
+output "backgroundhost_app_url" {
+  description = "The full URL of the BackgroundHost Hangfire Dashboard"
+  value       = "https://${azurerm_linux_web_app.backgroundhost.default_hostname}"
+}
+
+output "backgroundhost_app_service_principal_id" {
+  description = "The principal ID of the BackgroundHost App Service managed identity"
+  value       = azurerm_linux_web_app.backgroundhost.identity[0].principal_id
+}
+
+# --------------------------------------------------------------------------
 # KEY VAULT OUTPUTS
 # --------------------------------------------------------------------------
 

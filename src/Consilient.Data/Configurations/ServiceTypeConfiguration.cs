@@ -11,7 +11,6 @@ namespace Consilient.Data.Configurations
             base.Configure(entity);
             entity.ToTable("ServiceTypes", ConsilientDbContext.Schemas.Clinical);
 
-            entity.Property(e => e.Cptcode).IsRequired().HasColumnName("CPTCode");
             entity.Property(e => e.Description).IsRequired().HasMaxLength(100);
         }
     }

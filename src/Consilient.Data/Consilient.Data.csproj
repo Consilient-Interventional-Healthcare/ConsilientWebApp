@@ -39,12 +39,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.12">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -58,5 +59,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Consilient.Common\Consilient.Common.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Configurations\Billing\" />
+    <Folder Include="Entities\Billing\" />
   </ItemGroup>
 </Project>

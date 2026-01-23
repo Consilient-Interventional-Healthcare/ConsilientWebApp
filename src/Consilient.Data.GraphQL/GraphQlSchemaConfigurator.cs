@@ -1,5 +1,7 @@
 ﻿using Consilient.Common;
 using Consilient.Data.Entities;
+using Consilient.Data.Entities.Clinical;
+using Consilient.Data.Entities.Staging;
 using Consilient.Data.GraphQL.Models;
 using EntityGraphQL.Schema;
 using EntityGraphQL.Schema.FieldExtensions;
@@ -75,7 +77,6 @@ namespace Consilient.Data.GraphQL
             insuranceType.AddField(m => m.Id, nameof(Insurance.Id));
 
             var serviceTypeType = schema.AddType<ServiceType>(ToGraphQlName(nameof(ServiceType)), $"{ToGraphQlName(nameof(ServiceType))} object");
-            serviceTypeType.AddField(m => m.Cptcode, nameof(ServiceType.Cptcode));
             serviceTypeType.AddField(m => m.Id, nameof(ServiceType.Id));
             serviceTypeType.AddField(m => m.Description, nameof(ServiceType.Description));
 

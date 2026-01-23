@@ -1,5 +1,5 @@
 ﻿using Consilient.Data;
-using Consilient.Data.Entities;
+using Consilient.Data.Entities.Clinical;
 using Consilient.Visits.Contracts;
 using Consilient.Visits.Contracts.Models;
 using Consilient.Visits.Contracts.Models.Requests;
@@ -126,7 +126,6 @@ namespace Consilient.Visits.Services
                 .Where(e => e.Id == id)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(e => e.IsScribeServiceOnly, _ => request.IsScribeServiceOnly)
-                    .SetProperty(e => e.ServiceTypeId, _ => request.ServiceTypeId)
                 );
 
             if (affected == 0)

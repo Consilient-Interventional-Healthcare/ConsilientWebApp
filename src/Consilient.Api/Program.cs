@@ -33,7 +33,6 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
 using Serilog.Events;
 using Prometheus;
-using Consilient.Api.Infra.HealthChecks;
 
 namespace Consilient.Api
 {

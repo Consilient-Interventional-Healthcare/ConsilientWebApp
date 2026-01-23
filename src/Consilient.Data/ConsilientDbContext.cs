@@ -1,5 +1,8 @@
-﻿using Consilient.Data.Configurations;
-using Consilient.Data.Entities;
+﻿using Consilient.Data.Entities;
+using Consilient.Data.Entities.Billing;
+using Consilient.Data.Entities.Clinical;
+using Consilient.Data.Entities.Compensation;
+using Consilient.Data.Entities.Staging;
 using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.Data
@@ -42,22 +45,28 @@ namespace Consilient.Data
 
         public virtual DbSet<Visit> Visits { get; set; } = null!;
 
+        public virtual DbSet<BillingCode> BillingCodes { get; set; } = null!;
+
+        public virtual DbSet<VisitServiceBilling> VisitServiceBillings { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Only apply configurations in the base "Consilient.Data.Configurations" namespace.
-            // This intentionally excludes sub-namespaces such as "Consilient.Data.Configurations.Identity"
-            // so Identity entity configurations are not picked up by the main Consilient migration.
+            // Apply configurations from Consilient.Data.Configurations and all sub-namespaces
+            // except Identity (which uses a separate DbContext)
             modelBuilder.ApplyConfigurationsFromAssembly(
                 GetType().Assembly,
-                type => type.Namespace != null && type.Namespace == typeof(EmployeeConfiguration).Namespace);
+                type => type.Namespace != null
+                    && type.Namespace.StartsWith("Consilient.Data.Configurations")
+                    && !type.Namespace.StartsWith("Consilient.Data.Configurations.Identity"));
         }
 
         internal static class Schemas
         {
             public const string Clinical = "Clinical";
             public const string Compensation = "Compensation";
+            public const string Billing = "Billing";
         }
     }
 }

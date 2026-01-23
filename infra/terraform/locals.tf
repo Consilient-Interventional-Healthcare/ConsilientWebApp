@@ -46,8 +46,9 @@ locals {
 
   # New suffixes for multi-tier naming
   region_suffix       = lower(replace(var.region, " ", ""))
-  random_suffix_api   = substr(md5("${var.subscription_id}-${var.resource_group_name}-api-${var.environment}"), 6, 4)
-  random_suffix_react = substr(md5("${var.subscription_id}-${var.resource_group_name}-react-${var.environment}"), 6, 4)
+  random_suffix_api     = substr(md5("${var.subscription_id}-${var.resource_group_name}-api-${var.environment}"), 6, 4)
+  random_suffix_react   = substr(md5("${var.subscription_id}-${var.resource_group_name}-react-${var.environment}"), 6, 4)
+  random_suffix_bghost  = substr(md5("${var.subscription_id}-${var.resource_group_name}-bghost-${var.environment}"), 6, 4)
 
   # --------------------------------------------------------------------------
   # DEFAULT SKU OPTIONS PER ENVIRONMENT
@@ -161,6 +162,28 @@ locals {
       dev  = true
       prod = false
     }
+  }
+
+  # --------------------------------------------------------------------------
+  # BACKGROUNDHOST APP SERVICE
+  # --------------------------------------------------------------------------
+  backgroundhost = {
+    service_plan_name = "${var.project_name}-asp-bghost-${var.environment}"
+
+    # Multi-tier hostname naming strategy (same pattern as API)
+    service_name = (
+      local.effective_naming_tier == 0 ? "${var.project_name}-bghost-${var.environment}" :
+      local.effective_naming_tier == 1 ? "${var.project_name}-bghost-${var.environment}-${local.region_suffix}" :
+      "${var.project_name}-bghost-${var.environment}-${local.random_suffix_bghost}"
+    )
+
+    # Uses default_skus.app_service_plan for each environment
+    # Override here if BackgroundHost needs different SKUs than default
+    sku = local.default_skus[var.environment].app_service_plan
+
+    # Health check configuration
+    health_check_path                 = "/health"
+    health_check_eviction_time_in_min = 5
   }
 
   # --------------------------------------------------------------------------

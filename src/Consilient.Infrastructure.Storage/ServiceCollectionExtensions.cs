@@ -1,6 +1,7 @@
 using Consilient.Infrastructure.Storage.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Consilient.Infrastructure.Storage
 {
@@ -28,6 +29,28 @@ namespace Consilient.Infrastructure.Storage
             }
 
             return services;
+        }
+
+        /// <summary>
+        /// Adds the Azure Blob Storage health check.
+        /// Only registers if the FileStorage provider is configured as "AzureBlob".
+        /// </summary>
+        /// <param name="builder">The health checks builder.</param>
+        /// <param name="configuration">The configuration to check the storage provider.</param>
+        /// <returns>The health checks builder for chaining.</returns>
+        public static IHealthChecksBuilder AddAzureBlobStorageHealthCheck(
+            this IHealthChecksBuilder builder,
+            IConfiguration configuration)
+        {
+            var options = configuration.GetSection(FileStorageOptions.SectionName).Get<FileStorageOptions>()
+                          ?? new FileStorageOptions();
+
+            if (string.Equals(options.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase))
+            {
+                builder.AddCheck<AzureBlobStorageHealthCheck>("azure_blob_storage", tags: ["infrastructure", "storage"]);
+            }
+
+            return builder;
         }
     }
 }

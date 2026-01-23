@@ -1,5 +1,5 @@
 ﻿using Consilient.Data;
-using Consilient.Data.Entities;
+using Consilient.Data.Entities.Compensation;
 using Consilient.Employees.Contracts;
 using Consilient.Employees.Contracts.Dtos;
 using Consilient.Employees.Contracts.Requests;

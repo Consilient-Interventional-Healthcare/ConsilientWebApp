@@ -85,7 +85,6 @@ namespace Consilient.Shared.Services
                     .Where(st => st.Id == id)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(st => st.Description, st => request.Description ?? st.Description)
-                        .SetProperty(st => st.Cptcode, st => request.CptCode ?? st.Cptcode)
                     );
 
                 if (affected == 0)

@@ -10,10 +10,5 @@ namespace Consilient.Shared.Contracts.Requests
         /// New description value, or null to leave unchanged.
         /// </summary>
         public string? Description { get; set; }
-
-        /// <summary>
-        /// New CPT code value, or null to leave unchanged.
-        /// </summary>
-        public int? CptCode { get; set; }
     }
 }

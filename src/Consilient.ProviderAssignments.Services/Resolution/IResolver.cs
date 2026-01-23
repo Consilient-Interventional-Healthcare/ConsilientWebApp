@@ -1,4 +1,4 @@
-﻿using Consilient.Data.Entities;
+﻿using Consilient.Data.Entities.Staging;
 
 namespace Consilient.ProviderAssignments.Services.Resolution
 {

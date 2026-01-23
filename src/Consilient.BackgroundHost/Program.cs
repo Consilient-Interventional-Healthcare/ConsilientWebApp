@@ -1,4 +1,5 @@
-﻿using Consilient.Background.Workers;
+using Azure.Identity;
+using Consilient.Background.Workers;
 using Consilient.BackgroundHost.Configuration;
 using Consilient.BackgroundHost.Infra.Security;
 using Consilient.BackgroundHost.Init;
@@ -19,7 +20,10 @@ using Consilient.Visits.Services;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
@@ -36,6 +40,40 @@ namespace Consilient.BackgroundHost
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
+
+            // Add Azure App Configuration as primary source for runtime configuration
+            var appConfigEndpoint = builder.Configuration["AppConfiguration:Endpoint"];
+            if (!string.IsNullOrEmpty(appConfigEndpoint))
+            {
+                try
+                {
+                    var credential = new DefaultAzureCredential();
+                    var appConfigLabel = builder.Environment.EnvironmentName switch
+                    {
+                        "Development" => "dev",
+                        "Production" => "prod",
+                        _ => builder.Environment.EnvironmentName.ToLower()
+                    };
+
+                    builder.Configuration.AddAzureAppConfiguration(options =>
+                    {
+                        options
+                            .Connect(new Uri(appConfigEndpoint), credential)
+                            .Select("BackgroundHost:*", LabelFilter.Null)
+                            .Select("BackgroundHost:*", appConfigLabel)
+                            .TrimKeyPrefix("BackgroundHost:")
+                            .ConfigureKeyVault(kv =>
+                            {
+                                kv.SetCredential(credential);
+                            });
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // Log warning and continue with local config if App Configuration fails
+                    Console.WriteLine($"Warning: Failed to load Azure App Configuration: {ex.Message}");
+                }
+            }
 
             var logger = CreateLogger(builder);
             Log.Logger = logger;
@@ -65,12 +103,26 @@ namespace Consilient.BackgroundHost
                 builder.Services.AddWorkers();
                 builder.Services.RegisterLogging(logger);
 
+                // Configure health checks
+                builder.Services.AddHealthChecks()
+                    .AddDbContextCheck<ConsilientDbContext>()
+                    .AddLokiHealthCheck(builder.Services)
+                    .AddAzureBlobStorageHealthCheck(builder.Configuration);
+
                 var app = builder.Build();
 
+                // Health check endpoint with JSON response
+                app.MapHealthChecks("/health", new HealthCheckOptions
+                {
+                    ResponseWriter = HealthCheckResponseWriter.WriteJsonResponse
+                });
+
+                // Configure Hangfire dashboard with JWT authentication
+                var authFilter = new JwtAuthorizationFilter(builder.Configuration);
                 app.UseHangfireDashboard(string.Empty, new DashboardOptions
                 {
                     DashboardTitle = $"{builder.Environment.ApplicationName} ({builder.Environment.EnvironmentName.ToUpper()})",
-                    Authorization = [new MyAuthorizationFilter()]
+                    Authorization = [authFilter]
                 });
 
                 app.Run();

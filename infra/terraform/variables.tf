@@ -278,3 +278,38 @@ EOT
   sensitive   = true
   default     = ""
 }
+
+# ============================================================================
+# BACKGROUNDHOST VARIABLES
+# ============================================================================
+
+variable "backgroundhost_separate_plan" {
+  description = <<EOT
+Use a separate App Service Plan for BackgroundHost.
+When false, BackgroundHost shares the API App Service Plan (cost optimization for dev).
+When true, creates a dedicated plan (recommended for production to enable independent scaling).
+EOT
+  type        = bool
+  default     = false
+}
+
+variable "backgroundhost_custom_domain" {
+  description = <<EOT
+Custom domain name for the BackgroundHost App Service.
+If provided, Azure will automatically issue and manage an SSL certificate for this domain.
+The domain must be registered and its DNS must be configured to point to the App Service.
+Example: "jobs.example.com"
+EOT
+  type        = string
+  default     = ""
+}
+
+variable "backgroundhost_dashboard_auth_enabled" {
+  description = <<EOT
+Enable JWT authentication for Hangfire dashboard.
+When true, users must be authenticated via the same JWT as the API.
+When false, dashboard is open (NOT recommended for production).
+EOT
+  type        = bool
+  default     = true
+}
