@@ -27,7 +27,7 @@ This file contains the complete OpenAPI 3.0 specification for the Consilient API
 - JWT authentication requirements
 - Error responses (including ProblemDetails)
 
-**Generation:** Auto-generated during rebuild via Swashbuckle CLI. Script: `src/Scripts/openapi-generation/Generate-OpenApiDoc.ps1`
+**Generation:** Auto-generated via Nuke build system. Run `build.cmd GenerateOpenApiDoc` or `build.cmd GenerateAllTypes`.
 
 **Usage:** When discussing API endpoints, parameters, or schemas, always refer to this file for accurate, current definitions.
 
@@ -43,7 +43,7 @@ This file contains the GraphQL Schema Definition Language (SDL) for the EntityGr
 
 **Endpoint:** `/graphql` (with GraphiQL UI at `/ui/graphiql` in development)
 
-**Generation:** Auto-generated during rebuild via EntityGraphQL. Script: `src/Scripts/graphql-schema-generation/Generate-GraphQLSchema.ps1`
+**Generation:** Auto-generated via Nuke build system. Run `build.cmd GenerateGraphQLSchema` or `build.cmd GenerateAllTypes`.
 
 **Usage:** When discussing GraphQL queries, types, or schema structure, refer to this file for accurate, current definitions.
 
@@ -108,10 +108,16 @@ build.cmd Compile --configuration Release
 | **Database** | `EnsureDatabase` | Start DB container + apply migrations |
 | | `UpdateLocalDatabase` | Apply pending EF migrations |
 | | `CheckMigrations` | List pending migrations |
+| | `CheckDatabaseHealth` | Verify database container is healthy |
+| | `AddMigration` | Add a new EF Core migration |
+| | `GenerateMigrationScript` | Generate SQL script from latest migration |
+| | `ResetDatabase` | Reset local database (destroys all data) |
 | **Docker** | `DockerUp` | Start all Docker services |
 | | `DockerDown` | Stop all Docker services |
 | | `DockerBuild` | Build Docker images |
-| **Frontend** | `BuildFrontend` | Build frontend for production |
+| | `DockerRestart` | Restart all Docker services |
+| **Frontend** | `RestoreFrontend` | Install frontend npm dependencies |
+| | `BuildFrontend` | Build frontend for production |
 | | `TestFrontend` | Run frontend tests (Vitest) |
 | | `LintFrontend` | Run ESLint on frontend |
 
@@ -120,9 +126,12 @@ build.cmd Compile --configuration Release
 | Parameter | Description |
 |-----------|-------------|
 | `--configuration` | Build configuration (`Debug` or `Release`) |
-| `--force` | Force regeneration even if outputs are up-to-date |
+| `--force` | Force regeneration / skip confirmation prompts |
 | `--skip-database` | Skip database operations |
 | `--db-context` | Target context (`ConsilientDbContext`, `UsersDbContext`, or `Both`) |
+| `--migration-name` | Migration name (required for `AddMigration`) |
+| `--sequence-number` | Override sequence number for SQL script (1-99) |
+| `--database` | Target database name (default: `consilient_main`) |
 
 ---
 
@@ -157,7 +166,7 @@ Code generation is handled by the NUKE build system. Run `build.cmd GenerateAllT
 - **Routing:** Convention: `[Route("api/[controller]")]`
 
 ### Database
-- **Migrations:** Use EF Core migrations (`Add-Migration`, `Update-Database`)
+- **Migrations:** Use Nuke build targets (`build.cmd AddMigration`, `build.cmd UpdateLocalDatabase`)
 - **Relationships:** Configured via Fluent API in `src/Consilient.Data/Configuration/`
 - **Queries:** Use async methods (`ToListAsync()`, `FirstOrDefaultAsync()`, etc.)
 - **Interceptors:** Custom save changes interceptor tracks hospitalization status changes
@@ -182,9 +191,11 @@ Code generation is handled by the NUKE build system. Run `build.cmd GenerateAllT
 ### Database Changes
 1. Update entity in `src/Consilient.Data/Entities/`
 2. Configure relationship in `src/Consilient.Data/Configuration/` if needed
-3. Run `Add-Migration [MigrationName]` in Package Manager Console
-4. Review migration, then `Update-Database`
-5. Commit migration files
+3. Run `build.cmd AddMigration --db-context ConsilientDbContext --migration-name YourMigrationName`
+4. Review migration in `src/Consilient.Data.Migrations/`
+5. Run `build.cmd UpdateLocalDatabase` to apply locally
+6. (Optional) Run `build.cmd GenerateMigrationScript` to generate SQL for deployment
+7. Commit migration files
 
 ### Background Jobs
 - Define jobs in `src/Consilient.Background.Workers/`
