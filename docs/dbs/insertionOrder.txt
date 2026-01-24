@@ -1,0 +1,14 @@
+Facilities
+HospitalizationStatuses
+Patients
+Insurances
+ServiceTypes
+VisitEventTypes
+Hospitalizations
+Visits
+Providers
+HospitalizationInsurances
+HospitalizationStatusHistories
+PatientFacilities
+VisitAttendants
+VisitEvents
