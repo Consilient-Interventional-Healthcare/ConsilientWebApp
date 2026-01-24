@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Consilient.Common.Contracts;
 
 namespace Consilient.BackgroundHost
 {

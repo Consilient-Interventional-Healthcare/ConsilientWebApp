@@ -1,4 +1,4 @@
-namespace Consilient.Common.Services
+namespace Consilient.Common.Contracts
 {
     public interface ICurrentUserService
     {

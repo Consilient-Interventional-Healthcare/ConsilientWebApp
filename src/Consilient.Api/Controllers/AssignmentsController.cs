@@ -1,11 +1,11 @@
 using Consilient.Api.Configuration;
 using Consilient.Api.Helpers;
 using Consilient.Background.Workers.ProviderAssignments;
-using Consilient.Common.Services;
 using Consilient.Infrastructure.Storage.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Consilient.Infrastructure.Storage;
 using Consilient.ProviderAssignments.Contracts.Import;
+using Consilient.Common.Contracts;
 
 namespace Consilient.Api.Controllers
 {

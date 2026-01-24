@@ -1,4 +1,4 @@
-using Consilient.Common.Services;
+using Consilient.Common.Contracts;
 using Consilient.Data.Entities.Clinical;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;

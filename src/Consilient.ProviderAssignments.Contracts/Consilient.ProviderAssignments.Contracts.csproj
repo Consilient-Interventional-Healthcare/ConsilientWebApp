@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.ExcelImporter\Consilient.Infrastructure.ExcelImporter.csproj" />
   </ItemGroup>
 

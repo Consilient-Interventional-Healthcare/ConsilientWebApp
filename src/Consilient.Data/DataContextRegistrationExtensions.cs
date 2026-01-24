@@ -1,4 +1,4 @@
-﻿using Consilient.Common.Services;
+﻿using Consilient.Common.Contracts;
 using Consilient.Data.Interceptors;
 using Microsoft.Extensions.DependencyInjection;
 

@@ -1,4 +1,5 @@
 using Consilient.Api.Infra.Authentication;
+using Consilient.Api.Infra.Contracts;
 using Consilient.Users.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;

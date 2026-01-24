@@ -1,6 +1,7 @@
 using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Validators;
 using Consilient.ProviderAssignments.Contracts;
+using Consilient.ProviderAssignments.Contracts.Import;
 
 namespace Consilient.ProviderAssignments.Services.Import.Validation.Validators
 {

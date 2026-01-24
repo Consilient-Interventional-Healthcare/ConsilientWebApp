@@ -76,8 +76,6 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             DateOnly date,
             List<ProviderAssignment> records)
         {
-            //var totalRecords = records.Count;
-
             //ReportProgress(progress, "Physician", 0, totalRecords, batchId);
             await RunResolvers<IPhysicianResolver>(cache, facilityId, date, records);
 
@@ -90,7 +88,7 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             //ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId);
             await RunResolvers<IHospitalizationResolver>(cache, facilityId, date, records);
 
-            await RunResolvers<IHospitalizationStatusResolver>(cache, facilityId, date, records);
+            //await RunResolvers<IHospitalizationStatusResolver>(cache, facilityId, date, records);
 
             //ReportProgress(progress, "Visit", 0, totalRecords, batchId);
             await RunResolvers<IVisitResolver>(cache, facilityId, date, records);
@@ -136,20 +134,20 @@ namespace Consilient.ProviderAssignments.Services.Resolution
             return batch;
         }
 
-        private static void ReportProgress(
-            IProgress<ResolutionProgressEventArgs>? progress,
-            string stage,
-            int processedRecords,
-            int totalRecords,
-            Guid batchId)
-        {
-            progress?.Report(new ResolutionProgressEventArgs
-            {
-                Stage = stage,
-                ProcessedRecords = processedRecords,
-                TotalRecords = totalRecords,
-                BatchId = batchId
-            });
-        }
+        //private static void ReportProgress(
+        //    IProgress<ResolutionProgressEventArgs>? progress,
+        //    string stage,
+        //    int processedRecords,
+        //    int totalRecords,
+        //    Guid batchId)
+        //{
+        //    progress?.Report(new ResolutionProgressEventArgs
+        //    {
+        //        Stage = stage,
+        //        ProcessedRecords = processedRecords,
+        //        TotalRecords = totalRecords,
+        //        BatchId = batchId
+        //    });
+        //}
     }
 }

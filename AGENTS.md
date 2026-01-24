@@ -10,42 +10,221 @@
 | GraphQL Schema | [`docs/schema.graphql`](docs/schema.graphql) | GraphQL SDL |
 | API Source | [`src/Consilient.Api/`](src/Consilient.Api/) | Controllers, configuration |
 | Frontend | [`src/Consilient.WebApp2/`](src/Consilient.WebApp2/) | React TypeScript SPA |
+| Scripts | [`scripts/`](scripts/) | PowerShell utilities and secrets |
 
 ---
 
-## API Documentation
+## Command Execution Guidelines (Windows)
 
-### REST API (OpenAPI)
+### Operating System Context
+- **Platform:** Windows with PowerShell
+- **Shell:** PowerShell (default), cmd.exe (fallback)
+- **Working Directory:** Use absolute paths or paths relative to repository root
 
-**Location:** `docs/openapi.json` (at repository root)
+### Script Execution
 
-This file contains the complete OpenAPI 3.0 specification for the Consilient API, including:
-- All REST API endpoints and routes (controllers in `src/Consilient.Api/Controllers/`)
-- HTTP verbs (GET, POST, PUT, DELETE, PATCH)
-- Request/response schemas and data models
-- Query parameters, path parameters, and request bodies
-- JWT authentication requirements
-- Error responses (including ProblemDetails)
+**Preferred: PowerShell scripts with `.\` prefix**
+```powershell
+.\build.ps1 GenerateAllTypes
+.\build.ps1 AddMigration --migration-name MyMigration --db-context ConsilientDbContext
+```
 
-**Generation:** Auto-generated via Nuke build system. Run `build.cmd GenerateOpenApiDoc` or `build.cmd GenerateAllTypes`.
+**Alternative: Batch files (no prefix needed)**
+```cmd
+build.cmd GenerateAllTypes
+```
 
-**Usage:** When discussing API endpoints, parameters, or schemas, always refer to this file for accurate, current definitions.
+**Never use:**
+```bash
+# Linux-style execution (will fail)
+./build.ps1
+bash build.sh
+```
 
-### GraphQL API
+### Quoting Rules
 
-**Location:** `docs/schema.graphql` (at repository root)
+**Parameters with spaces or special characters:** Use double quotes
+```powershell
+.\build.ps1 AddMigration --migration-name "Add Patient Notes" --db-context ConsilientDbContext
+```
 
-This file contains the GraphQL Schema Definition Language (SDL) for the EntityGraphQL API, including:
-- All GraphQL types (visit, patient, provider, hospitalization, etc.)
-- Query definitions with required parameters
-- Enum types (ProviderType, SortDirectionEnum)
-- Input types for sorting and filtering
+**Simple parameters:** No quotes needed
+```powershell
+.\build.ps1 AddMigration --migration-name AddPatientNotes --db-context ConsilientDbContext
+```
 
-**Endpoint:** `/graphql` (with GraphiQL UI at `/ui/graphiql` in development)
+**Avoid single quotes for command arguments** - PowerShell treats them as literal strings without variable expansion.
 
-**Generation:** Auto-generated via Nuke build system. Run `build.cmd GenerateGraphQLSchema` or `build.cmd GenerateAllTypes`.
+### npm/Node.js Commands
 
-**Usage:** When discussing GraphQL queries, types, or schema structure, refer to this file for accurate, current definitions.
+**Frontend directory:** `src/Consilient.WebApp2/`
+```powershell
+# Run from repository root - specify working directory
+cd src/Consilient.WebApp2 && npm run dev
+
+# Or use npm prefix
+npm --prefix src/Consilient.WebApp2 run dev
+```
+
+### Command Chaining
+
+```powershell
+# Sequential (stop on failure)
+cd src/Consilient.WebApp2 && npm install && npm run build
+
+# Sequential (continue on failure)
+Remove-Item temp.txt; Write-Host "Done"
+```
+
+### Path Conventions
+
+```powershell
+# Both work in most contexts
+src/Consilient.WebApp2/          # Forward slashes (cross-platform)
+src\Consilient.WebApp2\          # Backslashes (Windows native)
+```
+
+### Common Pitfalls to Avoid
+
+| Incorrect | Correct | Reason |
+|-----------|---------|--------|
+| `./build.ps1` | `.\build.ps1` | Windows uses backslash |
+| `build.ps1` | `.\build.ps1` | Explicit path required for security |
+| `'string param'` | `"string param"` | Use double quotes for parameters |
+| `export VAR=value` | `$env:VAR = "value"` | PowerShell syntax |
+
+---
+
+## Secrets Management
+
+### Credentials Location
+
+Secrets are stored in environment files in `scripts/`:
+
+| File | Purpose | Usage |
+|------|---------|-------|
+| `scripts/.env.dev` | **Remote dev environment credentials** | **Primary - use this for most operations** |
+| `scripts/.env.local` | Local development credentials | Rarely used |
+| `scripts/.env.template` | Template for creating new env files | Reference only |
+
+### Loading Secrets
+
+```powershell
+# Load the environment loader
+. scripts/common/Load-Environment.ps1
+
+# Load all credentials for dev environment (most common)
+Import-ConsilientEnvironment -Environment dev
+
+# Load only specific categories
+Import-ConsilientEnvironment -Environment dev -Categories @('az')
+Import-ConsilientEnvironment -Environment dev -Categories @('az', 'db')
+```
+
+### Secret Categories
+
+| Category | Variables | Load Command |
+|----------|-----------|--------------|
+| `az` | ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID, AZURE_SUBSCRIPTION_ID, AZURE_REGION, AZURE_RESOURCE_GROUP_NAME, ACR_REGISTRY_URL | `-Categories @('az')` |
+| `db` | SQL_ADMIN_USERNAME, SQL_ADMIN_PASSWORD | `-Categories @('db')` |
+| `gh` | GITHUB_TOKEN, CONTAINER_REGISTRY | `-Categories @('gh')` |
+| `loki` | LOKI_ADDR, LOKI_USERNAME, LOKI_PASSWORD | `-Categories @('loki')` |
+| `act` | CAE_NAME_TEMPLATE | `-Categories @('act')` |
+
+---
+
+## External CLI Tools
+
+### Azure CLI (az)
+
+#### Loading Credentials
+
+Before running any `az` commands, load credentials into the session:
+
+```powershell
+. scripts/common/Load-Environment.ps1
+Import-ConsilientEnvironment -Environment dev -Categories @('az')
+```
+
+#### Authentication with Service Principal
+
+```powershell
+# Login with service principal (credentials loaded from env vars)
+az login --service-principal `
+    --username $env:ARM_CLIENT_ID `
+    --password $env:ARM_CLIENT_SECRET `
+    --tenant $env:ARM_TENANT_ID
+
+# Set the subscription
+az account set --subscription $env:AZURE_SUBSCRIPTION_ID
+```
+
+#### Azure Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `ARM_CLIENT_ID` | Service principal application ID |
+| `ARM_CLIENT_SECRET` | Service principal secret |
+| `ARM_TENANT_ID` | Azure AD tenant ID |
+| `AZURE_SUBSCRIPTION_ID` | Target subscription ID |
+| `AZURE_REGION` | Default region (canadacentral) |
+| `AZURE_RESOURCE_GROUP_NAME` | Default resource group |
+| `ACR_REGISTRY_URL` | Azure Container Registry URL |
+
+#### Common az Commands
+
+```powershell
+# List resources in the resource group
+az resource list --resource-group $env:AZURE_RESOURCE_GROUP_NAME --output table
+
+# Check current subscription
+az account show --output table
+
+# List container apps
+az containerapp list --resource-group $env:AZURE_RESOURCE_GROUP_NAME --output table
+
+# Get container app logs
+az containerapp logs show --name consilient-api --resource-group $env:AZURE_RESOURCE_GROUP_NAME
+```
+
+### GitHub CLI (gh)
+
+#### Authentication
+
+```powershell
+# Login interactively (one-time setup)
+gh auth login
+
+# Check auth status
+gh auth status
+```
+
+#### Common gh Commands
+
+```powershell
+# Pull requests
+gh pr list
+gh pr view 123
+gh pr create --title "Title" --body "Description"
+
+# Issues
+gh issue list
+
+# Workflow runs
+gh run list
+gh run view 12345678
+gh workflow run deploy.yml --ref main
+```
+
+#### Container Registry (GHCR)
+
+```powershell
+# Login to GHCR
+echo $env:GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+
+# Pull/push images
+docker pull ghcr.io/consilient/consilient-api:latest
+```
 
 ---
 
@@ -76,22 +255,22 @@ This file contains the GraphQL Schema Definition Language (SDL) for the EntityGr
 
 ## Build System
 
-The repository uses a NUKE build system via `build.cmd` at the repository root. This is the primary way to build, test, and generate code.
+The repository uses a NUKE build system. Use `.\build.ps1` (PowerShell) or `build.cmd` (cmd) at the repository root.
 
 ### Usage
 
-```bash
+```powershell
 # Run the default target (Compile)
-build.cmd
+.\build.ps1
 
 # Run a specific target
-build.cmd GenerateAllTypes
+.\build.ps1 GenerateAllTypes
 
 # Force regeneration even if outputs are up-to-date
-build.cmd GenerateAllTypes --force
+.\build.ps1 GenerateAllTypes --force
 
 # Run with specific configuration
-build.cmd Compile --configuration Release
+.\build.ps1 Compile --configuration Release
 ```
 
 ### Available Targets
@@ -138,9 +317,149 @@ build.cmd Compile --configuration Release
 
 ---
 
+## Database Operations
+
+### DbContext Options
+
+The codebase has two database contexts:
+- **`ConsilientDbContext`** → `consilient_main` database (clinical data, billing, visits)
+- **`UsersDbContext`** → `consilient_users` database (identity, authentication)
+- **`Both`** → Applies to both contexts (not valid for `AddMigration`)
+
+### Creating a New Migration
+
+```powershell
+# Create migration for clinical database
+.\build.ps1 AddMigration --migration-name AddPatientNotes --db-context ConsilientDbContext
+
+# Create migration for users database
+.\build.ps1 AddMigration --migration-name AddUserPreferences --db-context UsersDbContext
+```
+
+**Output locations:**
+- ConsilientDbContext → `src/Consilient.Data.Migrations/Consilient/`
+- UsersDbContext → `src/Consilient.Data.Migrations/Users/`
+
+### Generating SQL Scripts for Deployment
+
+```powershell
+# Generate SQL script for latest migration (auto-numbered)
+.\build.ps1 GenerateMigrationScript --db-context ConsilientDbContext
+
+# Generate with specific sequence number
+.\build.ps1 GenerateMigrationScript --db-context ConsilientDbContext --sequence-number 06
+```
+
+**Output locations:**
+- ConsilientDbContext → `src/Databases/consilient_main/XX_MigrationName.sql`
+- UsersDbContext → `src/Databases/users_main/XX_MigrationName.sql`
+
+### Applying Migrations Locally
+
+```powershell
+# Apply migrations to specific context
+.\build.ps1 UpdateLocalDatabase --db-context ConsilientDbContext
+
+# Apply migrations to both contexts
+.\build.ps1 UpdateLocalDatabase --db-context Both
+```
+
+### Checking Pending Migrations
+
+```powershell
+# Check pending migrations for specific context
+.\build.ps1 CheckMigrations --db-context ConsilientDbContext
+
+# Check all contexts
+.\build.ps1 CheckMigrations --db-context Both
+```
+
+### Resetting Local Database
+
+```powershell
+# Reset database (requires --force flag)
+.\build.ps1 ResetDatabase --force
+```
+
+### Complete Workflow Example
+
+When making database schema changes, follow this sequence:
+
+```powershell
+# 1. Modify entity in src/Consilient.Data/Entities/
+# 2. Update configuration in src/Consilient.Data/Configurations/ if needed
+
+# 3. Create the EF migration
+.\build.ps1 AddMigration --migration-name YourMigrationName --db-context ConsilientDbContext
+
+# 4. Review the generated migration file
+# Located at: src/Consilient.Data.Migrations/Consilient/[timestamp]_YourMigrationName.cs
+
+# 5. Generate SQL script for CI/CD deployment
+.\build.ps1 GenerateMigrationScript --db-context ConsilientDbContext
+
+# 6. Apply migration locally to test
+.\build.ps1 UpdateLocalDatabase --db-context ConsilientDbContext
+
+# 7. Commit all generated files:
+#    - src/Consilient.Data.Migrations/Consilient/[timestamp]_YourMigrationName.cs
+#    - src/Consilient.Data.Migrations/Consilient/[timestamp]_YourMigrationName.Designer.cs
+#    - src/Consilient.Data.Migrations/Consilient/ConsilientDbContextModelSnapshot.cs
+#    - src/Databases/consilient_main/XX_YourMigrationName.sql
+```
+
+### Troubleshooting
+
+**Migration shows "may result in data loss":**
+- This warning appears when dropping columns or tables
+- Review the migration carefully before applying
+
+**Database connection fails:**
+- Ensure Docker is running: `.\build.ps1 DockerUp`
+- Check database health: `.\build.ps1 CheckDatabaseHealth`
+- Start database if needed: `.\build.ps1 EnsureDatabase`
+
+**Seed data fails with NULL constraint:**
+- Check that `seed.sql` provides all NOT NULL columns
+- Review table schema in the migration files
+
+---
+
+## API Documentation
+
+### REST API (OpenAPI)
+
+**Location:** `docs/openapi.json`
+
+This file contains the complete OpenAPI 3.0 specification for the Consilient API, including:
+- All REST API endpoints and routes (controllers in `src/Consilient.Api/Controllers/`)
+- HTTP verbs (GET, POST, PUT, DELETE, PATCH)
+- Request/response schemas and data models
+- Query parameters, path parameters, and request bodies
+- JWT authentication requirements
+- Error responses (including ProblemDetails)
+
+**Generation:** `.\build.ps1 GenerateOpenApiDoc` or `.\build.ps1 GenerateAllTypes`
+
+### GraphQL API
+
+**Location:** `docs/schema.graphql`
+
+This file contains the GraphQL Schema Definition Language (SDL) for the EntityGraphQL API, including:
+- All GraphQL types (visit, patient, provider, hospitalization, etc.)
+- Query definitions with required parameters
+- Enum types (ProviderType, SortDirectionEnum)
+- Input types for sorting and filtering
+
+**Endpoint:** `/graphql` (with GraphiQL UI at `/ui/graphiql` in development)
+
+**Generation:** `.\build.ps1 GenerateGraphQLSchema` or `.\build.ps1 GenerateAllTypes`
+
+---
+
 ## Code Generation Outputs
 
-Code generation is handled by the NUKE build system. Run `build.cmd GenerateAllTypes` to regenerate all types.
+Run `.\build.ps1 GenerateAllTypes` to regenerate all types.
 
 | Output | Source | Target |
 |--------|--------|--------|
@@ -169,7 +488,7 @@ Code generation is handled by the NUKE build system. Run `build.cmd GenerateAllT
 - **Routing:** Convention: `[Route("api/[controller]")]`
 
 ### Database
-- **Migrations:** Use Nuke build targets (`build.cmd AddMigration`, `build.cmd UpdateLocalDatabase`)
+- **Migrations:** Use Nuke build targets (`.\build.ps1 AddMigration`, `.\build.ps1 UpdateLocalDatabase`)
 - **Relationships:** Configured via Fluent API in `src/Consilient.Data/Configuration/`
 - **Queries:** Use async methods (`ToListAsync()`, `FirstOrDefaultAsync()`, etc.)
 - **Interceptors:** Custom save changes interceptor tracks hospitalization status changes
@@ -194,10 +513,10 @@ Code generation is handled by the NUKE build system. Run `build.cmd GenerateAllT
 ### Database Changes
 1. Update entity in `src/Consilient.Data/Entities/`
 2. Configure relationship in `src/Consilient.Data/Configuration/` if needed
-3. Run `build.cmd AddMigration --db-context ConsilientDbContext --migration-name YourMigrationName`
+3. Run `.\build.ps1 AddMigration --db-context ConsilientDbContext --migration-name YourMigrationName`
 4. Review migration in `src/Consilient.Data.Migrations/`
-5. Run `build.cmd UpdateLocalDatabase` to apply locally
-6. (Optional) Run `build.cmd GenerateMigrationScript` to generate SQL for deployment
+5. Run `.\build.ps1 UpdateLocalDatabase` to apply locally
+6. (Optional) Run `.\build.ps1 GenerateMigrationScript` to generate SQL for deployment
 7. Commit migration files
 
 ### Background Jobs

@@ -1,11 +1,11 @@
 ﻿using Consilient.Data.Entities.Staging;
 
-namespace Consilient.ProviderAssignments.Services.Resolution
+namespace Consilient.ProviderAssignments.Contracts.Resolution
 {
     /// <summary>
     /// Non-generic base interface for resolver enumeration.
     /// </summary>
-    internal interface IResolver
+    public interface IResolver
     {
         /// <summary>
         /// Resolves staging records by matching them to existing database entities.
@@ -19,15 +19,15 @@ namespace Consilient.ProviderAssignments.Services.Resolution
     /// <summary>
     /// Generic interface for resolvers that work with a specific entity type.
     /// </summary>
-    internal interface IResolver<TEntity> : IResolver where TEntity : class
+    public interface IResolver<TEntity> : IResolver where TEntity : class
     {
     }
 
     // Marker interfaces for each resolver type
-    internal interface IPhysicianResolver : IResolver { }
-    internal interface INursePractitionerResolver : IResolver { }
-    internal interface IPatientResolver : IResolver { }
-    internal interface IHospitalizationResolver : IResolver { }
-    internal interface IHospitalizationStatusResolver : IResolver { }
-    internal interface IVisitResolver : IResolver { }
+    public interface IPhysicianResolver : IResolver { }
+    public interface INursePractitionerResolver : IResolver { }
+    public interface IPatientResolver : IResolver { }
+    public interface IHospitalizationResolver : IResolver { }
+    public interface IHospitalizationStatusResolver : IResolver { }
+    public interface IVisitResolver : IResolver { }
 }

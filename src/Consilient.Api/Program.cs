@@ -33,6 +33,7 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
 using Serilog.Events;
 using Prometheus;
+using Consilient.Common.Contracts;
 
 namespace Consilient.Api
 {

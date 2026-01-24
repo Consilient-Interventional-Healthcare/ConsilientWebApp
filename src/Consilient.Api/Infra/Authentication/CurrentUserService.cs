@@ -1,4 +1,4 @@
-using Consilient.Common.Services;
+using Consilient.Common.Contracts;
 using System.Security.Claims;
 
 namespace Consilient.Api.Infra.Authentication

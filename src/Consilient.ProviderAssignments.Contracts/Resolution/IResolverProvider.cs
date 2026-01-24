@@ -1,13 +1,11 @@
 ﻿using Consilient.Data;
-using Consilient.ProviderAssignments.Contracts.Resolution;
-using Consilient.ProviderAssignments.Services.Resolution.Resolvers;
 
-namespace Consilient.ProviderAssignments.Services.Resolution
+namespace Consilient.ProviderAssignments.Contracts.Resolution
 {
     /// <summary>
     /// Provides resolver instances for provider assignment resolution.
     /// </summary>
-    internal interface IResolverProvider
+    public interface IResolverProvider
     {
         /// <summary>
         /// Gets resolvers of the specified type with the given cache and database context.

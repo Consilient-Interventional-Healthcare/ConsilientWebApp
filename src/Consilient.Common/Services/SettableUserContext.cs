@@ -1,3 +1,5 @@
+using Consilient.Common.Contracts;
+
 namespace Consilient.Common.Services
 {
     public class SettableUserContext : ICurrentUserService, IUserContextSetter

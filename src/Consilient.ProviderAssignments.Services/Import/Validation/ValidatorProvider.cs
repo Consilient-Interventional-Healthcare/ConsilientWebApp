@@ -1,3 +1,4 @@
+using Consilient.ProviderAssignments.Contracts.Import;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.ProviderAssignments.Services.Import.Validation

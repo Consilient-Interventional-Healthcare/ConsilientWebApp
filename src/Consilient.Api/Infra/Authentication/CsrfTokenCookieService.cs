@@ -1,3 +1,4 @@
+using Consilient.Api.Infra.Contracts;
 using Consilient.Users.Services.OAuth;
 
 namespace Consilient.Api.Infra.Authentication

@@ -1,7 +1,7 @@
 using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.ProviderAssignments.Contracts;
 
-namespace Consilient.ProviderAssignments.Services.Import.Validation
+namespace Consilient.ProviderAssignments.Contracts.Import
 {
     /// <summary>
     /// Validates raw Excel row data during import.

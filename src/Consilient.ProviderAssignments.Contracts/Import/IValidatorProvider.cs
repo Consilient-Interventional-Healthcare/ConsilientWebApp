@@ -1,4 +1,4 @@
-namespace Consilient.ProviderAssignments.Services.Import.Validation
+namespace Consilient.ProviderAssignments.Contracts.Import
 {
     /// <summary>
     /// Provides validator instances for Excel row validation during import.

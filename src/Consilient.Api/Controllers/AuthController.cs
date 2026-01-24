@@ -1,5 +1,5 @@
 ﻿using Consilient.Api.Configuration;
-using Consilient.Api.Infra.Authentication;
+using Consilient.Api.Infra.Contracts;
 using Consilient.Users.Contracts;
 using Consilient.Users.Contracts.OAuth;
 using Consilient.Users.Services.OAuth;

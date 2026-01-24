@@ -1,3 +1,5 @@
+using Consilient.Common.Contracts;
+
 namespace Consilient.Common.Services
 {
     /// <summary>

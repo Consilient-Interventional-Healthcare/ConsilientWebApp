@@ -1,4 +1,5 @@
 ﻿using Consilient.Api.Configuration;
+using Consilient.Api.Infra.Contracts;
 using Microsoft.Extensions.Options;
 
 namespace Consilient.Api.Infra.Authentication
