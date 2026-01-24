@@ -99,16 +99,6 @@ namespace Consilient.Infrastructure.ExcelImporter
                                 excelRow.RowNumber, string.Join(", ", rowErrors));
                         }
                     }
-
-                    // Attach validation errors to row if it implements IValidatable (deprecated, use ValidatedRow<T> instead)
-#pragma warning disable CS0618 // Type or member is obsolete
-                    if (rowErrors.Count > 0 && row is IValidatable validatable)
-                    {
-                        validatable.ValidationErrors = rowErrors;
-                        stats.TotalRowsWithErrors++;
-                    }
-#pragma warning restore CS0618
-
                     // Transform (all rows, including invalid ones)
                     foreach (var transformer in transformers)
                     {

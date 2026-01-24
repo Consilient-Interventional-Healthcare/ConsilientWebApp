@@ -1,4 +1,4 @@
-namespace Consilient.Api.Infra.Authentication
+namespace Consilient.Api.Infra.Contracts
 {
     /// <summary>
     /// Service for managing authentication token cookies with secure defaults.

@@ -13,10 +13,10 @@ namespace Consilient.Api.Controllers
     /// <summary>
     /// API response for authentication operations.
     /// </summary>
-    public record AuthenticateUserApiResponse(
-        bool Succeeded,
-        IEnumerable<string>? Errors = null,
-        CurrentUserDto? User = null);
+    //public record AuthenticateUserApiResponse(
+    //    bool Succeeded,
+    //    IEnumerable<string>? Errors = null,
+    //    CurrentUserDto? User = null);
 
     /// <summary>
     /// Handles authentication and authorization operations.
@@ -62,8 +62,8 @@ namespace Consilient.Api.Controllers
         [HttpPost("authenticate")]
         [EnableRateLimiting(RateLimitingConstants.AuthenticatePolicy)]
         [AllowAnonymous]
-        [ProducesResponseType(typeof(AuthenticateUserApiResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(AuthenticateUserApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(AuthenticateUserResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AuthenticateUserResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Authenticate(
             [FromBody] AuthenticateUserRequest request,
@@ -74,8 +74,7 @@ namespace Consilient.Api.Controllers
                 return BadRequest("Request body is required.");
             }
 
-            return HandleAuthenticationResult(
-                await _userService.AuthenticateUserAsync(request, cancellationToken));
+            return HandleAuthenticationResult(await _userService.AuthenticateUserAsync(request, cancellationToken));
         }
 
         /// <summary>
@@ -83,8 +82,8 @@ namespace Consilient.Api.Controllers
         /// </summary>
         [HttpPost("external")]
         [AllowAnonymous]
-        [ProducesResponseType(typeof(AuthenticateUserApiResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(AuthenticateUserApiResponse), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(AuthenticateUserResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AuthenticateUserResult), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ExternalAuthenticate(
             [FromBody] ExternalAuthenticateRequest request,
@@ -368,9 +367,9 @@ namespace Consilient.Api.Controllers
             if (result.Succeeded)
             {
                 _jwtTokenCookieService.SetAuthenticationCookie(Response, result.Token!);
-                return Ok(new AuthenticateUserApiResponse(true, null, result.User));
+                return Ok(result);
             }
-            return Unauthorized(new AuthenticateUserApiResponse(false, result.Errors, null));
+            return Unauthorized(result);
         }
 
         private async Task<IActionResult> HandleOAuthErrorAsync(
@@ -437,29 +436,29 @@ namespace Consilient.Api.Controllers
         /// <summary>
         /// Validates that the returnUrl is a relative path or from an allowed origin to prevent open redirect attacks.
         /// </summary>
-        private bool IsValidReturnUrl(string? url)
-        {
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                return false;
-            }
+        //private bool IsValidReturnUrl(string? url)
+        //{
+        //    if (string.IsNullOrWhiteSpace(url))
+        //    {
+        //        return false;
+        //    }
 
-            // Allow relative URLs (starting with /)
-            if (url.StartsWith('/') && !url.StartsWith("//"))
-            {
-                return true;
-            }
+        //    // Allow relative URLs (starting with /)
+        //    if (url.StartsWith('/') && !url.StartsWith("//"))
+        //    {
+        //        return true;
+        //    }
 
-            // For absolute URLs, validate against allowed origins
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
-            {
-                return false;
-            }
+        //    // For absolute URLs, validate against allowed origins
+        //    if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        //    {
+        //        return false;
+        //    }
 
-            var urlOrigin = $"{uri.Scheme}://{uri.Authority}";
-            return _allowedOrigins.Any(origin =>
-                origin.Equals(urlOrigin, StringComparison.OrdinalIgnoreCase));
-        }
+        //    var urlOrigin = $"{uri.Scheme}://{uri.Authority}";
+        //    return _allowedOrigins.Any(origin =>
+        //        origin.Equals(urlOrigin, StringComparison.OrdinalIgnoreCase));
+        //}
 
         /// <summary>
         /// Normalizes a return URL to be relative, extracting the path from absolute URLs.

@@ -1,4 +1,4 @@
-namespace Consilient.Api.Infra.Authentication
+namespace Consilient.Api.Infra.Contracts
 {
     /// <summary>
     /// Service for managing CSRF token cookies to prevent cross-site request forgery attacks.
