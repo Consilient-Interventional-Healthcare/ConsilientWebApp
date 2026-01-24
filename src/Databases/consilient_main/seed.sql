@@ -67,7 +67,7 @@ INSERT INTO [Clinical].[ServiceTypes] ([ID], [Description])
 VALUES
     (1, N'Psych Evaluation'),
     (4, N'Progress Note'),
-    (5, N'DC Summary');
+    (5, N'Discharge Summary');
 GO
 
 SET IDENTITY_INSERT [Clinical].[ServiceTypes] OFF;
