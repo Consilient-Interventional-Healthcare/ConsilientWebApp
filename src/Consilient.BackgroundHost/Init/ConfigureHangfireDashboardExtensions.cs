@@ -31,7 +31,7 @@ namespace Consilient.BackgroundHost.Init
                 dashboardOptions.Authorization = [new JwtAuthorizationFilter(authOptions)];
             }
 
-            app.UseHangfireDashboard(string.Empty, dashboardOptions);
+            app.UseHangfireDashboard("/hangfire", dashboardOptions);
 
             return app;
         }
