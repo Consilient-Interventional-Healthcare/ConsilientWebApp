@@ -46,6 +46,7 @@ resource "azurerm_linux_web_app" "backgroundhost" {
   app_settings = {
     WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"
     ASPNETCORE_ENVIRONMENT              = var.environment == "dev" ? "Development" : "Production"
+    ASPNETCORE_FORWARDEDHEADERS_ENABLED = "true" # Required for OAuth behind Azure load balancer
     WEBSITES_PORT                       = "8092"
 
     # Azure App Configuration endpoint (primary source for runtime config)
