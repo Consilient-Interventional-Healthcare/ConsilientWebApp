@@ -24,11 +24,17 @@ namespace Consilient.BackgroundHost.Init
                 DashboardTitle = $"{environment.ApplicationName} ({environment.EnvironmentName.ToUpper()})"
             };
 
-            // Only require authentication when running in Azure
+            // Configure authorization based on environment
             if (AzureEnvironment.IsRunningInAzure)
             {
+                // In Azure: require JWT authentication
                 var authOptions = app.ApplicationServices.GetRequiredService<IOptions<AuthenticationSettings>>();
                 dashboardOptions.Authorization = [new JwtAuthorizationFilter(authOptions)];
+            }
+            else
+            {
+                // Local/Docker: allow all requests (no auth required)
+                dashboardOptions.Authorization = [];
             }
 
             app.UseHangfireDashboard("/hangfire", dashboardOptions);
