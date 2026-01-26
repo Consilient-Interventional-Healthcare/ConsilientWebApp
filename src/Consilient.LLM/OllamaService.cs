@@ -3,7 +3,7 @@ using OllamaSharp;
 
 namespace Consilient.LLM
 {
-    public class OllamaService(OllamaServiceConfiguration configuration) : IOllamaService
+    public class OllamaService(OllamaServiceOptions configuration) : IOllamaService
     {
         private readonly OllamaApiClient _client = new(configuration.BaseUrl);
         private readonly string _defaultModel = configuration.DefaultModel;

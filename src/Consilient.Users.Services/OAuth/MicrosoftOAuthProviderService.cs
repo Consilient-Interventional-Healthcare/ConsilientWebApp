@@ -11,27 +11,27 @@ namespace Consilient.Users.Services.OAuth
     /// </summary>
     public class MicrosoftOAuthProviderService : IOAuthProviderService
     {
-        private readonly OAuthProviderServiceConfiguration _configuration;
+        private readonly OAuthProviderOptions _oauthOptions;
         private readonly ILogger<MicrosoftOAuthProviderService> _logger;
 
         public MicrosoftOAuthProviderService(
-            IOptions<UserServiceConfiguration> userConfig,
+            IOptions<UserServiceOptions> userServiceOptions,
             ILogger<MicrosoftOAuthProviderService> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _configuration = userConfig?.Value?.OAuth
+            _oauthOptions = userServiceOptions?.Value?.OAuth
                 ?? throw new InvalidOperationException(
                     "OAuth configuration is missing. Please ensure the OAuth section is properly configured in application settings.");
 
             ValidateConfiguration();
 
-            if (!_configuration.Enabled)
+            if (!_oauthOptions.Enabled)
             {
                 _logger.LogWarning("Microsoft OAuth provider is not enabled in configuration");
             }
         }
 
-        public string GetProviderName() => _configuration.ProviderName;
+        public string GetProviderName() => _oauthOptions.ProviderName;
 
         public async Task<string> BuildAuthorizationUrlAsync(
             string state,
@@ -46,10 +46,10 @@ namespace Consilient.Users.Services.OAuth
 
             _logger.LogDebug("Building authorization URL for Microsoft OAuth");
             _logger.LogDebug("Redirect URI: {RedirectUri}", redirectUri);
-            _logger.LogDebug("Authority: {Authority}/{TenantId}", _configuration.Authority, _configuration.TenantId);
-            _logger.LogDebug("Client ID: {ClientId}", _configuration.ClientId);
+            _logger.LogDebug("Authority: {Authority}/{TenantId}", _oauthOptions.Authority, _oauthOptions.TenantId);
+            _logger.LogDebug("Client ID: {ClientId}", _oauthOptions.ClientId);
 
-            var scopes = _configuration.Scopes ?? [];
+            var scopes = _oauthOptions.Scopes ?? [];
             _logger.LogDebug("Scopes requested: {Scopes}", string.Join(", ", scopes));
             if (!scopes.Any())
             {
@@ -86,7 +86,7 @@ namespace Consilient.Users.Services.OAuth
             _logger.LogDebug("Code length: {CodeLength}, CodeVerifier length: {VerifierLength}", code.Length, codeVerifier.Length);
 
             var app = CreateConfidentialClientApplication(redirectUri);
-            var scopes = _configuration.Scopes ?? [];
+            var scopes = _oauthOptions.Scopes ?? [];
             _logger.LogDebug("Scopes for token exchange: {Scopes}", string.Join(", ", scopes));
 
             try
@@ -119,7 +119,7 @@ namespace Consilient.Users.Services.OAuth
                 return new AuthorizationCodeValidationResult
                 {
                     Succeeded = true,
-                    ProviderName = _configuration.ProviderName,
+                    ProviderName = _oauthOptions.ProviderName,
                     ProviderKey = providerKey,
                     UserName = userEmail,
                     UserEmail = userEmail
@@ -165,31 +165,31 @@ namespace Consilient.Users.Services.OAuth
 
         private void ValidateConfiguration()
         {
-            if (string.IsNullOrWhiteSpace(_configuration.ClientId))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.ClientId))
             {
                 throw new InvalidOperationException(
                     "OAuth ClientId is required but not configured in application settings.");
             }
 
-            if (string.IsNullOrWhiteSpace(_configuration.ClientSecret))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.ClientSecret))
             {
                 throw new InvalidOperationException(
                     "OAuth ClientSecret is required but not configured in application settings.");
             }
 
-            if (string.IsNullOrWhiteSpace(_configuration.Authority))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.Authority))
             {
                 throw new InvalidOperationException(
                     "OAuth Authority is required but not configured in application settings.");
             }
 
-            if (string.IsNullOrWhiteSpace(_configuration.TenantId))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.TenantId))
             {
                 throw new InvalidOperationException(
                     "OAuth TenantId is required but not configured in application settings.");
             }
 
-            if (string.IsNullOrWhiteSpace(_configuration.ProviderName))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.ProviderName))
             {
                 throw new InvalidOperationException(
                     "OAuth ProviderName is required but not configured in application settings.");
@@ -198,16 +198,16 @@ namespace Consilient.Users.Services.OAuth
 
         private IConfidentialClientApplication CreateConfidentialClientApplication(string redirectUri)
         {
-            var authority = _configuration.Authority!.TrimEnd('/');
-            var authorityUri = $"{authority}/{_configuration.TenantId}";
+            var authority = _oauthOptions.Authority!.TrimEnd('/');
+            var authorityUri = $"{authority}/{_oauthOptions.TenantId}";
 
             _logger.LogDebug("Creating MSAL ConfidentialClientApplication");
             _logger.LogDebug("Authority URI: {AuthorityUri}", authorityUri);
             _logger.LogDebug("Redirect URI: {RedirectUri}", redirectUri);
 
             return ConfidentialClientApplicationBuilder
-                .Create(_configuration.ClientId)
-                .WithClientSecret(_configuration.ClientSecret)
+                .Create(_oauthOptions.ClientId)
+                .WithClientSecret(_oauthOptions.ClientSecret)
                 .WithAuthority(authorityUri)
                 .WithRedirectUri(redirectUri)
                 .Build();

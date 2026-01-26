@@ -15,7 +15,7 @@ namespace Consilient.ProviderAssignments.Services.Import
         ILoggerFactory loggerFactory,
         ISinkProvider sinkProvider,
         IValidatorProvider validatorProvider,
-        IOptions<ImportSettings> settings) : IImporterFactory
+        IOptions<ProviderAssignmentsImportOptions> providerAssignmentsImportOptions) : IImporterFactory
     {
         public IProviderAssignmentsImporter Create(int facilityId, DateOnly serviceDate)
         {
@@ -71,7 +71,7 @@ namespace Consilient.ProviderAssignments.Services.Import
             {
                 Sheet = SheetSelector.FirstSheet,
                 ColumnMapping = CreateColumnMapping(),
-                BatchSize = settings.Value.BatchSize,
+                BatchSize = providerAssignmentsImportOptions.Value.BatchSize,
                 FailOnValidationError = false,
                 SkipEmptyRows = true,
                 MaxRows = int.MaxValue,

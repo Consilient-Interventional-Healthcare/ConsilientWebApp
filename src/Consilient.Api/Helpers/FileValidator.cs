@@ -2,9 +2,9 @@ using Consilient.Api.Configuration;
 
 namespace Consilient.Api.Helpers
 {
-    public class FileValidator(FileUploadSettings settings)
+    public class FileValidator(ProviderAssignmentsUploadsOptions settings)
     {
-        private readonly FileUploadSettings _settings = settings;
+        private readonly ProviderAssignmentsUploadsOptions _settings = settings;
 
         public FileValidationResult ValidateFile(IFormFile? file)
         {

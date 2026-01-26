@@ -25,9 +25,9 @@ namespace Consilient.Infrastructure.ExcelImporter.Tests.Helpers
             var serviceProvider = services.BuildServiceProvider();
 
             var validatorProvider = new ValidatorProvider(serviceProvider);
-            var importSettings = Options.Create(new ImportSettings());
+            var providerAssignmentsImportOptions = Options.Create(new ProviderAssignmentsImportOptions());
 
-            var importerFactory = new ImporterFactory(NullLoggerFactory.Instance, sinkProvider, validatorProvider, importSettings);
+            var importerFactory = new ImporterFactory(NullLoggerFactory.Instance, sinkProvider, validatorProvider, providerAssignmentsImportOptions);
             var importer = importerFactory.Create(facilityId, serviceDate);
             return importer;
         }

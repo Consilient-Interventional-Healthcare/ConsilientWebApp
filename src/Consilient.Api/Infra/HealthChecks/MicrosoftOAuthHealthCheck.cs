@@ -17,10 +17,10 @@ namespace Consilient.Api.Infra.HealthChecks
     /// </summary>
     internal class MicrosoftOAuthHealthCheck(
         HttpClient httpClient,
-        IOptions<UserServiceConfiguration> userConfig) : IHealthCheck
+        IOptions<UserServiceOptions> userServiceOptions) : IHealthCheck
     {
         private readonly HttpClient _httpClient = httpClient;
-        private readonly OAuthProviderServiceConfiguration? _configuration = userConfig?.Value?.OAuth;
+        private readonly OAuthProviderOptions? _oauthOptions = userServiceOptions?.Value?.OAuth;
 
         // Cache the last successful check to avoid hammering Microsoft endpoints
         private static DateTime _lastSuccessfulCheck = DateTime.MinValue;
@@ -56,9 +56,9 @@ namespace Consilient.Api.Infra.HealthChecks
             }
 
             // Add masked configuration values for diagnostics
-            data["authority"] = _configuration!.Authority!;
-            data["tenantId"] = MaskValue(_configuration.TenantId) ?? "not configured";
-            data["clientId"] = MaskValue(_configuration.ClientId) ?? "not configured";
+            data["authority"] = _oauthOptions!.Authority!;
+            data["tenantId"] = MaskValue(_oauthOptions.TenantId) ?? "not configured";
+            data["clientId"] = MaskValue(_oauthOptions.ClientId) ?? "not configured";
 
             // Check cache - if recently successful, return cached result
             if (DateTime.UtcNow - _lastSuccessfulCheck < _cacheDuration)
@@ -136,7 +136,7 @@ namespace Consilient.Api.Infra.HealthChecks
 
         private ConfigCheckResult CheckConfiguration()
         {
-            if (_configuration == null)
+            if (_oauthOptions == null)
             {
                 return new ConfigCheckResult
                 {
@@ -147,7 +147,7 @@ namespace Consilient.Api.Infra.HealthChecks
                 };
             }
 
-            if (!_configuration.Enabled)
+            if (!_oauthOptions.Enabled)
             {
                 return new ConfigCheckResult
                 {
@@ -160,13 +160,13 @@ namespace Consilient.Api.Infra.HealthChecks
 
             var missingFields = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(_configuration.ClientId))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.ClientId))
                 missingFields.Add("ClientId");
-            if (string.IsNullOrWhiteSpace(_configuration.ClientSecret))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.ClientSecret))
                 missingFields.Add("ClientSecret");
-            if (string.IsNullOrWhiteSpace(_configuration.TenantId))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.TenantId))
                 missingFields.Add("TenantId");
-            if (string.IsNullOrWhiteSpace(_configuration.Authority))
+            if (string.IsNullOrWhiteSpace(_oauthOptions.Authority))
                 missingFields.Add("Authority");
 
             if (missingFields.Count > 0)
@@ -194,8 +194,8 @@ namespace Consilient.Api.Infra.HealthChecks
             {
                 // Authority may already include TenantId (e.g., https://login.microsoftonline.com/{tenantId})
                 // or may be just the base URL. Handle both cases.
-                var authority = _configuration!.Authority!.TrimEnd('/');
-                var tenantId = _configuration.TenantId!;
+                var authority = _oauthOptions!.Authority!.TrimEnd('/');
+                var tenantId = _oauthOptions.TenantId!;
 
                 // Check if authority already ends with the tenant ID
                 var discoveryUrl = authority.EndsWith(tenantId, StringComparison.OrdinalIgnoreCase)
@@ -374,12 +374,12 @@ namespace Consilient.Api.Infra.HealthChecks
         {
             try
             {
-                var authority = _configuration!.Authority!.TrimEnd('/');
-                var authorityUri = $"{authority}/{_configuration.TenantId}";
+                var authority = _oauthOptions!.Authority!.TrimEnd('/');
+                var authorityUri = $"{authority}/{_oauthOptions.TenantId}";
 
                 var app = ConfidentialClientApplicationBuilder
-                    .Create(_configuration.ClientId)
-                    .WithClientSecret(_configuration.ClientSecret)
+                    .Create(_oauthOptions.ClientId)
+                    .WithClientSecret(_oauthOptions.ClientSecret)
                     .WithAuthority(authorityUri)
                     .Build();
 

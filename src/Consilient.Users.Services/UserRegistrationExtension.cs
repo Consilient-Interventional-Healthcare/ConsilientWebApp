@@ -33,7 +33,7 @@ namespace Consilient.Users.Services
             // Register OAuth provider services (only if enabled in configuration)
             // Build a temporary service provider to read configuration
             var serviceProvider = services.BuildServiceProvider();
-            var userConfig = serviceProvider.GetService<IOptions<UserServiceConfiguration>>();
+            var userConfig = serviceProvider.GetService<IOptions<UserServiceOptions>>();
 
             // Only register OAuth service if it's configured and enabled
             if (userConfig?.Value?.OAuth?.Enabled == true)

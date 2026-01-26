@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
@@ -32,6 +33,8 @@ namespace Consilient.BackgroundHost
 {
     internal static class Program
     {
+        private const string AppConfigurationEndpointKey = "AppConfiguration:Endpoint";
+
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -43,7 +46,7 @@ namespace Consilient.BackgroundHost
                 .AddEnvironmentVariables();
 
             // Add Azure App Configuration as primary source for runtime configuration
-            var appConfigEndpoint = builder.Configuration["AppConfiguration:Endpoint"];
+            var appConfigEndpoint = builder.Configuration[AppConfigurationEndpointKey];
             if (!string.IsNullOrEmpty(appConfigEndpoint))
             {
                 try
@@ -84,7 +87,11 @@ namespace Consilient.BackgroundHost
 
                 var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
                 var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
-                var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
+
+                // Register configuration with IOptions pattern
+                builder.Services.AddOptions<AuthenticationSettings>()
+                    .Bind(builder.Configuration.GetSection(AuthenticationSettings.SectionName))
+                    .ValidateOnStart();
 
                 // Register user context for background jobs (must be before DbContext registration)
                 builder.Services.AddScoped<SettableUserContext>();
@@ -119,7 +126,8 @@ namespace Consilient.BackgroundHost
                 });
 
                 // Configure Hangfire dashboard with JWT authentication
-                var authFilter = new JwtAuthorizationFilter(builder.Configuration);
+                var authOptions = app.Services.GetRequiredService<IOptions<AuthenticationSettings>>();
+                var authFilter = new JwtAuthorizationFilter(authOptions);
                 app.UseHangfireDashboard(string.Empty, new DashboardOptions
                 {
                     DashboardTitle = $"{builder.Environment.ApplicationName} ({builder.Environment.EnvironmentName.ToUpper()})",
@@ -144,11 +152,11 @@ namespace Consilient.BackgroundHost
         {
             var loggingConfiguration =
                 builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)
-                    .Get<LoggingConfiguration>();
+                    .Get<LoggingOptions>();
 
             if (loggingConfiguration == null)
             {
-                // Fallback to console logger when LoggingConfiguration is not available
+                // Fallback to console logger when LoggingOptions is not available
                 // (e.g., local development without full config, or before AAC loads)
                 return CreateTrivialLogger(builder);
             }

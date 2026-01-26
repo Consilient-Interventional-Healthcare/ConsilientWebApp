@@ -18,7 +18,9 @@ namespace Consilient.ProviderAssignments.Services
     {
         public static IServiceCollection AddProviderAssignmentsServices(this IServiceCollection services, IConfiguration configuration)
         {
-            services.Configure<ImportSettings>(configuration.GetSection(ImportSettings.SectionName));
+            services.AddOptions<ProviderAssignmentsImportOptions>()
+                .Bind(configuration.GetSection(ProviderAssignmentsImportOptions.SectionName))
+                .ValidateOnStart();
             AddImportServices(services);
             AddResolutionServices(services);
             AddProcessingServices(services);

@@ -338,9 +338,24 @@ locals {
   # --------------------------------------------------------------------------
   # Configuration for file upload validation in the API
   file_upload = {
-    upload_path         = "uploads"
+    upload_path         = "providerAssignments"
     max_file_size_bytes = 10485760 # 10MB
     allowed_extensions  = [".xls", ".xlsm", ".xlsx"]
+  }
+
+  # --------------------------------------------------------------------------
+  # SHARED CONFIGURATION VALUES
+  # --------------------------------------------------------------------------
+  # Configuration values shared across multiple applications (API, BackgroundHost)
+  # These are used as the single source of truth for AAC keys
+  shared_config = {
+    jwt_issuer                       = "https://${local.api.service_name}.azurewebsites.net"
+    jwt_audience                     = "https://${local.api.service_name}.azurewebsites.net"
+    jwt_expiry_minutes               = "60"
+    filestorage_provider             = "AzureBlob"
+    loki_push_endpoint               = "/loki/api/v1/push"
+    loki_batch_posting_limit         = "100"
+    loglevel_microsoft_aspnetcore    = "Warning"
   }
 
   # --------------------------------------------------------------------------

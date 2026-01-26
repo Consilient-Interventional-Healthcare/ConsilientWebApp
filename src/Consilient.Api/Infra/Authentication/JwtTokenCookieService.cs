@@ -8,27 +8,20 @@ namespace Consilient.Api.Infra.Authentication
     /// Default implementation of authentication token cookie management.
     /// </summary>
     internal class JwtTokenCookieService(
-        IOptions<ApplicationSettings> settings,
+        IOptions<AuthenticationOptions> authOptions,
         IWebHostEnvironment environment,
         ILogger<JwtTokenCookieService> logger) : IJwtTokenCookieService
     {
-        private readonly ApplicationSettings _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
+        private readonly AuthenticationOptions _authOptions = authOptions?.Value ?? throw new ArgumentNullException(nameof(authOptions));
         private readonly IWebHostEnvironment _environment = environment ?? throw new ArgumentNullException(nameof(environment));
         private readonly ILogger<JwtTokenCookieService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        // Validate CookieExpiryMinutes at construction time
-        private readonly bool _ = settings?.Value?.Authentication?.CookieExpiryMinutes > 0
-            ? true
-            : throw new InvalidOperationException(
-                $"CookieExpiryMinutes must be greater than 0. Current value: {settings?.Value?.Authentication?.CookieExpiryMinutes ?? 0}. " +
-                "Set 'ConsilientApi:ApplicationSettings:Authentication:CookieExpiryMinutes' in Azure App Configuration.");
 
         public void SetAuthenticationCookie(HttpResponse response, string token)
         {
             ArgumentNullException.ThrowIfNull(response);
             ArgumentException.ThrowIfNullOrWhiteSpace(token);
 
-            var expiryMinutes = _settings.Authentication.CookieExpiryMinutes;
+            var expiryMinutes = _authOptions.CookieExpiryMinutes;
             var maxAge = TimeSpan.FromMinutes(expiryMinutes);
 
             var options = CookieOptionsFactory.CreateAuthTokenOptions(

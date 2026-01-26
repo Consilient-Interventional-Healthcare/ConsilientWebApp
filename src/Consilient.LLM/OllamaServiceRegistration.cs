@@ -5,7 +5,7 @@ namespace Consilient.LLM
 {
     public static class OllamaServiceRegistration
     {
-        public static void RegisterOllamaServices(this IServiceCollection services, OllamaServiceConfiguration ollamaServiceConfiguration)
+        public static void RegisterOllamaServices(this IServiceCollection services, OllamaServiceOptions ollamaServiceConfiguration)
         {
             services.AddScoped<IOllamaService>(_ => new OllamaService(ollamaServiceConfiguration));
         }

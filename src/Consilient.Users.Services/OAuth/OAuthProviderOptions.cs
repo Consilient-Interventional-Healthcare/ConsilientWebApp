@@ -1,7 +1,9 @@
-﻿namespace Consilient.Users.Contracts.OAuth
+namespace Consilient.Users.Contracts.OAuth
 {
-    public class OAuthProviderServiceConfiguration
+    public class OAuthProviderOptions
     {
+        public const string SectionName = "Authentication:UserService:OAuth";
+
         public bool Enabled { get; init; } = false;
         public string? Authority { get; init; }
         public string ProviderName { get; init; } = string.Empty;

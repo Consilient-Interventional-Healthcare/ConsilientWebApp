@@ -10,16 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Config\**" />
-    <EmbeddedResource Remove="Config\**" />
-    <None Remove="Config\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="Startup.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.22" />
@@ -47,6 +37,7 @@
     <ProjectReference Include="..\Consilient.Shared.Services\Consilient.Shared.Services.csproj" />
     <ProjectReference Include="..\Consilient.Visits.Service\Consilient.Visits.Services.csproj" />
     <ProjectReference Include="..\Consilient.ProviderAssignments.Services\Consilient.ProviderAssignments.Services.csproj" />
+    <ProjectReference Include="..\Consilient.Users.Services\Consilient.Users.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Storage\Consilient.Infrastructure.Storage.csproj" />
   </ItemGroup>
 

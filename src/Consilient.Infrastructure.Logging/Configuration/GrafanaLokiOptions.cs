@@ -1,6 +1,6 @@
-﻿namespace Consilient.Infrastructure.Logging.Configuration
+namespace Consilient.Infrastructure.Logging.Configuration
 {
-    public class GrafanaLokiConfiguration
+    public class GrafanaLokiOptions
     {
         public required string Url { get; init; } = string.Empty;
         public required string PushEndpoint { get; init; } = "/loki/api/v1/push";

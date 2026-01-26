@@ -9,13 +9,13 @@ using Microsoft.Extensions.Options;
 namespace Consilient.Users.Services
 {
     public class UserService(
-        IOptions<UserServiceConfiguration> configuration,
+        IOptions<UserServiceOptions> userServiceOptions,
         UserManager<User> userManager,
         IOAuthProviderRegistry oauthProviderRegistry,
         ITokenGenerator tokenGenerator,
         ILogger<UserService> logger) : IUserService
     {
-        private readonly UserServiceConfiguration _configuration = configuration?.Value ?? throw new ArgumentNullException(nameof(configuration));
+        private readonly UserServiceOptions _userServiceOptions = userServiceOptions?.Value ?? throw new ArgumentNullException(nameof(userServiceOptions));
         private readonly ILogger<UserService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly IOAuthProviderRegistry _oauthProviderRegistry = oauthProviderRegistry ?? throw new ArgumentNullException(nameof(oauthProviderRegistry));
         private readonly ITokenGenerator _tokenGenerator = tokenGenerator ?? throw new ArgumentNullException(nameof(tokenGenerator));
@@ -71,7 +71,7 @@ namespace Consilient.Users.Services
                 return IdentityHelper.CreateFailureResult(["Required claims not present in token."]);
             }
 
-            if (!EmailDomainHelper.IsEmailDomainAllowed(result.UserEmail, _configuration.AllowedEmailDomains))
+            if (!EmailDomainHelper.IsEmailDomainAllowed(result.UserEmail, _userServiceOptions.AllowedEmailDomains))
             {
                 _logger.LogWarning("External authentication blocked: email domain not allowed. Email: {Email}",
                     result.UserEmail);
@@ -161,7 +161,7 @@ namespace Consilient.Users.Services
             LinkExternalLoginRequest request,
             CancellationToken cancellationToken = default)
         {
-            if (!EmailDomainHelper.IsEmailDomainAllowed(request.Email, _configuration.AllowedEmailDomains))
+            if (!EmailDomainHelper.IsEmailDomainAllowed(request.Email, _userServiceOptions.AllowedEmailDomains))
             {
                 _logger.LogWarning("Link external login blocked: email domain not allowed. Email: {Email}",
                     request.Email);
@@ -194,7 +194,7 @@ namespace Consilient.Users.Services
             User? user,
             LinkExternalLoginRequest request)
         {
-            if (user == null && !_configuration.AutoProvisionUser)
+            if (user == null && !_userServiceOptions.AutoProvisionUser)
             {
                 _logger.LogWarning(
                     "External login link failed: user not found and auto-provisioning disabled. Email: {Email}",
@@ -251,7 +251,7 @@ namespace Consilient.Users.Services
             }
             else
             {
-                if (!_configuration.AutoProvisionUser)
+                if (!_userServiceOptions.AutoProvisionUser)
                 {
                     _logger.LogWarning(
                         "External authentication failed: user not found and auto-provisioning disabled. Email: {Email}",

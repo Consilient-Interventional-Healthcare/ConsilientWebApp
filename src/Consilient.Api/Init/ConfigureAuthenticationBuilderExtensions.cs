@@ -11,7 +11,7 @@ namespace Consilient.Api.Init
     public static class ConfigureAuthenticationBuilderExtensions
     {
 
-        public static void ConfigureAuthentication(this WebApplicationBuilder builder, TokenGeneratorConfiguration tokenGeneratorConfiguration)
+        public static void ConfigureAuthentication(this WebApplicationBuilder builder, TokenGeneratorOptions tokenGeneratorOptions)
         {
             builder.Services.AddScoped<ICsrfTokenCookieService, CsrfTokenCookieService>();
             builder.Services.AddScoped<IJwtTokenCookieService, JwtTokenCookieService>();
@@ -37,11 +37,11 @@ namespace Consilient.Api.Init
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenGeneratorConfiguration.Secret)),
-                    ValidateIssuer = !string.IsNullOrEmpty(tokenGeneratorConfiguration.Issuer),
-                    ValidIssuer = tokenGeneratorConfiguration.Issuer,
-                    ValidateAudience = !string.IsNullOrEmpty(tokenGeneratorConfiguration.Audience),
-                    ValidAudience = tokenGeneratorConfiguration.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(tokenGeneratorOptions.Secret)),
+                    ValidateIssuer = !string.IsNullOrEmpty(tokenGeneratorOptions.Issuer),
+                    ValidIssuer = tokenGeneratorOptions.Issuer,
+                    ValidateAudience = !string.IsNullOrEmpty(tokenGeneratorOptions.Audience),
+                    ValidAudience = tokenGeneratorOptions.Audience,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromMinutes(5)
                 };

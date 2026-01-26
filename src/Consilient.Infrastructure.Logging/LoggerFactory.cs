@@ -7,14 +7,14 @@ namespace Consilient.Infrastructure.Logging
 {
     public static class LoggerFactory
     {
-        public static ILogger Create(LoggingConfiguration loggingSettings, IDictionary<string, string>? labels = null)
+        public static ILogger Create(LoggingOptions loggingOptions, IDictionary<string, string>? labels = null)
         {
-            var minimumLogLevel = ParseLogEventLevel(loggingSettings.LogLevel.Default);
+            var minimumLogLevel = ParseLogEventLevel(loggingOptions.LogLevel.Default);
             var loggerConfiguration = CreateLoggerConfiguration();
 
             loggerConfiguration
                 .MinimumLevel.Is(minimumLogLevel)
-                .MinimumLevel.Override("Microsoft.AspNetCore", ParseLogEventLevel(loggingSettings.LogLevel.MicrosoftAspNetCore));
+                .MinimumLevel.Override("Microsoft.AspNetCore", ParseLogEventLevel(loggingOptions.LogLevel.MicrosoftAspNetCore));
 
             loggerConfiguration.WriteTo.Console();
 
@@ -26,24 +26,24 @@ namespace Consilient.Infrastructure.Logging
 
             // Configure Loki credentials if provided
             LokiCredentials? lokiCredentials = null;
-            if (!string.IsNullOrEmpty(loggingSettings.GrafanaLoki.Username) &&
-                !string.IsNullOrEmpty(loggingSettings.GrafanaLoki.Password))
+            if (!string.IsNullOrEmpty(loggingOptions.GrafanaLoki.Username) &&
+                !string.IsNullOrEmpty(loggingOptions.GrafanaLoki.Password))
             {
                 lokiCredentials = new LokiCredentials
                 {
-                    Login = loggingSettings.GrafanaLoki.Username,
-                    Password = loggingSettings.GrafanaLoki.Password
+                    Login = loggingOptions.GrafanaLoki.Username,
+                    Password = loggingOptions.GrafanaLoki.Password
                 };
             }
 
             loggerConfiguration.WriteTo.GrafanaLoki(
-                uri: loggingSettings.GrafanaLoki.Url,
+                uri: loggingOptions.GrafanaLoki.Url,
                 labels: lokiLabels,
                 propertiesAsLabels: null,
                 credentials: lokiCredentials,
                 tenant: null,
                 restrictedToMinimumLevel: minimumLogLevel,
-                batchPostingLimit: loggingSettings.GrafanaLoki.BatchPostingLimit,
+                batchPostingLimit: loggingOptions.GrafanaLoki.BatchPostingLimit,
                 queueLimit: null,
                 period: null,
                 textFormatter: new LokiJsonTextFormatter()

@@ -1,9 +1,7 @@
 using Consilient.Api.Client;
 using Consilient.Constants;
-using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
-using Consilient.WebApp.Configuration;
 using Consilient.WebApp.Infra;
 using Consilient.WebApp.Init;
 using Microsoft.AspNetCore.Authentication;
@@ -18,6 +16,8 @@ namespace Consilient.WebApp
 {
     internal static class Program
     {
+        private const string AzureAdSectionName = "AzureAd";
+
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -34,9 +34,15 @@ namespace Consilient.WebApp
                 Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
 
                 // Add services to the container.
-                var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
+                var apiClientOptions = builder.Configuration
+                    .GetSection(ConsilientApiClientOptions.SectionName)
+                    .Get<ConsilientApiClientOptions>() ?? throw new InvalidOperationException($"Configuration section missing: '{ConsilientApiClientOptions.SectionName}'");
 
-                builder.Services.AddConsilientApiClient(applicationSettings.ApiClient, sp => sp.GetRequiredService<ICurrentUserService>().UserId);
+                builder.Services.AddOptions<ConsilientApiClientOptions>()
+                    .Bind(builder.Configuration.GetSection(ConsilientApiClientOptions.SectionName))
+                    .ValidateOnStart();
+
+                builder.Services.AddConsilientApiClient(apiClientOptions, sp => sp.GetRequiredService<ICurrentUserService>().UserId);
 
                 builder.Services.RegisterLogging(logger);
 
@@ -50,7 +56,7 @@ namespace Consilient.WebApp
                 builder.Services.AddSession();
 
                 builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-                    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
+                    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection(AzureAdSectionName));
 
                 //// not needed
                 //builder.Services.Configure<OpenIdConnectOptions>(
@@ -118,7 +124,7 @@ namespace Consilient.WebApp
         {
             var loggingConfiguration =
                 builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)
-                    .Get<LoggingConfiguration>() ??
+                    .Get<LoggingOptions>() ??
                 throw new NullReferenceException($"{ApplicationConstants.ConfigurationFiles.AppSettings} missing");
 
             var labels = new Dictionary<string, string>

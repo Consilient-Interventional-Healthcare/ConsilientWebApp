@@ -2,6 +2,7 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Consilient.Api.Configuration;
+using Consilient.Api.Configuration.Validators;
 using Consilient.Api.Hubs;
 using Consilient.Api.Infra.Authentication;
 using Consilient.Api.Infra.ModelBinders;
@@ -20,12 +21,14 @@ using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
 using Consilient.Shared.Services;
 using Consilient.Users.Services;
+using Consilient.Users.Services.Validators;
 using Consilient.Visits.Services;
 using Consilient.ProviderAssignments.Services;
 using Consilient.Infrastructure.Storage;
 using GraphQL.Server.Ui.GraphiQL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -54,7 +57,7 @@ namespace Consilient.Api
             // NEW: Add Azure App Configuration as primary source for runtime configuration
             // This is the single source of truth for all application settings and Key Vault references
             // Requires "AppConfiguration__Endpoint" app setting in App Service
-            var appConfigEndpoint = builder.Configuration["AppConfiguration:Endpoint"];
+            var appConfigEndpoint = builder.Configuration[$"{AppConfigurationOptions.SectionName}:Endpoint"];
             if (!string.IsNullOrEmpty(appConfigEndpoint))
             {
                 try
@@ -105,7 +108,7 @@ namespace Consilient.Api
                 {
                     // If AAC connection fails, fall back to legacy Key Vault integration
                     Log.Warning(ex, "Failed to load Azure App Configuration, falling back to Azure Key Vault");
-                    var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+                    var keyVaultUrl = builder.Configuration[$"{AzureKeyVaultOptions.SectionName}:Url"];
                     if (!string.IsNullOrEmpty(keyVaultUrl))
                     {
                         var credential = new DefaultAzureCredential();
@@ -121,7 +124,7 @@ namespace Consilient.Api
             {
                 // LEGACY: Fallback to direct Key Vault integration if AppConfiguration endpoint not configured
                 // This supports deployments without App Configuration (local dev, legacy environments, etc.)
-                var keyVaultUrl = builder.Configuration["KeyVault:Url"];
+                var keyVaultUrl = builder.Configuration[$"{AzureKeyVaultOptions.SectionName}:Url"];
                 if (!string.IsNullOrEmpty(keyVaultUrl))
                 {
                     var credential = new DefaultAzureCredential();
@@ -133,7 +136,7 @@ namespace Consilient.Api
                 }
             }
 
-            var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)?.Get<LoggingConfiguration>();
+            var loggingConfiguration = builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)?.Get<LoggingOptions>();
             var logger = CreateLogger(builder, loggingConfiguration);
             Log.Logger = logger;
             builder.Host.UseSerilog(logger);
@@ -147,14 +150,33 @@ namespace Consilient.Api
                 {
                     builder.Services.AddSingleton(loggingConfiguration);
                 }
-                var applicationSettings = builder.Services.RegisterApplicationSettings<ApplicationSettings>(builder.Configuration);
+                // Get configuration for startup-time use (before DI is built)
+                var authOptions = builder.Configuration
+                    .GetSection(AuthenticationOptions.SectionName)
+                    .Get<AuthenticationOptions>() ?? throw new Exception($"Configuration section missing: '{AuthenticationOptions.SectionName}'");
 
-                // Add explicit Options registration
-                builder.Services.Configure<ApplicationSettings>(
-                    builder.Configuration.GetSection("ApplicationSettings"));
+                // Register configuration validators
+                builder.Services.AddSingleton<IValidateOptions<AuthenticationOptions>, AuthenticationOptionsValidator>();
+                builder.Services.AddSingleton<IValidateOptions<ProviderAssignmentsUploadsOptions>, ProviderAssignmentsUploadsOptionsValidator>();
+                builder.Services.AddSingleton<IValidateOptions<UserServiceOptions>, UserServiceOptionsValidator>();
+                builder.Services.AddSingleton<IValidateOptions<TokenGeneratorOptions>, TokenGeneratorOptionsValidator>();
 
-                builder.Services.Configure<UserServiceConfiguration>(
-                    builder.Configuration.GetSection("ApplicationSettings:Authentication:UserService"));
+                // Register configuration with IOptions pattern and validation at startup
+                builder.Services.AddOptions<AuthenticationOptions>()
+                    .Bind(builder.Configuration.GetSection(AuthenticationOptions.SectionName))
+                    .ValidateOnStart();
+
+                builder.Services.AddOptions<ProviderAssignmentsUploadsOptions>()
+                    .Bind(builder.Configuration.GetSection(ProviderAssignmentsUploadsOptions.SectionName))
+                    .ValidateOnStart();
+
+                builder.Services.AddOptions<UserServiceOptions>()
+                    .Bind(builder.Configuration.GetSection(UserServiceOptions.SectionName))
+                    .ValidateOnStart();
+
+                builder.Services.AddOptions<TokenGeneratorOptions>()
+                    .Bind(builder.Configuration.GetSection(TokenGeneratorOptions.SectionName))
+                    .ValidateOnStart();
 
                 // Register ICurrentUserService BEFORE DbContext (required by HospitalizationStatusChangeInterceptor)
                 builder.Services.AddHttpContextAccessor();
@@ -170,7 +192,7 @@ namespace Consilient.Api
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
                 builder.Services.RegisterUserServices(
-                    applicationSettings.Authentication.PasswordPolicy,
+                    authOptions.PasswordPolicy,
                     useDistributedCache: builder.Environment.IsProduction());
                 builder.Services.RegisterVisitServices();
                 builder.Services.RegisterHospitalizationServices();
@@ -181,14 +203,12 @@ namespace Consilient.Api
                 builder.Services.AddWorkers();
                 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-                var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
+                var allowedOrigins = builder.Configuration.GetSection(AllowedOriginsOptions.SectionName).Get<string[]>();
                 builder.Services.ConfigureCors(allowedOrigins);
 
                 // Register redirect validation options (uses same origins as CORS for consistency)
-                builder.Services.Configure<RedirectValidationOptions>(options =>
-                {
-                    options.AllowedOrigins = allowedOrigins ?? [];
-                });
+                builder.Services.AddSingleton(Microsoft.Extensions.Options.Options.Create(
+                    new RedirectValidationOptions { AllowedOrigins = allowedOrigins ?? [] }));
 
                 builder.Services.ConfigureRateLimiting();
 
@@ -196,7 +216,7 @@ namespace Consilient.Api
 
                 builder.Services.AddControllers(options =>
                 {
-                    if (applicationSettings.Authentication.Enabled && (builder.Environment.IsProduction() || builder.Environment.IsDevelopment()))
+                    if (authOptions.Enabled && (builder.Environment.IsProduction() || builder.Environment.IsDevelopment()))
                     {
                         var policy = new AuthorizationPolicyBuilder()
                             .RequireAuthenticatedUser()
@@ -208,7 +228,7 @@ namespace Consilient.Api
                     options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
                 }).AddNewtonsoftJson();
 
-                builder.Services.ConfigureHealthChecks(builder.Configuration, applicationSettings.Authentication.UserService);
+                builder.Services.ConfigureHealthChecks(builder.Configuration, authOptions.UserService);
 
                 // Configure Data Protection with proper cryptographic algorithms
                 // Note: In Azure App Service containers, data protection keys are ephemeral by design.
@@ -222,16 +242,16 @@ namespace Consilient.Api
                     });
                 builder.Services.AddSwaggerGen(builder.Environment.ApplicationName, version);
                 builder.Services.AddSignalR();
-                builder.ConfigureAuthentication(applicationSettings.Authentication.UserService.Jwt);
+                builder.ConfigureAuthentication(authOptions.UserService.Jwt);
 
-                var prometheusConfig = builder.Configuration
-                    .GetSection("Prometheus")
-                    .Get<PrometheusConfiguration>() ?? new PrometheusConfiguration();
+                var prometheusOptions = builder.Configuration
+                    .GetSection(PrometheusOptions.SectionName)
+                    .Get<PrometheusOptions>() ?? new PrometheusOptions();
 
                 var app = builder.Build();
 
                 // Prometheus metrics endpoint (behind feature flag)
-                app.UsePrometheusMetrics(prometheusConfig);
+                app.UsePrometheusMetrics(prometheusOptions);
 
                 // Serilog request logging with enrichment (always enabled for endpoint analytics)
                 app.UseSerilogRequestLoggingWithEnrichment();
@@ -274,7 +294,7 @@ namespace Consilient.Api
                 // Rate limiting middleware (applies GlobalLimiter by default)
                 app.UseRateLimiter();
 
-                var authenticationEnabled = builder.Environment.IsProduction() || builder.Environment.IsDevelopment() && applicationSettings.Authentication.Enabled;
+                var authenticationEnabled = builder.Environment.IsProduction() || builder.Environment.IsDevelopment() && authOptions.Enabled;
                 if (authenticationEnabled)
                 {
                     app.UseAuthentication();
@@ -301,7 +321,7 @@ namespace Consilient.Api
             }
         }
 
-        private static Serilog.ILogger CreateLogger(WebApplicationBuilder builder, LoggingConfiguration? loggingConfiguration)
+        private static Serilog.ILogger CreateLogger(WebApplicationBuilder builder, LoggingOptions? loggingConfiguration)
         {
             if (loggingConfiguration == null)
             {

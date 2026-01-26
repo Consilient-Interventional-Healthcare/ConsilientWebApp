@@ -4,7 +4,7 @@ namespace Consilient.ProviderAssignments.Contracts.Import
     /// Configuration settings for the provider assignment import process.
     /// Bind to the "Import" section in appsettings.json.
     /// </summary>
-    public class ImportSettings
+    public class ProviderAssignmentsImportOptions
     {
         /// <summary>
         /// Configuration section name for binding.
@@ -15,6 +15,6 @@ namespace Consilient.ProviderAssignments.Contracts.Import
         /// Number of rows to process per batch during import operations.
         /// Default is 1000.
         /// </summary>
-        public int BatchSize { get; set; } = 1000;
+        public int BatchSize { get; init; } = 1000;
     }
 }

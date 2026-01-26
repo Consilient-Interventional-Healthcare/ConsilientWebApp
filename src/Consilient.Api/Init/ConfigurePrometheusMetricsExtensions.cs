@@ -5,9 +5,9 @@ namespace Consilient.Api.Init;
 
 internal static class ConfigurePrometheusMetricsExtensions
 {
-    public static void UsePrometheusMetrics(this IApplicationBuilder app, PrometheusConfiguration config)
+    public static void UsePrometheusMetrics(this IApplicationBuilder app, PrometheusOptions prometheusOptions)
     {
-        if (!config.Enabled)
+        if (!prometheusOptions.Enabled)
         {
             return;
         }

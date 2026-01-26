@@ -6,7 +6,7 @@ namespace Consilient.Api.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class LokiController(LoggingConfiguration loggingConfiguration, ILogger<LokiController> _logger) : ControllerBase
+    public class LokiController(LoggingOptions loggingOptions, ILogger<LokiController> _logger) : ControllerBase
     {
         [HttpPost("logs")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -14,7 +14,7 @@ namespace Consilient.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> ForwardToLoki()
         {
-            var lokiUrl = loggingConfiguration.GrafanaLoki.Url;
+            var lokiUrl = loggingOptions.GrafanaLoki.Url;
             if (string.IsNullOrEmpty(lokiUrl))
             {
                 var message = "Loki URL is not configured.";
@@ -22,7 +22,7 @@ namespace Consilient.Api.Controllers
                 return BadRequest(message);
             }
 
-            var pushEndpoint = loggingConfiguration.GrafanaLoki.PushEndpoint;
+            var pushEndpoint = loggingOptions.GrafanaLoki.PushEndpoint;
             if (string.IsNullOrEmpty(pushEndpoint))
             {
                 var message = "Loki push endpoint is not configured.";

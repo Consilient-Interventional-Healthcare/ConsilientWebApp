@@ -1,20 +1,27 @@
 using System.Text.Json;
+using Consilient.Api.Configuration;
 using Consilient.Infrastructure.Logging.Configuration;
+using Consilient.Users.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Consilient.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class DiagnosticsController(
-        LoggingConfiguration? loggingConfiguration,
-        IConfiguration configuration,
-        ILogger<DiagnosticsController> logger) : ControllerBase
+        LoggingOptions? loggingOptions,
+        IOptions<AuthenticationOptions> authOptions,
+        IOptions<UserServiceOptions> userServiceOptions,
+        ILogger<DiagnosticsController> logger,
+        IWebHostEnvironment environment) : ControllerBase
     {
-        private readonly LoggingConfiguration? _loggingConfiguration = loggingConfiguration;
-        private readonly IConfiguration _configuration = configuration;
+        private readonly LoggingOptions? _loggingOptions = loggingOptions;
+        private readonly AuthenticationOptions _authOptions = authOptions.Value;
+        private readonly UserServiceOptions _userServiceOptions = userServiceOptions.Value;
         private readonly ILogger<DiagnosticsController> _logger = logger;
+        private readonly IWebHostEnvironment _environment = environment;
 
         [HttpGet("loki-config")]
         [AllowAnonymous]  // TEMPORARY - Remove in production or add auth
@@ -22,10 +29,10 @@ namespace Consilient.Api.Controllers
         {
             return Ok(new
             {
-                LokiUrlFromConfig = _loggingConfiguration?.GrafanaLoki?.Url,
-                LokiPushEndpoint = _loggingConfiguration?.GrafanaLoki?.PushEndpoint,
-                ConstructedReadyUrl = !string.IsNullOrEmpty(_loggingConfiguration?.GrafanaLoki?.Url)
-                    ? $"{_loggingConfiguration.GrafanaLoki.Url.TrimEnd('/')}/ready"
+                LokiUrlFromConfig = _loggingOptions?.GrafanaLoki?.Url,
+                LokiPushEndpoint = _loggingOptions?.GrafanaLoki?.PushEndpoint,
+                ConstructedReadyUrl = !string.IsNullOrEmpty(_loggingOptions?.GrafanaLoki?.Url)
+                    ? $"{_loggingOptions.GrafanaLoki.Url.TrimEnd('/')}/ready"
                     : "N/A"
             });
         }
@@ -34,7 +41,7 @@ namespace Consilient.Api.Controllers
         [AllowAnonymous]  // TEMPORARY - Remove in production or add auth
         public async Task<IActionResult> TestLokiConnection()
         {
-            var lokiUrl = _loggingConfiguration?.GrafanaLoki?.Url;
+            var lokiUrl = _loggingOptions?.GrafanaLoki?.Url;
             if (string.IsNullOrEmpty(lokiUrl))
             {
                 return BadRequest("Loki URL not configured");
@@ -68,31 +75,32 @@ namespace Consilient.Api.Controllers
 
         [HttpGet("app-config")]
         [AllowAnonymous]  // TEMPORARY - Remove in production or restrict with auth
-        public IActionResult GetAppConfiguration([FromQuery] string? prefix = null)
+        public IActionResult GetAppConfiguration()
         {
-            var configKeys = new Dictionary<string, object?>();
-
-            // Get all configuration keys (or filter by prefix)
-            var allConfig = _configuration.AsEnumerable()
-                .Where(kvp => !string.IsNullOrEmpty(kvp.Key))
-                .Where(kvp => string.IsNullOrEmpty(prefix) || kvp.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(kvp => kvp.Key);
-
-            foreach (var kvp in allConfig)
-            {
-                // Mask sensitive values
-                var isSensitive = kvp.Key.Contains("Secret", StringComparison.OrdinalIgnoreCase) ||
-                                  kvp.Key.Contains("Password", StringComparison.OrdinalIgnoreCase) ||
-                                  kvp.Key.Contains("ConnectionString", StringComparison.OrdinalIgnoreCase);
-
-                configKeys[kvp.Key] = isSensitive ? "***MASKED***" : kvp.Value;
-            }
-
+            // Return a summary of loaded configuration (non-sensitive values only)
             return Ok(new
             {
-                TotalKeys = configKeys.Count,
-                FilterPrefix = prefix,
-                Configuration = configKeys
+                Environment = _environment.EnvironmentName,
+                Authentication = new
+                {
+                    Enabled = _authOptions.Enabled,
+                    CookieExpiryMinutes = _authOptions.CookieExpiryMinutes,
+                    PasswordPolicy = _authOptions.PasswordPolicy != null ? new
+                    {
+                        _authOptions.PasswordPolicy.RequiredLength,
+                        _authOptions.PasswordPolicy.RequireDigit,
+                        _authOptions.PasswordPolicy.RequireUppercase,
+                        _authOptions.PasswordPolicy.RequireLowercase,
+                        _authOptions.PasswordPolicy.RequireNonAlphanumeric
+                    } : null
+                },
+                UserService = new
+                {
+                    AutoProvisionUser = _userServiceOptions.AutoProvisionUser,
+                    AllowedEmailDomains = _userServiceOptions.AllowedEmailDomains,
+                    JwtConfigured = _userServiceOptions.Jwt != null,
+                    OAuthConfigured = _userServiceOptions.OAuth != null
+                }
             });
         }
 
@@ -100,22 +108,18 @@ namespace Consilient.Api.Controllers
         [AllowAnonymous]  // TEMPORARY - Remove in production or restrict with auth
         public IActionResult VerifyOAuthConfiguration()
         {
-            // Verify specific OAuth keys are loaded with expected values
-            var oauthSection = "ApplicationSettings:Authentication:UserService:OAuth";
+            var oauth = _userServiceOptions.OAuth;
 
             var result = new
             {
-                OAuthEnabled = _configuration[$"{oauthSection}:Enabled"],
-                OAuthProviderName = _configuration[$"{oauthSection}:ProviderName"],
-                OAuthClientId = !string.IsNullOrEmpty(_configuration[$"{oauthSection}:ClientId"]) ? "SET" : "NOT SET",
-                OAuthClientSecret = !string.IsNullOrEmpty(_configuration[$"{oauthSection}:ClientSecret"]) ? "SET" : "NOT SET",
-                OAuthTenantId = !string.IsNullOrEmpty(_configuration[$"{oauthSection}:TenantId"]) ? "SET" : "NOT SET",
-                OAuthAuthority = _configuration[$"{oauthSection}:Authority"],
-                OAuthScopes = _configuration[$"{oauthSection}:Scopes"],
-
-                // Show config source indicator
-                AppConfigurationEndpoint = _configuration["AppConfiguration:Endpoint"] ?? "NOT SET",
-                Environment = _configuration["ASPNETCORE_ENVIRONMENT"]
+                OAuthEnabled = oauth?.Enabled ?? false,
+                OAuthProviderName = oauth?.ProviderName ?? "NOT SET",
+                OAuthClientId = !string.IsNullOrEmpty(oauth?.ClientId) ? "SET" : "NOT SET",
+                OAuthClientSecret = !string.IsNullOrEmpty(oauth?.ClientSecret) ? "SET" : "NOT SET",
+                OAuthTenantId = !string.IsNullOrEmpty(oauth?.TenantId) ? "SET" : "NOT SET",
+                OAuthAuthority = oauth?.Authority ?? "NOT SET",
+                OAuthScopes = oauth?.Scopes != null ? string.Join(", ", oauth.Scopes) : "NOT SET",
+                Environment = _environment.EnvironmentName
             };
 
             return Ok(result);
@@ -129,7 +133,7 @@ namespace Consilient.Api.Controllers
         [AllowAnonymous]  // TEMPORARY - Remove in production or add auth
         public async Task<IActionResult> TestLokiLogging()
         {
-            var lokiUrl = _loggingConfiguration?.GrafanaLoki?.Url;
+            var lokiUrl = _loggingOptions?.GrafanaLoki?.Url;
             if (string.IsNullOrEmpty(lokiUrl))
             {
                 return BadRequest(new { Error = "Loki URL not configured" });

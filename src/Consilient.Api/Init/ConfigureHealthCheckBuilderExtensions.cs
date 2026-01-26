@@ -8,14 +8,14 @@ namespace Consilient.Api.Init
 {
     internal static class ConfigureHealthCheckBuilderExtensions
     {
-        public static IHealthChecksBuilder ConfigureHealthChecks(this IServiceCollection services, IConfiguration configuration, UserServiceConfiguration userServiceConfig)
+        public static IHealthChecksBuilder ConfigureHealthChecks(this IServiceCollection services, IConfiguration configuration, UserServiceOptions userServiceOptions)
         {
             var healthChecksBuilder = services.AddHealthChecks()
                 .AddDbContextCheck<ConsilientDbContext>()
                 .AddLokiHealthCheck(services)
                 .AddAzureBlobStorageHealthCheck(configuration);
 
-            if (userServiceConfig.OAuth?.Enabled == true)
+            if (userServiceOptions.OAuth?.Enabled == true)
             {
                 services.AddHttpClient<MicrosoftOAuthHealthCheck>(client =>
                 {

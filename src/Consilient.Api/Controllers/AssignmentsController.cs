@@ -3,6 +3,7 @@ using Consilient.Api.Helpers;
 using Consilient.Background.Workers.ProviderAssignments;
 using Consilient.Infrastructure.Storage.Contracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Consilient.Infrastructure.Storage;
 using Consilient.ProviderAssignments.Contracts.Import;
 using Consilient.Common.Contracts;
@@ -13,12 +14,12 @@ namespace Consilient.Api.Controllers
     [ApiController]
     public class AssignmentsController(
         ProviderAssignmentsImportWorkerEnqueuer importWorkerEnqueuer,
-        ApplicationSettings applicationSettings,
+        IOptions<ProviderAssignmentsUploadsOptions> fileUploadOptions,
         ICurrentUserService currentUserService,
         IFileStorage fileStorage) : ControllerBase
     {
         private readonly ProviderAssignmentsImportWorkerEnqueuer _importWorkerEnqueuer = importWorkerEnqueuer;
-        private readonly FileUploadSettings _fileUploadSettings = applicationSettings.ProviderAssignmentsUploads;
+        private readonly ProviderAssignmentsUploadsOptions _fileUploadOptions = fileUploadOptions.Value;
         private readonly ICurrentUserService _currentUserService = currentUserService;
         private readonly IFileStorage _fileStorage = fileStorage;
 
@@ -34,7 +35,7 @@ namespace Consilient.Api.Controllers
             CancellationToken cancellationToken = default)
         {
             // Validate file
-            var fileValidator = new FileValidator(_fileUploadSettings);
+            var fileValidator = new FileValidator(_fileUploadOptions);
             var validationResult = fileValidator.ValidateFile(file);
             if (!validationResult.IsValid)
             {

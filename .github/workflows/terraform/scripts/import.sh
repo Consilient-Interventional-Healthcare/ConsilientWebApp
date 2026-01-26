@@ -402,20 +402,20 @@ import_resource "azurerm_app_configuration_key.user_auto_provision" \
   "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ApplicationSettings:Authentication:UserService:AutoProvisionUser?label=${TF_VAR_environment}" \
   "User Auto Provision Config Key"
 
-# File Upload Settings (ProviderAssignmentsUploads)
+# Provider Assignments Uploads Settings
 import_resource "azurerm_app_configuration_key.api_file_upload_path" \
-  "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:UploadPath?label=${TF_VAR_environment}" \
-  "File Upload Path Config Key"
+  "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ProviderAssignmentsUploads:UploadPath?label=${TF_VAR_environment}" \
+  "Provider Assignments Uploads Path Config Key"
 
 import_resource "azurerm_app_configuration_key.api_file_upload_max_size" \
-  "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:MaxFileSizeBytes?label=${TF_VAR_environment}" \
-  "File Upload Max Size Config Key"
+  "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ProviderAssignmentsUploads:MaxFileSizeBytes?label=${TF_VAR_environment}" \
+  "Provider Assignments Uploads Max Size Config Key"
 
 # Import AllowedExtensions array keys (indexes 0-2 for .xls, .xlsm, .xlsx)
 for i in 0 1 2; do
   import_resource "azurerm_app_configuration_key.api_file_upload_extensions[\"$i\"]" \
-    "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:AllowedExtensions:${i}?label=${TF_VAR_environment}" \
-    "File Upload Allowed Extension $i Config Key"
+    "${APPCONFIG_ENDPOINT}/kv/ConsilientApi:ProviderAssignmentsUploads:AllowedExtensions:${i}?label=${TF_VAR_environment}" \
+    "Provider Assignments Uploads Allowed Extension $i Config Key"
 done
 
 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo ""

@@ -18,17 +18,17 @@ namespace Consilient.Infrastructure.Logging
     public class LokiHealthCheck : IHealthCheck
     {
         private readonly HttpClient _httpClient;
-        private readonly LoggingConfiguration? _loggingConfiguration;
+        private readonly LoggingOptions? _loggingOptions;
         private readonly Serilog.ILogger _logger;
 
         // Cache the last successful pipeline verification to avoid hammering Loki
         private static DateTime _lastSuccessfulPipelineCheck = DateTime.MinValue;
         private static readonly TimeSpan PipelineCacheDuration = TimeSpan.FromMinutes(5);
 
-        public LokiHealthCheck(HttpClient httpClient, LoggingConfiguration? loggingConfiguration)
+        public LokiHealthCheck(HttpClient httpClient, LoggingOptions? loggingOptions)
         {
             _httpClient = httpClient;
-            _loggingConfiguration = loggingConfiguration;
+            _loggingOptions = loggingOptions;
             _logger = Log.Logger;
         }
 
@@ -36,7 +36,7 @@ namespace Consilient.Infrastructure.Logging
             HealthCheckContext context,
             CancellationToken cancellationToken = default)
         {
-            var lokiUrl = _loggingConfiguration?.GrafanaLoki?.Url;
+            var lokiUrl = _loggingOptions?.GrafanaLoki?.Url;
             var data = new Dictionary<string, object>();
 
             if (string.IsNullOrEmpty(lokiUrl))
@@ -185,8 +185,8 @@ namespace Consilient.Infrastructure.Logging
                 var request = new HttpRequestMessage(HttpMethod.Get, lokiQueryUrl);
 
                 // Add Basic Auth if credentials are configured
-                var username = _loggingConfiguration?.GrafanaLoki?.Username;
-                var password = _loggingConfiguration?.GrafanaLoki?.Password;
+                var username = _loggingOptions?.GrafanaLoki?.Username;
+                var password = _loggingOptions?.GrafanaLoki?.Password;
                 if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
                 {
                     var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));

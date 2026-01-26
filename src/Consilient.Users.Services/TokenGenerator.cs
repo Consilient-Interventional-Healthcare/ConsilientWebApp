@@ -7,22 +7,22 @@ using System.Text;
 
 namespace Consilient.Users.Services
 {
-    public class TokenGenerator(IOptions<UserServiceConfiguration> userConfig) : ITokenGenerator
+    public class TokenGenerator(IOptions<UserServiceOptions> userServiceOptions) : ITokenGenerator
     {
-        private readonly TokenGeneratorConfiguration _configuration = userConfig.Value?.Jwt
+        private readonly TokenGeneratorOptions _jwtOptions = userServiceOptions.Value?.Jwt
             ?? throw new InvalidOperationException(
                 "JWT configuration is missing. Please ensure the JWT section is properly configured in application settings.");
 
         public string GenerateToken(IEnumerable<Claim> claims)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.Secret));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.Secret));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _configuration.Issuer,
-                audience: _configuration.Audience,
+                issuer: _jwtOptions.Issuer,
+                audience: _jwtOptions.Audience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(_configuration.ExpiryMinutes),
+                expires: DateTime.UtcNow.AddMinutes(_jwtOptions.ExpiryMinutes),
                 signingCredentials: credentials
             );
 

@@ -5,7 +5,7 @@ namespace Consilient.Api.Client
 {
     public static class ConsilientApiClientRegistrationExtension
     {
-        public static void AddConsilientApiClient(this IServiceCollection services, ConsilientApiClientConfiguration configuration, Func<IServiceProvider, string?> getUserNameFunc)
+        public static void AddConsilientApiClient(this IServiceCollection services, ConsilientApiClientOptions configuration, Func<IServiceProvider, string?> getUserNameFunc)
         {
             ArgumentNullException.ThrowIfNull(configuration);
             ArgumentNullException.ThrowIfNull(getUserNameFunc);

@@ -1,5 +1,6 @@
+using Consilient.BackgroundHost.Configuration;
 using Hangfire.Dashboard;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
@@ -18,15 +19,15 @@ namespace Consilient.BackgroundHost.Infra.Security
         private readonly string _audience;
         private readonly bool _authEnabled;
 
-        public JwtAuthorizationFilter(IConfiguration configuration)
+        public JwtAuthorizationFilter(IOptions<AuthenticationSettings> authOptions)
         {
-            var authSection = configuration.GetSection("ApplicationSettings:Authentication");
-            _authEnabled = authSection.GetValue<bool>("DashboardAuthEnabled", true);
+            var authSettings = authOptions?.Value ?? throw new ArgumentNullException(nameof(authOptions));
+            _authEnabled = authSettings.DashboardAuthEnabled;
 
-            var jwtSection = authSection.GetSection("UserService:Jwt");
-            _secret = jwtSection["Secret"] ?? string.Empty;
-            _issuer = jwtSection["Issuer"] ?? string.Empty;
-            _audience = jwtSection["Audience"] ?? string.Empty;
+            var jwtSettings = authSettings.UserService?.Jwt;
+            _secret = jwtSettings?.Secret ?? string.Empty;
+            _issuer = jwtSettings?.Issuer ?? string.Empty;
+            _audience = jwtSettings?.Audience ?? string.Empty;
         }
 
         public bool Authorize(DashboardContext context)

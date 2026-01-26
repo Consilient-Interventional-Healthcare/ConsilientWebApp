@@ -60,7 +60,7 @@ output "app_configuration_endpoint" {
 # Keys use ConsilientApi: prefix which is stripped by the API at runtime via TrimKeyPrefix()
 resource "azurerm_app_configuration_key" "api_auth_enabled" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:Enabled"
+  key                    = "ConsilientApi:Authentication:Enabled"
   label                  = var.environment
   value                  = "true"
   type                   = "kv"
@@ -77,9 +77,9 @@ resource "azurerm_app_configuration_key" "api_auth_enabled" {
 # JWT Issuer (matches API app service URL for audience validation)
 resource "azurerm_app_configuration_key" "api_jwt_issuer" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:Jwt:Issuer"
+  key                    = "ConsilientApi:Authentication:UserService:Jwt:Issuer"
   label                  = var.environment
-  value                  = "https://${local.api.service_name}.azurewebsites.net"
+  value                  = local.shared_config.jwt_issuer
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -94,9 +94,9 @@ resource "azurerm_app_configuration_key" "api_jwt_issuer" {
 # JWT Audience (matches API app service URL)
 resource "azurerm_app_configuration_key" "api_jwt_audience" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:Jwt:Audience"
+  key                    = "ConsilientApi:Authentication:UserService:Jwt:Audience"
   label                  = var.environment
-  value                  = "https://${local.api.service_name}.azurewebsites.net"
+  value                  = local.shared_config.jwt_audience
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -111,9 +111,9 @@ resource "azurerm_app_configuration_key" "api_jwt_audience" {
 # JWT Token Expiry (in minutes)
 resource "azurerm_app_configuration_key" "api_jwt_expiry" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:Jwt:ExpiryMinutes"
+  key                    = "ConsilientApi:Authentication:UserService:Jwt:ExpiryMinutes"
   label                  = var.environment
-  value                  = "60"
+  value                  = local.shared_config.jwt_expiry_minutes
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -128,7 +128,7 @@ resource "azurerm_app_configuration_key" "api_jwt_expiry" {
 # Password Policy Configuration
 resource "azurerm_app_configuration_key" "api_password_policy_require_digit" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequireDigit"
+  key                    = "ConsilientApi:Authentication:PasswordPolicy:RequireDigit"
   label                  = var.environment
   value                  = "true"
   type                   = "kv"
@@ -148,7 +148,7 @@ resource "azurerm_app_configuration_key" "api_password_policy_require_digit" {
 
 resource "azurerm_app_configuration_key" "api_password_policy_required_length" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequiredLength"
+  key                    = "ConsilientApi:Authentication:PasswordPolicy:RequiredLength"
   label                  = var.environment
   value                  = "8"
   type                   = "kv"
@@ -168,7 +168,7 @@ resource "azurerm_app_configuration_key" "api_password_policy_required_length" {
 
 resource "azurerm_app_configuration_key" "api_password_policy_require_non_alphanumeric" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequireNonAlphanumeric"
+  key                    = "ConsilientApi:Authentication:PasswordPolicy:RequireNonAlphanumeric"
   label                  = var.environment
   value                  = "false"
   type                   = "kv"
@@ -188,7 +188,7 @@ resource "azurerm_app_configuration_key" "api_password_policy_require_non_alphan
 
 resource "azurerm_app_configuration_key" "api_password_policy_require_uppercase" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequireUppercase"
+  key                    = "ConsilientApi:Authentication:PasswordPolicy:RequireUppercase"
   label                  = var.environment
   value                  = "true"
   type                   = "kv"
@@ -208,7 +208,7 @@ resource "azurerm_app_configuration_key" "api_password_policy_require_uppercase"
 
 resource "azurerm_app_configuration_key" "api_password_policy_require_lowercase" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequireLowercase"
+  key                    = "ConsilientApi:Authentication:PasswordPolicy:RequireLowercase"
   label                  = var.environment
   value                  = "true"
   type                   = "kv"
@@ -228,7 +228,7 @@ resource "azurerm_app_configuration_key" "api_password_policy_require_lowercase"
 
 resource "azurerm_app_configuration_key" "api_password_policy_required_unique_chars" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:PasswordPolicy:RequiredUniqueChars"
+  key                    = "ConsilientApi:Authentication:PasswordPolicy:RequiredUniqueChars"
   label                  = var.environment
   value                  = "1"
   type                   = "kv"
@@ -265,13 +265,29 @@ resource "azurerm_app_configuration_key" "api_logging_default_level" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
+# MicrosoftAspNetCore Log Level
+resource "azurerm_app_configuration_key" "api_logging_microsoft_aspnetcore" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:Logging:LogLevel:Microsoft.AspNetCore"
+  label                  = var.environment
+  value                  = local.shared_config.loglevel_microsoft_aspnetcore
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "logging"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
 
 # Grafana Loki Configuration (push endpoint path)
 resource "azurerm_app_configuration_key" "api_loki_push_endpoint" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Logging:GrafanaLoki:PushEndpoint"
   label                  = var.environment
-  value                  = "/loki/api/v1/push"
+  value                  = local.shared_config.loki_push_endpoint
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -287,7 +303,7 @@ resource "azurerm_app_configuration_key" "api_loki_batch_posting_limit" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Logging:GrafanaLoki:BatchPostingLimit"
   label                  = var.environment
-  value                  = "100"
+  value                  = local.shared_config.loki_batch_posting_limit
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -483,7 +499,7 @@ resource "azurerm_app_configuration_key" "react_external_login_mock" {
 # JWT Signing Secret Reference
 resource "azurerm_app_configuration_key" "secrets_jwt_signing_secret" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:Jwt:Secret"
+  key                    = "ConsilientApi:Authentication:UserService:Jwt:Secret"
   label                  = var.environment
   type                   = "vault" # Special type for Key Vault references
   vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/jwt-signing-secret"
@@ -603,7 +619,7 @@ resource "azurerm_app_configuration_key" "secrets_loki_password" {
 # OAuth Enabled Flag
 resource "azurerm_app_configuration_key" "oauth_enabled" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:Enabled"
+  key                    = "ConsilientApi:Authentication:UserService:OAuth:Enabled"
   label                  = var.environment
   value                  = var.oauth_enabled ? "true" : "false"
   type                   = "kv"
@@ -624,7 +640,7 @@ resource "azurerm_app_configuration_key" "oauth_enabled" {
 # OAuth Provider Name
 resource "azurerm_app_configuration_key" "oauth_provider_name" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ProviderName"
+  key                    = "ConsilientApi:Authentication:UserService:OAuth:ProviderName"
   label                  = var.environment
   value                  = "Microsoft"
   type                   = "kv"
@@ -641,7 +657,7 @@ resource "azurerm_app_configuration_key" "oauth_provider_name" {
 # OAuth Authority (Microsoft login URL)
 resource "azurerm_app_configuration_key" "oauth_authority" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:Authority"
+  key                    = "ConsilientApi:Authentication:UserService:OAuth:Authority"
   label                  = var.environment
   value                  = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}"
   type                   = "kv"
@@ -658,7 +674,7 @@ resource "azurerm_app_configuration_key" "oauth_authority" {
 # OAuth Client ID (from Azure AD App Registration, or placeholder if not configured)
 resource "azurerm_app_configuration_key" "oauth_client_id" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ClientId"
+  key                    = "ConsilientApi:Authentication:UserService:OAuth:ClientId"
   label                  = var.environment
   value                  = var.oauth_enabled ? azuread_application.oauth[0].client_id : "not-configured"
   type                   = "kv"
@@ -679,7 +695,7 @@ resource "azurerm_app_configuration_key" "oauth_client_id" {
 # OAuth Tenant ID
 resource "azurerm_app_configuration_key" "oauth_tenant_id" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:TenantId"
+  key                    = "ConsilientApi:Authentication:UserService:OAuth:TenantId"
   label                  = var.environment
   value                  = data.azurerm_client_config.current.tenant_id
   type                   = "kv"
@@ -696,7 +712,7 @@ resource "azurerm_app_configuration_key" "oauth_tenant_id" {
 # OAuth Scopes (comma-separated string for .NET to parse)
 resource "azurerm_app_configuration_key" "oauth_scopes" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:Scopes"
+  key                    = "ConsilientApi:Authentication:UserService:OAuth:Scopes"
   label                  = var.environment
   value                  = "openid profile email"
   type                   = "kv"
@@ -714,7 +730,7 @@ resource "azurerm_app_configuration_key" "oauth_scopes" {
 # Controls how long the auth_token cookie is valid
 resource "azurerm_app_configuration_key" "auth_cookie_expiry" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:CookieExpiryMinutes"
+  key                    = "ConsilientApi:Authentication:CookieExpiryMinutes"
   label                  = var.environment
   value                  = "60" # 1 hour
   type                   = "kv"
@@ -737,7 +753,7 @@ resource "azurerm_app_configuration_key" "auth_cookie_expiry" {
 # (provided their email domain is in AllowedEmailDomains)
 resource "azurerm_app_configuration_key" "user_auto_provision" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:AutoProvisionUser"
+  key                    = "ConsilientApi:Authentication:UserService:AutoProvisionUser"
   label                  = var.environment
   value                  = var.environment == "dev" ? "true" : "false"
   type                   = "kv"
@@ -755,10 +771,30 @@ resource "azurerm_app_configuration_key" "user_auto_provision" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
+# Allowed Email Domains for user authentication
+# Restricts which email domains can authenticate via OAuth
+resource "azurerm_app_configuration_key" "api_allowed_email_domains" {
+  for_each = { for idx, domain in ["consilientivh.com"] : idx => domain }
+
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "ConsilientApi:Authentication:UserService:AllowedEmailDomains:${each.key}"
+  label                  = var.environment
+  value                  = each.value
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "ConsilientApi"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
 # OAuth Client Secret (Key Vault reference)
 resource "azurerm_app_configuration_key" "oauth_client_secret" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:Authentication:UserService:OAuth:ClientSecret"
+  key                    = "ConsilientApi:Authentication:UserService:OAuth:ClientSecret"
   label                  = var.environment
   type                   = "vault"
   vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/oauth-client-secret"
@@ -808,7 +844,7 @@ resource "azurerm_app_configuration_key" "shared_filestorage_provider" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "Shared:FileStorage:Provider"
   label                  = var.environment
-  value                  = "AzureBlob" # Use Azure Blob in deployed environments
+  value                  = local.shared_config.filestorage_provider
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -832,6 +868,40 @@ resource "azurerm_app_configuration_key" "shared_filestorage_container" {
   tags = {
     application = "Shared"
     category    = "storage"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# Shared MicrosoftAspNetCore Log Level
+resource "azurerm_app_configuration_key" "shared_logging_microsoft_aspnetcore" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "Shared:Logging:LogLevel:Microsoft.AspNetCore"
+  label                  = var.environment
+  value                  = local.shared_config.loglevel_microsoft_aspnetcore
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "Shared"
+    category    = "logging"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# Shared JWT Expiry Minutes
+resource "azurerm_app_configuration_key" "shared_jwt_expiry" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "Shared:Authentication:UserService:Jwt:ExpiryMinutes"
+  label                  = var.environment
+  value                  = local.shared_config.jwt_expiry_minutes
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "Shared"
+    category    = "authentication"
   }
 
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
@@ -867,7 +937,7 @@ resource "azurerm_app_configuration_key" "api_filestorage_provider" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:FileStorage:Provider"
   label                  = var.environment
-  value                  = "AzureBlob" # Matches Shared:FileStorage:Provider
+  value                  = local.shared_config.filestorage_provider
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -916,14 +986,15 @@ resource "azurerm_app_configuration_key" "api_filestorage_connection" {
 }
 
 # ============================================================================
-# CONFIGURATION KEYS - FILE UPLOAD SETTINGS (Provider Assignments)
+# CONFIGURATION KEYS - PROVIDER ASSIGNMENTS UPLOADS
 # ============================================================================
 # Settings for file upload validation (allowed extensions, max size, etc.)
+# Binds to ProviderAssignmentsUploadsOptions in Consilient.Api
 
 # Upload Path - directory/prefix for storing uploaded files
 resource "azurerm_app_configuration_key" "api_file_upload_path" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:UploadPath"
+  key                    = "ConsilientApi:ProviderAssignmentsUploads:UploadPath"
   label                  = var.environment
   value                  = local.file_upload.upload_path
   type                   = "kv"
@@ -940,7 +1011,7 @@ resource "azurerm_app_configuration_key" "api_file_upload_path" {
 # Max File Size in Bytes
 resource "azurerm_app_configuration_key" "api_file_upload_max_size" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:MaxFileSizeBytes"
+  key                    = "ConsilientApi:ProviderAssignmentsUploads:MaxFileSizeBytes"
   label                  = var.environment
   value                  = tostring(local.file_upload.max_file_size_bytes)
   type                   = "kv"
@@ -960,7 +1031,7 @@ resource "azurerm_app_configuration_key" "api_file_upload_extensions" {
   for_each = { for idx, ext in local.file_upload.allowed_extensions : idx => ext }
 
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "ConsilientApi:ApplicationSettings:ProviderAssignmentsUploads:AllowedExtensions:${each.key}"
+  key                    = "ConsilientApi:ProviderAssignmentsUploads:AllowedExtensions:${each.key}"
   label                  = var.environment
   value                  = each.value
   type                   = "kv"
@@ -984,7 +1055,7 @@ resource "azurerm_app_configuration_key" "bghost_filestorage_provider" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "BackgroundHost:FileStorage:Provider"
   label                  = var.environment
-  value                  = "AzureBlob"
+  value                  = local.shared_config.filestorage_provider
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -1083,7 +1154,7 @@ resource "azurerm_app_configuration_key" "bghost_connection_hangfire" {
 # Dashboard Auth Enabled flag
 resource "azurerm_app_configuration_key" "bghost_auth_enabled" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:ApplicationSettings:Authentication:DashboardAuthEnabled"
+  key                    = "BackgroundHost:Authentication:DashboardAuthEnabled"
   label                  = var.environment
   value                  = var.backgroundhost_dashboard_auth_enabled ? "true" : "false"
   type                   = "kv"
@@ -1100,7 +1171,7 @@ resource "azurerm_app_configuration_key" "bghost_auth_enabled" {
 # JWT Secret (Key Vault Reference - same as API)
 resource "azurerm_app_configuration_key" "bghost_jwt_secret" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:ApplicationSettings:Authentication:UserService:Jwt:Secret"
+  key                    = "BackgroundHost:Authentication:UserService:Jwt:Secret"
   label                  = var.environment
   type                   = "vault"
   vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/jwt-signing-secret"
@@ -1119,9 +1190,9 @@ resource "azurerm_app_configuration_key" "bghost_jwt_secret" {
 # JWT Issuer (same as API)
 resource "azurerm_app_configuration_key" "bghost_jwt_issuer" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:ApplicationSettings:Authentication:UserService:Jwt:Issuer"
+  key                    = "BackgroundHost:Authentication:UserService:Jwt:Issuer"
   label                  = var.environment
-  value                  = "https://${local.api.service_name}.azurewebsites.net"
+  value                  = local.shared_config.jwt_issuer
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -1136,9 +1207,26 @@ resource "azurerm_app_configuration_key" "bghost_jwt_issuer" {
 # JWT Audience (same as API)
 resource "azurerm_app_configuration_key" "bghost_jwt_audience" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:ApplicationSettings:Authentication:UserService:Jwt:Audience"
+  key                    = "BackgroundHost:Authentication:UserService:Jwt:Audience"
   label                  = var.environment
-  value                  = "https://${local.api.service_name}.azurewebsites.net"
+  value                  = local.shared_config.jwt_audience
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# JWT Expiry Minutes (same as API)
+resource "azurerm_app_configuration_key" "bghost_jwt_expiry" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Authentication:UserService:Jwt:ExpiryMinutes"
+  label                  = var.environment
+  value                  = local.shared_config.jwt_expiry_minutes
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -1161,6 +1249,23 @@ resource "azurerm_app_configuration_key" "bghost_logging_level" {
   key                    = "BackgroundHost:Logging:LogLevel:Default"
   label                  = var.environment
   value                  = var.environment == "dev" ? "Debug" : "Information"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "logging"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# MicrosoftAspNetCore Log Level
+resource "azurerm_app_configuration_key" "bghost_logging_microsoft_aspnetcore" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Logging:LogLevel:Microsoft.AspNetCore"
+  label                  = var.environment
+  value                  = local.shared_config.loglevel_microsoft_aspnetcore
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -1196,7 +1301,7 @@ resource "azurerm_app_configuration_key" "bghost_loki_endpoint" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "BackgroundHost:Logging:GrafanaLoki:PushEndpoint"
   label                  = var.environment
-  value                  = "/loki/api/v1/push"
+  value                  = local.shared_config.loki_push_endpoint
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -1213,7 +1318,7 @@ resource "azurerm_app_configuration_key" "bghost_loki_batch_limit" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "BackgroundHost:Logging:GrafanaLoki:BatchPostingLimit"
   label                  = var.environment
-  value                  = "100"
+  value                  = local.shared_config.loki_batch_posting_limit
   type                   = "kv"
   content_type           = "text/plain"
 
