@@ -46,6 +46,16 @@ namespace Consilient.BackgroundHost
                 var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire)
                     ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
 
+                // Register LoggingOptions for LokiHealthCheck dependency injection
+                var loggingConfiguration = builder.Configuration
+                    .GetSection(ApplicationConstants.ConfigurationSections.Logging)
+                    .Get<LoggingOptions>();
+
+                if (loggingConfiguration != null)
+                {
+                    builder.Services.AddSingleton(loggingConfiguration);
+                }
+
                 // Configure cross-cutting concerns via Init extensions
                 builder.Services.ConfigureAuthenticationOptions(builder.Configuration);
                 builder.Services.ConfigureUserContext();
