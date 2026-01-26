@@ -213,6 +213,7 @@ jobs:
           echo "**Deployment Details:**" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **API App Name:** \`${{ env.API_APP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Endpoint:** https://${{ env.API_APP_NAME }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
           echo "- **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Docker Image:** \`${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -389,6 +390,7 @@ jobs:
           echo "**Deployment Details:**" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **BackgroundHost App Name:** \`${{ env.BACKGROUNDHOST_APP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Hangfire Dashboard:** https://${{ env.BACKGROUNDHOST_APP_NAME }}.azurewebsites.net/hangfire" >> $GITHUB_STEP_SUMMARY
           echo "- **Image Tag:** \`${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Docker Image:** \`${{ env.ACR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
