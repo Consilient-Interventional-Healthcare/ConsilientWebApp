@@ -26,7 +26,7 @@ resource "azuread_application" "oauth" {
 
     implicit_grant {
       access_token_issuance_enabled = false
-      id_token_issuance_enabled     = false
+      id_token_issuance_enabled     = true  # Required for OpenID Connect authentication
     }
   }
 

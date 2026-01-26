@@ -443,3 +443,4 @@ build/.tmp/
 
 # SchemaSpy JDBC drivers (downloaded at build time)
 /src/.docker/schemaspy-drivers/*.jar
+/_tmp

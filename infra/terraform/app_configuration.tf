@@ -654,12 +654,12 @@ resource "azurerm_app_configuration_key" "oauth_provider_name" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
-# OAuth Authority (Microsoft login URL)
+# OAuth Authority (Microsoft login URL - base URL only, TenantId is separate)
 resource "azurerm_app_configuration_key" "oauth_authority" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Authentication:UserService:OAuth:Authority"
   label                  = var.environment
-  value                  = "${local.shared_config.oauth_authority}/${local.shared_config.oauth_tenant_id}"
+  value                  = "${local.shared_config.oauth_authority}/"
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -1185,12 +1185,12 @@ resource "azurerm_app_configuration_key" "bghost_oauth_provider_name" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
-# OAuth Authority (Microsoft login URL with tenant)
+# OAuth Authority (Microsoft login URL - base URL only, TenantId is separate)
 resource "azurerm_app_configuration_key" "bghost_oauth_authority" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "BackgroundHost:Authentication:UserService:OAuth:Authority"
   label                  = var.environment
-  value                  = "${local.shared_config.oauth_authority}/${local.shared_config.oauth_tenant_id}"
+  value                  = "${local.shared_config.oauth_authority}/"
   type                   = "kv"
   content_type           = "text/plain"
 

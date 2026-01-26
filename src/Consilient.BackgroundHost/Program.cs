@@ -4,7 +4,6 @@ using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Employees.Services;
 using Consilient.Infrastructure.ExcelImporter;
-using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Infrastructure.Storage;
@@ -58,6 +57,7 @@ namespace Consilient.BackgroundHost
                 }
 
                 // Configure cross-cutting concerns via Init extensions
+                builder.Services.ConfigureAuthenticationOptions(builder.Configuration);
                 builder.Services.ConfigureEntraAuthentication(builder.Configuration);
                 builder.Services.ConfigureUserContext();
 
@@ -80,8 +80,11 @@ namespace Consilient.BackgroundHost
 
                 var app = builder.Build();
 
-                // Only use auth middleware when running in Azure
-                if (AzureEnvironment.IsRunningInAzure)
+                // UseRouting must come before authentication/authorization middleware
+                app.UseRouting();
+
+                // Configure authentication middleware when Entra auth is enabled
+                if (ConfigureEntraAuthenticationExtensions.ShouldUseEntraAuth(builder.Configuration))
                 {
                     app.UseAuthentication();
                     app.UseAuthorization();
@@ -90,8 +93,8 @@ namespace Consilient.BackgroundHost
                 // Map endpoints
                 app.MapHealthCheckEndpoint();
 
-                // Configure Hangfire dashboard with Azure Entra authentication
-                app.UseHangfireDashboardWithAuth(builder.Environment);
+                // Configure Hangfire dashboard with Entra authentication (when in Azure or ForceEntraAuth)
+                app.UseHangfireDashboardWithAuth(builder.Environment, builder.Configuration);
 
                 app.Run();
             }
