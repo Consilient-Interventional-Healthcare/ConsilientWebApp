@@ -1,4 +1,4 @@
-using Consilient.Users.Services;
+using Consilient.Users.Contracts.OAuth;
 
 namespace Consilient.BackgroundHost.Configuration
 {
@@ -6,15 +6,14 @@ namespace Consilient.BackgroundHost.Configuration
     {
         public const string SectionName = "Authentication";
 
-        public bool DashboardAuthEnabled { get; init; } = true;
         public UserServiceSettings? UserService { get; init; }
     }
 
     internal class UserServiceSettings
     {
         /// <summary>
-        /// JWT configuration shared with Consilient.Users.Services.
+        /// OAuth configuration for Azure Entra authentication.
         /// </summary>
-        public TokenGeneratorOptions? Jwt { get; init; }
+        public OAuthProviderOptions? OAuth { get; init; }
     }
 }

@@ -5,8 +5,9 @@ locals {
   oauth = {
     enabled          = var.oauth_enabled
     app_display_name = "${var.project_name}-oauth-${var.environment}"
-    # Callback URL for OAuth flow - matches AuthController endpoint
-    redirect_uri = "https://${local.api.service_name}.azurewebsites.net/auth/microsoft/callback"
+    # Callback URLs for OAuth flow
+    api_redirect_uri         = "https://${local.api.service_name}.azurewebsites.net/auth/microsoft/callback"
+    backgroundhost_redirect_uri = "https://${local.backgroundhost.service_name}.azurewebsites.net/signin-oidc"
   }
 }
 
@@ -18,7 +19,10 @@ resource "azuread_application" "oauth" {
   sign_in_audience = "AzureADMyOrg" # Single tenant
 
   web {
-    redirect_uris = [local.oauth.redirect_uri]
+    redirect_uris = [
+      local.oauth.api_redirect_uri,
+      local.oauth.backgroundhost_redirect_uri
+    ]
 
     implicit_grant {
       access_token_issuance_enabled = false
@@ -88,7 +92,10 @@ output "oauth_application_id" {
   description = "OAuth Application (Client) ID"
 }
 
-output "oauth_redirect_uri" {
-  value       = local.oauth.enabled ? local.oauth.redirect_uri : null
-  description = "OAuth Redirect URI"
+output "oauth_redirect_uris" {
+  value = local.oauth.enabled ? [
+    local.oauth.api_redirect_uri,
+    local.oauth.backgroundhost_redirect_uri
+  ] : null
+  description = "OAuth Redirect URIs"
 }

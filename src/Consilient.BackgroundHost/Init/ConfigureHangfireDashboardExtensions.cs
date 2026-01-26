@@ -1,19 +1,16 @@
-using Consilient.BackgroundHost.Configuration;
 using Consilient.BackgroundHost.Infra.Security;
 using Consilient.Infrastructure.Injection;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 
 namespace Consilient.BackgroundHost.Init
 {
     internal static class ConfigureHangfireDashboardExtensions
     {
         /// <summary>
-        /// Configures Hangfire dashboard with JWT authentication.
-        /// The dashboard is protected using the same JWT token mechanism as the API.
+        /// Configures Hangfire dashboard with Azure Entra authentication in Azure,
+        /// or open access locally/Docker.
         /// </summary>
         public static IApplicationBuilder UseHangfireDashboardWithAuth(
             this IApplicationBuilder app,
@@ -27,9 +24,8 @@ namespace Consilient.BackgroundHost.Init
             // Configure authorization based on environment
             if (AzureEnvironment.IsRunningInAzure)
             {
-                // In Azure: require JWT authentication
-                var authOptions = app.ApplicationServices.GetRequiredService<IOptions<AuthenticationSettings>>();
-                dashboardOptions.Authorization = [new JwtAuthorizationFilter(authOptions)];
+                // In Azure: require Azure Entra authentication
+                dashboardOptions.Authorization = [new EntraAuthorizationFilter()];
             }
             else
             {

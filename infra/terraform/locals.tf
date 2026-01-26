@@ -356,6 +356,12 @@ locals {
     loki_push_endpoint               = "/loki/api/v1/push"
     loki_batch_posting_limit         = "100"
     loglevel_microsoft_aspnetcore    = "Warning"
+    # OAuth settings shared between API and BackgroundHost
+    oauth_provider_name              = "Microsoft"
+    oauth_authority                  = "https://login.microsoftonline.com"
+    oauth_tenant_id                  = data.azurerm_client_config.current.tenant_id
+    oauth_client_id                  = var.oauth_enabled ? azuread_application.oauth[0].client_id : "not-configured"
+    oauth_scopes                     = "openid profile email"
   }
 
   # --------------------------------------------------------------------------

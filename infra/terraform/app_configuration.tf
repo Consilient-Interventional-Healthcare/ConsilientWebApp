@@ -642,7 +642,7 @@ resource "azurerm_app_configuration_key" "oauth_provider_name" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Authentication:UserService:OAuth:ProviderName"
   label                  = var.environment
-  value                  = "Microsoft"
+  value                  = local.shared_config.oauth_provider_name
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -659,7 +659,7 @@ resource "azurerm_app_configuration_key" "oauth_authority" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Authentication:UserService:OAuth:Authority"
   label                  = var.environment
-  value                  = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}"
+  value                  = "${local.shared_config.oauth_authority}/${local.shared_config.oauth_tenant_id}"
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -676,7 +676,7 @@ resource "azurerm_app_configuration_key" "oauth_client_id" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Authentication:UserService:OAuth:ClientId"
   label                  = var.environment
-  value                  = var.oauth_enabled ? azuread_application.oauth[0].client_id : "not-configured"
+  value                  = local.shared_config.oauth_client_id
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -697,7 +697,7 @@ resource "azurerm_app_configuration_key" "oauth_tenant_id" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Authentication:UserService:OAuth:TenantId"
   label                  = var.environment
-  value                  = data.azurerm_client_config.current.tenant_id
+  value                  = local.shared_config.oauth_tenant_id
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -714,7 +714,7 @@ resource "azurerm_app_configuration_key" "oauth_scopes" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "ConsilientApi:Authentication:UserService:OAuth:Scopes"
   label                  = var.environment
-  value                  = "openid profile email"
+  value                  = local.shared_config.oauth_scopes
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -1147,16 +1147,16 @@ resource "azurerm_app_configuration_key" "bghost_connection_hangfire" {
 }
 
 # ============================================================================
-# CONFIGURATION KEYS - AUTHENTICATION (BackgroundHost)
+# CONFIGURATION KEYS - OAUTH (BackgroundHost)
 # ============================================================================
-# BackgroundHost dashboard authentication settings (uses same JWT as API)
+# BackgroundHost OAuth settings - always enabled (uses shared OAuth app with API)
 
-# Dashboard Auth Enabled flag
-resource "azurerm_app_configuration_key" "bghost_auth_enabled" {
+# OAuth Enabled (always true for BackgroundHost)
+resource "azurerm_app_configuration_key" "bghost_oauth_enabled" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:Authentication:DashboardAuthEnabled"
+  key                    = "BackgroundHost:Authentication:UserService:OAuth:Enabled"
   label                  = var.environment
-  value                  = var.backgroundhost_dashboard_auth_enabled ? "true" : "false"
+  value                  = "true"
   type                   = "kv"
   content_type           = "text/plain"
 
@@ -1168,13 +1168,102 @@ resource "azurerm_app_configuration_key" "bghost_auth_enabled" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
-# JWT Secret (Key Vault Reference - same as API)
-resource "azurerm_app_configuration_key" "bghost_jwt_secret" {
+# OAuth Provider Name
+resource "azurerm_app_configuration_key" "bghost_oauth_provider_name" {
   configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:Authentication:UserService:Jwt:Secret"
+  key                    = "BackgroundHost:Authentication:UserService:OAuth:ProviderName"
+  label                  = var.environment
+  value                  = local.shared_config.oauth_provider_name
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Authority (Microsoft login URL with tenant)
+resource "azurerm_app_configuration_key" "bghost_oauth_authority" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Authentication:UserService:OAuth:Authority"
+  label                  = var.environment
+  value                  = "${local.shared_config.oauth_authority}/${local.shared_config.oauth_tenant_id}"
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Client ID (shared with API)
+resource "azurerm_app_configuration_key" "bghost_oauth_client_id" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Authentication:UserService:OAuth:ClientId"
+  label                  = var.environment
+  value                  = local.shared_config.oauth_client_id
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Tenant ID
+resource "azurerm_app_configuration_key" "bghost_oauth_tenant_id" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Authentication:UserService:OAuth:TenantId"
+  label                  = var.environment
+  value                  = local.shared_config.oauth_tenant_id
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Scopes
+resource "azurerm_app_configuration_key" "bghost_oauth_scopes" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Authentication:UserService:OAuth:Scopes"
+  label                  = var.environment
+  value                  = local.shared_config.oauth_scopes
+  type                   = "kv"
+  content_type           = "text/plain"
+
+  tags = {
+    application = "BackgroundHost"
+    category    = "authentication"
+  }
+
+  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
+}
+
+# OAuth Client Secret (Key Vault reference - same as API)
+resource "azurerm_app_configuration_key" "bghost_oauth_client_secret" {
+  configuration_store_id = azurerm_app_configuration.main.id
+  key                    = "BackgroundHost:Authentication:UserService:OAuth:ClientSecret"
   label                  = var.environment
   type                   = "vault"
-  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/jwt-signing-secret"
+  vault_key_reference    = "https://${azurerm_key_vault.main.name}.vault.azure.net/secrets/oauth-client-secret"
 
   tags = {
     application = "BackgroundHost"
@@ -1183,59 +1272,8 @@ resource "azurerm_app_configuration_key" "bghost_jwt_secret" {
 
   depends_on = [
     azurerm_role_assignment.terraform_appconfig_owner,
-    azurerm_key_vault_secret.jwt_signing_secret
+    azurerm_key_vault_secret.oauth_client_secret
   ]
-}
-
-# JWT Issuer (same as API)
-resource "azurerm_app_configuration_key" "bghost_jwt_issuer" {
-  configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:Authentication:UserService:Jwt:Issuer"
-  label                  = var.environment
-  value                  = local.shared_config.jwt_issuer
-  type                   = "kv"
-  content_type           = "text/plain"
-
-  tags = {
-    application = "BackgroundHost"
-    category    = "authentication"
-  }
-
-  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
-}
-
-# JWT Audience (same as API)
-resource "azurerm_app_configuration_key" "bghost_jwt_audience" {
-  configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:Authentication:UserService:Jwt:Audience"
-  label                  = var.environment
-  value                  = local.shared_config.jwt_audience
-  type                   = "kv"
-  content_type           = "text/plain"
-
-  tags = {
-    application = "BackgroundHost"
-    category    = "authentication"
-  }
-
-  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
-}
-
-# JWT Expiry Minutes (same as API)
-resource "azurerm_app_configuration_key" "bghost_jwt_expiry" {
-  configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "BackgroundHost:Authentication:UserService:Jwt:ExpiryMinutes"
-  label                  = var.environment
-  value                  = local.shared_config.jwt_expiry_minutes
-  type                   = "kv"
-  content_type           = "text/plain"
-
-  tags = {
-    application = "BackgroundHost"
-    category    = "authentication"
-  }
-
-  depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
 # ============================================================================
