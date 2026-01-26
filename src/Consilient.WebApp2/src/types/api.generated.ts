@@ -36,15 +36,16 @@ export namespace Auth {
       password: string;
   }
 
+  export interface AuthenticateUserResult {
+      succeeded: boolean;
+      token?: string | null;
+      user?: CurrentUserDto;
+      errors?: string[] | null;
+  }
+
   export interface ClaimDto {
       type: string;
       value: string;
-  }
-
-  export interface Consilient_Api_Controllers_AuthenticateUserApiResponse {
-      succeeded: boolean;
-      errors?: string[] | null;
-      user?: CurrentUserDto;
   }
 
   export interface CurrentUserDto {
@@ -72,9 +73,6 @@ export namespace Auth {
       succeeded: boolean;
       errors?: string[] | null;
   }
-
-  // Type aliases for shorter names
-  export type AuthenticateUserApiResponse = Consilient_Api_Controllers_AuthenticateUserApiResponse;
 
 }
 
@@ -296,7 +294,6 @@ export namespace ServiceTypes {
 
   export interface UpdateServiceTypeRequest {
       description?: string | null;
-      cptCode?: number | null;
   }
 
 }
@@ -350,7 +347,6 @@ export namespace Visits {
   }
 
   export interface UpdateVisitRequest {
-      serviceTypeId: number;
       isScribeServiceOnly: boolean;
       physicianApproved: boolean;
       nursePractitionerApproved: boolean;
@@ -439,7 +435,6 @@ export namespace GraphQL {
     id?: InputMaybe<SortDirectionEnum>;
     isScribeServiceOnly?: InputMaybe<SortDirectionEnum>;
     room?: InputMaybe<SortDirectionEnum>;
-    serviceTypeId?: InputMaybe<SortDirectionEnum>;
     updatedAtUtc?: InputMaybe<SortDirectionEnum>;
   };
 
@@ -505,8 +500,10 @@ export namespace GraphQL {
     date: Scalars['DateOnly']['output'];
     facilityId: Scalars['Int']['output'];
     hospitalization?: Maybe<ProviderAssignmentHospitalization>;
+    hospitalizationStatus?: Maybe<ProviderAssignmentHospitalizationStatus>;
     hospitalizationWasCreated: Scalars['Boolean']['output'];
     id: Scalars['Int']['output'];
+    imported: Scalars['Boolean']['output'];
     nursePractitioner?: Maybe<ProviderAssignmentProvider>;
     nursePractitionerWasCreated: Scalars['Boolean']['output'];
     patient?: Maybe<ProviderAssignmentPatient>;
@@ -514,10 +511,13 @@ export namespace GraphQL {
     physician?: Maybe<ProviderAssignmentProvider>;
     physicianWasCreated: Scalars['Boolean']['output'];
     resolvedHospitalizationId?: Maybe<Scalars['Int']['output']>;
+    resolvedHospitalizationStatusId?: Maybe<Scalars['Int']['output']>;
     resolvedNursePractitionerId?: Maybe<Scalars['Int']['output']>;
     resolvedPatientId?: Maybe<Scalars['Int']['output']>;
     resolvedPhysicianId?: Maybe<Scalars['Int']['output']>;
     resolvedVisitId?: Maybe<Scalars['Int']['output']>;
+    shouldImport: Scalars['Boolean']['output'];
+    validationErrorsJson?: Maybe<Scalars['String']['output']>;
     visit?: Maybe<ProviderAssignmentVisit>;
   };
 
@@ -541,6 +541,13 @@ export namespace GraphQL {
     caseId?: Maybe<Scalars['String']['output']>;
   };
 
+  export type ProviderAssignmentHospitalizationStatus = {
+    billingCode?: Maybe<Scalars['String']['output']>;
+    code?: Maybe<Scalars['String']['output']>;
+    color?: Maybe<Scalars['String']['output']>;
+    name?: Maybe<Scalars['String']['output']>;
+  };
+
   export type ProviderAssignmentPatient = {
     firstName?: Maybe<Scalars['String']['output']>;
     lastName?: Maybe<Scalars['String']['output']>;
@@ -554,12 +561,10 @@ export namespace GraphQL {
 
   export type ProviderAssignmentVisit = {
     bed?: Maybe<Scalars['String']['output']>;
-    imported: Scalars['Boolean']['output'];
     room?: Maybe<Scalars['String']['output']>;
   };
 
   export type ServiceType = {
-    cptcode?: Maybe<Scalars['Int']['output']>;
     description?: Maybe<Scalars['String']['output']>;
     id: Scalars['Int']['output'];
   };

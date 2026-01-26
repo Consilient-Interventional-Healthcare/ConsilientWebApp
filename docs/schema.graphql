@@ -153,16 +153,20 @@ type provider {
 type providerAssignment {
 	"""BatchId"""
 	batchId: ID!
-	"""Service date"""
+	"""ServiceDate"""
 	date: DateOnly!
 	"""FacilityId"""
 	facilityId: Int!
 	"""Hospitalization data - from Hospitalization table if resolved, otherwise from staging"""
 	hospitalization: providerAssignmentHospitalization
+	"""HospitalizationStatus data - from HospitalizationStatus table if resolved, otherwise null"""
+	hospitalizationStatus: providerAssignmentHospitalizationStatus
 	"""HospitalizationWasCreated"""
 	hospitalizationWasCreated: Boolean!
 	"""Id"""
 	id: Int!
+	"""Imported"""
+	imported: Boolean!
 	"""Nurse practitioner data - from Provider table if resolved, otherwise from staging"""
 	nursePractitioner: providerAssignmentProvider
 	"""NursePractitionerWasCreated"""
@@ -177,6 +181,8 @@ type providerAssignment {
 	physicianWasCreated: Boolean!
 	"""ResolvedHospitalizationId"""
 	resolvedHospitalizationId: Int
+	"""ResolvedHospitalizationStatusId"""
+	resolvedHospitalizationStatusId: Int
 	"""ResolvedNursePractitionerId"""
 	resolvedNursePractitionerId: Int
 	"""ResolvedPatientId"""
@@ -185,6 +191,10 @@ type providerAssignment {
 	resolvedPhysicianId: Int
 	"""ResolvedVisitId"""
 	resolvedVisitId: Int
+	"""ShouldImport"""
+	shouldImport: Boolean!
+	"""ValidationErrorsJson"""
+	validationErrorsJson: String
 	"""Visit data - from Visit table if resolved, otherwise from staging"""
 	visit: providerAssignmentVisit
 }
@@ -211,6 +221,18 @@ type providerAssignmentHospitalization {
 	caseId: String
 }
 
+"""Hospitalization status data from resolved status"""
+type providerAssignmentHospitalizationStatus {
+	"""BillingCode"""
+	billingCode: String
+	"""Code"""
+	code: String
+	"""Color"""
+	color: String
+	"""Name"""
+	name: String
+}
+
 """Patient data from resolved patient or staging"""
 type providerAssignmentPatient {
 	"""FirstName"""
@@ -233,8 +255,6 @@ type providerAssignmentProvider {
 type providerAssignmentVisit {
 	"""Bed"""
 	bed: String
-	"""Imported"""
-	imported: Boolean!
 	"""Room"""
 	room: String
 }
@@ -259,14 +279,11 @@ input QueryVisitsSortInput {
 	id: SortDirectionEnum
 	isScribeServiceOnly: SortDirectionEnum
 	room: SortDirectionEnum
-	serviceTypeId: SortDirectionEnum
 	updatedAtUtc: SortDirectionEnum
 }
 
 """serviceType object"""
 type serviceType {
-	"""Cptcode"""
-	cptcode: Int
 	"""Description"""
 	description: String
 	"""Id"""

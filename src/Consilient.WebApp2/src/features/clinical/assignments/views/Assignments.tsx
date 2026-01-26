@@ -1,36 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import {
   providerAssignmentsService,
   type ProviderAssignmentBatch,
-  type ProviderAssignment,
 } from '../services/ProviderAssignmentsService';
+import { AssignmentsTable } from '../components/AssignmentsTable';
 import { GraphQL } from '@/types/api.generated';
+import { useFacilities } from '@/shared/stores/FacilityStore';
 
 const POLL_INTERVAL = 5000;
 
-const formatName = (person: { firstName?: string | null; lastName?: string | null } | null): string =>
-  person ? `${person.lastName ?? ''}, ${person.firstName ?? ''}`.replace(/^, |, $/g, '') : '';
-
-const isNewEntity = (resolvedId: number | null | undefined, lastName: string | null | undefined): boolean =>
-  resolvedId == null && !!lastName;
+type TabType = 'ready' | 'imported' | 'invalid';
 
 export default function Assignments() {
   const { id: batchId } = useParams<{ id: string }>();
   const [batch, setBatch] = useState<ProviderAssignmentBatch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { data: facilities } = useFacilities();
 
   const fetchBatch = useCallback(async () => {
     if (!batchId) return;
@@ -64,56 +55,68 @@ export default function Assignments() {
     };
   }, [fetchBatch]);
 
-  const handleCheckboxChange = (id: number, checked: boolean) => {
-    setSelectedIds((prev) => {
-      const newSet = new Set(prev);
-      if (checked) {
-        newSet.add(id);
-      } else {
-        newSet.delete(id);
-      }
-      return newSet;
-    });
-  };
+  const items = batch?.items ?? [];
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked && batch?.items) {
-      const selectableItems = batch.items.filter((item) => !item.visit?.imported);
-      setSelectedIds(new Set(selectableItems.map((item) => item.id)));
-    } else {
-      setSelectedIds(new Set());
+  const facilityName = useMemo(() => {
+    return facilities?.find(f => f.id === batch?.facilityId)?.name ?? batch?.facilityId;
+  }, [facilities, batch?.facilityId]);
+
+  const { readyToImport, imported, invalid } = useMemo(() => {
+    const ready = items.filter(item =>
+      item.shouldImport === true &&
+      item.imported === false &&
+      !item.validationErrorsJson
+    );
+
+    const imp = items.filter(item =>
+      item.imported === true
+    );
+
+    const inv = items.filter(item =>
+      item.shouldImport === false &&
+      item.imported === false &&
+      !!item.validationErrorsJson
+    );
+
+    return { readyToImport: ready, imported: imp, invalid: inv };
+  }, [items]);
+
+  const tabOptions = useMemo(() => {
+    const options: { label: string; value: TabType }[] = [];
+    if (readyToImport.length > 0) {
+      options.push({ label: `Ready to Import (${readyToImport.length})`, value: 'ready' });
     }
-  };
+    if (imported.length > 0) {
+      options.push({ label: `Imported (${imported.length})`, value: 'imported' });
+    }
+    if (invalid.length > 0) {
+      options.push({ label: `Invalid (${invalid.length})`, value: 'invalid' });
+    }
+    return options;
+  }, [readyToImport.length, imported.length, invalid.length]);
 
-  const renderNameWithBadge = (
-    person: { firstName?: string | null; lastName?: string | null } | null | undefined,
-    resolvedId: number | null | undefined
-  ) => (
-    <span className="flex items-center gap-2">
-      {formatName(person ?? null)}
-      {isNewEntity(resolvedId, person?.lastName) && <Badge variant="success">new</Badge>}
-    </span>
-  );
+  // Set default tab when options change
+  useEffect(() => {
+    if (tabOptions.length > 0 && (!activeTab || !tabOptions.some(opt => opt.value === activeTab))) {
+      const firstOption = tabOptions[0];
+      if (firstOption) {
+        setActiveTab(firstOption.value);
+      }
+    }
+  }, [tabOptions, activeTab]);
 
-  const renderPatientWithBadge = (
-    patient: { firstName?: string | null; lastName?: string | null; mrn?: string | null } | null | undefined,
-    resolvedId: number | null | undefined
-  ) => (
-    <span className="flex items-center gap-2">
-      {formatName(patient ?? null)}{patient?.mrn ? ` (${patient.mrn})` : ''}
-      {resolvedId == null && <Badge variant="success">new</Badge>}
-    </span>
-  );
-
-  const renderCaseIdWithBadge = (
-    hospitalization: { caseId?: string | null } | null | undefined,
-    resolvedId: number | null | undefined
-  ) => (
-    <span className="flex items-center gap-2">
-      {hospitalization?.caseId ?? ''}
-      {resolvedId == null && <Badge variant="success">new</Badge>}
-    </span>
-  );
+  const currentItems = useMemo(() => {
+    switch (activeTab) {
+      case 'ready':
+        return readyToImport;
+      case 'imported':
+        return imported;
+      case 'invalid':
+        return invalid;
+      default:
+        return [];
+    }
+  }, [activeTab, readyToImport, imported, invalid]);
 
   if (isLoading) {
     return (
@@ -131,72 +134,39 @@ export default function Assignments() {
     );
   }
 
-  const items = batch.items ?? [];
-  const selectableItems = items.filter((item) => !item.visit?.imported);
-  const allSelected = selectableItems.length > 0 && selectedIds.size === selectableItems.length;
-
   return (
     <div className="bg-white min-h-screen p-8">
-      <div className="mb-6 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Provider Assignments</h1>
-          <p className="text-gray-600">
-            Date: {batch.date} | Facility: {batch.facilityId} | Batch: {batch.batchId} | Items: {items.length}
-          </p>
-          <p className="text-gray-500 text-sm mt-1">
-            Status: <Badge variant={batch.status === GraphQL.ProviderAssignmentBatchStatus.Pending ? 'warning' : 'default'}>{batch.status}</Badge>
-          </p>
-        </div>
-        <Button disabled={!allSelected}>
-          Process imports
-        </Button>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Provider Assignments</h1>
+        <p className="text-gray-600">
+          Date: {batch.date} | Facility: {facilityName} | Batch: {batch.batchId}
+        </p>
+        <p className="text-gray-500 text-sm mt-1">
+          Status: <Badge variant={batch.status === GraphQL.ProviderAssignmentBatchStatus.Pending ? 'warning' : 'default'}>{batch.status}</Badge>
+        </p>
       </div>
 
-      {items.length === 0 ? (
+      {tabOptions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">No assignments found</div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-              </TableHead>
-              <TableHead>Patient</TableHead>
-              <TableHead>Physician</TableHead>
-              <TableHead>Nurse Practitioner</TableHead>
-              <TableHead>Hospitalization</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Room</TableHead>
-              <TableHead>Imported</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item: ProviderAssignment) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(item.id)}
-                    onChange={(e) => handleCheckboxChange(item.id, e.target.checked)}
-                    disabled={item.visit?.imported}
-                    className="rounded border-gray-300"
-                  />
-                </TableCell>
-                <TableCell>{renderPatientWithBadge(item.patient, item.resolvedPatientId)}</TableCell>
-                <TableCell>{renderNameWithBadge(item.physician, item.resolvedPhysicianId)}</TableCell>
-                <TableCell>{renderNameWithBadge(item.nursePractitioner, item.resolvedNursePractitionerId)}</TableCell>
-                <TableCell>{renderCaseIdWithBadge(item.hospitalization, item.resolvedHospitalizationId)}</TableCell>
-                <TableCell>{`${item.visit?.room ?? ''} ${item.visit?.bed ?? ''}`.trim()}</TableCell>
-                <TableCell>{item.visit?.imported ? 'Yes' : 'No'}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <Tabs value={activeTab ?? ''} onValueChange={(value) => setActiveTab(value as TabType)}>
+          <div className="mb-4 flex justify-between items-center">
+            <TabsList>
+              {tabOptions.map((opt) => (
+                <TabsTrigger key={opt.value} value={opt.value}>
+                  {opt.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {activeTab === 'ready' && (
+              <Button>
+                Process imports
+              </Button>
+            )}
+          </div>
+
+          <AssignmentsTable items={currentItems} />
+        </Tabs>
       )}
     </div>
   );

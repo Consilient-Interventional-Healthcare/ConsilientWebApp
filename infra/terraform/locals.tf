@@ -356,11 +356,13 @@ locals {
     loki_push_endpoint               = "/loki/api/v1/push"
     loki_batch_posting_limit         = "100"
     loglevel_microsoft_aspnetcore    = "Warning"
-    # OAuth settings shared between API and BackgroundHost
+    # OAuth settings - Note: API and BackgroundHost use DIFFERENT App Registrations
+    # ClientIds are read from Azure AD data sources (stored in Terraform state)
     oauth_provider_name              = "AzureAD"
     oauth_authority                  = "https://login.microsoftonline.com"
     oauth_tenant_id                  = data.azurerm_client_config.current.tenant_id
-    oauth_client_id                  = var.oauth_enabled ? azuread_application.oauth[0].client_id : "not-configured"
+    oauth_client_id                  = local.oauth_client_ids.consilient_api
+    oauth_client_id_bghost           = local.oauth_client_ids.backgroundhost
     oauth_scopes                     = "openid profile email"
   }
 

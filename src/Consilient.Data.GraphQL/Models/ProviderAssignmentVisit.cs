@@ -8,6 +8,5 @@ namespace Consilient.Data.GraphQL.Models
     {
         public string? Room { get; set; }
         public string? Bed { get; set; }
-        public bool Imported { get; set; }
     }
 }

@@ -194,6 +194,8 @@ services:
       - ./certs:/app/.local:ro
       - ../Consilient.WebApp2/vite.config.ts:/app/vite.config.ts
       - ../Consilient.WebApp2/index.html:/app/index.html
+      - ../Consilient.WebApp2/package.json:/app/package.json
+      - ../Consilient.WebApp2/package-lock.json:/app/package-lock.json
       - /app/node_modules
     ports:
       - "8082:5173"

@@ -135,17 +135,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               }
             }
@@ -155,17 +155,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               }
             }
@@ -228,17 +228,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               }
             }
@@ -248,17 +248,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Consilient_Api_Controllers_AuthenticateUserApiResponse"
+                  "$ref": "#/components/schemas/AuthenticateUserResult"
                 }
               }
             }
@@ -570,15 +570,6 @@
       "get": {
         "tags": [
           "Diagnostics"
-        ],
-        "parameters": [
-          {
-            "name": "prefix",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
         ],
         "responses": {
           "200": {
@@ -2770,6 +2761,32 @@
         },
         "additionalProperties": false
       },
+      "AuthenticateUserResult": {
+        "required": [
+          "succeeded"
+        ],
+        "type": "object",
+        "properties": {
+          "succeeded": {
+            "type": "boolean"
+          },
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/CurrentUserDto"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ClaimDto": {
         "required": [
           "type",
@@ -2782,28 +2799,6 @@
           },
           "value": {
             "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
-      "Consilient_Api_Controllers_AuthenticateUserApiResponse": {
-        "required": [
-          "succeeded"
-        ],
-        "type": "object",
-        "properties": {
-          "succeeded": {
-            "type": "boolean"
-          },
-          "errors": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true
-          },
-          "user": {
-            "$ref": "#/components/schemas/CurrentUserDto"
           }
         },
         "additionalProperties": false
@@ -3602,11 +3597,6 @@
           "description": {
             "type": "string",
             "nullable": true
-          },
-          "cptCode": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3616,15 +3606,10 @@
           "isScribeServiceOnly",
           "nursePractitionerApproved",
           "physicianApproved",
-          "physicianApprovedDateTime",
-          "serviceTypeId"
+          "physicianApprovedDateTime"
         ],
         "type": "object",
         "properties": {
-          "serviceTypeId": {
-            "type": "integer",
-            "format": "int32"
-          },
           "isScribeServiceOnly": {
             "type": "boolean"
           },

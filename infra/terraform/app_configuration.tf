@@ -1198,12 +1198,12 @@ resource "azurerm_app_configuration_key" "bghost_oauth_authority" {
   depends_on = [azurerm_role_assignment.terraform_appconfig_owner]
 }
 
-# OAuth Client ID (shared with API)
+# OAuth Client ID (BackgroundHost has its own App Registration)
 resource "azurerm_app_configuration_key" "bghost_oauth_client_id" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "BackgroundHost:Authentication:UserService:OAuth:ClientId"
   label                  = var.environment
-  value                  = local.shared_config.oauth_client_id
+  value                  = local.shared_config.oauth_client_id_bghost
   type                   = "kv"
   content_type           = "text/plain"
 

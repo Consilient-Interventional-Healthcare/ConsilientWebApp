@@ -34,13 +34,16 @@ class ProviderAssignmentsService {
           physician { firstName lastName }
           nursePractitioner { firstName lastName }
           hospitalization { caseId }
-          visit { room bed imported }
+          visit { room bed }
           resolvedPatientId
           resolvedPhysicianId
           resolvedNursePractitionerId
           resolvedHospitalizationId
           resolvedHospitalizationStatusId
           hospitalizationStatus { code }
+          imported
+          shouldImport
+          validationErrorsJson
         }
       }
     }`;

@@ -24,4 +24,7 @@ cat >> $OUT <<'EOF'
 console.log('window.__ENV loaded:', window.__ENV);
 EOF
 
+# Install any new/missing packages (fast if nothing changed)
+npm install
+
 exec npm run dev -- --host 0.0.0.0

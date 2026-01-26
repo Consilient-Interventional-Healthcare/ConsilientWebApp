@@ -1,6 +1,22 @@
 # Azure AD App Registration for OAuth
 # Creates application, service principal, and client secret for Microsoft OAuth login
 
+# ============================================================================
+# DATA SOURCES - Look up existing App Registrations
+# ============================================================================
+# These data sources read the ClientIds from Azure AD and store them in Terraform state
+# This ensures the values are never set to "not-configured"
+
+# ConsilientApi App Registration (consilient-app-dev)
+data "azuread_application" "consilient_api" {
+  display_name = "consilient-app-${var.environment}"
+}
+
+# BackgroundHost App Registration (Consilient-BackgroundHost)
+data "azuread_application" "backgroundhost" {
+  display_name = "Consilient-BackgroundHost"
+}
+
 locals {
   oauth = {
     enabled          = var.oauth_enabled
@@ -8,6 +24,12 @@ locals {
     # Callback URLs for OAuth flow
     api_redirect_uri         = "https://${local.api.service_name}.azurewebsites.net/auth/microsoft/callback"
     backgroundhost_redirect_uri = "https://${local.backgroundhost.service_name}.azurewebsites.net/signin-oidc"
+  }
+
+  # OAuth ClientIds from existing App Registrations (read from Azure AD)
+  oauth_client_ids = {
+    consilient_api = data.azuread_application.consilient_api.client_id
+    backgroundhost = data.azuread_application.backgroundhost.client_id
   }
 }
 

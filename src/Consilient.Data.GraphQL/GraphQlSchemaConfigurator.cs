@@ -184,7 +184,6 @@ namespace Consilient.Data.GraphQL
             var providerAssignmentVisitType = schema.AddType<ProviderAssignmentVisit>("providerAssignmentVisit", "Visit data from resolved visit or staging");
             providerAssignmentVisitType.AddField(m => m.Room, nameof(ProviderAssignmentVisit.Room));
             providerAssignmentVisitType.AddField(m => m.Bed, nameof(ProviderAssignmentVisit.Bed));
-            providerAssignmentVisitType.AddField(m => m.Imported, nameof(ProviderAssignmentVisit.Imported));
 
             var providerAssignmentHospitalizationStatusType = schema.AddType<ProviderAssignmentHospitalizationStatus>("providerAssignmentHospitalizationStatus", "Hospitalization status data from resolved status");
             providerAssignmentHospitalizationStatusType.AddField(m => m.Name, nameof(ProviderAssignmentHospitalizationStatus.Name));
@@ -214,6 +213,11 @@ namespace Consilient.Data.GraphQL
             paType.AddField(m => m.PhysicianWasCreated, nameof(ProviderAssignment.PhysicianWasCreated));
             paType.AddField(m => m.NursePractitionerWasCreated, nameof(ProviderAssignment.NursePractitionerWasCreated));
             paType.AddField(m => m.HospitalizationWasCreated, nameof(ProviderAssignment.HospitalizationWasCreated));
+
+            // Import status fields
+            paType.AddField(m => m.ShouldImport, nameof(ProviderAssignment.ShouldImport));
+            paType.AddField(m => m.Imported, nameof(ProviderAssignment.Imported));
+            paType.AddField(m => m.ValidationErrorsJson, nameof(ProviderAssignment.ValidationErrorsJson));
 
             // Computed fields - only fetched when requested
             // Patient: uses navigation property when resolved, falls back to staging data
@@ -249,8 +253,7 @@ namespace Consilient.Data.GraphQL
             paType.AddField("visit", pa => new ProviderAssignmentVisit
             {
                 Room = pa.ResolvedVisit != null ? pa.ResolvedVisit.Room : pa.Room,
-                Bed = pa.ResolvedVisit != null ? pa.ResolvedVisit.Bed : pa.Bed,
-                Imported = pa.ResolvedVisitId != null
+                Bed = pa.ResolvedVisit != null ? pa.ResolvedVisit.Bed : pa.Bed
             }, "Visit data - from Visit table if resolved, otherwise from staging");
 
             paType.AddField("hospitalizationStatus", pa => new ProviderAssignmentHospitalizationStatus
