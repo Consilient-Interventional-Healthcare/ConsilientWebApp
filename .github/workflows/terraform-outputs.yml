@@ -13,6 +13,9 @@ on:
       react_app_name:
         description: "The name of the React App Service"
         value: ${{ jobs.outputs.outputs.react_app_name }}
+      backgroundhost_app_name:
+        description: "The name of the BackgroundHost App Service"
+        value: ${{ jobs.outputs.outputs.backgroundhost_app_name }}
       acr_registry_url:
         description: "The URL of the Azure Container Registry"
         value: ${{ jobs.outputs.outputs.acr_registry_url }}
@@ -32,6 +35,7 @@ jobs:
     outputs:
       api_app_name: ${{ steps.outputs.outputs.api_app_name }}
       react_app_name: ${{ steps.outputs.outputs.react_app_name }}
+      backgroundhost_app_name: ${{ steps.outputs.outputs.backgroundhost_app_name }}
       acr_registry_url: ${{ steps.outputs.outputs.acr_registry_url }}
       resource_group_name: ${{ steps.outputs.outputs.resource_group_name }}
       sql_server_fqdn: ${{ steps.outputs.outputs.sql_server_fqdn }}
@@ -98,6 +102,7 @@ jobs:
           echo "**Resources:**" >> $GITHUB_STEP_SUMMARY
           echo "- **API App:** \`${{ steps.outputs.outputs.api_app_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **React App:** \`${{ steps.outputs.outputs.react_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **BackgroundHost App:** \`${{ steps.outputs.outputs.backgroundhost_app_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **ACR Registry:** \`${{ steps.outputs.outputs.acr_registry_url }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Resource Group:** \`${{ steps.outputs.outputs.resource_group_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **SQL Server:** \`${{ steps.outputs.outputs.sql_server_fqdn }}\`" >> $GITHUB_STEP_SUMMARY

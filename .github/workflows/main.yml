@@ -80,9 +80,11 @@ jobs:
       # For push/PR: use actual file change detection
       infrastructure: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.infrastructure }}
       databases: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.databases }}
-      dotnet: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.dotnet }}
+      api: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.api }}
+      backgroundhost: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.backgroundhost }}
+      dotnet_shared: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.dotnet_shared }}
       react: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.react }}
-      any_changes: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.infrastructure == 'true' || steps.filter.outputs.databases == 'true' || steps.filter.outputs.dotnet == 'true' || steps.filter.outputs.react == 'true' }}
+      any_changes: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.infrastructure == 'true' || steps.filter.outputs.databases == 'true' || steps.filter.outputs.api == 'true' || steps.filter.outputs.backgroundhost == 'true' || steps.filter.outputs.dotnet_shared == 'true' || steps.filter.outputs.react == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -94,8 +96,18 @@ jobs:
               - 'infra/terraform/**/*.tfvars'
             databases:
               - 'src/Databases/**'
-            dotnet:
-              - 'src/Consilient.!(WebApp|WebApp2)/**'
+            api:
+              - 'src/Consilient.Api/**'
+            backgroundhost:
+              - 'src/Consilient.BackgroundHost/**'
+              - 'src/Consilient.Background.Workers/**'
+            dotnet_shared:
+              - 'src/Consilient.Common.*/**'
+              - 'src/Consilient.Constants/**'
+              - 'src/Consilient.Data/**'
+              - 'src/Consilient.Infrastructure.*/**'
+              - 'src/Consilient.Shared.*/**'
+              - 'src/Consilient.*.Services/**'
             react:
               - 'src/Consilient.WebApp2/**'
 
@@ -196,6 +208,7 @@ jobs:
     outputs:
       api_app_name: ${{ needs.terraform.outputs.api_app_name || needs.terraform-outputs.outputs.api_app_name }}
       react_app_name: ${{ needs.terraform.outputs.react_app_name || needs.terraform-outputs.outputs.react_app_name }}
+      backgroundhost_app_name: ${{ needs.terraform.outputs.backgroundhost_app_name || needs.terraform-outputs.outputs.backgroundhost_app_name }}
       acr_registry_url: ${{ needs.terraform.outputs.acr_registry_url || needs.terraform-outputs.outputs.acr_registry_url }}
       resource_group_name: ${{ needs.terraform.outputs.resource_group_name || needs.terraform-outputs.outputs.resource_group_name }}
       sql_server_fqdn: ${{ needs.terraform.outputs.sql_server_fqdn || needs.terraform-outputs.outputs.sql_server_fqdn }}
@@ -209,6 +222,7 @@ jobs:
           echo "**Outputs:**" >> $GITHUB_STEP_SUMMARY
           echo "- API App: \`${{ needs.terraform.outputs.api_app_name || needs.terraform-outputs.outputs.api_app_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- React App: \`${{ needs.terraform.outputs.react_app_name || needs.terraform-outputs.outputs.react_app_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- BackgroundHost App: \`${{ needs.terraform.outputs.backgroundhost_app_name || needs.terraform-outputs.outputs.backgroundhost_app_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- ACR Registry: \`${{ needs.terraform.outputs.acr_registry_url || needs.terraform-outputs.outputs.acr_registry_url }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Resource Group: \`${{ needs.terraform.outputs.resource_group_name || needs.terraform-outputs.outputs.resource_group_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- SQL Server: \`${{ needs.terraform.outputs.sql_server_fqdn || needs.terraform-outputs.outputs.sql_server_fqdn }}\`" >> $GITHUB_STEP_SUMMARY
@@ -235,10 +249,13 @@ jobs:
 
 
   deploy-dotnet-apps:
-    name: Deploy API
+    name: Deploy API & BackgroundHost
     needs: [initialize-workflow, detect-changes, terraform-consolidation, deploy-databases, warm-docker-cache]
     if: |
-      (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.dotnet == 'true') &&
+      (github.event_name == 'workflow_dispatch' ||
+       needs.detect-changes.outputs.api == 'true' ||
+       needs.detect-changes.outputs.backgroundhost == 'true' ||
+       needs.detect-changes.outputs.dotnet_shared == 'true') &&
       always() &&
       needs.terraform-consolidation.result == 'success' &&
       (needs.deploy-databases.result == 'success' || needs.deploy-databases.result == 'skipped') &&
@@ -247,10 +264,15 @@ jobs:
     with:
       environment: ${{ needs.initialize-workflow.outputs.environment }}
       api_app_name: ${{ needs.terraform-consolidation.outputs.api_app_name || format('consilient-api-{0}', needs.initialize-workflow.outputs.environment) }}
+      backgroundhost_app_name: ${{ needs.terraform-consolidation.outputs.backgroundhost_app_name }}
       acr_registry: ${{ needs.terraform-consolidation.outputs.acr_registry_url }}
       resource_group: ${{ needs.terraform-consolidation.outputs.resource_group_name }}
       api_image_name: 'consilient-api'
+      backgroundhost_image_name: 'consilient-backgroundhost'
       cache_image_ref: ${{ format('{0}/consilient-api:latest', needs.terraform-consolidation.outputs.acr_registry_url) }}
+      backgroundhost_cache_image_ref: ${{ format('{0}/consilient-backgroundhost:latest', needs.terraform-consolidation.outputs.acr_registry_url) }}
+      skip_api: ${{ github.event_name != 'workflow_dispatch' && needs.detect-changes.outputs.api != 'true' && needs.detect-changes.outputs.dotnet_shared != 'true' }}
+      skip_backgroundhost: ${{ github.event_name != 'workflow_dispatch' && needs.detect-changes.outputs.backgroundhost != 'true' && needs.detect-changes.outputs.dotnet_shared != 'true' }}
     secrets: inherit
 
   deploy-react-apps:
@@ -304,7 +326,9 @@ jobs:
           echo "### Changes Detected" >> $GITHUB_STEP_SUMMARY
           echo "- Infrastructure: ${{ needs.detect-changes.outputs.infrastructure }}" >> $GITHUB_STEP_SUMMARY
           echo "- Databases: ${{ needs.detect-changes.outputs.databases }}" >> $GITHUB_STEP_SUMMARY
-          echo "- .NET API: ${{ needs.detect-changes.outputs.dotnet }}" >> $GITHUB_STEP_SUMMARY
+          echo "- .NET API: ${{ needs.detect-changes.outputs.api }}" >> $GITHUB_STEP_SUMMARY
+          echo "- .NET BackgroundHost: ${{ needs.detect-changes.outputs.backgroundhost }}" >> $GITHUB_STEP_SUMMARY
+          echo "- .NET Shared: ${{ needs.detect-changes.outputs.dotnet_shared }}" >> $GITHUB_STEP_SUMMARY
           echo "- React App: ${{ needs.detect-changes.outputs.react }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify Teams
