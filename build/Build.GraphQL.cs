@@ -1,6 +1,3 @@
-using Nuke.Common;
-using Nuke.Common.IO;
-
 /// <summary>
 /// GraphQL code generation targets.
 /// Handles: GraphQL schema export and TypeScript type generation.

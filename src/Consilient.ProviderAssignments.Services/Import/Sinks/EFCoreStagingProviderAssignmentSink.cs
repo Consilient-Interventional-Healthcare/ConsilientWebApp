@@ -1,10 +1,10 @@
-using System.Text.Json;
 using Consilient.Data;
 using Consilient.Data.Entities.Staging;
 using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.ProviderAssignments.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Consilient.ProviderAssignments.Services.Import.Sinks;
 

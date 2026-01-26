@@ -1,15 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text.RegularExpressions;
-using System.Threading;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
 using Serilog;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 /// <summary>

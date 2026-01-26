@@ -4,5 +4,5 @@
     {
         Physician = 0,
         NursePractitioner = 1
-    } 
+    }
 }

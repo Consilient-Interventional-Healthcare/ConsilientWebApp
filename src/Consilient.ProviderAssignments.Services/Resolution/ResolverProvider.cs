@@ -1,6 +1,5 @@
 ﻿using Consilient.Data;
 using Consilient.ProviderAssignments.Contracts.Resolution;
-using Consilient.ProviderAssignments.Services.Resolution.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.ProviderAssignments.Services.Resolution

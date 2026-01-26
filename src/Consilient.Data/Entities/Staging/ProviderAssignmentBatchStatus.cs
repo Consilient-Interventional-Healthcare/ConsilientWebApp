@@ -1,4 +1,3 @@
-using Consilient.Data.Entities.Clinical;
 namespace Consilient.Data.Entities.Staging
 {
     public enum ProviderAssignmentBatchStatus

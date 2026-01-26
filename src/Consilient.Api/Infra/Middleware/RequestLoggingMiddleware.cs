@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using Serilog.Context;
+using System.Diagnostics;
 
 namespace Consilient.Api.Infra.Middleware;
 

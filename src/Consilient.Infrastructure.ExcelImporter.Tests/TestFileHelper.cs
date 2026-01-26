@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Reflection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-
 namespace Consilient.Infrastructure.ExcelImporter.Tests
 {
     public static class TestFileHelper

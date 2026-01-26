@@ -1,6 +1,6 @@
-using Consilient.ProviderAssignments.Contracts;
-using Consilient.Infrastructure.ExcelImporter.Mappers;
 using Consilient.Infrastructure.ExcelImporter.Contracts;
+using Consilient.Infrastructure.ExcelImporter.Mappers;
+using Consilient.ProviderAssignments.Contracts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 

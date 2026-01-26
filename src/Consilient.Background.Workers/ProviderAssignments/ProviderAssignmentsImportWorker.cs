@@ -1,11 +1,10 @@
 using Consilient.Background.Workers.Contracts;
 using Consilient.Background.Workers.Models;
+using Consilient.Common.Contracts;
 using Consilient.Infrastructure.Storage.Contracts;
-using Hangfire;
+using Consilient.ProviderAssignments.Contracts.Import;
 using Hangfire.Server;
 using System.ComponentModel;
-using Consilient.ProviderAssignments.Contracts.Import;
-using Consilient.Common.Contracts;
 
 namespace Consilient.Background.Workers.ProviderAssignments
 {

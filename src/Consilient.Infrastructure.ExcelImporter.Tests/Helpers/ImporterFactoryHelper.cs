@@ -1,11 +1,11 @@
-using Consilient.ProviderAssignments.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Contracts;
-using Microsoft.Extensions.Logging.Abstractions;
+using Consilient.ProviderAssignments.Contracts;
 using Consilient.ProviderAssignments.Contracts.Import;
 using Consilient.ProviderAssignments.Services.Import;
 using Consilient.ProviderAssignments.Services.Import.Validation;
 using Consilient.ProviderAssignments.Services.Import.Validation.Validators;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Helpers

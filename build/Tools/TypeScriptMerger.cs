@@ -1,9 +1,7 @@
-using System;
-using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
 using Nuke.Common.IO;
 using Serilog;
+using System.Text;
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// Merges REST API types and GraphQL types into a single TypeScript file.

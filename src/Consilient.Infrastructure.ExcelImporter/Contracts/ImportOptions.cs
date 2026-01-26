@@ -9,7 +9,7 @@ namespace Consilient.Infrastructure.ExcelImporter.Contracts
         public int MaxRows { get; init; } = int.MaxValue;
         public bool SkipEmptyRows { get; init; } = true;
         public bool FailOnValidationError { get; init; } = true;
-        
+
         /// <summary>
         /// Optional function to determine when to stop reading rows.
         /// Takes the current ExcelRow and ColumnMapping, returns true to stop reading.

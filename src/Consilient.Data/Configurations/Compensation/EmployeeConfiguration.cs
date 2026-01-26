@@ -1,4 +1,3 @@
-using Consilient.Data.Entities;
 using Consilient.Data.Entities.Compensation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

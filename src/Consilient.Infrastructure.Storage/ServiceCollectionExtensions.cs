@@ -2,7 +2,6 @@ using Consilient.Infrastructure.Storage.Contracts;
 using Consilient.Infrastructure.Storage.Validators;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 namespace Consilient.Infrastructure.Storage

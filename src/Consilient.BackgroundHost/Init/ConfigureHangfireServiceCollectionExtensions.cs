@@ -1,12 +1,12 @@
-﻿using Hangfire;
+using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Consilient.BackgroundHost.Init
 {
-    internal static class HangfireRegistrationExtension
+    internal static class ConfigureHangfireServiceCollectionExtensions
     {
-        public static void RegisterHangfireServices(this IServiceCollection services, string connectionString)
+        public static void ConfigureHangfireServices(this IServiceCollection services, string connectionString)
         {
             services.AddSingleton<IBackgroundJobClient, BackgroundJobClient>();
             services.AddSingleton<IRecurringJobManager, RecurringJobManager>();

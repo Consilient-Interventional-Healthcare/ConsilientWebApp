@@ -1,10 +1,10 @@
-using System.Text.Json;
 using Consilient.Api.Configuration;
 using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Users.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 namespace Consilient.Api.Controllers
 {

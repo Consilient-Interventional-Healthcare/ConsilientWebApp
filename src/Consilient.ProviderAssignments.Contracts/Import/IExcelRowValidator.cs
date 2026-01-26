@@ -1,5 +1,4 @@
 using Consilient.Infrastructure.ExcelImporter.Contracts;
-using Consilient.ProviderAssignments.Contracts;
 
 namespace Consilient.ProviderAssignments.Contracts.Import
 {

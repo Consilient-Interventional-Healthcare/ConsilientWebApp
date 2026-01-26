@@ -1,10 +1,10 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using Consilient.Infrastructure.Logging.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 using Serilog.Events;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace Consilient.Infrastructure.Logging
 {

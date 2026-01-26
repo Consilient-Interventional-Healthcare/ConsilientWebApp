@@ -1,6 +1,3 @@
-using Nuke.Common;
-using Nuke.Common.IO;
-
 /// <summary>
 /// OpenAPI/REST code generation targets.
 /// Handles: OpenAPI document generation and TypeScript type generation.

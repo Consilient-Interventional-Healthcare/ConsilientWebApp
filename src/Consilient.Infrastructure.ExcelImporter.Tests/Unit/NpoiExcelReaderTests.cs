@@ -1,6 +1,5 @@
 using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.Infrastructure.ExcelImporter.Readers;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 {

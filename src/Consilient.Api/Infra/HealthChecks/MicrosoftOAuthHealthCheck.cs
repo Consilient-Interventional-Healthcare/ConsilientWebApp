@@ -1,9 +1,9 @@
-using System.Text.Json;
 using Consilient.Users.Contracts.OAuth;
 using Consilient.Users.Services;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
+using System.Text.Json;
 
 namespace Consilient.Api.Infra.HealthChecks
 {

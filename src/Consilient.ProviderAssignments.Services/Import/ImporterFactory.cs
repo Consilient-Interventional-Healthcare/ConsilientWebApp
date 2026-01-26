@@ -5,7 +5,6 @@ using Consilient.Infrastructure.ExcelImporter.Readers;
 using Consilient.ProviderAssignments.Contracts;
 using Consilient.ProviderAssignments.Contracts.Import;
 using Consilient.ProviderAssignments.Services.Import.Transformers;
-using Consilient.ProviderAssignments.Services.Import.Validation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -78,7 +77,7 @@ namespace Consilient.ProviderAssignments.Services.Import
                 ShouldStopReading = (excelRow, columnMapping) =>
                 {
                     // Stop when Hospital Number (column C) is empty
-                    return excelRow.Cells.TryGetValue("Hospital Number", out var hospitalNumber) && 
+                    return excelRow.Cells.TryGetValue("Hospital Number", out var hospitalNumber) &&
                            string.IsNullOrWhiteSpace(hospitalNumber);
                 }
             };

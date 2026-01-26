@@ -1,7 +1,6 @@
-using System.Collections.Generic;
+using Consilient.Data.Entities.Clinical;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
-using Consilient.Data.Entities.Clinical;
 
 namespace Consilient.Data.Entities.Staging
 {
@@ -33,7 +32,7 @@ namespace Consilient.Data.Entities.Staging
         public string? NormalizedPhysicianLastName { get; set; }
         public string? NormalizedNursePractitionerLastName { get; set; }
         public string? Room { get; set; }
-        public string? Bed { get; set; } 
+        public string? Bed { get; set; }
 
         /* Resolved */
         public int? ResolvedPhysicianId { get; set; }

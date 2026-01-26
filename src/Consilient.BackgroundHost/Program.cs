@@ -1,14 +1,9 @@
-using Azure.Identity;
 using Consilient.Background.Workers;
-using Consilient.BackgroundHost.Configuration;
-using Consilient.BackgroundHost.Infra.Security;
 using Consilient.BackgroundHost.Init;
-using Consilient.Common.Services;
 using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Employees.Services;
 using Consilient.Infrastructure.ExcelImporter;
-using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
 using Consilient.Infrastructure.Storage;
@@ -17,90 +12,48 @@ using Consilient.Patients.Services;
 using Consilient.ProviderAssignments.Services;
 using Consilient.Shared.Services;
 using Consilient.Visits.Services;
-using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Consilient.Common.Contracts;
 
 namespace Consilient.BackgroundHost
 {
     internal static class Program
     {
-        private const string AppConfigurationEndpointKey = "AppConfiguration:Endpoint";
-
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Configuration loading
             builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
                 .AddJsonFile(ApplicationConstants.ConfigurationFiles.AppSettings, optional: true, reloadOnChange: true)
                 .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
                 .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables();
-
-            // Add Azure App Configuration as primary source for runtime configuration
-            var appConfigEndpoint = builder.Configuration[AppConfigurationEndpointKey];
-            if (!string.IsNullOrEmpty(appConfigEndpoint))
-            {
-                try
-                {
-                    var credential = new DefaultAzureCredential();
-                    var appConfigLabel = builder.Environment.EnvironmentName switch
-                    {
-                        "Development" => "dev",
-                        "Production" => "prod",
-                        _ => builder.Environment.EnvironmentName.ToLower()
-                    };
-
-                    builder.Configuration.AddAzureAppConfiguration(options =>
-                    {
-                        options
-                            .Connect(new Uri(appConfigEndpoint), credential)
-                            .Select("BackgroundHost:*", LabelFilter.Null)
-                            .Select("BackgroundHost:*", appConfigLabel)
-                            .TrimKeyPrefix("BackgroundHost:")
-                            .ConfigureKeyVault(kv =>
-                            {
-                                kv.SetCredential(credential);
-                            });
-                    });
-                }
-                catch (Exception ex)
-                {
-                    // Log warning and continue with local config if App Configuration fails
-                    Console.WriteLine($"Warning: Failed to load Azure App Configuration: {ex.Message}");
-                }
-            }
+                .AddEnvironmentVariables()
+                .AddBackgroundHostAzureAppConfiguration(builder.Environment.EnvironmentName);
 
             var logger = CreateLogger(builder);
             Log.Logger = logger;
+
             try
             {
                 Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
 
-                var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default) ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
-                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire) ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
+                var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default)
+                    ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
+                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire)
+                    ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
 
-                // Register configuration with IOptions pattern
-                builder.Services.AddOptions<AuthenticationSettings>()
-                    .Bind(builder.Configuration.GetSection(AuthenticationSettings.SectionName))
-                    .ValidateOnStart();
+                // Configure cross-cutting concerns via Init extensions
+                builder.Services.ConfigureAuthenticationOptions(builder.Configuration);
+                builder.Services.ConfigureUserContext();
 
-                // Register user context for background jobs (must be before DbContext registration)
-                builder.Services.AddScoped<SettableUserContext>();
-                builder.Services.AddScoped<ICurrentUserService>(sp => sp.GetRequiredService<SettableUserContext>());
-                builder.Services.AddScoped<IUserContextSetter>(sp => sp.GetRequiredService<SettableUserContext>());
-
+                // Register domain services
                 builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
                 builder.Services.RegisterEmployeeServices();
-                builder.Services.RegisterHangfireServices(hangfireConnectionString);
+                builder.Services.ConfigureHangfireServices(hangfireConnectionString);
                 builder.Services.RegisterInsuranceServices();
                 builder.Services.RegisterPatientServices();
                 builder.Services.RegisterSharedServices();
@@ -112,27 +65,15 @@ namespace Consilient.BackgroundHost
                 builder.Services.RegisterLogging(logger);
 
                 // Configure health checks
-                builder.Services.AddHealthChecks()
-                    .AddDbContextCheck<ConsilientDbContext>()
-                    .AddLokiHealthCheck(builder.Services)
-                    .AddAzureBlobStorageHealthCheck(builder.Configuration);
+                builder.Services.ConfigureHealthChecks(builder.Configuration);
 
                 var app = builder.Build();
 
-                // Health check endpoint with JSON response
-                app.MapHealthChecks("/health", new HealthCheckOptions
-                {
-                    ResponseWriter = HealthCheckResponseWriter.WriteJsonResponse
-                });
+                // Map endpoints
+                app.MapHealthCheckEndpoint();
 
                 // Configure Hangfire dashboard with JWT authentication
-                var authOptions = app.Services.GetRequiredService<IOptions<AuthenticationSettings>>();
-                var authFilter = new JwtAuthorizationFilter(authOptions);
-                app.UseHangfireDashboard(string.Empty, new DashboardOptions
-                {
-                    DashboardTitle = $"{builder.Environment.ApplicationName} ({builder.Environment.EnvironmentName.ToUpper()})",
-                    Authorization = [authFilter]
-                });
+                app.UseHangfireDashboardWithAuth(builder.Environment);
 
                 app.Run();
             }

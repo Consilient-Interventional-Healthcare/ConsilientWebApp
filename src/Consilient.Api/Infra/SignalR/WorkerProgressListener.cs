@@ -1,7 +1,7 @@
 using Consilient.Api.Hubs;
 using Consilient.Background.Workers.Contracts;
-using Consilient.Background.Workers.ProviderAssignments;
 using Consilient.Background.Workers.Models;
+using Consilient.Background.Workers.ProviderAssignments;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Consilient.Api.Infra.SignalR

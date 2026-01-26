@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using Nuke.Common.IO;
 using Serilog;
+using System.Text;
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// Organizes NSwag-generated TypeScript interfaces into module namespaces based on OpenAPI tags.

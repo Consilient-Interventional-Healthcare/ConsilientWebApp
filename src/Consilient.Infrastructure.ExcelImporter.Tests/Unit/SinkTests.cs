@@ -1,6 +1,5 @@
-using Consilient.ProviderAssignments.Contracts;
-using Consilient.ProviderAssignments.Services;
 using Consilient.Infrastructure.ExcelImporter.Sinks;
+using Consilient.ProviderAssignments.Contracts;
 
 namespace Consilient.Infrastructure.ExcelImporter.Tests.Unit
 {

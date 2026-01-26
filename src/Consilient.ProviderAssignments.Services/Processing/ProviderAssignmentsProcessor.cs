@@ -1,10 +1,10 @@
-using System.Data;
 using Consilient.Data;
 using Consilient.ProviderAssignments.Contracts.Processing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using System.Data;
 
 namespace Consilient.ProviderAssignments.Services.Processing
 {

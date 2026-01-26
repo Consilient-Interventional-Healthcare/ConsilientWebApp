@@ -1,5 +1,6 @@
 ﻿using Consilient.Api.Infra.HealthChecks;
 using Consilient.Data;
+using Consilient.Infrastructure.Injection;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Storage;
 using Consilient.Users.Services;
@@ -12,8 +13,13 @@ namespace Consilient.Api.Init
         {
             var healthChecksBuilder = services.AddHealthChecks()
                 .AddDbContextCheck<ConsilientDbContext>()
-                .AddLokiHealthCheck(services)
-                .AddAzureBlobStorageHealthCheck(configuration);
+                .AddLokiHealthCheck(services);
+
+            // Only add Azure Blob Storage health check when running in Azure App Service
+            if (AzureEnvironment.IsRunningInAzure)
+            {
+                healthChecksBuilder.AddAzureBlobStorageHealthCheck(configuration);
+            }
 
             if (userServiceOptions.OAuth?.Enabled == true)
             {

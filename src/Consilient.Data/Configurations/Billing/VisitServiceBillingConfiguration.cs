@@ -1,4 +1,3 @@
-using Consilient.Data.Entities;
 using Consilient.Data.Entities.Billing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
