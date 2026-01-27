@@ -49,12 +49,66 @@ enum SortDirectionEnum {
 }
 
 type Query {
+	"""Daily log visits with deduplicated providers for a specific date and facility"""
+	dailyLogVisits(dateServiced: String!, facilityId: Int!): dailyLogVisitsResult
 	"""List of patients"""
 	patients(filter: String, sort: [QueryPatientsSortInput!]): [patient!]
 	"""Provider assignment batch with metadata and items"""
 	providerAssignmentBatch(batchId: ID!): providerAssignmentBatch
 	"""List of visits for a specific date and facility"""
 	visits(dateServiced: String!, facilityId: Int!, sort: [QueryVisitsSortInput!]): [visit!]
+}
+
+"""Hospitalization information for daily log"""
+type dailyLogHospitalization {
+	"""AdmissionDate"""
+	admissionDate: Date
+	"""CaseId"""
+	caseId: Int!
+	"""HospitalizationStatusId"""
+	hospitalizationStatusId: Int!
+	"""Id"""
+	id: Int!
+}
+
+"""Provider information for daily log"""
+type dailyLogProvider {
+	"""FirstName"""
+	firstName: String
+	"""Id"""
+	id: Int!
+	"""LastName"""
+	lastName: String
+	"""Type"""
+	type: ProviderType!
+}
+
+"""Visit information for daily log"""
+type dailyLogVisit {
+	"""Bed"""
+	bed: String
+	"""Hospitalization"""
+	hospitalization: dailyLogHospitalization
+	"""Id"""
+	id: Int!
+	"""Patient"""
+	patient: visitPatient
+	"""ProviderIds"""
+	providerIds: [Int!]
+	"""Room"""
+	room: String
+}
+
+"""Result containing date, facility, providers and visits"""
+type dailyLogVisitsResult {
+	"""Service date"""
+	date: DateOnly!
+	"""FacilityId"""
+	facilityId: Int!
+	"""Providers"""
+	providers: [dailyLogProvider!]
+	"""Visits"""
+	visits: [dailyLogVisit!]
 }
 
 """facility object"""
@@ -95,8 +149,6 @@ type hospitalization {
 
 """hospitalizationStatus object"""
 type hospitalizationStatus {
-	"""BillingCode"""
-	billingCode: String
 	"""Code"""
 	code: String
 	"""Color"""
@@ -223,8 +275,6 @@ type providerAssignmentHospitalization {
 
 """Hospitalization status data from resolved status"""
 type providerAssignmentHospitalizationStatus {
-	"""BillingCode"""
-	billingCode: String
 	"""Code"""
 	code: String
 	"""Color"""

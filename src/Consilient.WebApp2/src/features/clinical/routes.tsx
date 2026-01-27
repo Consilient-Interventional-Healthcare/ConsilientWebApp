@@ -65,13 +65,18 @@ export const clinicalRoutes: RouteObject[] = [
         },
         children: [
           {
-            path: ":date?/:providerId?/:visitId?",
+            path: ":date?/:facilityId?/:providerId?/:visitId?",
             element: React.createElement(lazy(() => import("@/features/clinical/daily-log/DailyLog"))),
             loader: ({ params }) => {
               if (!params['date']) {
                 return redirect(`/clinical/daily-log/${getTodayDate()}`);
               }
-              return params;
+              return {
+                date: params['date'],
+                facilityId: params['facilityId'] ? Number(params['facilityId']) : null,
+                providerId: params['providerId'] ? Number(params['providerId']) : undefined,
+                visitId: params['visitId'] ? Number(params['visitId']) : undefined,
+              };
             },
             handle: {
               // No label so it doesn't show as a subnav

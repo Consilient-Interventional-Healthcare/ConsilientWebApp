@@ -50,17 +50,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/FileUploadResult"
+                  "$ref": "#/components/schemas/ImportProviderAssignmentResult"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FileUploadResult"
+                  "$ref": "#/components/schemas/ImportProviderAssignmentResult"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FileUploadResult"
+                  "$ref": "#/components/schemas/ImportProviderAssignmentResult"
                 }
               }
             }
@@ -119,6 +119,46 @@
                   "items": {
                     "$ref": "#/components/schemas/ProviderAssignmentBatchStatusDto"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/Assignments/process/{batchId}": {
+      "post": {
+        "tags": [
+          "Assignments"
+        ],
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -3229,37 +3269,6 @@
         },
         "additionalProperties": false
       },
-      "FileUploadResult": {
-        "required": [
-          "batchId",
-          "facilityId",
-          "fileName",
-          "message",
-          "serviceDate"
-        ],
-        "type": "object",
-        "properties": {
-          "fileName": {
-            "type": "string"
-          },
-          "serviceDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "facilityId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
-          },
-          "batchId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "additionalProperties": false
-      },
       "Gender": {
         "enum": [
           1,
@@ -3365,6 +3374,27 @@
         ],
         "type": "integer",
         "format": "int32"
+      },
+      "ImportProviderAssignmentResult": {
+        "required": [
+          "batchId",
+          "message",
+          "success"
+        ],
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "batchId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
       },
       "InsertVisitEventRequest": {
         "required": [

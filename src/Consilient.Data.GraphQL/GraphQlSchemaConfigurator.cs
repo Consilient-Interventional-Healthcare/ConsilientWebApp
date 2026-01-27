@@ -9,15 +9,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Consilient.Data.GraphQL;
 
-public static class GraphQlSchemaConfigurator
+public static partial class GraphQlSchemaConfigurator
 {
     public static void ConfigureSchema(SchemaProvider<ConsilientDbContext> schema)
     {
         ArgumentNullException.ThrowIfNull(schema, nameof(schema));
         AddTypes(schema);
+        AddDailyLogTypes(schema);
 
         var query = schema.Query();
         AddToQuery(query);
+        AddDailyLogQuery(query);
     }
 
     private static void AddTypes(SchemaProvider<ConsilientDbContext> schema)

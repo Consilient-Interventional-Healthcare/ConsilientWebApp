@@ -18,10 +18,8 @@
 
 export namespace Assignments {
 
-  export interface FileUploadResult {
-      fileName: string;
-      serviceDate: string;
-      facilityId: number;
+  export interface ImportProviderAssignmentResult {
+      success: boolean;
       message: string;
       batchId: string;
   }
@@ -399,9 +397,16 @@ export namespace GraphQL {
   }
 
   export type Query = {
+    dailyLogVisits?: Maybe<DailyLogVisitsResult>;
     patients?: Maybe<Array<Patient>>;
     providerAssignmentBatch?: Maybe<ProviderAssignmentBatch>;
     visits?: Maybe<Array<Visit>>;
+  };
+
+
+  export type QueryDailyLogVisitsArgs = {
+    dateServiced: Scalars['String']['input'];
+    facilityId: Scalars['Int']['input'];
   };
 
 
@@ -448,6 +453,36 @@ export namespace GraphQL {
     Desc = 'DESC'
   }
 
+  export type DailyLogHospitalization = {
+    admissionDate?: Maybe<Scalars['Date']['output']>;
+    caseId: Scalars['Int']['output'];
+    hospitalizationStatusId: Scalars['Int']['output'];
+    id: Scalars['Int']['output'];
+  };
+
+  export type DailyLogProvider = {
+    firstName?: Maybe<Scalars['String']['output']>;
+    id: Scalars['Int']['output'];
+    lastName?: Maybe<Scalars['String']['output']>;
+    type: ProviderType;
+  };
+
+  export type DailyLogVisit = {
+    bed?: Maybe<Scalars['String']['output']>;
+    hospitalization?: Maybe<DailyLogHospitalization>;
+    id: Scalars['Int']['output'];
+    patient?: Maybe<VisitPatient>;
+    providerIds?: Maybe<Array<Scalars['Int']['output']>>;
+    room?: Maybe<Scalars['String']['output']>;
+  };
+
+  export type DailyLogVisitsResult = {
+    date: Scalars['DateOnly']['output'];
+    facilityId: Scalars['Int']['output'];
+    providers?: Maybe<Array<DailyLogProvider>>;
+    visits?: Maybe<Array<DailyLogVisit>>;
+  };
+
   export type Facility = {
     abbreviation?: Maybe<Scalars['String']['output']>;
     id: Scalars['Int']['output'];
@@ -469,7 +504,6 @@ export namespace GraphQL {
   };
 
   export type HospitalizationStatus = {
-    billingCode?: Maybe<Scalars['String']['output']>;
     code?: Maybe<Scalars['String']['output']>;
     color?: Maybe<Scalars['String']['output']>;
     displayOrder: Scalars['Int']['output'];
@@ -547,7 +581,6 @@ export namespace GraphQL {
   };
 
   export type ProviderAssignmentHospitalizationStatus = {
-    billingCode?: Maybe<Scalars['String']['output']>;
     code?: Maybe<Scalars['String']['output']>;
     color?: Maybe<Scalars['String']['output']>;
     name?: Maybe<Scalars['String']['output']>;
