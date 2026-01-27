@@ -26,7 +26,7 @@ namespace Consilient.Api
     {
         public static void Main(string[] args)
         {
-            const string version = "v1";
+            const string version = "v1";  
 
             var builder = WebApplication.CreateBuilder(args);
 
