@@ -92,12 +92,11 @@
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Code" nullable="false" remarks="" size="40" type="nvarchar" typeCode="-9"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="Name" nullable="false" remarks="" size="200" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="BillingCode" nullable="false" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="Color" nullable="false" remarks="" size="40" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="DisplayOrder" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
-         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="6" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="7" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="Color" nullable="false" remarks="" size="40" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="DisplayOrder" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="6" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
          <primaryKey column="Id" sequenceNumberInPK="1"/>
          <index name="PK_HospitalizationStatus" unique="true">
             <column ascending="true" name="Id"/>

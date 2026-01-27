@@ -99,7 +99,6 @@ namespace Consilient.Data.GraphQL
             hospitalizationStatusType.AddField(m => m.Id, nameof(HospitalizationStatus.Id));
             hospitalizationStatusType.AddField(m => m.Code, nameof(HospitalizationStatus.Code));
             hospitalizationStatusType.AddField(m => m.Name, nameof(HospitalizationStatus.Name));
-            hospitalizationStatusType.AddField(m => m.BillingCode, nameof(HospitalizationStatus.BillingCode));
             hospitalizationStatusType.AddField(m => m.Color, nameof(HospitalizationStatus.Color));
             hospitalizationStatusType.AddField(m => m.DisplayOrder, nameof(HospitalizationStatus.DisplayOrder));
 
@@ -187,7 +186,6 @@ namespace Consilient.Data.GraphQL
 
             var providerAssignmentHospitalizationStatusType = schema.AddType<ProviderAssignmentHospitalizationStatus>("providerAssignmentHospitalizationStatus", "Hospitalization status data from resolved status");
             providerAssignmentHospitalizationStatusType.AddField(m => m.Name, nameof(ProviderAssignmentHospitalizationStatus.Name));
-            providerAssignmentHospitalizationStatusType.AddField(m => m.BillingCode, nameof(ProviderAssignmentHospitalizationStatus.BillingCode));
             providerAssignmentHospitalizationStatusType.AddField(m => m.Code, nameof(ProviderAssignmentHospitalizationStatus.Code));
             providerAssignmentHospitalizationStatusType.AddField(m => m.Color, nameof(ProviderAssignmentHospitalizationStatus.Color));
 
@@ -259,7 +257,6 @@ namespace Consilient.Data.GraphQL
             paType.AddField("hospitalizationStatus", pa => new ProviderAssignmentHospitalizationStatus
             {
                 Name = pa.ResolvedHospitalizationStatus != null ? pa.ResolvedHospitalizationStatus.Name : null,
-                BillingCode = pa.ResolvedHospitalizationStatus != null ? pa.ResolvedHospitalizationStatus.BillingCode : null,
                 Code = pa.ResolvedHospitalizationStatus != null ? pa.ResolvedHospitalizationStatus.Code : null,
                 Color = pa.ResolvedHospitalizationStatus != null ? pa.ResolvedHospitalizationStatus.Color : null,
             }, "HospitalizationStatus data - from HospitalizationStatus table if resolved, otherwise null");
