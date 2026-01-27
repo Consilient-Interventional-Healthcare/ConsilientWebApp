@@ -469,7 +469,7 @@ namespace {migrationNamespace}
             DatabaseDocsOutputDir.CreateDirectory();
 
             // Get databases to document - all schemas
-            var databases = new[] { ("consilient_main", "consilient_main", new[] { "clinical", "compensation", "identity", "staging" }) };
+            var databases = new[] { ("consilient_main", "consilient_main", new[] { "billing", "clinical", "compensation", "identity", "staging" }) };
 
             try
             {

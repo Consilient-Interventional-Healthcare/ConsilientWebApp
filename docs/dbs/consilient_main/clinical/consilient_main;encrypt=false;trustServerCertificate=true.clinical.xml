@@ -218,13 +218,12 @@
       </table>
       <table catalog="consilient_main" name="ServiceTypes" remarks="" schema="Clinical" type="TABLE">
          <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4">
-            <child catalog="consilient_main" column="ServiceTypeId" foreignKey="FK_Visits_ServiceTypes_ServiceTypeId" implied="false" onDeleteCascade="false" schema="Clinical" table="Visits"/>
+            <child catalog="consilient_main" column="ServiceTypeId" foreignKey="FK_VisitServiceBillings_ServiceTypes_ServiceTypeId" implied="false" onDeleteCascade="false" schema="Billing" table="VisitServiceBillings"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Description" nullable="false" remarks="" size="200" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="CPTCode" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
-         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="3" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="2" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="3" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
          <primaryKey column="Id" sequenceNumberInPK="1"/>
          <index name="PK_ServiceTypes" unique="true">
             <column ascending="true" name="Id"/>
@@ -306,6 +305,7 @@
       </table>
       <table catalog="consilient_main" name="Visits" remarks="" schema="Clinical" type="TABLE">
          <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4">
+            <child catalog="consilient_main" column="VisitId" foreignKey="FK_VisitServiceBillings_Visits_VisitId" implied="false" onDeleteCascade="false" schema="Billing" table="VisitServiceBillings"/>
             <child catalog="consilient_main" column="VisitId" foreignKey="FK_VisitAttendants_Visits_VisitId" implied="false" onDeleteCascade="false" schema="Clinical" table="VisitAttendants"/>
             <child catalog="consilient_main" column="VisitId" foreignKey="FK_VisitEvents_Visits_VisitId" implied="false" onDeleteCascade="false" schema="Clinical" table="VisitEvents"/>
             <child catalog="consilient_main" column="ResolvedVisitId" foreignKey="FK_ProviderAssignments_Visits_ResolvedVisitId" implied="false" onDeleteCascade="false" schema="staging" table="ProviderAssignments"/>
@@ -315,14 +315,11 @@
             <parent catalog="consilient_main" column="Id" foreignKey="FK_Visits_Hospitalizations_HospitalizationId" implied="false" onDeleteCascade="false" schema="Clinical" table="Hospitalizations"/>
          </column>
          <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="3" name="IsScribeServiceOnly" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="ServiceTypeId" nullable="false" remarks="" size="4" type="int" typeCode="4">
-            <parent catalog="consilient_main" column="Id" foreignKey="FK_Visits_ServiceTypes_ServiceTypeId" implied="false" onDeleteCascade="false" schema="Clinical" table="ServiceTypes"/>
-         </column>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="Room" nullable="false" remarks="" size="40" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="Bed" nullable="false" remarks="" size="10" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="7" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="8" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="Room" nullable="false" remarks="" size="40" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="Bed" nullable="false" remarks="" size="10" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="6" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="7" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="8" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
          <primaryKey column="Id" sequenceNumberInPK="1"/>
          <index name="PK_Visit" unique="true">
             <column ascending="true" name="Id"/>
@@ -332,9 +329,6 @@
          </index>
          <index name="IX_Visits_HospitalizationId" unique="false">
             <column ascending="true" name="HospitalizationId"/>
-         </index>
-         <index name="IX_Visits_ServiceTypeId" unique="false">
-            <column ascending="true" name="ServiceTypeId"/>
          </index>
       </table>
    </tables>

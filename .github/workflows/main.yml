@@ -84,7 +84,8 @@ jobs:
       backgroundhost: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.backgroundhost }}
       dotnet_shared: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.dotnet_shared }}
       react: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.react }}
-      any_changes: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.infrastructure == 'true' || steps.filter.outputs.databases == 'true' || steps.filter.outputs.api == 'true' || steps.filter.outputs.backgroundhost == 'true' || steps.filter.outputs.dotnet_shared == 'true' || steps.filter.outputs.react == 'true' }}
+      docs_dbs: ${{ github.event_name == 'workflow_dispatch' && 'false' || steps.filter.outputs.docs_dbs }}
+      any_changes: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.infrastructure == 'true' || steps.filter.outputs.databases == 'true' || steps.filter.outputs.api == 'true' || steps.filter.outputs.backgroundhost == 'true' || steps.filter.outputs.dotnet_shared == 'true' || steps.filter.outputs.react == 'true' || steps.filter.outputs.docs_dbs == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -110,6 +111,8 @@ jobs:
               - 'src/Consilient.*.Services/**'
             react:
               - 'src/Consilient.WebApp2/**'
+            docs_dbs:
+              - 'docs/dbs/**'
 
   build-runner-image:
     name: Image Runner
@@ -296,13 +299,55 @@ jobs:
       cache_image_ref: ${{ format('{0}/consilient-react:latest', needs.terraform-consolidation.outputs.acr_registry_url) }}
     secrets: inherit
 
+  publish-docs-dbs:
+    name: Publish Database Docs
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.docs_dbs == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Add .nojekyll file
+        run: touch docs/.nojekyll
+
+      - name: Upload documentation artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+          retention-days: 1
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Report deployment status
+        if: always()
+        run: |
+          echo "## 📚 Database Docs Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.deployment.outcome }}" = "success" ]; then
+            echo "✅ Successfully deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+            echo "View at: [${{ steps.deployment.outputs.page_url }}](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Deployment to GitHub Pages failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
   # ============================================================================
   # WORKFLOW SUMMARY
   # ============================================================================
 
   workflow-summary:
     name: Workflow Summary
-    needs: [initialize-workflow, detect-changes, terraform, terraform-outputs, terraform-consolidation, deploy-databases, deploy-dotnet-apps, deploy-react-apps]
+    needs: [initialize-workflow, detect-changes, terraform, terraform-outputs, terraform-consolidation, deploy-databases, deploy-dotnet-apps, deploy-react-apps, publish-docs-dbs]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -322,6 +367,7 @@ jobs:
           echo "| Deploy Databases | ${{ needs.deploy-databases.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy API | ${{ needs.deploy-dotnet-apps.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy React | ${{ needs.deploy-react-apps.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Publish DB Docs | ${{ needs.publish-docs-dbs.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Changes Detected" >> $GITHUB_STEP_SUMMARY
           echo "- Infrastructure: ${{ needs.detect-changes.outputs.infrastructure }}" >> $GITHUB_STEP_SUMMARY
@@ -330,6 +376,7 @@ jobs:
           echo "- .NET BackgroundHost: ${{ needs.detect-changes.outputs.backgroundhost }}" >> $GITHUB_STEP_SUMMARY
           echo "- .NET Shared: ${{ needs.detect-changes.outputs.dotnet_shared }}" >> $GITHUB_STEP_SUMMARY
           echo "- React App: ${{ needs.detect-changes.outputs.react }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Database Docs: ${{ needs.detect-changes.outputs.docs_dbs }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify Teams
         env:
