@@ -1,6 +1,7 @@
 ﻿using Consilient.Data;
 using Consilient.Data.Entities.Staging;
 using Consilient.ProviderAssignments.Contracts.Resolution;
+using Consilient.ProviderAssignments.Contracts.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -42,14 +43,25 @@ internal class ProviderAssignmentsResolver(
 
                 if (recordsList.Count != 0)
                 {
-                    // Step 2: Create cache once for the entire resolution cycle
+                    // Step 2: Create validation contexts (deserialize any existing errors)
+                    var contexts = recordsList
+                        .Select(r => new RowValidationContext(r, r.ValidationErrorsJson))
+                        .ToList();
+
+                    // Step 3: Create cache once for the entire resolution cycle
                     var cache = new ResolutionCache();
 
-                    // Step 3: Run all resolvers in dependency order
-                    await ResolveAll(cache, batch.FacilityId, batch.Date, recordsList);
+                    // Step 4: Run all resolvers in dependency order
+                    await ResolveAll(cache, batch.FacilityId, batch.Date, contexts);
+
+                    // Step 5: Persist any validation errors back to the rows
+                    foreach (var ctx in contexts)
+                    {
+                        ctx.PersistToRow();
+                    }
                 }
 
-                // Step 4: Update batch status and save all changes
+                // Step 6: Update batch status and save all changes
                 //ReportProgress(progress, "SaveChanges", recordsList.Count, recordsList.Count, batchId);
                 batch.Status = ProviderAssignmentBatchStatus.Resolved;
                 await _dbContext.SaveChangesAsync(cancellationToken);
@@ -74,33 +86,33 @@ internal class ProviderAssignmentsResolver(
         IResolutionCache cache,
         int facilityId,
         DateOnly date,
-        List<ProviderAssignment> records)
+        List<RowValidationContext> contexts)
     {
         //ReportProgress(progress, "Physician", 0, totalRecords, batchId);
-        await RunResolvers<IPhysicianResolver>(cache, facilityId, date, records);
+        await RunResolvers<IPhysicianResolver>(cache, facilityId, date, contexts);
 
         //ReportProgress(progress, "NursePractitioner", 0, totalRecords, batchId);
-        await RunResolvers<INursePractitionerResolver>(cache, facilityId, date, records);
+        await RunResolvers<INursePractitionerResolver>(cache, facilityId, date, contexts);
 
         //ReportProgress(progress, "Patient", 0, totalRecords, batchId);
-        await RunResolvers<IPatientResolver>(cache, facilityId, date, records);
+        await RunResolvers<IPatientResolver>(cache, facilityId, date, contexts);
 
         //ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId);
-        await RunResolvers<IHospitalizationResolver>(cache, facilityId, date, records);
+        await RunResolvers<IHospitalizationResolver>(cache, facilityId, date, contexts);
 
-        //await RunResolvers<IHospitalizationStatusResolver>(cache, facilityId, date, records);
+        //await RunResolvers<IHospitalizationStatusResolver>(cache, facilityId, date, contexts);
 
         //ReportProgress(progress, "Visit", 0, totalRecords, batchId);
-        await RunResolvers<IVisitResolver>(cache, facilityId, date, records);
+        await RunResolvers<IVisitResolver>(cache, facilityId, date, contexts);
 
     }
 
-    private async Task RunResolvers<TResolver>(IResolutionCache cache, int facilityId, DateOnly date, List<ProviderAssignment> records)
+    private async Task RunResolvers<TResolver>(IResolutionCache cache, int facilityId, DateOnly date, List<RowValidationContext> contexts)
         where TResolver : IResolver
     {
         foreach (var resolver in _resolverProvider.GetResolvers<TResolver>(cache, _dbContext))
         {
-            await resolver.ResolveAsync(facilityId, date, records);
+            await resolver.ResolveAsync(facilityId, date, contexts);
         }
     }
 

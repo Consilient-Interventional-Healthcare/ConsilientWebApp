@@ -1,7 +1,7 @@
-﻿using Consilient.Api.Client.Contracts;
+using Consilient.Api.Client.Contracts;
 using Consilient.Api.Client.Models;
-using System.Net.Http.Json;
-using System.Text.Json;
+using Consilient.Infrastructure.Serialization;
+using Newtonsoft.Json;
 
 namespace Consilient.Api.Client.Modules
 {
@@ -21,11 +21,12 @@ namespace Consilient.Api.Client.Modules
                     ErrorMessage = await response.Content.ReadAsStringAsync().ConfigureAwait(false)
                 };
             }
+            var jsonContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             return new ApiResponse<T>
             {
                 IsSuccess = response.IsSuccessStatusCode,
                 StatusCode = (int)response.StatusCode,
-                Data = await response.Content.ReadFromJsonAsync<T?>().ConfigureAwait(false)
+                Data = JsonConvert.DeserializeObject<T>(jsonContent, JsonSerializerConfiguration.DefaultSettings)
             };
         }
 
@@ -64,7 +65,11 @@ namespace Consilient.Api.Client.Modules
 
             if (hasData && !hasFiles)
             {
-                return data is HttpContent content ? content : JsonContent.Create(data);
+                if (data is HttpContent content)
+                    return content;
+
+                var json = JsonConvert.SerializeObject(data, JsonSerializerConfiguration.DefaultSettings);
+                return new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             }
 
             var form = new MultipartFormDataContent();
@@ -79,7 +84,7 @@ namespace Consilient.Api.Client.Modules
                 }
                 else
                 {
-                    var jsonString = JsonSerializer.Serialize(data);
+                    var jsonString = JsonConvert.SerializeObject(data, JsonSerializerConfiguration.DefaultSettings);
                     dataContent = new StringContent(jsonString, System.Text.Encoding.UTF8, "application/json");
                 }
                 form.Add(dataContent, "data");

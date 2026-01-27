@@ -1,7 +1,7 @@
 using Consilient.Data;
 using Consilient.Data.Entities.Clinical;
-using Consilient.Data.Entities.Staging;
 using Consilient.ProviderAssignments.Contracts.Resolution;
+using Consilient.ProviderAssignments.Contracts.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -20,12 +20,12 @@ internal class HospitalizationStatusResolver(IResolutionCache cache, ConsilientD
         return DbContext.HospitalizationStatuses.AsNoTracking().ToList();
     }
 
-    protected override Task<IEnumerable<HospitalizationStatus>?> ResolveRecord(ProviderAssignment record, IReadOnlyCollection<HospitalizationStatus> cachedItems)
+    protected override Task<IEnumerable<HospitalizationStatus>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<HospitalizationStatus> cachedItems)
     {
         IEnumerable<HospitalizationStatus>? statuses = null;
 
         // If PsychEval is null or empty, resolve to status ID 1
-        if (!record.ResolvedHospitalizationStatusId.HasValue && string.IsNullOrWhiteSpace(record.PsychEval))
+        if (!ctx.Row.ResolvedHospitalizationStatusId.HasValue && string.IsNullOrWhiteSpace(ctx.Row.PsychEval))
         {
             statuses = cachedItems.Where(s => s.Id == 1).ToList();
         }
@@ -33,8 +33,8 @@ internal class HospitalizationStatusResolver(IResolutionCache cache, ConsilientD
         return Task.FromResult(statuses);
     }
 
-    protected override void SetResolvedId(ProviderAssignment record, HospitalizationStatus entity)
+    protected override void SetResolvedId(RowValidationContext ctx, HospitalizationStatus entity)
     {
-        record.ResolvedHospitalizationStatusId = entity.Id;
+        ctx.Row.ResolvedHospitalizationStatusId = entity.Id;
     }
 }

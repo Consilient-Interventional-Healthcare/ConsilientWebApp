@@ -1,10 +1,11 @@
 using Consilient.Infrastructure.Logging.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Serilog;
 using Serilog.Events;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
 
 namespace Consilient.Infrastructure.Logging;
 
@@ -211,12 +212,11 @@ public class LokiHealthCheck : IHealthCheck
 
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
-            using var doc = JsonDocument.Parse(responseBody);
-            var root = doc.RootElement;
+            var root = JObject.Parse(responseBody);
 
-            if (root.TryGetProperty("data", out var data) &&
-                data.TryGetProperty("result", out var result) &&
-                result.GetArrayLength() > 0)
+            var data = root["data"];
+            var result = data?["result"] as JArray;
+            if (result != null && result.Count > 0)
             {
                 // Success! Log entry was found in Loki
                 _lastSuccessfulPipelineCheck = DateTime.UtcNow;
@@ -259,7 +259,7 @@ public class LokiHealthCheck : IHealthCheck
                 Error = $"Failed to query Loki: {ex.Message}"
             };
         }
-        catch (JsonException ex)
+        catch (JsonReaderException ex)
         {
             return new PipelineCheckResult
             {

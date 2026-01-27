@@ -1,6 +1,7 @@
 using Consilient.Data;
 using Consilient.Data.Entities.Staging;
 using Consilient.ProviderAssignments.Contracts.Resolution;
+using Consilient.ProviderAssignments.Contracts.Validation;
 using Microsoft.Extensions.Logging;
 
 namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers;
@@ -11,39 +12,39 @@ internal abstract class BaseResolver<TEntity, TResolver>(IResolutionCache cache,
     protected ConsilientDbContext DbContext { get; } = dbContext;
     protected ILogger<TResolver> Logger { get; } = logger;
 
-    public async Task ResolveAsync(int facilityId, DateOnly date, List<ProviderAssignment> records)
+    public async Task ResolveAsync(int facilityId, DateOnly date, List<RowValidationContext> contexts)
     {
-        if (records == null || records.Count == 0)
+        if (contexts == null || contexts.Count == 0)
         {
             return;
         }
         var cachedItems = await LoadCache(facilityId, date);
-        foreach (var record in records)
+        foreach (var ctx in contexts)
         {
-            if (record.HasValidationErrors)
+            if (ctx.HasErrors)
             {
                 continue;
             }
-            var resolved = await ResolveRecord(record, cachedItems);
+            var resolved = await ResolveRecord(ctx, cachedItems);
             if (resolved?.Count() == 1)
             {
-                SetResolvedId(record, resolved.First());
+                SetResolvedId(ctx, resolved.First());
             }
             else if (resolved == null || !resolved.Any())
             {
                 Logger.LogDebug("{ResolverType}: No match found for record {RecordId} (MRN: {Mrn})",
-                    GetType().Name, record.Id, record.Mrn);
+                    GetType().Name, ctx.Row.Id, ctx.Row.Mrn);
             }
             else
             {
                 Logger.LogWarning("{ResolverType}: Multiple matches ({MatchCount}) found for record {RecordId} (MRN: {Mrn})",
-                    GetType().Name, resolved.Count(), record.Id, record.Mrn);
+                    GetType().Name, resolved.Count(), ctx.Row.Id, ctx.Row.Mrn);
             }
         }
     }
 
-    protected abstract void SetResolvedId(ProviderAssignment record, TEntity entity);
-    protected abstract Task<IEnumerable<TEntity>?> ResolveRecord(ProviderAssignment record, IReadOnlyCollection<TEntity> cachedItems);
+    protected abstract void SetResolvedId(RowValidationContext ctx, TEntity entity);
+    protected abstract Task<IEnumerable<TEntity>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<TEntity> cachedItems);
 
     protected Task<IReadOnlyCollection<TEntity>> LoadCache(int facilityId, DateOnly date)
     {

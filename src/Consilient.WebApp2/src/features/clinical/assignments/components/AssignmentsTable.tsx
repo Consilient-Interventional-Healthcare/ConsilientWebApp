@@ -19,6 +19,16 @@ const formatName = (person: { firstName?: string | null; lastName?: string | nul
 const isNewEntity = (resolvedId: number | null | undefined, lastName: string | null | undefined): boolean =>
   resolvedId == null && !!lastName;
 
+const parseErrorMessages = (json: string | null | undefined): string[] => {
+  if (!json) return [];
+  try {
+    const errors = JSON.parse(json) as Array<{ message?: string }>;
+    return errors.map(e => e.message).filter((m): m is string => !!m);
+  } catch {
+    return [];
+  }
+};
+
 export function AssignmentsTable({ items }: AssignmentsTableProps) {
   const renderNameWithBadge = (
     person: { firstName?: string | null; lastName?: string | null } | null | undefined,
@@ -65,6 +75,7 @@ export function AssignmentsTable({ items }: AssignmentsTableProps) {
           <TableHead>Hospitalization</TableHead>
           <TableHead>Room</TableHead>
           <TableHead>Imported</TableHead>
+          <TableHead>Errors</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -77,6 +88,11 @@ export function AssignmentsTable({ items }: AssignmentsTableProps) {
             <TableCell>{renderCaseIdWithBadge(item.hospitalization, item.resolvedHospitalizationId)}</TableCell>
             <TableCell>{`${item.visit?.room ?? ''} ${item.visit?.bed ?? ''}`.trim()}</TableCell>
             <TableCell>{item.imported ? 'Yes' : 'No'}</TableCell>
+            <TableCell className="text-red-600">
+              {parseErrorMessages(item.validationErrorsJson).map((msg, i) => (
+                <div key={i}>{msg}</div>
+              ))}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

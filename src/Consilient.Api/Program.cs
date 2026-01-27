@@ -9,6 +9,7 @@ using Consilient.Employees.Services;
 using Consilient.Hospitalizations.Services;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
+using Consilient.Infrastructure.Serialization;
 using Consilient.Infrastructure.Storage;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
@@ -26,7 +27,10 @@ internal static class Program
 {
     public static void Main(string[] args)
     {
-        const string version = "v1";  
+        // Initialize global JSON serialization settings before any JSON operations
+        JsonSerializerConfiguration.InitializeGlobalDefaults();
+
+        const string version = "v1";
 
         var builder = WebApplication.CreateBuilder(args);
 

@@ -54,6 +54,7 @@
     <ProjectReference Include="..\Consilient.Visits.Service\Consilient.Visits.Services.csproj" />
     <ProjectReference Include="..\Consilient.ProviderAssignments.Services\Consilient.ProviderAssignments.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Storage\Consilient.Infrastructure.Storage.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.Serialization\Consilient.Infrastructure.Serialization.csproj" />
   </ItemGroup>
 
   <!-- Code generation is now handled by NUKE Build -->

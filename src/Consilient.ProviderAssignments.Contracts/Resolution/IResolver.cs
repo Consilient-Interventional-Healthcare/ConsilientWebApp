@@ -1,4 +1,4 @@
-﻿using Consilient.Data.Entities.Staging;
+﻿using Consilient.ProviderAssignments.Contracts.Validation;
 
 namespace Consilient.ProviderAssignments.Contracts.Resolution;
 
@@ -12,8 +12,8 @@ public interface IResolver
     /// </summary>
     /// <param name="facilityId">The facility ID for the resolution context.</param>
     /// <param name="date">The service date for the resolution context.</param>
-    /// <param name="records">The staging records to resolve.</param>
-    Task ResolveAsync(int facilityId, DateOnly date, List<ProviderAssignment> records);
+    /// <param name="contexts">The validation contexts wrapping staging records to resolve.</param>
+    Task ResolveAsync(int facilityId, DateOnly date, List<RowValidationContext> contexts);
 }
 
 /// <summary>

@@ -54,39 +54,12 @@ public class ProviderAssignment : BaseEntity<int>
     public bool ShouldImport { get; set; }
     public bool Imported { get; set; }
     public string? ValidationErrorsJson { get; set; }
-    public string? ExclusionReason { get; set; }
     public bool PatientWasCreated { get; set; }
     public bool PatientFacilityWasCreated { get; set; }
     public bool PhysicianWasCreated { get; set; }
     public bool NursePractitionerWasCreated { get; set; }
     public bool HospitalizationWasCreated { get; set; }
 
-
-    [NotMapped]
-    public List<string> ValidationErrors
-    {
-        get => string.IsNullOrEmpty(ValidationErrorsJson)
-            ? []
-            : JsonSerializer.Deserialize<List<string>>(ValidationErrorsJson) ?? [];
-        set => ValidationErrorsJson = value.Count == 0
-            ? null
-            : JsonSerializer.Serialize(value);
-    }
-
     [NotMapped]
     public bool HasValidationErrors => !string.IsNullOrEmpty(ValidationErrorsJson);
-
-    public void AddValidationError(string error)
-    {
-        var errors = ValidationErrors;
-        errors.Add(error);
-        ValidationErrors = errors;
-    }
-
-    public void AddValidationErrors(IEnumerable<string> errors)
-    {
-        var currentErrors = ValidationErrors;
-        currentErrors.AddRange(errors);
-        ValidationErrors = currentErrors;
-    }
 }

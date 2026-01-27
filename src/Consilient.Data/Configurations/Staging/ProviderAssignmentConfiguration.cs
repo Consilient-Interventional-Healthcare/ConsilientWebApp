@@ -35,7 +35,6 @@ internal class ProviderAssignmentConfiguration : BaseEntityTypeConfiguration<Pro
         entity.Property(e => e.ValidationErrorsJson)
             .HasColumnName("ValidationErrors")
             .HasColumnType("nvarchar(max)");
-        entity.Property(e => e.ExclusionReason).HasMaxLength(500);
         entity.Property(e => e.ShouldImport).IsRequired().HasDefaultValue(false);
         entity.Property(e => e.ResolvedVisitId);
         entity.Property(e => e.NormalizedPatientLastName).HasMaxLength(100);
@@ -49,7 +48,6 @@ internal class ProviderAssignmentConfiguration : BaseEntityTypeConfiguration<Pro
         entity.Property(e => e.PatientWasCreated).IsRequired().HasDefaultValue(false);
         entity.Property(e => e.Room).HasMaxLength(20);
         entity.Property(e => e.Bed).HasMaxLength(5);
-        entity.Ignore(e => e.ValidationErrors);
 
         // Navigation property relationships
         entity.HasOne(e => e.ResolvedPatient)

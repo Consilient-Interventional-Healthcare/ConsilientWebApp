@@ -1,17 +1,12 @@
-﻿using Consilient.Api.Client.Models;
-using System.Text.Json;
+using Consilient.Api.Client.Models;
+using Consilient.Infrastructure.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Consilient.Api.Client
 {
     public static class ApiResponseExtensions
     {
-        // Cache JsonSerializerOptions instance to avoid CA1869
-        private static readonly JsonSerializerOptions _cachedJsonSerializerOptions = new()
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
         public static T? Unwrap<T>(this ApiResponse<T> response)
         {
             return response.IsSuccess ? response.Data : throw new InvalidOperationException($"API call failed with status code {response.StatusCode}: {response.ErrorMessage}");
@@ -39,35 +34,22 @@ namespace Consilient.Api.Client
                 return typed;
             }
 
-            // Handle JsonElement (common when deserializing JSON to object)
-            if (value is JsonElement je)
+            // Handle JToken (common when deserializing JSON to object with Newtonsoft)
+            if (value is JToken jToken)
             {
-                if (je.ValueKind == JsonValueKind.Null)
+                if (jToken.Type == JTokenType.Null)
                 {
                     return default;
                 }
 
                 try
                 {
-                    // Use cached JsonSerializerOptions instance
-                    return je.Deserialize<T>(_cachedJsonSerializerOptions);
+                    var serializer = JsonSerializer.Create(JsonSerializerConfiguration.DefaultSettings);
+                    return jToken.ToObject<T>(serializer);
                 }
                 catch (JsonException ex)
                 {
-                    throw new InvalidOperationException($"Failed to deserialize JsonElement for GraphQL key '{key}'.", ex);
-                }
-            }
-
-            // Handle JsonDocument
-            if (value is JsonDocument jd)
-            {
-                try
-                {
-                    return jd.RootElement.Deserialize<T>(_cachedJsonSerializerOptions);
-                }
-                catch (JsonException ex)
-                {
-                    throw new InvalidOperationException($"Failed to deserialize JsonDocument for GraphQL key '{key}'.", ex);
+                    throw new InvalidOperationException($"Failed to deserialize JToken for GraphQL key '{key}'.", ex);
                 }
             }
 
@@ -76,7 +58,7 @@ namespace Consilient.Api.Client
             {
                 try
                 {
-                    return JsonSerializer.Deserialize<T>(s, _cachedJsonSerializerOptions);
+                    return JsonConvert.DeserializeObject<T>(s, JsonSerializerConfiguration.DefaultSettings);
                 }
                 catch (JsonException ex)
                 {
@@ -87,8 +69,8 @@ namespace Consilient.Api.Client
             // Fallback: serialize the object back to JSON then deserialize to target type
             try
             {
-                var serialized = JsonSerializer.Serialize(value, _cachedJsonSerializerOptions);
-                return JsonSerializer.Deserialize<T>(serialized, _cachedJsonSerializerOptions);
+                var serialized = JsonConvert.SerializeObject(value, JsonSerializerConfiguration.DefaultSettings);
+                return JsonConvert.DeserializeObject<T>(serialized, JsonSerializerConfiguration.DefaultSettings);
             }
             catch (JsonException ex)
             {

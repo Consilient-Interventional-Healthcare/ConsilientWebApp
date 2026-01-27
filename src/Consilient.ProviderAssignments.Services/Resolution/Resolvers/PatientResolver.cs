@@ -1,6 +1,6 @@
 ﻿using Consilient.Data;
-using Consilient.Data.Entities.Staging;
 using Consilient.ProviderAssignments.Contracts.Resolution;
+using Consilient.ProviderAssignments.Contracts.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +12,7 @@ internal class PatientResolver(IResolutionCache cache, ConsilientDbContext dbCon
     protected override IReadOnlyCollection<PatientRow> LoadEntities(int facilityId, DateOnly date)
     {
         var rows = DbContext.Database.SqlQueryRaw<PatientRow>(@"
-                SELECT 
+                SELECT
                    P.Id AS PatientId
                   ,BirthDate AS PatientDob
                   ,FirstName AS PatientFirstName
@@ -25,15 +25,15 @@ internal class PatientResolver(IResolutionCache cache, ConsilientDbContext dbCon
         return rows;
     }
 
-    protected override Task<IEnumerable<PatientRow>?> ResolveRecord(ProviderAssignment record, IReadOnlyCollection<PatientRow> cachedItems)
+    protected override Task<IEnumerable<PatientRow>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<PatientRow> cachedItems)
     {
-        if (record.FacilityId == 0)
+        if (ctx.Row.FacilityId == 0)
         {
             return Task.FromResult<IEnumerable<PatientRow>?>(null);
         }
-        if (!string.IsNullOrEmpty(record.Mrn))
+        if (!string.IsNullOrEmpty(ctx.Row.Mrn))
         {
-            var matchedByMrn = cachedItems.Where(p => p.PatientMrn == record.Mrn && p.FacilityId.HasValue && p.FacilityId.Value == record.FacilityId).ToList();
+            var matchedByMrn = cachedItems.Where(p => p.PatientMrn == ctx.Row.Mrn && p.FacilityId.HasValue && p.FacilityId.Value == ctx.Row.FacilityId).ToList();
             if (matchedByMrn.Count != 0)
             {
                 return Task.FromResult<IEnumerable<PatientRow>?>(matchedByMrn);
@@ -42,8 +42,8 @@ internal class PatientResolver(IResolutionCache cache, ConsilientDbContext dbCon
         return Task.FromResult<IEnumerable<PatientRow>?>(null);
     }
 
-    protected override void SetResolvedId(ProviderAssignment record, PatientRow entity)
+    protected override void SetResolvedId(RowValidationContext ctx, PatientRow entity)
     {
-        record.ResolvedPatientId = entity.PatientId;
+        ctx.Row.ResolvedPatientId = entity.PatientId;
     }
 }

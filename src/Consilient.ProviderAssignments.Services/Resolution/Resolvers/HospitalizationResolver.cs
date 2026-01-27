@@ -1,7 +1,7 @@
 ﻿using Consilient.Data;
 using Consilient.Data.Entities.Clinical;
-using Consilient.Data.Entities.Staging;
 using Consilient.ProviderAssignments.Contracts.Resolution;
+using Consilient.ProviderAssignments.Contracts.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -15,23 +15,23 @@ internal class HospitalizationResolver(IResolutionCache cache, ConsilientDbConte
         return DbContext.Hospitalizations.AsNoTracking().ToList();
     }
 
-    protected override Task<IEnumerable<Hospitalization>?> ResolveRecord(ProviderAssignment record, IReadOnlyCollection<Hospitalization> cachedItems)
+    protected override Task<IEnumerable<Hospitalization>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<Hospitalization> cachedItems)
     {
         IEnumerable<Hospitalization>? hospitalizations = null;
-        if (record.FacilityId == 0 || !record.ResolvedPatientId.HasValue)
+        if (ctx.Row.FacilityId == 0 || !ctx.Row.ResolvedPatientId.HasValue)
         {
             return Task.FromResult(hospitalizations);
         }
-        if (!int.TryParse(record.HospitalNumber, out var caseId))
+        if (!int.TryParse(ctx.Row.HospitalNumber, out var caseId))
         {
             return Task.FromResult(hospitalizations);
         }
-        hospitalizations = cachedItems.Where(h => h.CaseId == caseId && h.FacilityId == record.FacilityId && h.PatientId == record.ResolvedPatientId.Value).ToList();
+        hospitalizations = cachedItems.Where(h => h.CaseId == caseId && h.FacilityId == ctx.Row.FacilityId && h.PatientId == ctx.Row.ResolvedPatientId.Value).ToList();
         return Task.FromResult<IEnumerable<Hospitalization>?>(hospitalizations);
     }
 
-    protected override void SetResolvedId(ProviderAssignment record, Hospitalization entity)
+    protected override void SetResolvedId(RowValidationContext ctx, Hospitalization entity)
     {
-        record.ResolvedHospitalizationId = entity.Id;
+        ctx.Row.ResolvedHospitalizationId = entity.Id;
     }
 }

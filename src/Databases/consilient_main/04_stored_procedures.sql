@@ -569,15 +569,6 @@ BEGIN
         INNER JOIN #StagingRecords sr ON spa.Id = sr.StagingId
         WHERE sr.IsValid = 1;
 
-        -- Update skipped records with exclusion reason
-        UPDATE spa
-        SET
-            spa.ExclusionReason = sr.ExclusionReason,
-            spa.UpdatedAtUtc = SYSUTCDATETIME()
-        FROM [staging].[ProviderAssignments] spa
-        INNER JOIN #StagingRecords sr ON spa.Id = sr.StagingId
-        WHERE sr.IsValid = 0;
-
         -- ===========================================
         -- SECTION 12: Calculate Results
         -- ===========================================

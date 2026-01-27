@@ -3,7 +3,8 @@ using Consilient.Users.Services;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
-using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Consilient.Api.Infra.HealthChecks;
 
@@ -217,9 +218,10 @@ internal class MicrosoftOAuthHealthCheck(
             }
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            using var doc = JsonDocument.Parse(content);
+            var doc = JObject.Parse(content);
 
-            if (!doc.RootElement.TryGetProperty("jwks_uri", out var jwksUriElement))
+            var jwksUri = doc["jwks_uri"]?.Value<string>();
+            if (string.IsNullOrEmpty(jwksUri))
             {
                 return new DiscoveryCheckResult
                 {
@@ -233,7 +235,7 @@ internal class MicrosoftOAuthHealthCheck(
             {
                 IsSuccess = true,
                 Status = "ok",
-                JwksUri = jwksUriElement.GetString()
+                JwksUri = jwksUri
             };
         }
         catch (TaskCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -258,7 +260,7 @@ internal class MicrosoftOAuthHealthCheck(
                 Error = $"Cannot reach discovery endpoint: {ex.Message}"
             };
         }
-        catch (JsonException ex)
+        catch (JsonReaderException ex)
         {
             return new DiscoveryCheckResult
             {
@@ -297,10 +299,10 @@ internal class MicrosoftOAuthHealthCheck(
             }
 
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
-            using var doc = JsonDocument.Parse(content);
+            var doc = JObject.Parse(content);
 
-            if (!doc.RootElement.TryGetProperty("keys", out var keysElement) ||
-                keysElement.ValueKind != JsonValueKind.Array)
+            var keysElement = doc["keys"] as JArray;
+            if (keysElement == null)
             {
                 return new JwksCheckResult
                 {
@@ -310,7 +312,7 @@ internal class MicrosoftOAuthHealthCheck(
                 };
             }
 
-            var keyCount = keysElement.GetArrayLength();
+            var keyCount = keysElement.Count;
             if (keyCount == 0)
             {
                 return new JwksCheckResult
@@ -350,7 +352,7 @@ internal class MicrosoftOAuthHealthCheck(
                 Error = $"Cannot reach JWKS endpoint: {ex.Message}"
             };
         }
-        catch (JsonException ex)
+        catch (JsonReaderException ex)
         {
             return new JwksCheckResult
             {

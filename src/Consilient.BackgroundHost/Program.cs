@@ -6,6 +6,7 @@ using Consilient.Employees.Services;
 using Consilient.Infrastructure.ExcelImporter;
 using Consilient.Infrastructure.Logging;
 using Consilient.Infrastructure.Logging.Configuration;
+using Consilient.Infrastructure.Serialization;
 using Consilient.Infrastructure.Storage;
 using Consilient.Insurances.Services;
 using Consilient.Patients.Services;
@@ -24,6 +25,9 @@ internal static class Program
 {
     public static void Main(string[] args)
     {
+        // Initialize global JSON serialization settings before any JSON operations
+        JsonSerializerConfiguration.InitializeGlobalDefaults();
+
         var builder = WebApplication.CreateBuilder(args);
 
         // Configuration loading

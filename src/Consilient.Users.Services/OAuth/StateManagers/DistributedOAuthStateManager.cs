@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Caching.Distributed;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace Consilient.Users.Services.OAuth.StateManagers;
 
@@ -32,7 +32,7 @@ public class DistributedOAuthStateManager(IDistributedCache cache) : OAuthStateM
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(OAuthSecurityConstants.StateExpirationMinutes)
         };
 
-        var json = JsonSerializer.Serialize(entry);
+        var json = JsonConvert.SerializeObject(entry);
         await _cache.SetStringAsync(
             $"{CacheKeyPrefix}{state}",
             json,
@@ -61,9 +61,9 @@ public class DistributedOAuthStateManager(IDistributedCache cache) : OAuthStateM
         StateEntry? entry;
         try
         {
-            entry = JsonSerializer.Deserialize<StateEntry>(json);
+            entry = JsonConvert.DeserializeObject<StateEntry>(json);
         }
-        catch (JsonException)
+        catch (JsonSerializationException)
         {
             return StateRetrievalResult.Failure("Invalid state token format.");
         }

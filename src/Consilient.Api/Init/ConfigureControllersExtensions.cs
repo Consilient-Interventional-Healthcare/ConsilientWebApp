@@ -1,5 +1,6 @@
 using Consilient.Api.Configuration;
 using Consilient.Api.Infra.ModelBinders;
+using Consilient.Infrastructure.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,7 +30,10 @@ internal static class ConfigureControllersExtensions
             }
             // Ensure our provider runs before defaults
             options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
-        }).AddNewtonsoftJson();
+        }).AddNewtonsoftJson(options =>
+        {
+            JsonSerializerConfiguration.Configure(options.SerializerSettings);
+        });
 
         return services;
     }

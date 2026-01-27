@@ -2,9 +2,9 @@ using Consilient.Data;
 using Consilient.Data.Entities.Staging;
 using Consilient.Infrastructure.ExcelImporter.Contracts;
 using Consilient.ProviderAssignments.Contracts.Import;
+using Consilient.ProviderAssignments.Contracts.Validation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace Consilient.ProviderAssignments.Services.Import.Sinks;
 
@@ -43,13 +43,7 @@ internal class EFCoreStagingProviderAssignmentSink(
 
         // Verify batch exists and is in Pending status
         var batchRecord = await dbContext.StagingProviderAssignmentBatches
-            .FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken);
-
-        if (batchRecord is null)
-        {
-            throw new InvalidOperationException($"Batch {batchId} does not exist");
-        }
-
+            .FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken) ?? throw new InvalidOperationException($"Batch {batchId} does not exist");
         if (batchRecord.Status != ProviderAssignmentBatchStatus.Pending)
         {
             throw new InvalidOperationException(
@@ -87,15 +81,15 @@ internal class EFCoreStagingProviderAssignmentSink(
     public Task FinalizeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     // SQL Server smalldatetime minimum value (1900-01-01)
-    private static readonly DateTime SqlSmallDateTimeMin = new(1900, 1, 1);
+    private static readonly DateTime _sqlSmallDateTimeMin = new(1900, 1, 1);
 
     private static ProviderAssignment MapToEntity(Guid batchId, ValidatedRow<ProcessedProviderAssignment> vr)
     {
         // Coerce invalid DateTime values to SQL-compatible minimum
         var admit = vr.Row.Raw.Admit;
-        if (admit < SqlSmallDateTimeMin)
+        if (admit < _sqlSmallDateTimeMin)
         {
-            admit = SqlSmallDateTimeMin;
+            admit = _sqlSmallDateTimeMin;
         }
 
         return new ProviderAssignment
@@ -125,7 +119,8 @@ internal class EFCoreStagingProviderAssignmentSink(
             NormalizedPatientLastName = vr.Row.NormalizedPatientLastName,
             NormalizedPhysicianLastName = vr.Row.NormalizedPhysicianLastName,
             // Validation
-            ValidationErrorsJson = vr.Errors.Count > 0 ? JsonSerializer.Serialize(vr.Errors) : null,
+            ValidationErrorsJson = RowValidationContext.SerializeErrors(
+                vr.Errors.Select(e => new Contracts.Validation.ValidationError(ValidationErrorType.Import, e))),
             ShouldImport = vr.IsValid
         };
     }

@@ -40,6 +40,7 @@
     <ProjectReference Include="..\Consilient.ProviderAssignments.Services\Consilient.ProviderAssignments.Services.csproj" />
     <ProjectReference Include="..\Consilient.Users.Services\Consilient.Users.Services.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Storage\Consilient.Infrastructure.Storage.csproj" />
+    <ProjectReference Include="..\Consilient.Infrastructure.Serialization\Consilient.Infrastructure.Serialization.csproj" />
   </ItemGroup>
 
   <ItemGroup>
