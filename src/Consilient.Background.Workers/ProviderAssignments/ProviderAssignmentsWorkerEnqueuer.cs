@@ -4,7 +4,7 @@ using Hangfire;
 
 namespace Consilient.Background.Workers.ProviderAssignments
 {
-    public class ProviderAssignmentsImportWorkerEnqueuer(IBackgroundJobClient backgroundJobClient)
+    public class ProviderAssignmentsWorkerEnqueuer(IBackgroundJobClient backgroundJobClient)
     {
         public FileUploadResult Import(Guid batchId, string fileName, int facilityId, DateOnly dateService, int enqueuedByUserId)
         {
@@ -31,6 +31,12 @@ namespace Consilient.Background.Workers.ProviderAssignments
                 Message = "File uploaded successfully and queued for processing.",
                 BatchId = batchId
             };
+        }
+
+        public string Process(Guid batchId)
+        {
+            var jobId = backgroundJobClient.Enqueue<ProviderAssignmentsProcessWorker>(worker => worker.Process(batchId));
+            return jobId;
         }
     }
 }

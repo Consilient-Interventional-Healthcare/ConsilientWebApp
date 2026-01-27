@@ -9,7 +9,7 @@ namespace Consilient.Background.Workers
         {
             services.AddScoped<ProviderAssignmentsImportWorker>();
             services.AddScoped<ProviderAssignmentsResolutionWorker>();
-            services.AddScoped<ProviderAssignmentsImportWorkerEnqueuer>();
+            services.AddScoped<ProviderAssignmentsWorkerEnqueuer>();
             return services;
         }
     }

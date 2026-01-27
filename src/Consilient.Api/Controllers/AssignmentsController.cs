@@ -2,8 +2,11 @@ using Consilient.Api.Configuration;
 using Consilient.Api.Helpers;
 using Consilient.Background.Workers.ProviderAssignments;
 using Consilient.Common.Contracts;
+using Consilient.Common.Helpers;
+using Consilient.Data.Entities.Staging;
 using Consilient.Infrastructure.Storage;
 using Consilient.Infrastructure.Storage.Contracts;
+using Consilient.ProviderAssignments.Contracts;
 using Consilient.ProviderAssignments.Contracts.Import;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -13,12 +16,12 @@ namespace Consilient.Api.Controllers
     [Route("[controller]")]
     [ApiController]
     public class AssignmentsController(
-        ProviderAssignmentsImportWorkerEnqueuer importWorkerEnqueuer,
+        ProviderAssignmentsWorkerEnqueuer importWorkerEnqueuer,
         IOptions<ProviderAssignmentsUploadsOptions> fileUploadOptions,
         ICurrentUserService currentUserService,
         IFileStorage fileStorage) : ControllerBase
     {
-        private readonly ProviderAssignmentsImportWorkerEnqueuer _importWorkerEnqueuer = importWorkerEnqueuer;
+        private readonly ProviderAssignmentsWorkerEnqueuer _importWorkerEnqueuer = importWorkerEnqueuer;
         private readonly ProviderAssignmentsUploadsOptions _fileUploadOptions = fileUploadOptions.Value;
         private readonly ICurrentUserService _currentUserService = currentUserService;
         private readonly IFileStorage _fileStorage = fileStorage;
@@ -52,6 +55,27 @@ namespace Consilient.Api.Controllers
             var result = _importWorkerEnqueuer.Import(batchId, fileReference, facilityId, serviceDate, _currentUserService.UserId);
 
             return Accepted(result);
+        }
+
+        [HttpGet("batch-statuses")]
+        [ProducesResponseType<List<ProviderAssignmentBatchStatusDto>>(StatusCodes.Status200OK)]
+        public IActionResult GetBatchStatuses()
+        {
+            var statuses = EnumHelper.ToList<ProviderAssignmentBatchStatus>()
+                .Select(status => new ProviderAssignmentBatchStatusDto(
+                    Value: (int)status,
+                    Name: status.ToString()))
+                .ToList();
+            
+            return Ok(statuses);
+        }
+
+        [HttpPost("process/{batchId:guid}")]
+        [ProducesResponseType<string>(StatusCodes.Status202Accepted)]
+        public IActionResult ProcessBatch(Guid batchId)
+        {
+            var jobId = _importWorkerEnqueuer.Process(batchId);
+            return Accepted(jobId);
         }
     }
 }

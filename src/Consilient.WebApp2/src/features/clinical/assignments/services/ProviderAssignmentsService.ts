@@ -56,6 +56,11 @@ class ProviderAssignmentsService {
     const data = response.data.data as Pick<GraphQL.Query, 'providerAssignmentBatch'> | null;
     return data?.providerAssignmentBatch ?? null;
   }
+
+  async processBatch(batchId: string): Promise<string> {
+    const response = await api.post<string>(`${this.baseUrl}/process/${batchId}`);
+    return response.data;
+  }
 }
 
 export const providerAssignmentsService = new ProviderAssignmentsService();

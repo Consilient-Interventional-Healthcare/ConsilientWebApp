@@ -10,6 +10,7 @@ import {
 import { AssignmentsTable } from '../components/AssignmentsTable';
 import { GraphQL } from '@/types/api.generated';
 import { useFacilities } from '@/shared/stores/FacilityStore';
+import { useProviderAssignmentBatchStatuses } from '@/shared/stores/ProviderAssignmentBatchStatusStore';
 
 const POLL_INTERVAL = 5000;
 
@@ -19,9 +20,11 @@ export default function Assignments() {
   const { id: batchId } = useParams<{ id: string }>();
   const [batch, setBatch] = useState<ProviderAssignmentBatch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { data: facilities } = useFacilities();
+  const { data: batchStatuses } = useProviderAssignmentBatchStatuses();
 
   const fetchBatch = useCallback(async () => {
     if (!batchId) return;
@@ -60,6 +63,24 @@ export default function Assignments() {
   const facilityName = useMemo(() => {
     return facilities?.find(f => f.id === batch?.facilityId)?.name ?? batch?.facilityId;
   }, [facilities, batch?.facilityId]);
+
+  const statusName = useMemo(() => {
+    return batchStatuses?.find(s => s.name === batch?.status)?.name ?? batch?.status;
+  }, [batchStatuses, batch?.status]);
+
+  const handleProcessImports = useCallback(async () => {
+    if (!batchId) return;
+
+    setIsProcessing(true);
+    try {
+      await providerAssignmentsService.processBatch(batchId);
+      await fetchBatch();
+    } catch (error) {
+      console.error('Failed to process imports:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [batchId, fetchBatch]);
 
   const { readyToImport, imported, invalid } = useMemo(() => {
     const ready = items.filter(item =>
@@ -142,7 +163,7 @@ export default function Assignments() {
           Date: {batch.date} | Facility: {facilityName} | Batch: {batch.batchId}
         </p>
         <p className="text-gray-500 text-sm mt-1">
-          Status: <Badge variant={batch.status === GraphQL.ProviderAssignmentBatchStatus.Pending ? 'warning' : 'default'}>{batch.status}</Badge>
+          Status: <Badge variant={batch.status === GraphQL.ProviderAssignmentBatchStatus.Pending ? 'warning' : 'default'}>{statusName}</Badge>
         </p>
       </div>
 
@@ -159,8 +180,8 @@ export default function Assignments() {
               ))}
             </TabsList>
             {activeTab === 'ready' && (
-              <Button>
-                Process imports
+              <Button onClick={handleProcessImports} disabled={isProcessing}>
+                {isProcessing ? 'Processing...' : 'Process imports'}
               </Button>
             )}
           </div>

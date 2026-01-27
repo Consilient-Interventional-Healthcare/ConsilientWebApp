@@ -26,6 +26,11 @@ export namespace Assignments {
       batchId: string;
   }
 
+  export interface ProviderAssignmentBatchStatusDto {
+      value: number;
+      name: string;
+  }
+
 }
 
 
