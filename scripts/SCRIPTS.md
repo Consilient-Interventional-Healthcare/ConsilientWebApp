@@ -129,7 +129,7 @@ These scripts remain in their original locations due to tight coupling with thei
 
 | Location | Scripts | Purpose |
 |----------|---------|---------|
-| `.github/workflows/terraform/scripts/` | terraform-init.sh, import.sh, terraform-outputs.sh | Terraform CI/CD |
+| `.github/workflows/terraform/scripts/` | terraform-init.sh, import-aztfexport.sh, terraform-outputs.sh | Terraform CI/CD |
 | `.github/workflows/database-docs/` | process-all-databases.sh, generate-index.sh | DB documentation |
 | `.github/actions/discover-databases/` | discover-databases.sh | GitHub Action component |
 

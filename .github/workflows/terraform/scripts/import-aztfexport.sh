@@ -8,7 +8,7 @@ set +e  # Don't exit on error, we'll handle errors ourselves
 # aztfexport: https://github.com/Azure/aztfexport
 # Documentation: https://learn.microsoft.com/en-us/azure/developer/terraform/azure-export-for-terraform/export-terraform-overview
 #
-# Advantages over manual import.sh:
+# Advantages of aztfexport:
 # - Automatically discovers all resources in the resource group
 # - No need to maintain hardcoded resource IDs or terraform addresses
 # - Handles resource dependencies automatically
@@ -298,24 +298,4 @@ fi
 # - Review resources before importing
 # - Edit the mapping file to exclude certain resources
 # - Customize terraform resource names in the mapping
-#
-# =============================================================================
-# Comparison with manual import.sh
-# =============================================================================
-#
-# Manual import.sh:
-#   - Requires maintaining ~500 lines of bash with hardcoded resource IDs
-#   - Must be updated when adding/removing infrastructure
-#   - Resource naming logic must match terraform locals.tf
-#   - Explicit control over each resource import
-#
-# aztfexport (this script):
-#   - Automatic discovery of all resources in resource group
-#   - No maintenance required when infrastructure changes
-#   - Uses Azure's aztft library for accurate resource mapping
-#   - May import resources not in your Terraform config (review mapping)
-#
-# Recommendation: Use aztfexport for initial imports and when infrastructure
-# changes significantly. Use manual import.sh when you need precise control
-# over exactly which resources are imported.
 # =============================================================================

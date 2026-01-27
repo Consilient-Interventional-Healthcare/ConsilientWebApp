@@ -247,7 +247,7 @@ jobs:
               [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  State drift detected - running import script..."
 
               # Run import script
-              if bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/import.sh"; then
+              if bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/import-aztfexport.sh"; then
                 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import completed successfully - retrying terraform validate..."
 
                 # Retry validate
@@ -321,7 +321,7 @@ jobs:
               echo "🔍 Detected potential hostname conflict - running diagnostics via import script..."
 
               # Run import script which now includes hostname validation
-              if bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/import.sh"; then
+              if bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/import-aztfexport.sh"; then
                 echo "✅ Import diagnostics completed - retrying terraform apply..."
 
                 # Retry apply
@@ -344,7 +344,7 @@ jobs:
               [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "ℹ️  State drift detected - running import script..."
 
               # Run import script
-              if bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/import.sh"; then
+              if bash "${GITHUB_WORKSPACE}/.github/workflows/terraform/scripts/import-aztfexport.sh"; then
                 [[ "${ACTIONS_STEP_DEBUG}" == "true" ]] && echo "✅ Import completed successfully - retrying terraform apply..."
 
                 # Retry apply
