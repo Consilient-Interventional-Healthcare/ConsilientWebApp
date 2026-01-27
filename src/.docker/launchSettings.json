@@ -38,6 +38,32 @@
       "sslPort": 8091,
       "useSSL": true
     },
+    "Docker Compose - API Only": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "db": "StartWithoutDebugging",
+        "consilient.api": "StartDebugging",
+        "consilient.backgroundhost": "StartWithoutDebugging",
+        "consilient.webapp2": "StartWithoutDebugging"
+      },
+      "httpPort": 0,
+      "sslPort": 8091,
+      "useSSL": true
+    },
+    "Docker Compose - BackgroundHost Only": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "db": "StartWithoutDebugging",
+        "consilient.api": "StartWithoutDebugging",
+        "consilient.backgroundhost": "StartDebugging",
+        "consilient.webapp2": "StartWithoutDebugging"
+      },
+      "httpPort": 0,
+      "sslPort": 8092,
+      "useSSL": true
+    },
     "Docker Compose - No LLM": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",

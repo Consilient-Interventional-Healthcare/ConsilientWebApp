@@ -1,8 +1,6 @@
 // Project: https://github.com/alasql/alasql
 
 declare module 'alasql' {
-	import type * as xlsx from 'xlsx';
-
 	// Callback with error-first convention and optional data
 	type AlaSQLCallback<T = unknown> = (err: Error | null, data?: T) => void;
 
@@ -29,7 +27,7 @@ declare module 'alasql' {
 		oracle: boolean;
 		sqlite: boolean;
 		orientdb: boolean;
-		excel?: xlsx.WorkBook; // now typed
+		excel?: unknown;
 	}
 
 	// compiled Statement
@@ -145,7 +143,7 @@ declare module 'alasql' {
 		aggr: userAggregatorLookUp;
 		autoval(tablename: string, colname: string, getNext?: boolean): number;
 		yy: object;
-		setXLSX(xlsxlib: typeof xlsx): void;
+		setXLSX(xlsxlib: unknown): void;
 		Database: new (databaseid?: string) => Database;
 
 		/**

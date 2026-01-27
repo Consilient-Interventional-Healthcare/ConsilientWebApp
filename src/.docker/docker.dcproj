@@ -7,8 +7,8 @@
     <ProjectGuid>81dded9d-158b-e303-5f62-77a2896d2a5a</ProjectGuid>
   </PropertyGroup>
 
-  <!-- Stop existing containers before starting new ones to avoid port conflicts -->
-  <Target Name="StopExistingContainers" BeforeTargets="PrepareForBuild;Build;DockerComposeBuild;DockerComposeUp">
+  <!-- Manual clean target - only runs on Build > Clean, not on every F5 -->
+  <Target Name="CleanDockerContainers" AfterTargets="Clean">
     <!-- Stop and remove any consilient containers by name pattern -->
     <Exec Command="powershell -NoProfile -Command &quot;docker ps -aq --filter 'name=consilient' | ForEach-Object { docker stop $_ 2>$null; docker rm -f $_ 2>$null }&quot;" ContinueOnError="true" IgnoreStandardErrorWarningFormat="true" />
     <!-- Also run compose down for good measure -->

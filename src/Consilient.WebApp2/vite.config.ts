@@ -47,8 +47,8 @@ export default defineConfig({
           'rsuite-vendor': ['rsuite'],
           // Charting library
           'charts-vendor': ['recharts'],
-          // Data processing libraries (Excel, SQL)
-          'data-vendor': ['xlsx', 'alasql'],
+          // Data processing libraries (SQL)
+          'data-vendor': ['alasql'],
           // Icon libraries
           'icons-vendor': [
             '@fortawesome/fontawesome-svg-core',

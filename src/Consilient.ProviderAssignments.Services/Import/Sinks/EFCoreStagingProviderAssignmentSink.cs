@@ -41,6 +41,21 @@ internal class EFCoreStagingProviderAssignmentSink(
 
         var records = validatedRows.Select(vr => MapToEntity(batchId, vr)).ToList();
 
+        // Verify batch exists and is in Pending status
+        var batchRecord = await dbContext.StagingProviderAssignmentBatches
+            .FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken);
+
+        if (batchRecord is null)
+        {
+            throw new InvalidOperationException($"Batch {batchId} does not exist");
+        }
+
+        if (batchRecord.Status != ProviderAssignmentBatchStatus.Pending)
+        {
+            throw new InvalidOperationException(
+                $"Batch {batchId} has status {batchRecord.Status}, expected {ProviderAssignmentBatchStatus.Pending}");
+        }
+
         var strategy = dbContext.Database.CreateExecutionStrategy();
 
         await strategy.ExecuteAsync(async () =>
@@ -49,17 +64,6 @@ internal class EFCoreStagingProviderAssignmentSink(
 
             try
             {
-                // Create batch record
-                var batchRecord = new ProviderAssignmentBatch
-                {
-                    Date = serviceDate,
-                    FacilityId = facilityId,
-                    Status = ProviderAssignmentBatchStatus.Pending
-                };
-                dbContext.StagingProviderAssignmentBatches.Add(batchRecord);
-                dbContext.Entry(batchRecord).Property(e => e.Id).CurrentValue = batchId;
-                await dbContext.SaveChangesAsync(cancellationToken);
-
                 // Insert all records using standard EF Core
                 dbContext.StagingProviderAssignments.AddRange(records);
                 await dbContext.SaveChangesAsync(cancellationToken);
