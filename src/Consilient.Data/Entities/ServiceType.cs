@@ -1,8 +1,7 @@
-﻿namespace Consilient.Data.Entities
-{
+﻿namespace Consilient.Data.Entities;
 
-    public class ServiceType : BaseEntity<int>
-    {
-        public string Description { get; set; } = string.Empty;
-    }
+
+public class ServiceType : BaseEntity<int>
+{
+    public string Description { get; set; } = string.Empty;
 }

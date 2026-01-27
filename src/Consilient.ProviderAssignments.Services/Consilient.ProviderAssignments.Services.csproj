@@ -13,10 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="ProviderAssignmentsService.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <InternalsVisibleTo Include="Consilient.Infrastructure.ExcelImporter.Tests" />
   </ItemGroup>
 

@@ -1,14 +1,13 @@
 ﻿using Consilient.Visits.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Consilient.Visits.Services
+namespace Consilient.Visits.Services;
+
+public static class VisitRegistrationExtension
 {
-    public static class VisitRegistrationExtension
+    public static void RegisterVisitServices(this IServiceCollection services)
     {
-        public static void RegisterVisitServices(this IServiceCollection services)
-        {
-            services.AddScoped<IVisitService, VisitService>();
-            services.AddScoped<IVisitEventService, VisitEventService>();
-        }
+        services.AddScoped<IVisitService, VisitService>();
+        services.AddScoped<IVisitEventService, VisitEventService>();
     }
 }

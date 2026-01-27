@@ -1,11 +1,10 @@
-﻿namespace Consilient.Shared.Contracts.Dtos
+﻿namespace Consilient.Shared.Contracts.Dtos;
+
+public class FacilityDto
 {
-    public class FacilityDto
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string? Name { get; set; }
+    public string? Name { get; set; }
 
-        public string? Abbreviation { get; set; }
-    }
+    public string? Abbreviation { get; set; }
 }

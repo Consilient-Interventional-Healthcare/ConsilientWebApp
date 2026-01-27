@@ -1,13 +1,12 @@
 ﻿using Consilient.Insurances.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Consilient.Insurances.Services
+namespace Consilient.Insurances.Services;
+
+public static class InsuranceRegistrationExtension
 {
-    public static class InsuranceRegistrationExtension
+    public static void RegisterInsuranceServices(this IServiceCollection services)
     {
-        public static void RegisterInsuranceServices(this IServiceCollection services)
-        {
-            services.AddScoped<IInsuranceService, InsuranceService>();
-        }
+        services.AddScoped<IInsuranceService, InsuranceService>();
     }
 }

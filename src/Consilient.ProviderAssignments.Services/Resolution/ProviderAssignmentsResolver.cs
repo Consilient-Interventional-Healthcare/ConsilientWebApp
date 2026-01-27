@@ -4,150 +4,149 @@ using Consilient.ProviderAssignments.Contracts.Resolution;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Consilient.ProviderAssignments.Services.Resolution
+namespace Consilient.ProviderAssignments.Services.Resolution;
+
+internal class ProviderAssignmentsResolver(
+    IResolverProvider resolverProvider,
+    ConsilientDbContext dbContext,
+    ILogger<ProviderAssignmentsResolver> logger) : IProviderAssignmentsResolver
 {
-    internal class ProviderAssignmentsResolver(
-        IResolverProvider resolverProvider,
-        ConsilientDbContext dbContext,
-        ILogger<ProviderAssignmentsResolver> logger) : IProviderAssignmentsResolver
+    private readonly IResolverProvider _resolverProvider = resolverProvider;
+    private readonly ConsilientDbContext _dbContext = dbContext;
+    private readonly ILogger<ProviderAssignmentsResolver> _logger = logger;
+
+
+    public async Task ResolveAsync(
+        Guid batchId,
+        CancellationToken cancellationToken = default)
     {
-        private readonly IResolverProvider _resolverProvider = resolverProvider;
-        private readonly ConsilientDbContext _dbContext = dbContext;
-        private readonly ILogger<ProviderAssignmentsResolver> _logger = logger;
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
 
-
-        public async Task ResolveAsync(
-            Guid batchId,
-            CancellationToken cancellationToken = default)
+        await strategy.ExecuteAsync(async () =>
         {
-            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-            await strategy.ExecuteAsync(async () =>
+            try
             {
-                using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-
-                try
+                // Step 0: Load and validate batch
+                var batch = await LoadAndValidateBatchAsync(batchId, cancellationToken);
+                if (batch == null)
                 {
-                    // Step 0: Load and validate batch
-                    var batch = await LoadAndValidateBatchAsync(batchId, cancellationToken);
-                    if (batch == null)
-                    {
-                        return;
-                    }
-
-                    // Step 1: Load staging records
-                    var recordsList = await GetStagingRecordsForResolution(batchId, cancellationToken);
-
-                    _logger.LogInformation("Batch {BatchId}: Loaded {RecordCount} staging records", batchId, recordsList.Count);
-
-                    if (recordsList.Count != 0)
-                    {
-                        // Step 2: Create cache once for the entire resolution cycle
-                        var cache = new ResolutionCache();
-
-                        // Step 3: Run all resolvers in dependency order
-                        await ResolveAll(cache, batch.FacilityId, batch.Date, recordsList);
-                    }
-
-                    // Step 4: Update batch status and save all changes
-                    //ReportProgress(progress, "SaveChanges", recordsList.Count, recordsList.Count, batchId);
-                    batch.Status = ProviderAssignmentBatchStatus.Resolved;
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-
-                    _logger.LogInformation("Batch {BatchId}: Resolution completed", batchId);
-
-                    await transaction.CommitAsync(cancellationToken);
+                    return;
                 }
-                catch (Exception ex)
+
+                // Step 1: Load staging records
+                var recordsList = await GetStagingRecordsForResolution(batchId, cancellationToken);
+
+                _logger.LogInformation("Batch {BatchId}: Loaded {RecordCount} staging records", batchId, recordsList.Count);
+
+                if (recordsList.Count != 0)
                 {
-                    _logger.LogError(ex, "Batch {BatchId}: Resolution failed, rolling back", batchId);
-                    throw;
+                    // Step 2: Create cache once for the entire resolution cycle
+                    var cache = new ResolutionCache();
+
+                    // Step 3: Run all resolvers in dependency order
+                    await ResolveAll(cache, batch.FacilityId, batch.Date, recordsList);
                 }
-            });
-        }
 
-        /// <summary>
-        /// Run all resolvers in dependency order.
-        /// Order is critical: Providers → Patient → Hospitalization → Visit
-        /// </summary>
-        private async Task ResolveAll(
-            IResolutionCache cache,
-            int facilityId,
-            DateOnly date,
-            List<ProviderAssignment> records)
-        {
-            //ReportProgress(progress, "Physician", 0, totalRecords, batchId);
-            await RunResolvers<IPhysicianResolver>(cache, facilityId, date, records);
+                // Step 4: Update batch status and save all changes
+                //ReportProgress(progress, "SaveChanges", recordsList.Count, recordsList.Count, batchId);
+                batch.Status = ProviderAssignmentBatchStatus.Resolved;
+                await _dbContext.SaveChangesAsync(cancellationToken);
 
-            //ReportProgress(progress, "NursePractitioner", 0, totalRecords, batchId);
-            await RunResolvers<INursePractitionerResolver>(cache, facilityId, date, records);
+                _logger.LogInformation("Batch {BatchId}: Resolution completed", batchId);
 
-            //ReportProgress(progress, "Patient", 0, totalRecords, batchId);
-            await RunResolvers<IPatientResolver>(cache, facilityId, date, records);
-
-            //ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId);
-            await RunResolvers<IHospitalizationResolver>(cache, facilityId, date, records);
-
-            //await RunResolvers<IHospitalizationStatusResolver>(cache, facilityId, date, records);
-
-            //ReportProgress(progress, "Visit", 0, totalRecords, batchId);
-            await RunResolvers<IVisitResolver>(cache, facilityId, date, records);
-
-        }
-
-        private async Task RunResolvers<TResolver>(IResolutionCache cache, int facilityId, DateOnly date, List<ProviderAssignment> records)
-            where TResolver : IResolver
-        {
-            foreach (var resolver in _resolverProvider.GetResolvers<TResolver>(cache, _dbContext))
-            {
-                await resolver.ResolveAsync(facilityId, date, records);
+                await transaction.CommitAsync(cancellationToken);
             }
-        }
-
-        private async Task<List<ProviderAssignment>> GetStagingRecordsForResolution(Guid batchId, CancellationToken cancellationToken = default)
-        {
-            // Only load records without validation errors - validation happens during import
-            return await _dbContext.StagingProviderAssignments
-                .Where(x => x.BatchId == batchId && x.ValidationErrorsJson == null)
-                .ToListAsync(cancellationToken);
-        }
-
-        private async Task<ProviderAssignmentBatch?> LoadAndValidateBatchAsync(Guid batchId, CancellationToken cancellationToken)
-        {
-            var batch = await _dbContext.StagingProviderAssignmentBatches.FindAsync([batchId], cancellationToken);
-
-            if (batch == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Batch {BatchId}: Batch not found, skipping resolution", batchId);
-                return null;
+                _logger.LogError(ex, "Batch {BatchId}: Resolution failed, rolling back", batchId);
+                throw;
             }
-
-            if (batch.Status != ProviderAssignmentBatchStatus.Imported)
-            {
-                _logger.LogWarning(
-                    "Batch {BatchId}: Skipping resolution because batch status is '{ActualStatus}' (expected '{ExpectedStatus}'). " +
-                    "This batch may have already been resolved or is still being imported.",
-                    batchId, batch.Status, ProviderAssignmentBatchStatus.Imported);
-                return null;
-            }
-
-            return batch;
-        }
-
-        //private static void ReportProgress(
-        //    IProgress<ResolutionProgressEventArgs>? progress,
-        //    string stage,
-        //    int processedRecords,
-        //    int totalRecords,
-        //    Guid batchId)
-        //{
-        //    progress?.Report(new ResolutionProgressEventArgs
-        //    {
-        //        Stage = stage,
-        //        ProcessedRecords = processedRecords,
-        //        TotalRecords = totalRecords,
-        //        BatchId = batchId
-        //    });
-        //}
+        });
     }
+
+    /// <summary>
+    /// Run all resolvers in dependency order.
+    /// Order is critical: Providers → Patient → Hospitalization → Visit
+    /// </summary>
+    private async Task ResolveAll(
+        IResolutionCache cache,
+        int facilityId,
+        DateOnly date,
+        List<ProviderAssignment> records)
+    {
+        //ReportProgress(progress, "Physician", 0, totalRecords, batchId);
+        await RunResolvers<IPhysicianResolver>(cache, facilityId, date, records);
+
+        //ReportProgress(progress, "NursePractitioner", 0, totalRecords, batchId);
+        await RunResolvers<INursePractitionerResolver>(cache, facilityId, date, records);
+
+        //ReportProgress(progress, "Patient", 0, totalRecords, batchId);
+        await RunResolvers<IPatientResolver>(cache, facilityId, date, records);
+
+        //ReportProgress(progress, "Hospitalization", 0, totalRecords, batchId);
+        await RunResolvers<IHospitalizationResolver>(cache, facilityId, date, records);
+
+        //await RunResolvers<IHospitalizationStatusResolver>(cache, facilityId, date, records);
+
+        //ReportProgress(progress, "Visit", 0, totalRecords, batchId);
+        await RunResolvers<IVisitResolver>(cache, facilityId, date, records);
+
+    }
+
+    private async Task RunResolvers<TResolver>(IResolutionCache cache, int facilityId, DateOnly date, List<ProviderAssignment> records)
+        where TResolver : IResolver
+    {
+        foreach (var resolver in _resolverProvider.GetResolvers<TResolver>(cache, _dbContext))
+        {
+            await resolver.ResolveAsync(facilityId, date, records);
+        }
+    }
+
+    private async Task<List<ProviderAssignment>> GetStagingRecordsForResolution(Guid batchId, CancellationToken cancellationToken = default)
+    {
+        // Only load records without validation errors - validation happens during import
+        return await _dbContext.StagingProviderAssignments
+            .Where(x => x.BatchId == batchId && x.ValidationErrorsJson == null)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<ProviderAssignmentBatch?> LoadAndValidateBatchAsync(Guid batchId, CancellationToken cancellationToken)
+    {
+        var batch = await _dbContext.StagingProviderAssignmentBatches.FindAsync([batchId], cancellationToken);
+
+        if (batch == null)
+        {
+            _logger.LogWarning("Batch {BatchId}: Batch not found, skipping resolution", batchId);
+            return null;
+        }
+
+        if (batch.Status != ProviderAssignmentBatchStatus.Imported)
+        {
+            _logger.LogWarning(
+                "Batch {BatchId}: Skipping resolution because batch status is '{ActualStatus}' (expected '{ExpectedStatus}'). " +
+                "This batch may have already been resolved or is still being imported.",
+                batchId, batch.Status, ProviderAssignmentBatchStatus.Imported);
+            return null;
+        }
+
+        return batch;
+    }
+
+    //private static void ReportProgress(
+    //    IProgress<ResolutionProgressEventArgs>? progress,
+    //    string stage,
+    //    int processedRecords,
+    //    int totalRecords,
+    //    Guid batchId)
+    //{
+    //    progress?.Report(new ResolutionProgressEventArgs
+    //    {
+    //        Stage = stage,
+    //        ProcessedRecords = processedRecords,
+    //        TotalRecords = totalRecords,
+    //        BatchId = batchId
+    //    });
+    //}
 }

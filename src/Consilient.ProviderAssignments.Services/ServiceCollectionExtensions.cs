@@ -1,4 +1,5 @@
 ﻿using Consilient.Infrastructure.ExcelImporter.Contracts;
+using Consilient.ProviderAssignments.Contracts;
 using Consilient.ProviderAssignments.Contracts.Import;
 using Consilient.ProviderAssignments.Contracts.Processing;
 using Consilient.ProviderAssignments.Contracts.Resolution;
@@ -12,62 +13,64 @@ using Consilient.ProviderAssignments.Services.Resolution.Resolvers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Consilient.ProviderAssignments.Services
+namespace Consilient.ProviderAssignments.Services;
+
+public static class ServiceCollectionExtensions
 {
-    public static class ServiceCollectionExtensions
+    public static IServiceCollection AddProviderAssignmentsServices(this IServiceCollection services, IConfiguration configuration)
     {
-        public static IServiceCollection AddProviderAssignmentsServices(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddOptions<ProviderAssignmentsImportOptions>()
-                .Bind(configuration.GetSection(ProviderAssignmentsImportOptions.SectionName))
-                .ValidateOnStart();
-            AddImportServices(services);
-            AddResolutionServices(services);
-            AddProcessingServices(services);
-            return services;
-        }
+        services.AddOptions<ProviderAssignmentsImportOptions>()
+            .Bind(configuration.GetSection(ProviderAssignmentsImportOptions.SectionName))
+            .ValidateOnStart();
+        AddImportServices(services);
+        AddResolutionServices(services);
+        AddProcessingServices(services);
+        return services;
+    }
 
-        private static void AddImportServices(IServiceCollection services)
-        {
-            services.AddScoped<IDataSink, EFCoreStagingProviderAssignmentSink>();
-            services.AddScoped<ISinkProvider, TrivialSinkProvider>();
+    private static void AddImportServices(IServiceCollection services)
+    {
+        services.AddScoped<IDataSink, EFCoreStagingProviderAssignmentSink>();
+        services.AddScoped<ISinkProvider, TrivialSinkProvider>();
 
-            // Register individual validators (validate raw Excel data)
-            services.AddScoped<IExcelRowValidator, NameRequiredValidator>();
-            services.AddScoped<IExcelRowValidator, AgeRangeValidator>();
-            services.AddScoped<IExcelRowValidator, HospitalNumberValidator>();
-            services.AddScoped<IExcelRowValidator, DateFieldsValidator>();
-            services.AddScoped<IExcelRowValidator, MrnValidator>();
+        // Register individual validators (validate raw Excel data)
+        services.AddScoped<IExcelRowValidator, NameRequiredValidator>();
+        services.AddScoped<IExcelRowValidator, AgeRangeValidator>();
+        services.AddScoped<IExcelRowValidator, HospitalNumberValidator>();
+        services.AddScoped<IExcelRowValidator, DateFieldsValidator>();
+        services.AddScoped<IExcelRowValidator, MrnValidator>();
 
-            // Register validator provider
-            services.AddScoped<IValidatorProvider, ValidatorProvider>();
+        // Register validator provider
+        services.AddScoped<IValidatorProvider, ValidatorProvider>();
 
-            services.AddScoped<IImporterFactory, ImporterFactory>();
-        }
+        services.AddScoped<IImporterFactory, ImporterFactory>();
+        
+        // Register provider assignments service (implements both interfaces)
+        services.AddScoped<IProviderAssignmentsService, ProviderAssignmentsService>();
+    }
 
-        private static void AddResolutionServices(IServiceCollection services)
-        {
-            // Register resolution cache
-            services.AddScoped<IResolutionCache, ResolutionCache>();
+    private static void AddResolutionServices(IServiceCollection services)
+    {
+        // Register resolution cache
+        services.AddScoped<IResolutionCache, ResolutionCache>();
 
-            // Register individual resolvers with their marker interfaces
-            services.AddScoped<IPhysicianResolver, PhysicianResolver>();
-            services.AddScoped<INursePractitionerResolver, NursePractitionerResolver>();
-            services.AddScoped<IPatientResolver, PatientResolver>();
-            services.AddScoped<IHospitalizationResolver, HospitalizationResolver>();
-            services.AddScoped<IHospitalizationStatusResolver, HospitalizationStatusResolver>();
-            services.AddScoped<IVisitResolver, VisitResolver>();
+        // Register individual resolvers with their marker interfaces
+        services.AddScoped<IPhysicianResolver, PhysicianResolver>();
+        services.AddScoped<INursePractitionerResolver, NursePractitionerResolver>();
+        services.AddScoped<IPatientResolver, PatientResolver>();
+        services.AddScoped<IHospitalizationResolver, HospitalizationResolver>();
+        services.AddScoped<IHospitalizationStatusResolver, HospitalizationStatusResolver>();
+        services.AddScoped<IVisitResolver, VisitResolver>();
 
-            // Register resolver provider (creates resolvers with explicit cache/dbContext)
-            services.AddScoped<IResolverProvider, ResolverProvider>();
+        // Register resolver provider (creates resolvers with explicit cache/dbContext)
+        services.AddScoped<IResolverProvider, ResolverProvider>();
 
-            // Register main resolver
-            services.AddScoped<IProviderAssignmentsResolver, ProviderAssignmentsResolver>();
-        }
+        // Register main resolver
+        services.AddScoped<IProviderAssignmentsResolver, ProviderAssignmentsResolver>();
+    }
 
-        private static void AddProcessingServices(IServiceCollection services)
-        {
-            services.AddScoped<IProviderAssignmentsProcessor, ProviderAssignmentsProcessor>();
-        }
+    private static void AddProcessingServices(IServiceCollection services)
+    {
+        services.AddScoped<IProviderAssignmentsProcessor, ProviderAssignmentsProcessor>();
     }
 }

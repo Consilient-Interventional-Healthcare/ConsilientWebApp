@@ -1,7 +1,6 @@
-﻿namespace Consilient.Api.Models
+﻿namespace Consilient.Api.Models;
+
+public class LokiPayload
 {
-    public class LokiPayload
-    {
-        public List<LokiStream> Streams { get; set; } = null!;
-    }
+    public List<LokiStream> Streams { get; set; } = null!;
 }

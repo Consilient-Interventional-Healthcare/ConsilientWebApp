@@ -18,129 +18,128 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-namespace Consilient.BackgroundHost
+namespace Consilient.BackgroundHost;
+
+internal static class Program
 {
-    internal static class Program
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
+        var builder = WebApplication.CreateBuilder(args);
+
+        // Configuration loading
+        builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
+            .AddJsonFile(ApplicationConstants.ConfigurationFiles.AppSettings, optional: true, reloadOnChange: true)
+            .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
+            .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .AddBackgroundHostAzureAppConfiguration(builder.Environment.EnvironmentName);
+
+        var logger = CreateLogger(builder);
+        Log.Logger = logger;
+
+        try
         {
-            var builder = WebApplication.CreateBuilder(args);
+            Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
 
-            // Configuration loading
-            builder.Configuration.SetBasePath(builder.Environment.ContentRootPath)
-                .AddJsonFile(ApplicationConstants.ConfigurationFiles.AppSettings, optional: true, reloadOnChange: true)
-                .AddJsonFile(string.Format(ApplicationConstants.ConfigurationFiles.EnvironmentAppSettings, builder.Environment.EnvironmentName), optional: true, reloadOnChange: true)
-                .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
-                .AddBackgroundHostAzureAppConfiguration(builder.Environment.EnvironmentName);
+            var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default)
+                ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
+            var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire)
+                ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
 
-            var logger = CreateLogger(builder);
-            Log.Logger = logger;
+            // Register LoggingOptions for LokiHealthCheck dependency injection
+            var loggingConfiguration = builder.Configuration
+                .GetSection(ApplicationConstants.ConfigurationSections.Logging)
+                .Get<LoggingOptions>();
 
-            try
+            if (loggingConfiguration != null)
             {
-                Log.Information("Starting {App} ({Environment})", builder.Environment.ApplicationName, builder.Environment.EnvironmentName);
-
-                var defaultConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Default)
-                    ?? throw new NullReferenceException($"{ApplicationConstants.ConnectionStrings.Default} missing");
-                var hangfireConnectionString = builder.Configuration.GetConnectionString(ApplicationConstants.ConnectionStrings.Hangfire)
-                    ?? throw new Exception($"{ApplicationConstants.ConnectionStrings.Hangfire} missing");
-
-                // Register LoggingOptions for LokiHealthCheck dependency injection
-                var loggingConfiguration = builder.Configuration
-                    .GetSection(ApplicationConstants.ConfigurationSections.Logging)
-                    .Get<LoggingOptions>();
-
-                if (loggingConfiguration != null)
-                {
-                    builder.Services.AddSingleton(loggingConfiguration);
-                }
-
-                // Configure cross-cutting concerns via Init extensions
-                builder.Services.ConfigureAuthenticationOptions(builder.Configuration);
-                builder.Services.ConfigureEntraAuthentication(builder.Configuration);
-                builder.Services.ConfigureUserContext();
-
-                // Register domain services
-                builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
-                builder.Services.RegisterEmployeeServices();
-                builder.Services.ConfigureHangfireServices(hangfireConnectionString);
-                builder.Services.RegisterInsuranceServices();
-                builder.Services.RegisterPatientServices();
-                builder.Services.RegisterSharedServices();
-                builder.Services.RegisterVisitServices();
-                builder.Services.AddProviderAssignmentsServices(builder.Configuration);
-                builder.Services.AddFileStorage(builder.Configuration);
-                builder.Services.AddExcelImporter();
-                builder.Services.AddWorkers();
-                builder.Services.RegisterLogging(logger);
-
-                // Configure health checks
-                builder.Services.ConfigureHealthChecks(builder.Configuration);
-
-                var app = builder.Build();
-
-                // UseRouting must come before authentication/authorization middleware
-                app.UseRouting();
-
-                // Configure authentication middleware when Entra auth is enabled
-                if (ConfigureEntraAuthenticationExtensions.ShouldUseEntraAuth(builder.Configuration))
-                {
-                    app.UseAuthentication();
-                    app.UseAuthorization();
-                }
-
-                // Map endpoints
-                app.MapHealthCheckEndpoint();
-
-                // Configure Hangfire dashboard with Entra authentication (when in Azure or ForceEntraAuth)
-                app.UseHangfireDashboardWithAuth(builder.Environment, builder.Configuration);
-
-                app.Run();
+                builder.Services.AddSingleton(loggingConfiguration);
             }
-            catch (Exception ex)
+
+            // Configure cross-cutting concerns via Init extensions
+            builder.Services.ConfigureAuthenticationOptions(builder.Configuration);
+            builder.Services.ConfigureEntraAuthentication(builder.Configuration);
+            builder.Services.ConfigureUserContext();
+
+            // Register domain services
+            builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
+            builder.Services.RegisterEmployeeServices();
+            builder.Services.ConfigureHangfireServices(hangfireConnectionString);
+            builder.Services.RegisterInsuranceServices();
+            builder.Services.RegisterPatientServices();
+            builder.Services.RegisterSharedServices();
+            builder.Services.RegisterVisitServices();
+            builder.Services.AddProviderAssignmentsServices(builder.Configuration);
+            builder.Services.AddFileStorage(builder.Configuration);
+            builder.Services.AddExcelImporter();
+            builder.Services.AddWorkers();
+            builder.Services.RegisterLogging(logger);
+
+            // Configure health checks
+            builder.Services.ConfigureHealthChecks(builder.Configuration);
+
+            var app = builder.Build();
+
+            // UseRouting must come before authentication/authorization middleware
+            app.UseRouting();
+
+            // Configure authentication middleware when Entra auth is enabled
+            if (ConfigureEntraAuthenticationExtensions.ShouldUseEntraAuth(builder.Configuration))
             {
-                Log.Fatal(ex, "Host terminated unexpectedly");
-                throw;
+                app.UseAuthentication();
+                app.UseAuthorization();
             }
-            finally
-            {
-                Log.Information("Shutting down {App}", builder.Environment.ApplicationName);
-                Log.CloseAndFlush();
-            }
+
+            // Map endpoints
+            app.MapHealthCheckEndpoint();
+
+            // Configure Hangfire dashboard with Entra authentication (when in Azure or ForceEntraAuth)
+            app.UseHangfireDashboardWithAuth(builder.Environment, builder.Configuration);
+
+            app.Run();
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Host terminated unexpectedly");
+            throw;
+        }
+        finally
+        {
+            Log.Information("Shutting down {App}", builder.Environment.ApplicationName);
+            Log.CloseAndFlush();
+        }
+    }
+
+    private static ILogger CreateLogger(WebApplicationBuilder builder)
+    {
+        var loggingConfiguration =
+            builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)
+                .Get<LoggingOptions>();
+
+        if (loggingConfiguration == null)
+        {
+            // Fallback to console logger when LoggingOptions is not available
+            // (e.g., local development without full config, or before AAC loads)
+            return CreateTrivialLogger(builder);
         }
 
-        private static ILogger CreateLogger(WebApplicationBuilder builder)
+        var labels = new Dictionary<string, string>
         {
-            var loggingConfiguration =
-                builder.Configuration.GetSection(ApplicationConstants.ConfigurationSections.Logging)
-                    .Get<LoggingOptions>();
+            { LabelConstants.App, builder.Environment.ApplicationName },
+            { LabelConstants.Env, builder.Environment.EnvironmentName.ToLower() }
+        };
+        var logger = LoggerFactory.Create(loggingConfiguration, labels);
+        return logger;
+    }
 
-            if (loggingConfiguration == null)
-            {
-                // Fallback to console logger when LoggingOptions is not available
-                // (e.g., local development without full config, or before AAC loads)
-                return CreateTrivialLogger(builder);
-            }
-
-            var labels = new Dictionary<string, string>
-            {
-                { LabelConstants.App, builder.Environment.ApplicationName },
-                { LabelConstants.Env, builder.Environment.EnvironmentName.ToLower() }
-            };
-            var logger = LoggerFactory.Create(loggingConfiguration, labels);
-            return logger;
-        }
-
-        private static Serilog.Core.Logger CreateTrivialLogger(WebApplicationBuilder builder)
-        {
-            return new LoggerConfiguration()
-                .MinimumLevel.Information()
-                .Enrich.FromLogContext()
-                .Enrich.WithProperty(LabelConstants.App, builder.Environment.ApplicationName)
-                .Enrich.WithProperty(LabelConstants.Env, builder.Environment.EnvironmentName.ToLower())
-                .WriteTo.Console()
-                .CreateLogger();
-        }
+    private static Serilog.Core.Logger CreateTrivialLogger(WebApplicationBuilder builder)
+    {
+        return new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .Enrich.FromLogContext()
+            .Enrich.WithProperty(LabelConstants.App, builder.Environment.ApplicationName)
+            .Enrich.WithProperty(LabelConstants.Env, builder.Environment.EnvironmentName.ToLower())
+            .WriteTo.Console()
+            .CreateLogger();
     }
 }

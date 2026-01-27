@@ -1,12 +1,11 @@
-﻿namespace Consilient.Data.Contracts
-{
-    public interface IAuditableEntity
-    {
-        DateTime CreatedAtUtc { get; }
-        DateTime UpdatedAtUtc { get; }
-        byte[] RowVersion { get; }
+﻿namespace Consilient.Data.Contracts;
 
-        public void SetCreatedAtUtc(DateTime createdAtUtc);
-        public void SetUpdatedAtUtc(DateTime updatedAtUtc);
-    }
+public interface IAuditableEntity
+{
+    DateTime CreatedAtUtc { get; }
+    DateTime UpdatedAtUtc { get; }
+    byte[] RowVersion { get; }
+
+    public void SetCreatedAtUtc(DateTime createdAtUtc);
+    public void SetUpdatedAtUtc(DateTime updatedAtUtc);
 }

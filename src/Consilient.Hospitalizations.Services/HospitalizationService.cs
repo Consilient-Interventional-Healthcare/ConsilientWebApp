@@ -4,28 +4,27 @@ using Consilient.Hospitalizations.Contracts.Models;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
-namespace Consilient.Hospitalizations.Services
+namespace Consilient.Hospitalizations.Services;
+
+public class HospitalizationService(ConsilientDbContext dataContext) : IHospitalizationService
 {
-    public class HospitalizationService(ConsilientDbContext dataContext) : IHospitalizationService
+    public Task<HospitalizationDto?> GetHospitalizationById(int id)
     {
-        public Task<HospitalizationDto?> GetHospitalizationById(int id)
-        {
-            return dataContext.Hospitalizations
-                .AsNoTracking()
-                .Where(h => h.Id == id)
-                .ProjectToType<HospitalizationDto>()
-                .FirstOrDefaultAsync();
-        }
+        return dataContext.Hospitalizations
+            .AsNoTracking()
+            .Where(h => h.Id == id)
+            .ProjectToType<HospitalizationDto>()
+            .FirstOrDefaultAsync();
+    }
 
-        public async Task<IEnumerable<HospitalizationStatusDto>> GetHospitalizationStatuses()
-        {
-            var statuses = await dataContext.HospitalizationStatuses
-                .AsNoTracking()
-                .OrderBy(s => s.DisplayOrder)
-                .ProjectToType<HospitalizationStatusDto>()
-                .ToListAsync();
+    public async Task<IEnumerable<HospitalizationStatusDto>> GetHospitalizationStatuses()
+    {
+        var statuses = await dataContext.HospitalizationStatuses
+            .AsNoTracking()
+            .OrderBy(s => s.DisplayOrder)
+            .ProjectToType<HospitalizationStatusDto>()
+            .ToListAsync();
 
-            return statuses;
-        }
+        return statuses;
     }
 }

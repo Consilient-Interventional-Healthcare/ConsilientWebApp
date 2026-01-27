@@ -1,9 +1,8 @@
-﻿namespace Consilient.Common
+﻿namespace Consilient.Common;
+
+public enum EmployeeRole
 {
-    public enum EmployeeRole
-    {
-        Provider = 0,
-        NursePractitioner = 1,
-        Staff = 2
-    }
+    Provider = 0,
+    NursePractitioner = 1,
+    Staff = 2
 }

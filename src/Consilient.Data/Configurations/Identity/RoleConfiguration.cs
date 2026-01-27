@@ -2,17 +2,16 @@ using Consilient.Data.Entities.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Consilient.Data.Configurations.Identity
+namespace Consilient.Data.Configurations.Identity;
+
+internal class RoleConfiguration : BaseEntityTypeConfiguration<Role>
 {
-    internal class RoleConfiguration : BaseEntityTypeConfiguration<Role>
+    internal const string TableName = "Roles";
+
+    public override void Configure(EntityTypeBuilder<Role> entity)
     {
-        internal const string TableName = "Roles";
+        base.Configure(entity);
 
-        public override void Configure(EntityTypeBuilder<Role> entity)
-        {
-            base.Configure(entity);
-
-            entity.ToTable(TableName, UsersDbContext.Schemas.Identity);
-        }
+        entity.ToTable(TableName, UsersDbContext.Schemas.Identity);
     }
 }

@@ -6,102 +6,101 @@ using Consilient.Shared.Contracts.Requests;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 
-namespace Consilient.Shared.Services
+namespace Consilient.Shared.Services;
+
+public class ServiceTypeService(ConsilientDbContext dataContext) : IServiceTypeService
 {
-    public class ServiceTypeService(ConsilientDbContext dataContext) : IServiceTypeService
+    public async Task<ServiceTypeDto> CreateAsync(CreateServiceTypeRequest request)
     {
-        public async Task<ServiceTypeDto> CreateAsync(CreateServiceTypeRequest request)
+        ArgumentNullException.ThrowIfNull(request);
+
+        var entity = request.Adapt<ServiceType>();
+        try
         {
-            ArgumentNullException.ThrowIfNull(request);
-
-            var entity = request.Adapt<ServiceType>();
-            try
-            {
-                await dataContext.ServiceTypes.AddAsync(entity);
-                await dataContext.SaveChangesAsync();
-            }
-            catch (DbUpdateException ex)
-            {
-                throw new InvalidOperationException("Failed to create service type. Database constraint or integrity error occurred.", ex);
-            }
-
-            return entity.Adapt<ServiceTypeDto>();
+            await dataContext.ServiceTypes.AddAsync(entity);
+            await dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("Failed to create service type. Database constraint or integrity error occurred.", ex);
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        return entity.Adapt<ServiceTypeDto>();
+    }
+
+    public async Task<bool> DeleteAsync(int id)
+    {
+        if (id <= 0)
         {
-            if (id <= 0)
-            {
-                return false;
-            }
-
-            try
-            {
-                var affected = await dataContext.ServiceTypes
-                    .Where(st => st.Id == id)
-                    .ExecuteDeleteAsync();
-
-                return affected > 0;
-            }
-            catch (DbUpdateException ex)
-            {
-                throw new InvalidOperationException("Failed to delete service type. Related data or database constraints may prevent deletion.", ex);
-            }
+            return false;
         }
 
-        public async Task<IEnumerable<ServiceTypeDto>> GetAllAsync()
+        try
         {
-            var dtos = await dataContext.ServiceTypes
-                .AsNoTracking()
-                .ProjectToType<ServiceTypeDto>()
-                .ToListAsync();
-
-            return dtos;
-        }
-
-        public async Task<ServiceTypeDto?> GetByIdAsync(int id)
-        {
-            var dto = await dataContext.ServiceTypes
-                .AsNoTracking()
+            var affected = await dataContext.ServiceTypes
                 .Where(st => st.Id == id)
-                .ProjectToType<ServiceTypeDto>()
-                .FirstOrDefaultAsync();
+                .ExecuteDeleteAsync();
 
-            return dto;
+            return affected > 0;
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("Failed to delete service type. Related data or database constraints may prevent deletion.", ex);
+        }
+    }
+
+    public async Task<IEnumerable<ServiceTypeDto>> GetAllAsync()
+    {
+        var dtos = await dataContext.ServiceTypes
+            .AsNoTracking()
+            .ProjectToType<ServiceTypeDto>()
+            .ToListAsync();
+
+        return dtos;
+    }
+
+    public async Task<ServiceTypeDto?> GetByIdAsync(int id)
+    {
+        var dto = await dataContext.ServiceTypes
+            .AsNoTracking()
+            .Where(st => st.Id == id)
+            .ProjectToType<ServiceTypeDto>()
+            .FirstOrDefaultAsync();
+
+        return dto;
+    }
+
+    public async Task<ServiceTypeDto?> UpdateAsync(int id, UpdateServiceTypeRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (id <= 0)
+        {
+            return null;
         }
 
-        public async Task<ServiceTypeDto?> UpdateAsync(int id, UpdateServiceTypeRequest request)
+        try
         {
-            ArgumentNullException.ThrowIfNull(request);
+            var affected = await dataContext.ServiceTypes
+                .Where(st => st.Id == id)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(st => st.Description, st => request.Description ?? st.Description)
+                );
 
-            if (id <= 0)
+            if (affected == 0)
             {
                 return null;
             }
 
-            try
-            {
-                var affected = await dataContext.ServiceTypes
-                    .Where(st => st.Id == id)
-                    .ExecuteUpdateAsync(s => s
-                        .SetProperty(st => st.Description, st => request.Description ?? st.Description)
-                    );
-
-                if (affected == 0)
-                {
-                    return null;
-                }
-
-                return await dataContext.ServiceTypes
-                    .AsNoTracking()
-                    .Where(st => st.Id == id)
-                    .ProjectToType<ServiceTypeDto>()
-                    .FirstOrDefaultAsync();
-            }
-            catch (DbUpdateException ex)
-            {
-                throw new InvalidOperationException("Failed to update service type. Database constraint or concurrency issue may have occurred.", ex);
-            }
+            return await dataContext.ServiceTypes
+                .AsNoTracking()
+                .Where(st => st.Id == id)
+                .ProjectToType<ServiceTypeDto>()
+                .FirstOrDefaultAsync();
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("Failed to update service type. Database constraint or concurrency issue may have occurred.", ex);
         }
     }
 }

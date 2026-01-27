@@ -1,9 +1,8 @@
-namespace Consilient.Common.Contracts
+namespace Consilient.Common.Contracts;
+
+public interface ICurrentUserService
 {
-    public interface ICurrentUserService
-    {
-        int UserId { get; }
-        string? UserEmail { get; }
-        string? UserName { get; }
-    }
+    int UserId { get; }
+    string? UserEmail { get; }
+    string? UserName { get; }
 }

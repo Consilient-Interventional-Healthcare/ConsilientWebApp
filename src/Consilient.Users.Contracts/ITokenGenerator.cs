@@ -1,9 +1,8 @@
 using System.Security.Claims;
 
-namespace Consilient.Users.Contracts
+namespace Consilient.Users.Contracts;
+
+public interface ITokenGenerator
 {
-    public interface ITokenGenerator
-    {
-        string GenerateToken(IEnumerable<Claim> claims);
-    }
+    string GenerateToken(IEnumerable<Claim> claims);
 }

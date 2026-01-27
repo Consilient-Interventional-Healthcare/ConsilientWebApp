@@ -1,10 +1,9 @@
-namespace Consilient.Data.Entities.Clinical
+namespace Consilient.Data.Entities.Clinical;
+
+public class HospitalizationStatusHistory : BaseEntity<int>
 {
-    public class HospitalizationStatusHistory : BaseEntity<int>
-    {
-        public int HospitalizationId { get; set; }
-        public int NewStatusId { get; set; }
-        public DateTime ChangedAt { get; set; }
-        public int? ChangedByUserId { get; set; }
-    }
+    public int HospitalizationId { get; set; }
+    public int NewStatusId { get; set; }
+    public DateTime ChangedAt { get; set; }
+    public int? ChangedByUserId { get; set; }
 }

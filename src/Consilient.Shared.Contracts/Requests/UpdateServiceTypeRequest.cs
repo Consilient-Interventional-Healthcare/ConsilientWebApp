@@ -1,14 +1,13 @@
-namespace Consilient.Shared.Contracts.Requests
+namespace Consilient.Shared.Contracts.Requests;
+
+/// <summary>
+/// Request to update an existing service type.
+/// Use null for properties you do not want to change.
+/// </summary>
+public class UpdateServiceTypeRequest
 {
     /// <summary>
-    /// Request to update an existing service type.
-    /// Use null for properties you do not want to change.
+    /// New description value, or null to leave unchanged.
     /// </summary>
-    public class UpdateServiceTypeRequest
-    {
-        /// <summary>
-        /// New description value, or null to leave unchanged.
-        /// </summary>
-        public string? Description { get; set; }
-    }
+    public string? Description { get; set; }
 }

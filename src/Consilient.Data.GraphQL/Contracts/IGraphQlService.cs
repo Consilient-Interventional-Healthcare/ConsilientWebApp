@@ -1,7 +1,6 @@
-﻿namespace Consilient.Data.GraphQL.Contracts
+﻿namespace Consilient.Data.GraphQL.Contracts;
+
+public interface IGraphQlService
 {
-    public interface IGraphQlService
-    {
-        Task<QueryResult> ExecuteGraphQl(QueryRequest request, IServiceProvider sp);
-    }
+    Task<QueryResult> ExecuteGraphQl(QueryRequest request, IServiceProvider sp);
 }

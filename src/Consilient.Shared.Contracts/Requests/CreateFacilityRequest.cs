@@ -1,9 +1,8 @@
-﻿namespace Consilient.Shared.Contracts.Requests
-{
-    public class CreateFacilityRequest
-    {
-        public string? FacilityName { get; set; }
+﻿namespace Consilient.Shared.Contracts.Requests;
 
-        public string? FacilityAbbreviation { get; set; }
-    }
+public class CreateFacilityRequest
+{
+    public string? FacilityName { get; set; }
+
+    public string? FacilityAbbreviation { get; set; }
 }

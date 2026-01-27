@@ -1,8 +1,7 @@
-﻿namespace Consilient.Data.Contracts
+﻿namespace Consilient.Data.Contracts;
+
+public interface IEntity<TID> where TID : struct, IEquatable<TID>
 {
-    public interface IEntity<TID> where TID : struct, IEquatable<TID>
-    {
-        TID Id { get; }
-        byte[] RowVersion { get; }
-    }
+    TID Id { get; }
+    byte[] RowVersion { get; }
 }

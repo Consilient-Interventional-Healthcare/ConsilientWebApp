@@ -4,48 +4,51 @@ using Hangfire.Storage;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 
-namespace Consilient.BackgroundHost
+namespace Consilient.BackgroundHost;
+
+internal class WorkerRegistration(IRecurringJobManager recurringJobManager, JobStorage jobStorage)
 {
-    internal class WorkerRegistration(IRecurringJobManager recurringJobManager, JobStorage jobStorage)
+    public void Register()
     {
-        public void Register()
-        {
-            RegisterRecurringJobs();
-            RegisterJobsThatMustRunInStartup();
-        }
+        RegisterRecurringJobs();
+        RegisterJobsThatMustRunInStartup();
+    }
 
-        private static void RegisterJobsThatMustRunInStartup()
-        {
-        }
+    private static void RegisterJobsThatMustRunInStartup()
+    {
+    }
 
-        private void RegisterRecurringJob<TRecurringJob>(Expression<Action<TRecurringJob>> methodCall, string cronExpression, TimeZoneInfo? timeZoneInfo = null) where TRecurringJob : IRecurringWorker
-        {
-            recurringJobManager.AddOrUpdate(typeof(TRecurringJob).Name, methodCall, cronExpression, new RecurringJobOptions { TimeZone = timeZoneInfo ?? TimeZoneInfo.Local });
-        }
+    private void RegisterRecurringJob<TRecurringJob>(Expression<Action<TRecurringJob>> methodCall, string cronExpression, TimeZoneInfo? timeZoneInfo = null) where TRecurringJob : IRecurringWorker
+    {
+        recurringJobManager.AddOrUpdate(typeof(TRecurringJob).Name, methodCall, cronExpression, new RecurringJobOptions { TimeZone = timeZoneInfo ?? TimeZoneInfo.Local });
+    }
 
-        private void RegisterRecurringJobs()
-        {
-            using var connection = jobStorage.GetConnection();
-            foreach (var recurringJob in connection.GetRecurringJobs())
-            {
-                recurringJobManager.RemoveIfExists(recurringJob.Id);
-            }
-            //RegisterRecurringJob<EmailMonitorWorker>(m => m.Run(CancellationToken.None), "*/5 * * * *", GetEasternTimeZoneInfo());
-        }
+    private void RegisterRecurringJobs()
+    {
+        // No recurring jobs are currently registered, so skip cleanup for faster startup.
+        // When adding recurring jobs, uncomment the cleanup block below.
+        //
+        // using var connection = jobStorage.GetConnection();
+        // foreach (var recurringJob in connection.GetRecurringJobs())
+        // {
+        //     recurringJobManager.RemoveIfExists(recurringJob.Id);
+        // }
+        //
+        // RegisterRecurringJob<EmailMonitorWorker>(m => m.Run(CancellationToken.None), "*/5 * * * *", GetEasternTimeZoneInfo());
+    }
 
-        private static TimeZoneInfo GetEasternTimeZoneInfo()
+    private static TimeZoneInfo GetEasternTimeZoneInfo()
+    {
+        try
         {
-            try
-            {
-                var tz = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                   ? TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time")
-                   : TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
-                return tz;
-            }
-            catch
-            {
-                return TimeZoneInfo.Local;
-            }
+            var tz = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+               ? TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time")
+               : TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+            return tz;
+        }
+        catch
+        {
+            return TimeZoneInfo.Local;
         }
     }
 }

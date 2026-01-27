@@ -1,7 +1,6 @@
-namespace Consilient.Common.Contracts
+namespace Consilient.Common.Contracts;
+
+public interface IUserContextSetter
 {
-    public interface IUserContextSetter
-    {
-        void SetUser(int userId, string? userName = null, string? userEmail = null);
-    }
+    void SetUser(int userId, string? userName = null, string? userEmail = null);
 }

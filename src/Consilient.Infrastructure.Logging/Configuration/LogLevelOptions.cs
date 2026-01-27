@@ -1,9 +1,8 @@
-namespace Consilient.Infrastructure.Logging.Configuration
-{
+namespace Consilient.Infrastructure.Logging.Configuration;
 
-    public class LogLevelOptions
-    {
-        public required string Default { get; init; } = "Information";
-        public required string MicrosoftAspNetCore { get; init; } = "Warning";
-    }
+
+public class LogLevelOptions
+{
+    public required string Default { get; init; } = "Information";
+    public required string MicrosoftAspNetCore { get; init; } = "Warning";
 }

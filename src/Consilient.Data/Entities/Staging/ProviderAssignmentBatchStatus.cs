@@ -1,10 +1,9 @@
-namespace Consilient.Data.Entities.Staging
+namespace Consilient.Data.Entities.Staging;
+
+public enum ProviderAssignmentBatchStatus
 {
-    public enum ProviderAssignmentBatchStatus
-    {
-        Pending = 0,
-        Imported = 1,
-        Resolved = 2,
-        Processed = 3
-    }
+    Pending = 0,
+    Imported = 1,
+    Resolved = 2,
+    Processed = 3
 }

@@ -1,4 +1,3 @@
-﻿namespace Consilient.Background.Workers.Contracts
-{
-    public interface IBackgroundWorker;
-}
+﻿namespace Consilient.Background.Workers.Contracts;
+
+public interface IBackgroundWorker;

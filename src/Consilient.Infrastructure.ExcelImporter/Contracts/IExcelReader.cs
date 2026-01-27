@@ -1,10 +1,9 @@
-namespace Consilient.Infrastructure.ExcelImporter.Contracts
+namespace Consilient.Infrastructure.ExcelImporter.Contracts;
+
+public interface IExcelReader
 {
-    public interface IExcelReader
-    {
-        IAsyncEnumerable<ExcelRow> ReadRowsAsync(
-            Stream stream,
-            SheetSelector sheet,
-            CancellationToken cancellationToken = default);
-    }
+    IAsyncEnumerable<ExcelRow> ReadRowsAsync(
+        Stream stream,
+        SheetSelector sheet,
+        CancellationToken cancellationToken = default);
 }

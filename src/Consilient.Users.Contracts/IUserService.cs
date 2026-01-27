@@ -1,28 +1,27 @@
-﻿namespace Consilient.Users.Contracts
+﻿namespace Consilient.Users.Contracts;
+
+public interface IUserService
 {
-    public interface IUserService
-    {
-        Task<AuthenticateUserResult> AuthenticateUserAsync(
-            AuthenticateUserRequest request,
-            CancellationToken cancellationToken = default);
+    Task<AuthenticateUserResult> AuthenticateUserAsync(
+        AuthenticateUserRequest request,
+        CancellationToken cancellationToken = default);
 
-        Task<CurrentUserDto> GetCurrentUserAsync(
-            string userName,
-            CancellationToken cancellationToken = default);
+    Task<CurrentUserDto> GetCurrentUserAsync(
+        string userName,
+        CancellationToken cancellationToken = default);
 
-        Task<LinkExternalLoginResult> LinkExternalLoginAsync(
-            LinkExternalLoginRequest request,
-            CancellationToken cancellationToken = default);
+    Task<LinkExternalLoginResult> LinkExternalLoginAsync(
+        LinkExternalLoginRequest request,
+        CancellationToken cancellationToken = default);
 
-        Task<AuthenticateUserResult> AuthenticateExternalAsync(
-            ExternalAuthenticateRequest request,
-            CancellationToken cancellationToken = default);
+    Task<AuthenticateUserResult> AuthenticateExternalAsync(
+        ExternalAuthenticateRequest request,
+        CancellationToken cancellationToken = default);
 
-        Task<string> BuildAuthorizationUrlAsync(
-            string provider,
-            string state,
-            string codeChallenge,
-            string redirectUri,
-            CancellationToken cancellationToken = default);
-    }
+    Task<string> BuildAuthorizationUrlAsync(
+        string provider,
+        string state,
+        string codeChallenge,
+        string redirectUri,
+        CancellationToken cancellationToken = default);
 }

@@ -1,16 +1,15 @@
-﻿namespace Consilient.Insurances.Contracts.Requests
+﻿namespace Consilient.Insurances.Contracts.Requests;
+
+public class CreateInsuranceRequest
 {
-    public class CreateInsuranceRequest
-    {
-        public string? InsuranceCode { get; set; }
+    public string? InsuranceCode { get; set; }
 
-        public string? InsuranceDescription { get; set; }
+    public string? InsuranceDescription { get; set; }
 
-        public bool? PhysicianIncluded { get; set; }
+    public bool? PhysicianIncluded { get; set; }
 
-        public bool? IsContracted { get; set; }
+    public bool? IsContracted { get; set; }
 
-        public string CodeAndDescription { get; set; } = null!;
+    public string CodeAndDescription { get; set; } = null!;
 
-    }
 }

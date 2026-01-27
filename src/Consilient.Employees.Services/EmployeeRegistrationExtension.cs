@@ -1,13 +1,12 @@
 ﻿using Consilient.Employees.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Consilient.Employees.Services
+namespace Consilient.Employees.Services;
+
+public static class EmployeeRegistrationExtension
 {
-    public static class EmployeeRegistrationExtension
+    public static void RegisterEmployeeServices(this IServiceCollection services)
     {
-        public static void RegisterEmployeeServices(this IServiceCollection services)
-        {
-            services.AddScoped<IEmployeeService, EmployeeService>();
-        }
+        services.AddScoped<IEmployeeService, EmployeeService>();
     }
 }

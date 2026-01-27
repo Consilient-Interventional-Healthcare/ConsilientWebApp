@@ -1,8 +1,7 @@
-﻿namespace Consilient.Common
+﻿namespace Consilient.Common;
+
+public enum ProviderType
 {
-    public enum ProviderType
-    {
-        Physician = 0,
-        NursePractitioner = 1
-    }
+    Physician = 0,
+    NursePractitioner = 1
 }

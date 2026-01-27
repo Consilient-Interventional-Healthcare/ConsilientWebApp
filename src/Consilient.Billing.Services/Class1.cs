@@ -1,7 +1,6 @@
-﻿namespace Consilient.Billing.Services
-{
-    public class Class1
-    {
+﻿namespace Consilient.Billing.Services;
 
-    }
+public class Class1
+{
+
 }

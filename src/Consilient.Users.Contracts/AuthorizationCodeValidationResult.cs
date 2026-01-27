@@ -1,12 +1,11 @@
-﻿namespace Consilient.Users.Contracts
+﻿namespace Consilient.Users.Contracts;
+
+public class AuthorizationCodeValidationResult
 {
-    public class AuthorizationCodeValidationResult
-    {
-        public bool Succeeded { get; set; }
-        public string ProviderName { get; set; } = string.Empty;
-        public string ProviderKey { get; set; } = string.Empty;
-        public string UserEmail { get; set; } = string.Empty;
-        public string UserName { get; set; } = string.Empty;
-        public string? Error { get; set; }
-    }
+    public bool Succeeded { get; set; }
+    public string ProviderName { get; set; } = string.Empty;
+    public string ProviderKey { get; set; } = string.Empty;
+    public string UserEmail { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public string? Error { get; set; }
 }

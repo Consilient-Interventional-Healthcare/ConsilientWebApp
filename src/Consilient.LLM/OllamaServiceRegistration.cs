@@ -1,13 +1,12 @@
 ﻿using Consilient.LLM.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Consilient.LLM
+namespace Consilient.LLM;
+
+public static class OllamaServiceRegistration
 {
-    public static class OllamaServiceRegistration
+    public static void RegisterOllamaServices(this IServiceCollection services, OllamaServiceOptions ollamaServiceConfiguration)
     {
-        public static void RegisterOllamaServices(this IServiceCollection services, OllamaServiceOptions ollamaServiceConfiguration)
-        {
-            services.AddScoped<IOllamaService>(_ => new OllamaService(ollamaServiceConfiguration));
-        }
+        services.AddScoped<IOllamaService>(_ => new OllamaService(ollamaServiceConfiguration));
     }
 }

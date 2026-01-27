@@ -1,7 +1,6 @@
-﻿namespace Consilient.Data.GraphQL
+﻿namespace Consilient.Data.GraphQL;
+
+public class QueryRequest
 {
-    public class QueryRequest
-    {
-        public string? Query { get; set; }
-    }
+    public string? Query { get; set; }
 }

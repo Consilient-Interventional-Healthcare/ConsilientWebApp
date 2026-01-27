@@ -1,7 +1,6 @@
-﻿namespace Consilient.LLM.Contracts
+﻿namespace Consilient.LLM.Contracts;
+
+public interface IOllamaService
 {
-    public interface IOllamaService
-    {
-        Task<string> AskAsync(string prompt, CancellationToken cancellationToken = default);
-    }
+    Task<string> AskAsync(string prompt, CancellationToken cancellationToken = default);
 }

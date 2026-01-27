@@ -1,24 +1,23 @@
 ﻿using Consilient.Data.Contracts;
 using Microsoft.AspNetCore.Identity;
 
-namespace Consilient.Data.Entities.Identity
+namespace Consilient.Data.Entities.Identity;
+
+public class UserClaim : IdentityUserClaim<int>, IAuditableEntity
 {
-    public class UserClaim : IdentityUserClaim<int>, IAuditableEntity
+    public DateTime CreatedAtUtc { get; private set; }
+
+    public DateTime UpdatedAtUtc { get; private set; }
+
+    public byte[] RowVersion { get; private set; } = [];
+
+    public void SetCreatedAtUtc(DateTime createdAtUtc)
     {
-        public DateTime CreatedAtUtc { get; private set; }
+        CreatedAtUtc = createdAtUtc;
+    }
 
-        public DateTime UpdatedAtUtc { get; private set; }
-
-        public byte[] RowVersion { get; private set; } = [];
-
-        public void SetCreatedAtUtc(DateTime createdAtUtc)
-        {
-            CreatedAtUtc = createdAtUtc;
-        }
-
-        public void SetUpdatedAtUtc(DateTime updatedAtUtc)
-        {
-            UpdatedAtUtc = updatedAtUtc;
-        }
+    public void SetUpdatedAtUtc(DateTime updatedAtUtc)
+    {
+        UpdatedAtUtc = updatedAtUtc;
     }
 }

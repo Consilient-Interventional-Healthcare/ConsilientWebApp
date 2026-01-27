@@ -1,14 +1,13 @@
-namespace Consilient.Shared.Contracts.Dtos
+namespace Consilient.Shared.Contracts.Dtos;
+
+/// <summary>
+/// Data transfer object for service type.
+/// </summary>
+public class ServiceTypeDto
 {
-    /// <summary>
-    /// Data transfer object for service type.
-    /// </summary>
-    public class ServiceTypeDto
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public string? Description { get; set; }
+    public string? Description { get; set; }
 
-        public int? CptCode { get; set; }
-    }
+    public int? CptCode { get; set; }
 }

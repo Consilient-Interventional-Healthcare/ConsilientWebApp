@@ -1,9 +1,8 @@
-﻿namespace Consilient.Data.GraphQL.Models
+﻿namespace Consilient.Data.GraphQL.Models;
+
+internal class ProviderAssignmentHospitalizationStatus
 {
-    internal class ProviderAssignmentHospitalizationStatus
-    {
-        public string? Name { get; set; }
-        public string? Code { get; set; }
-        public string? Color { get; set; }
-    }
+    public string? Name { get; set; }
+    public string? Code { get; set; }
+    public string? Color { get; set; }
 }

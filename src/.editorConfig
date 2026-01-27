@@ -16,6 +16,9 @@ resharper_arrange_namespace_body_highlighting=none
 resharper_class_never_instantiated_global_highlighting=none
 dotnet_style_prefer_collection_expression = true:suggestion
 
+# Namespace declarations - prefer file-scoped namespaces (C# 10+)
+csharp_style_namespace_declarations = file_scoped:warning
+
 # Apply to all C# files
 [*.cs]
 

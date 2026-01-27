@@ -1,61 +1,60 @@
-namespace Consilient.Infrastructure.Storage
+namespace Consilient.Infrastructure.Storage;
+
+/// <summary>
+/// Static helper class for cross-platform path operations.
+/// </summary>
+public static class PathHelper
 {
     /// <summary>
-    /// Static helper class for cross-platform path operations.
+    /// Normalizes path separators to the current platform's native separator.
+    /// Handles both forward slashes (/) and backslashes (\).
     /// </summary>
-    public static class PathHelper
+    public static string NormalizePath(string path)
     {
-        /// <summary>
-        /// Normalizes path separators to the current platform's native separator.
-        /// Handles both forward slashes (/) and backslashes (\).
-        /// </summary>
-        public static string NormalizePath(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return path;
+        if (string.IsNullOrEmpty(path))
+            return path;
 
-            return path
-                .Replace('/', Path.DirectorySeparatorChar)
-                .Replace('\\', Path.DirectorySeparatorChar);
-        }
+        return path
+            .Replace('/', Path.DirectorySeparatorChar)
+            .Replace('\\', Path.DirectorySeparatorChar);
+    }
 
-        /// <summary>
-        /// Combines a base path with a file reference, normalizing separators for cross-platform compatibility.
-        /// Uses Path.GetFullPath to ensure proper path resolution on all platforms.
-        /// </summary>
-        public static string CombineAndNormalize(string basePath, string relativePath)
-        {
-            var normalizedBasePath = NormalizePath(basePath);
-            var normalizedRelativePath = NormalizePath(relativePath);
-            var combined = Path.Combine(normalizedBasePath, normalizedRelativePath);
-            // Path.GetFullPath resolves the path and normalizes separators for the current OS
-            return Path.GetFullPath(combined);
-        }
+    /// <summary>
+    /// Combines a base path with a file reference, normalizing separators for cross-platform compatibility.
+    /// Uses Path.GetFullPath to ensure proper path resolution on all platforms.
+    /// </summary>
+    public static string CombineAndNormalize(string basePath, string relativePath)
+    {
+        var normalizedBasePath = NormalizePath(basePath);
+        var normalizedRelativePath = NormalizePath(relativePath);
+        var combined = Path.Combine(normalizedBasePath, normalizedRelativePath);
+        // Path.GetFullPath resolves the path and normalizes separators for the current OS
+        return Path.GetFullPath(combined);
+    }
 
-        /// <summary>
-        /// Sanitizes a file name by removing invalid characters.
-        /// </summary>
-        public static string SanitizeFileName(string fileName)
-        {
-            if (string.IsNullOrEmpty(fileName))
-                return "file";
+    /// <summary>
+    /// Sanitizes a file name by removing invalid characters.
+    /// </summary>
+    public static string SanitizeFileName(string fileName)
+    {
+        if (string.IsNullOrEmpty(fileName))
+            return "file";
 
-            var invalidChars = Path.GetInvalidFileNameChars();
-            var sanitized = string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
-            return string.IsNullOrWhiteSpace(sanitized) ? "file" : sanitized;
-        }
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var sanitized = string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+        return string.IsNullOrWhiteSpace(sanitized) ? "file" : sanitized;
+    }
 
-        /// <summary>
-        /// Generates a file reference from sanitized path segments.
-        /// Each segment is sanitized and only non-null/non-empty segments are included.
-        /// </summary>
-        public static string GenerateFileReference(params string[] tokens)
-        {
-            var sanitizedSegments = tokens
-                .Where(s => !string.IsNullOrEmpty(s))
-                .Select(SanitizeFileName);
+    /// <summary>
+    /// Generates a file reference from sanitized path segments.
+    /// Each segment is sanitized and only non-null/non-empty segments are included.
+    /// </summary>
+    public static string GenerateFileReference(params string[] tokens)
+    {
+        var sanitizedSegments = tokens
+            .Where(s => !string.IsNullOrEmpty(s))
+            .Select(SanitizeFileName);
 
-            return string.Join("/", sanitizedSegments);
-        }
+        return string.Join("/", sanitizedSegments);
     }
 }

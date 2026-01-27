@@ -3,23 +3,22 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Routing;
 
-namespace Consilient.BackgroundHost.Init
-{
-    internal static class ConfigureHealthCheckEndpointExtensions
-    {
-        /// <summary>
-        /// Maps the health check endpoint with JSON response format.
-        /// </summary>
-        public static IEndpointRouteBuilder MapHealthCheckEndpoint(
-            this IEndpointRouteBuilder endpoints,
-            string path = "/health")
-        {
-            endpoints.MapHealthChecks(path, new HealthCheckOptions
-            {
-                ResponseWriter = HealthCheckResponseWriter.WriteJsonResponse
-            });
+namespace Consilient.BackgroundHost.Init;
 
-            return endpoints;
-        }
+internal static class ConfigureHealthCheckEndpointExtensions
+{
+    /// <summary>
+    /// Maps the health check endpoint with JSON response format.
+    /// </summary>
+    public static IEndpointRouteBuilder MapHealthCheckEndpoint(
+        this IEndpointRouteBuilder endpoints,
+        string path = "/health")
+    {
+        endpoints.MapHealthChecks(path, new HealthCheckOptions
+        {
+            ResponseWriter = HealthCheckResponseWriter.WriteJsonResponse
+        });
+
+        return endpoints;
     }
 }

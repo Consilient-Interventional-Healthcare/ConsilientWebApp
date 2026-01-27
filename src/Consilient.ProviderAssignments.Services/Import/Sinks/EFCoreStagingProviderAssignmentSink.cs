@@ -1,7 +1,7 @@
 using Consilient.Data;
 using Consilient.Data.Entities.Staging;
 using Consilient.Infrastructure.ExcelImporter.Contracts;
-using Consilient.ProviderAssignments.Contracts;
+using Consilient.ProviderAssignments.Contracts.Import;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;

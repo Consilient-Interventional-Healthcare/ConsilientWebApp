@@ -1,16 +1,14 @@
 ﻿using Consilient.Background.Workers.ProviderAssignments;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Consilient.Background.Workers
+namespace Consilient.Background.Workers;
+
+public static class ServiceCollectionExtensions
 {
-    public static class ServiceCollectionExtensions
+    public static IServiceCollection AddWorkers(this IServiceCollection services)
     {
-        public static IServiceCollection AddWorkers(this IServiceCollection services)
-        {
-            services.AddScoped<ProviderAssignmentsImportWorker>();
-            services.AddScoped<ProviderAssignmentsResolutionWorker>();
-            services.AddScoped<ProviderAssignmentsWorkerEnqueuer>();
-            return services;
-        }
+        services.AddScoped<ProviderAssignmentsImportWorker>();
+        services.AddScoped<ProviderAssignmentsResolutionWorker>();
+        return services;
     }
 }

@@ -1,8 +1,7 @@
-﻿namespace Consilient.Hospitalizations.Contracts.Models
+﻿namespace Consilient.Hospitalizations.Contracts.Models;
+
+public enum HospitalizationStatusType
 {
-    public enum HospitalizationStatusType
-    {
-        Event = 0,
-        State = 1
-    }
+    Event = 0,
+    State = 1
 }

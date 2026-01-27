@@ -1,33 +1,32 @@
-﻿namespace Consilient.Api.Init
+﻿namespace Consilient.Api.Init;
+
+internal static class ConfigureCorsServiceCollectionExtensions
 {
-    internal static class ConfigureCorsServiceCollectionExtensions
+    public const string DefaultCorsPolicyName = "DefaultCorsPolicy";
+
+    public static IServiceCollection ConfigureCors(this IServiceCollection services, string[]? allowedOrigins)
     {
-        public const string DefaultCorsPolicyName = "DefaultCorsPolicy";
-
-        public static IServiceCollection ConfigureCors(this IServiceCollection services, string[]? allowedOrigins)
+        services.AddCors(options =>
         {
-            services.AddCors(options =>
+            options.AddPolicy(DefaultCorsPolicyName, policy =>
             {
-                options.AddPolicy(DefaultCorsPolicyName, policy =>
+                if (allowedOrigins is { Length: > 0 })
                 {
-                    if (allowedOrigins is { Length: > 0 })
-                    {
-                        policy.WithOrigins(allowedOrigins)
-                              .AllowAnyMethod()
-                              .AllowAnyHeader()
-                              .AllowCredentials();
-                    }
-                    else
-                    {
-                        // Allow any origin when none configured (development/CLI tooling only)
-                        policy.AllowAnyOrigin()
-                              .AllowAnyMethod()
-                              .AllowAnyHeader();
-                    }
-                });
+                    policy.WithOrigins(allowedOrigins)
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
+                }
+                else
+                {
+                    // Allow any origin when none configured (development/CLI tooling only)
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                }
             });
+        });
 
-            return services;
-        }
+        return services;
     }
 }

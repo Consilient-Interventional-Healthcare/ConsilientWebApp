@@ -1,7 +1,6 @@
-namespace Consilient.Infrastructure.ExcelImporter.Contracts
+namespace Consilient.Infrastructure.ExcelImporter.Contracts;
+
+public interface IRowTransformer<TRow> where TRow : class
 {
-    public interface IRowTransformer<TRow> where TRow : class
-    {
-        TRow Transform(TRow row);
-    }
+    TRow Transform(TRow row);
 }

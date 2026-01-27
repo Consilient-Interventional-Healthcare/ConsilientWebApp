@@ -1,7 +1,6 @@
-﻿namespace Consilient.Visits.Contracts.Models.Requests
+﻿namespace Consilient.Visits.Contracts.Models.Requests;
+
+public class DeleteVisitEventRequest
 {
-    public class DeleteVisitEventRequest
-    {
-        public int VisitEventId { get; set; }
-    }
+    public int VisitEventId { get; set; }
 }

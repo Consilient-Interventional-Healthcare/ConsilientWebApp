@@ -5,33 +5,32 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Consilient.Api.Init
+namespace Consilient.Api.Init;
+
+internal static class ConfigureControllersExtensions
 {
-    internal static class ConfigureControllersExtensions
+    /// <summary>
+    /// Configures MVC controllers with authorization policy and custom model binders.
+    /// </summary>
+    public static IServiceCollection ConfigureControllers(
+        this IServiceCollection services,
+        AuthenticationOptions authOptions,
+        IHostEnvironment environment)
     {
-        /// <summary>
-        /// Configures MVC controllers with authorization policy and custom model binders.
-        /// </summary>
-        public static IServiceCollection ConfigureControllers(
-            this IServiceCollection services,
-            AuthenticationOptions authOptions,
-            IHostEnvironment environment)
+        services.AddControllers(options =>
         {
-            services.AddControllers(options =>
+            if (authOptions.Enabled && (environment.IsProduction() || environment.IsDevelopment()))
             {
-                if (authOptions.Enabled && (environment.IsProduction() || environment.IsDevelopment()))
-                {
-                    var policy = new AuthorizationPolicyBuilder()
-                        .RequireAuthenticatedUser()
-                        .Build();
+                var policy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
 
-                    options.Filters.Add(new AuthorizeFilter(policy));
-                }
-                // Ensure our provider runs before defaults
-                options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
-            }).AddNewtonsoftJson();
+                options.Filters.Add(new AuthorizeFilter(policy));
+            }
+            // Ensure our provider runs before defaults
+            options.ModelBinderProviders.Insert(0, new YyyyMmDdDateModelBinderProvider());
+        }).AddNewtonsoftJson();
 
-            return services;
-        }
+        return services;
     }
 }
