@@ -133,29 +133,32 @@
 <g id="node2" class="node">
 <title>ProviderAssignmentBatches</title>
 <g id="a_node2"><a xlink:href="../../tables/ProviderAssignmentBatches.html" xlink:title="ProviderAssignmentBatches" target="_top">
-<polygon fill="#ffffff" stroke="transparent" points="20.5,-1365.2 20.5,-1561.2 266.5,-1561.2 266.5,-1365.2 20.5,-1365.2"/>
-<polygon fill="#f5f5f5" stroke="transparent" points="20.5,-1538.2 20.5,-1561.2 266.5,-1561.2 266.5,-1538.2 20.5,-1538.2"/>
-<polygon fill="none" stroke="#000000" points="20.5,-1538.2 20.5,-1561.2 266.5,-1561.2 266.5,-1538.2 20.5,-1538.2"/>
-<text text-anchor="start" x="25.5" y="-1546.8" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#000000">ProviderAssignmentBatches</text>
-<text text-anchor="start" x="232.0219" y="-1546.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">[table]</text>
+<polygon fill="#ffffff" stroke="transparent" points="20.5,-1365.2 20.5,-1583.2 266.5,-1583.2 266.5,-1365.2 20.5,-1365.2"/>
+<polygon fill="#f5f5f5" stroke="transparent" points="20.5,-1560.2 20.5,-1583.2 266.5,-1583.2 266.5,-1560.2 20.5,-1560.2"/>
+<polygon fill="none" stroke="#000000" points="20.5,-1560.2 20.5,-1583.2 266.5,-1583.2 266.5,-1560.2 20.5,-1560.2"/>
+<text text-anchor="start" x="25.5" y="-1568.8" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#000000">ProviderAssignmentBatches</text>
+<text text-anchor="start" x="232.0219" y="-1568.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">[table]</text>
+<polygon fill="none" stroke="#000000" points="20.5,-1538.2 20.5,-1560.2 266.5,-1560.2 266.5,-1538.2 20.5,-1538.2"/>
+<image xlink:href="../../images/primaryKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="25.5" y="-1555.2"/>
+<text text-anchor="start" x="49.5" y="-1545.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Id</text>
+<polygon fill="#ffffff" stroke="transparent" points="20.5,-1516.2 20.5,-1538.2 266.5,-1538.2 266.5,-1516.2 20.5,-1516.2"/>
 <polygon fill="none" stroke="#000000" points="20.5,-1516.2 20.5,-1538.2 266.5,-1538.2 266.5,-1516.2 20.5,-1516.2"/>
-<image xlink:href="../../images/primaryKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="25.5" y="-1533.2"/>
-<text text-anchor="start" x="49.5" y="-1523.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Id</text>
+<text text-anchor="start" x="49.5" y="-1523.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Date</text>
 <polygon fill="#ffffff" stroke="transparent" points="20.5,-1494.2 20.5,-1516.2 266.5,-1516.2 266.5,-1494.2 20.5,-1494.2"/>
 <polygon fill="none" stroke="#000000" points="20.5,-1494.2 20.5,-1516.2 266.5,-1516.2 266.5,-1494.2 20.5,-1494.2"/>
-<text text-anchor="start" x="49.5" y="-1501.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Date</text>
+<text text-anchor="start" x="49.5" y="-1501.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FacilityId</text>
 <polygon fill="#ffffff" stroke="transparent" points="20.5,-1472.2 20.5,-1494.2 266.5,-1494.2 266.5,-1472.2 20.5,-1472.2"/>
 <polygon fill="none" stroke="#000000" points="20.5,-1472.2 20.5,-1494.2 266.5,-1494.2 266.5,-1472.2 20.5,-1472.2"/>
-<text text-anchor="start" x="49.5" y="-1479.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FacilityId</text>
-<polygon fill="#ffffff" stroke="transparent" points="20.5,-1450.2 20.5,-1472.2 266.5,-1472.2 266.5,-1450.2 20.5,-1450.2"/>
+<text text-anchor="start" x="49.5" y="-1479.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Status</text>
 <polygon fill="none" stroke="#000000" points="20.5,-1450.2 20.5,-1472.2 266.5,-1472.2 266.5,-1450.2 20.5,-1450.2"/>
-<text text-anchor="start" x="49.5" y="-1457.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Status</text>
+<text text-anchor="start" x="49.5" y="-1457.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedAtUtc</text>
 <polygon fill="none" stroke="#000000" points="20.5,-1428.2 20.5,-1450.2 266.5,-1450.2 266.5,-1428.2 20.5,-1428.2"/>
-<text text-anchor="start" x="49.5" y="-1435.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedAtUtc</text>
+<text text-anchor="start" x="49.5" y="-1435.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">UpdatedAtUtc</text>
 <polygon fill="none" stroke="#000000" points="20.5,-1406.2 20.5,-1428.2 266.5,-1428.2 266.5,-1406.2 20.5,-1406.2"/>
-<text text-anchor="start" x="49.5" y="-1413.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">UpdatedAtUtc</text>
+<text text-anchor="start" x="49.5" y="-1413.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">RowVersion</text>
+<polygon fill="#ffffff" stroke="transparent" points="20.5,-1384.2 20.5,-1406.2 266.5,-1406.2 266.5,-1384.2 20.5,-1384.2"/>
 <polygon fill="none" stroke="#000000" points="20.5,-1384.2 20.5,-1406.2 266.5,-1406.2 266.5,-1384.2 20.5,-1384.2"/>
-<text text-anchor="start" x="49.5" y="-1391.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">RowVersion</text>
+<text text-anchor="start" x="49.5" y="-1391.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedByUserId</text>
 <polygon fill="#ffffff" stroke="transparent" points="20.5,-1365.2 20.5,-1384.2 266.5,-1384.2 266.5,-1365.2 20.5,-1365.2"/>
 <polygon fill="none" stroke="#000000" points="20.5,-1365.2 20.5,-1384.2 266.5,-1384.2 266.5,-1365.2 20.5,-1365.2"/>
 <polygon fill="#ffffff" stroke="transparent" points="21.5,-1366.2 21.5,-1383.2 100.5,-1383.2 100.5,-1366.2 21.5,-1366.2"/>
@@ -172,9 +175,9 @@
 <!-- ProviderAssignments&#45;&gt;ProviderAssignmentBatches -->
 <g id="edge1" class="edge">
 <title>ProviderAssignments:w&#45;&gt;ProviderAssignmentBatches:e</title>
-<path fill="none" stroke="#000000" d="M314.6584,-1208.2893C266.8834,-1249.509 334.3657,-1527.2 266.5,-1527.2"/>
-<polygon fill="#000000" stroke="#000000" points="320.9914,-1205.9608 329.7423,-1206.5788 324.7457,-1204.5804 328.5,-1203.2 328.5,-1203.2 328.5,-1203.2 324.7457,-1204.5804 327.2577,-1199.8212 320.9914,-1205.9608 320.9914,-1205.9608"/>
-<ellipse fill="none" stroke="#000000" cx="317.988" cy="-1207.0651" rx="3.2" ry="3.2"/>
+<path fill="none" stroke="#000000" d="M314.7866,-1207.8295C262.4637,-1248.8878 339.2738,-1549.2 266.5,-1549.2"/>
+<polygon fill="#000000" stroke="#000000" points="320.9203,-1205.7589 329.6515,-1206.6109 324.7101,-1204.4794 328.5,-1203.2 328.5,-1203.2 328.5,-1203.2 324.7101,-1204.4794 327.3485,-1199.7891 320.9203,-1205.7589 320.9203,-1205.7589"/>
+<ellipse fill="none" stroke="#000000" cx="317.8884" cy="-1206.7824" rx="3.2" ry="3.2"/>
 </g>
 <!-- Clinical.Patients -->
 <g id="node3" class="node">

@@ -423,6 +423,34 @@ When making database schema changes, follow this sequence:
 - Check that `seed.sql` provides all NOT NULL columns
 - Review table schema in the migration files
 
+**UpdateLocalDatabase fails with connection string errors:**
+
+If `.\build.ps1 UpdateLocalDatabase` fails with "Format of the initialization string does not conform to specification" or similar connection string errors (often caused by special characters like `!` in passwords), apply the migration directly to the Docker container:
+
+```powershell
+# 1. Ensure database container is running and healthy
+docker compose -f "src/.docker/docker-compose.yml" up -d db
+docker inspect consilient.dbs.container --format="{{.State.Health.Status}}"
+# Wait until status is "healthy"
+
+# 2. Copy the SQL script into the container
+docker cp 'src/Databases/consilient_main/XX_YourMigration.sql' consilient.dbs.container:/tmp/migration.sql
+
+# 3. Execute the migration using the container's internal SA_PASSWORD
+# IMPORTANT: Use MSYS_NO_PATHCONV=1 prefix in Git Bash to prevent path mangling
+MSYS_NO_PATHCONV=1 docker exec consilient.dbs.container sh -c "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"\$SA_PASSWORD\" -d consilient_main -C -i /tmp/migration.sql"
+
+# 4. Verify the migration was applied
+MSYS_NO_PATHCONV=1 docker exec consilient.dbs.container sh -c "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"\$SA_PASSWORD\" -d consilient_main -C -Q \"SELECT TOP 3 MigrationId FROM __EFMigrationsHistory ORDER BY MigrationId DESC\""
+```
+
+**Key points for manual migration:**
+| Issue | Solution |
+|-------|----------|
+| Git Bash converts `/opt/...` paths | Add `MSYS_NO_PATHCONV=1` prefix |
+| Password with special characters (`!`) | Use `\$SA_PASSWORD` inside `sh -c` so it expands in the container |
+| "Login failed for user 'sa'" | The persistent volume may have a different password; always use `$SA_PASSWORD` from inside the container |
+
 ---
 
 ## API Documentation

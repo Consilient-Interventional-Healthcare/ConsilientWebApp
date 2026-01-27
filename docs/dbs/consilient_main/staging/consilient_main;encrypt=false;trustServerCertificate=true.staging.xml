@@ -11,9 +11,13 @@
          <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="((0))" digits="0" id="7" name="CreatedByUserId" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
          <primaryKey column="Id" sequenceNumberInPK="1"/>
          <index name="PK_ProviderAssignmentBatches" unique="true">
             <column ascending="true" name="Id"/>
+         </index>
+         <index name="IX_ProviderAssignmentBatches_CreatedByUserId" unique="false">
+            <column ascending="true" name="CreatedByUserId"/>
          </index>
          <index name="IX_ProviderAssignmentBatches_FacilityId_Date" unique="false">
             <column ascending="true" name="FacilityId"/>
