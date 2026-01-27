@@ -458,18 +458,16 @@ BEGIN
             TempId INT IDENTITY(1,1) PRIMARY KEY,
             DateServiced DATE,
             HospitalizationId INT,
-            ServiceTypeId INT,
             Room NVARCHAR(20),
             Bed NVARCHAR(5),
             StagingId INT,
             NewVisitId INT
         );
 
-        INSERT INTO #VisitsToInsert (DateServiced, HospitalizationId, ServiceTypeId, Room, Bed, StagingId)
+        INSERT INTO #VisitsToInsert (DateServiced, HospitalizationId, Room, Bed, StagingId)
         SELECT
             sr.ServiceDate,
             sr.ResolvedHospitalizationId,
-            CASE WHEN sr.IsPsychEval = 1 THEN 1 ELSE 4 END,
             ISNULL(sr.Room, ''),
             ISNULL(sr.Bed, ''),
             sr.StagingId
@@ -478,26 +476,26 @@ BEGIN
           AND sr.ResolvedHospitalizationId IS NOT NULL;
 
         -- Insert visits using cursor
-        DECLARE @VisitTempId INT, @VisitDate DATE, @VisitHospId INT, @VisitServiceTypeId INT;
+        DECLARE @VisitTempId INT, @VisitDate DATE, @VisitHospId INT;
         DECLARE @VisitRoom NVARCHAR(20), @VisitBed NVARCHAR(5), @NewVisitId INT;
 
         DECLARE visit_cursor CURSOR LOCAL FAST_FORWARD FOR
-            SELECT TempId, DateServiced, HospitalizationId, ServiceTypeId, Room, Bed
+            SELECT TempId, DateServiced, HospitalizationId, Room, Bed
             FROM #VisitsToInsert;
 
         OPEN visit_cursor;
-        FETCH NEXT FROM visit_cursor INTO @VisitTempId, @VisitDate, @VisitHospId, @VisitServiceTypeId, @VisitRoom, @VisitBed;
+        FETCH NEXT FROM visit_cursor INTO @VisitTempId, @VisitDate, @VisitHospId, @VisitRoom, @VisitBed;
 
         WHILE @@FETCH_STATUS = 0
         BEGIN
-            INSERT INTO [Clinical].[Visits] (DateServiced, HospitalizationId, IsScribeServiceOnly, ServiceTypeId, Room, Bed)
-            VALUES (@VisitDate, @VisitHospId, 0, @VisitServiceTypeId, @VisitRoom, @VisitBed);
+            INSERT INTO [Clinical].[Visits] (DateServiced, HospitalizationId, IsScribeServiceOnly, Room, Bed)
+            VALUES (@VisitDate, @VisitHospId, 0, @VisitRoom, @VisitBed);
 
             SET @NewVisitId = SCOPE_IDENTITY();
 
             UPDATE #VisitsToInsert SET NewVisitId = @NewVisitId WHERE TempId = @VisitTempId;
 
-            FETCH NEXT FROM visit_cursor INTO @VisitTempId, @VisitDate, @VisitHospId, @VisitServiceTypeId, @VisitRoom, @VisitBed;
+            FETCH NEXT FROM visit_cursor INTO @VisitTempId, @VisitDate, @VisitHospId, @VisitRoom, @VisitBed;
         END
 
         CLOSE visit_cursor;
