@@ -37,7 +37,6 @@ export default function DailyLog() {
   };
 
   useEffect(() => {
-    console.log("Visits useEffect triggered - date:", date, "facilityId:", facilityId);
     if (!facilityId) {
       // No facilityId provided, can't fetch visits
       return;
@@ -45,12 +44,10 @@ export default function DailyLog() {
 
     loadingBar?.start();
 
-    console.log("Fetching V2 visits for date:", date, "facilityId:", facilityId);
     dailyLogService
       .getVisitsByDateV2(date, facilityId)
       .then((data: DailyLogVisitsResponse) => {
         setDailyLogData(data);
-        console.log("Fetched V2 visits:", data);
       })
       .catch((err: unknown) => {
         console.error("Failed to fetch V2 visits", err);
@@ -73,10 +70,6 @@ export default function DailyLog() {
   }, [facilityId, date, navigate]);
 
   const handleProviderChange = (newProviderId: number | null) => {
-    console.log(
-      "handleProviderChange called with newProviderId:",
-      newProviderId
-    );
     if (!newProviderId) {
       // If no provider selected, clear visit selection as well
       setSelectedVisitId(null);
@@ -103,7 +96,6 @@ export default function DailyLog() {
   };
 
   const handleVisitSelect = (visitId: number | null) => {
-    console.log("handleVisitSelect called with visitId:", visitId);
     setSelectedVisitId(visitId);
     // Find the providerId for the selected visit
     const visitsData = dailyLogData?.result.visits ?? [];
@@ -122,7 +114,6 @@ export default function DailyLog() {
     setDailyLogData(null);
     setSelectedVisitId(null);
     const url = `/clinical/daily-log/${date}${newFacilityId ? `/${newFacilityId}` : ''}`;
-    console.log("handleFacilityChange - newFacilityId:", newFacilityId, "url:", url);
     void navigate(url);
   };
 
@@ -131,7 +122,6 @@ export default function DailyLog() {
     setDailyLogData(null);
     setSelectedVisitId(null);
     const url = `/clinical/daily-log/${newDate}${facilityId ? `/${facilityId}` : ''}`;
-    console.log("handleDateChange - newDate:", newDate, "facilityId:", facilityId, "url:", url);
     void navigate(url, { replace: true });
   };
 

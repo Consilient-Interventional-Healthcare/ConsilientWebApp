@@ -5,8 +5,11 @@ import { providerAssignmentsService } from '../../assignments/services/ProviderA
 import { visitService } from '../services/VisitService';
 import { facilityService } from '../services/FacilityService';
 import { formatDateFromUrl, formatDateToUrl, getToday } from '@/shared/utils/dateUtils';
+import { format, differenceInDays } from 'date-fns';
 import { GraphQL, type Facilities } from '@/types/api.generated';
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/shared/components/ui/table";
+import { DateNavigator } from "@/shared/components/ui/date-navigator";
+import { NativeSelect } from "@/shared/components/ui/native-select";
 import { HospitalizationStatusPill } from "../../daily-log/components/HospitalizationStatusPill";
 
 export default function Visits() {
@@ -90,23 +93,21 @@ export default function Visits() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Visits</h1>
         </div>
         <div className="flex items-center gap-4">
-          <input
-            type="date"
+          <DateNavigator
             value={dateISO}
             max={today}
-            onChange={(e) => handleDateChange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={handleDateChange}
           />
-          <select
+          <NativeSelect
             value={facilityId ?? ''}
             onChange={(e) => handleFacilityChange(e.target.value ? Number(e.target.value) : null)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-auto"
           >
             <option value="">Select a facility...</option>
             {facilities.map((f) => (
               <option key={f.id} value={f.id}>{f.name}</option>
             ))}
-          </select>
+          </NativeSelect>
           <button
             onClick={handleImportClick}
             disabled={isUploading || !facilityId}
@@ -139,7 +140,6 @@ export default function Visits() {
                 <TableHead>Hospitalization Status</TableHead>
                 <TableHead>Room / Bed</TableHead>
                 <TableHead>Admission Date</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -165,8 +165,18 @@ export default function Visits() {
                     <HospitalizationStatusPill statusId={visit.hospitalization?.hospitalizationStatusId ?? 0} />
                   </TableCell>
                   <TableCell>{visit.room} {visit.bed}</TableCell>
-                  <TableCell>{visit.hospitalization?.admissionDate ? new Date(visit.hospitalization.admissionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</TableCell>
-                  <TableCell>{/* Placeholder for actions */}</TableCell>
+                  <TableCell>
+                    {visit.hospitalization?.admissionDate ? (() => {
+                      const admissionDate = new Date(visit.hospitalization.admissionDate);
+                      const daysHospitalized = differenceInDays(new Date(), admissionDate);
+                      return (
+                        <span title={format(admissionDate, 'MMM d, yyyy h:mm a')}>
+                          {format(admissionDate, 'MMM d, yyyy')}
+                          <span className="text-xs text-gray-500 ml-2">({daysHospitalized} {daysHospitalized === 1 ? 'day' : 'days'})</span>
+                        </span>
+                      );
+                    })() : ''}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -23,3 +23,8 @@ class HospitalizationStatusStore {
 
 export const hospitalizationStatusStore = new HospitalizationStatusStore();
 export const useHospitalizationStatuses = () => hospitalizationStatusStore.useHospitalizationStatuses();
+
+export const useHospitalizationStatusById = (id: number | undefined) => {
+  const { data: statuses = [] } = useHospitalizationStatuses();
+  return statuses.find(s => s.id === id) ?? null;
+};

@@ -17,7 +17,7 @@ export default function DailyLogAdditionalInfo({ visit }: DailyLogAdditionalInfo
   useEffect(() => {
     if (visit) {
       dailyLogService.getPatientTimelineData(visit.hospitalizationId)
-        .then((d) => { console.log("Fetched timeline data:", d); setTimelineData(d); })
+        .then(setTimelineData)
         .catch((error) => {
           console.error("Failed to fetch patient timeline data:", error);
         });

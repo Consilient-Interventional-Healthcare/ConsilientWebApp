@@ -1,10 +1,10 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SegmentedControl } from '@/shared/components/ui/segmented-control';
 import { StatusComboBox } from '@/shared/components/ui/status-combobox';
-import { dataProvider } from '@/data/DataProvider';
-import type { GraphQL, Hospitalizations } from '@/types/api.generated';
+import type { GraphQL } from '@/types/api.generated';
 import { useVisitEventTypes } from '@/shared/stores/VisitEventTypeStore';
+import { useHospitalizationStatusById } from '@/shared/stores/HospitalizationStatusStore';
 
 interface DailyLogEntriesHeaderProps {
   visit: GraphQL.DailyLogVisit | null;
@@ -19,14 +19,15 @@ export function DailyLogEntriesHeader({
 }: DailyLogEntriesHeaderProps) {
   const [statusId, setStatusId] = useState<number | undefined>(visit?.hospitalization?.hospitalizationStatusId);
   const { data: eventTypes = [] } = useVisitEventTypes();
+  const selectedStatus = useHospitalizationStatusById(statusId);
+
+  // Sync statusId when visit changes
+  useEffect(() => {
+    setStatusId(visit?.hospitalization?.hospitalizationStatusId);
+  }, [visit?.hospitalization?.hospitalizationStatusId]);
 
   // All hooks must be called before any early returns
   if (!visit) return null;
-
-  const [selectedStatus = null] = dataProvider.query<Hospitalizations.HospitalizationStatusDto>(
-    "SELECT * FROM hospitalizationStatuses WHERE id = ?",
-    [statusId]
-  );
 
   const options = [
     { label: "All", value: "all" },

@@ -22,12 +22,12 @@ export function SegmentedControl({ options, defaultValue, onChange }: SegmentedC
   };
 
   return (
-    <ToggleGroup type="single" value={value} onValueChange={handleChange}>
+    <ToggleGroup type="single" variant="outline" spacing={0} value={value} onValueChange={handleChange}>
       {options.map((opt) => (
         <ToggleGroupItem
           key={opt.value}
           value={opt.value}
-          className="px-4 py-2 text-sm font-medium bg-white data-[state=on]:bg-accent data-[state=on]:text-white rounded-md border border-gray-300 flex items-center gap-2"
+          className="px-4 py-2 bg-white data-[state=on]:bg-accent data-[state=on]:text-white"
         >
           {opt.icon && (
             <DynamicIcon

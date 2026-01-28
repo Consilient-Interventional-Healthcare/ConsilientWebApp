@@ -67,7 +67,6 @@ export function DailyLogEntriesDisplay({ entries, typeFilter }: DailyLogEntriesD
             background: #fff;
             top: 0;
             left: -2px;
-            /*border: 2px solid #ddd;*/
             width: 26px;
             height: 26px;
             border-radius: 50%;

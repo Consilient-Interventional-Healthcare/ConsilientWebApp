@@ -1,11 +1,11 @@
-import type { Hospitalizations } from '@/types/api.generated';
-import { dataProvider } from '@/data/DataProvider';
+import { useHospitalizationStatusById } from '@/shared/stores/HospitalizationStatusStore';
+
 interface HospitalizationStatusPillProps {
-  statusId: Hospitalizations.HospitalizationStatusDto['id'];
+  statusId: number;
 }
 
 export function HospitalizationStatusPill({ statusId }: HospitalizationStatusPillProps) {
-  const [status = null] = dataProvider.query<Hospitalizations.HospitalizationStatusDto>('SELECT * FROM hospitalizationStatuses WHERE id = ?', [statusId]);
+  const status = useHospitalizationStatusById(statusId);
   if (!status) {
     return null;
   }

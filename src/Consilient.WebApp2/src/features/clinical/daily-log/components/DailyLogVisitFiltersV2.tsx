@@ -1,12 +1,14 @@
 import React from "react";
 import { cn } from "@/shared/utils/utils";
+import { DateNavigator } from "@/shared/components/ui/date-navigator";
+import { NativeSelect } from "@/shared/components/ui/native-select";
 import type { GraphQL, Facilities } from "@/types/api.generated";
 import {
   filterVisitsByProviderV2,
   getPatientDisplayNameV2,
   getProviderDisplayName,
 } from "@/features/clinical/daily-log/dailylog.adapters";
-// import { HospitalizationStatusPill } from "./HospitalizationStatusPill"; // Temporarily hidden for debugging
+import { HospitalizationStatusPill } from "./HospitalizationStatusPill";
 
 interface DailyLogVisitFiltersV2Props {
   date: string;
@@ -172,19 +174,13 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
           >
             Date
           </label>
-          <input
+          <DateNavigator
             id="date-input"
-            type="date"
             value={props.date}
             min={minDate}
             max={maxDate}
-            onChange={(e) => {
-              const selected = e.target.value;
-              if (selected >= minDate && selected <= maxDate) {
-                props.onDateChange?.(selected);
-              }
-            }}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onChange={(date) => props.onDateChange?.(date)}
+            className="w-full"
           />
         </div>
         {/* Provider Dropdown */}
@@ -249,17 +245,13 @@ function ProviderDropdown({
       >
         Provider
       </label>
-      <select
+      <NativeSelect
         id="provider-select"
         value={selectedProviderId ?? ""}
         onChange={(e) =>
           onProviderChange(e.target.value === "" ? null : Number(e.target.value))
         }
         disabled={isDisabled}
-        className={cn(
-          "w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white",
-          isDisabled && "bg-gray-100 cursor-not-allowed"
-        )}
       >
         {providers.length === 0 ? (
           <option value="">No providers</option>
@@ -270,7 +262,7 @@ function ProviderDropdown({
             </option>
           ))
         )}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
@@ -288,7 +280,6 @@ function FacilityDropdown({
 }: FacilityDropdownProps) {
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value === "" ? null : Number(e.target.value);
-    console.log("FacilityDropdown onChange:", newValue, "onFacilityChange:", !!onFacilityChange);
     onFacilityChange?.(newValue);
   };
 
@@ -300,18 +291,17 @@ function FacilityDropdown({
       >
         Facility
       </label>
-      <select
+      <NativeSelect
         id="facility-select"
         value={selectedFacilityId ?? ""}
         onChange={handleChange}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
       >
         {facilities.map((facility) => (
           <option key={facility.id} value={facility.id}>
             {facility.name}
           </option>
         ))}
-      </select>
+      </NativeSelect>
     </div>
   );
 }
@@ -351,14 +341,13 @@ const VisitListItem = React.forwardRef<HTMLButtonElement, VisitListItemProps>(
               </p>
             )}
           </div>
-          {/* Status pill - temporarily hidden for debugging */}
-          {/* <div className="flex items-center ml-2">
+          <div className="flex items-center ml-2">
             {visit.hospitalization?.hospitalizationStatusId && (
               <HospitalizationStatusPill
                 statusId={visit.hospitalization.hospitalizationStatusId}
               />
             )}
-          </div> */}
+          </div>
         </div>
       </button>
     );
