@@ -73,6 +73,20 @@ GO
 SET IDENTITY_INSERT [Clinical].[ServiceTypes] OFF;
 GO
 
+
+SET IDENTITY_INSERT [Clinical].[VisitEventTypes] ON;
+GO
+
+INSERT INTO [Clinical].[VisitEventTypes] ([Id], [Code], [Name])
+VALUES
+    (1, 'INTERVAL', 'Interval'),
+    (2, 'INTERVIEW', 'Interview'),
+    (3, 'PLAN', 'Plan');
+GO
+
+SET IDENTITY_INSERT [Clinical].[VisitEventTypes] OFF;
+GO
+
 INSERT INTO [Billing].[BillingCodes] ([Id], [Code], [Description])
 VALUES
     (1, '99233', N'Inpatient subsequent care, High complexity'),

@@ -8,6 +8,8 @@ import DailyLogPatientDetails from "./components/DailyLogAdditionalInfo";
 import type { DailyLogVisit, DailyLogVisitsResponse } from "./dailylog.types";
 import { DailyLogEntriesPanel } from "./components/DailyLogEntriesPanel";
 import { appSettings } from "@/config";
+import { facilityService } from "@/features/clinical/visits/services/FacilityService";
+import type { Facilities } from "@/types/api.generated";
 
 // At the top, outside the component:
 const dailyLogService = getDailyLogService();
@@ -30,10 +32,18 @@ export default function DailyLog() {
   // State for V2 response and legacy visits
   const [dailyLogData, setDailyLogData] = useState<DailyLogVisitsResponse | null>(null);
   const [visits, setVisits] = useState<DailyLogVisit[]>([]);
+  const [facilities, setFacilities] = useState<Facilities.FacilityDto[]>([]);
 
   const loadingBar = useContext(LoadingBarContext);
 
+  // Helper to build URLs with facilityId
+  const buildUrl = (parts: (string | number | null | undefined)[]) => {
+    const filtered = parts.filter(p => p != null);
+    return `/clinical/daily-log/${filtered.join('/')}`;
+  };
+
   useEffect(() => {
+    console.log("Visits useEffect triggered - date:", date, "facilityId:", facilityId);
     if (!facilityId) {
       // No facilityId provided, can't fetch visits
       return;
@@ -43,6 +53,7 @@ export default function DailyLog() {
 
     if (useV2Stage1) {
       // Use V2 service method
+      console.log("Fetching V2 visits for date:", date, "facilityId:", facilityId);
       dailyLogService
         .getVisitsByDateV2(date, facilityId)
         .then((data: DailyLogVisitsResponse) => {
@@ -72,11 +83,17 @@ export default function DailyLog() {
     }
   }, [date, facilityId, loadingBar]);
 
-  // Helper to build URLs with facilityId
-  const buildUrl = (parts: (string | number | null | undefined)[]) => {
-    const filtered = parts.filter(p => p != null);
-    return `/clinical/daily-log/${filtered.join('/')}`;
-  };
+  // Fetch facilities on mount and auto-select first if none selected
+  useEffect(() => {
+    facilityService.getAll().then((fetchedFacilities) => {
+      setFacilities(fetchedFacilities);
+      // Auto-select the first facility if none is selected
+      const firstFacility = fetchedFacilities[0];
+      if (!facilityId && firstFacility?.id) {
+        void navigate(buildUrl([date, firstFacility.id]), { replace: true });
+      }
+    }).catch(console.error);
+  }, [facilityId, date, navigate]);
 
   const handleProviderChange = (newProviderId: number | null) => {
     console.log(
@@ -123,6 +140,24 @@ export default function DailyLog() {
     }
   };
 
+  const handleFacilityChange = (newFacilityId: number | null) => {
+    // Clear data first to prevent auto-select from navigating back with stale facilityId
+    setDailyLogData(null);
+    setSelectedVisitId(null);
+    const url = `/clinical/daily-log/${date}${newFacilityId ? `/${newFacilityId}` : ''}`;
+    console.log("handleFacilityChange - newFacilityId:", newFacilityId, "url:", url);
+    void navigate(url);
+  };
+
+  const handleDateChange = (newDate: string) => {
+    // Clear data first to prevent auto-select from navigating back with stale values
+    setDailyLogData(null);
+    setSelectedVisitId(null);
+    const url = `/clinical/daily-log/${newDate}${facilityId ? `/${facilityId}` : ''}`;
+    console.log("handleDateChange - newDate:", newDate, "facilityId:", facilityId, "url:", url);
+    void navigate(url, { replace: true });
+  };
+
   const visit = useMemo(() => {
     if (!selectedVisitId) return null;
     return visits.find((v) => v.id === selectedVisitId) ?? null;
@@ -136,10 +171,14 @@ export default function DailyLog() {
           visitId={selectedVisitId}
           onVisitIdChange={handleVisitSelect}
           date={date}
+          onDateChange={handleDateChange}
           {...(providerId && { providerId })}
           onProviderChange={handleProviderChange}
           visits={dailyLogData?.result.visits ?? []}
           providers={dailyLogData?.providers ?? []}
+          facilities={facilities}
+          selectedFacilityId={facilityId}
+          onFacilityChange={handleFacilityChange}
         />
       ) : (
         <DailyLogVisitFilters

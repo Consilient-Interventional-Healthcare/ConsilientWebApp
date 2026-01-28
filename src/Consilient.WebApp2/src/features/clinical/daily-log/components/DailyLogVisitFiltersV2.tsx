@@ -1,12 +1,12 @@
 import React from "react";
 import { cn } from "@/shared/utils/utils";
-import type { GraphQL } from "@/types/api.generated";
+import type { GraphQL, Facilities } from "@/types/api.generated";
 import {
   filterVisitsByProviderV2,
   getPatientDisplayNameV2,
   getProviderDisplayName,
 } from "@/features/clinical/daily-log/dailylog.adapters";
-import { HospitalizationStatusPill } from "./HospitalizationStatusPill";
+// import { HospitalizationStatusPill } from "./HospitalizationStatusPill"; // Temporarily hidden for debugging
 
 interface DailyLogVisitFiltersV2Props {
   date: string;
@@ -17,6 +17,9 @@ interface DailyLogVisitFiltersV2Props {
   visits: GraphQL.DailyLogVisit[];
   providers: GraphQL.DailyLogProvider[];
   onDateChange?: (date: string) => void;
+  facilities: Facilities.FacilityDto[];
+  selectedFacilityId: number | null;
+  onFacilityChange?: (facilityId: number | null) => void;
 }
 
 export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
@@ -29,6 +32,11 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
   const safeProviders = React.useMemo(
     () => (Array.isArray(props.providers) ? props.providers : []),
     [props.providers]
+  );
+
+  const safeFacilities = React.useMemo(
+    () => (Array.isArray(props.facilities) ? props.facilities : []),
+    [props.facilities]
   );
 
   // Allow selectedProviderId to be null
@@ -44,10 +52,17 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
     React.useState<number | null>(initialProviderId);
 
   // Get visits for selected provider
-  const filteredVisits = React.useMemo(
-    () => filterVisitsByProviderV2(safeVisits, selectedProviderId),
-    [safeVisits, selectedProviderId]
-  );
+  const filteredVisits = React.useMemo(() => {
+    const filtered = filterVisitsByProviderV2(safeVisits, selectedProviderId);
+    return filtered.sort((a, b) => {
+      const lastNameA = (a.patient?.lastName ?? "").toLowerCase();
+      const lastNameB = (b.patient?.lastName ?? "").toLowerCase();
+      if (lastNameA !== lastNameB) return lastNameA.localeCompare(lastNameB);
+      const firstNameA = (a.patient?.firstName ?? "").toLowerCase();
+      const firstNameB = (b.patient?.firstName ?? "").toLowerCase();
+      return firstNameA.localeCompare(firstNameB);
+    });
+  }, [safeVisits, selectedProviderId]);
 
   // Keyboard navigation for visit list
   React.useEffect(() => {
@@ -80,13 +95,21 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
   };
 
   // Auto-select first visit when provider changes or on initial load
+  // Only auto-select if we have visits AND a valid provider selected
+  // This prevents auto-selection during facility/date changes when data is being cleared
   React.useEffect(() => {
-    if (filteredVisits.length > 0 && !props.visitId && filteredVisits[0]) {
+    if (
+      filteredVisits.length > 0 &&
+      !props.visitId &&
+      filteredVisits[0] &&
+      selectedProviderId !== null
+    ) {
       props.onVisitIdChange?.(filteredVisits[0].id);
     }
-  }, [filteredVisits, props]);
+  }, [filteredVisits, props, selectedProviderId]);
 
   // Sync selectedProviderId with providers when visits change
+  // Only update local state, don't call parent callback to avoid navigation loops
   React.useEffect(() => {
     if (
       safeProviders.length > 0 &&
@@ -94,9 +117,9 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
         !safeProviders.some((p) => p.id === selectedProviderId))
     ) {
       setSelectedProvider(safeProviders[0]?.id ?? null);
-      props.onProviderChange?.(safeProviders[0]?.id ?? null);
+      // Don't call props.onProviderChange here - it causes navigation loops
     }
-  }, [safeProviders, props, selectedProviderId]);
+  }, [safeProviders, selectedProviderId]);
 
   // Calculate min and max date for input
   const today = new Date();
@@ -107,8 +130,14 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
 
   return (
     <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full relative">
-      {/* Date and Provider Selection */}
+      {/* Facility, Date, and Provider Selection */}
       <div className="px-4 py-4 border-b border-gray-200 space-y-3">
+        {/* Facility Dropdown */}
+        <FacilityDropdown
+          facilities={safeFacilities}
+          selectedFacilityId={props.selectedFacilityId}
+          onFacilityChange={props.onFacilityChange}
+        />
         <div className="space-y-2">
           <label
             htmlFor="date-input"
@@ -179,6 +208,8 @@ function ProviderDropdown({
   providers,
   onProviderChange,
 }: ProviderDropdownProps) {
+  const isDisabled = !date || providers.length === 0;
+
   return (
     <div className="space-y-2">
       <label
@@ -193,16 +224,60 @@ function ProviderDropdown({
         onChange={(e) =>
           onProviderChange(e.target.value === "" ? null : Number(e.target.value))
         }
-        disabled={!date}
+        disabled={isDisabled}
         className={cn(
           "w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white",
-          !date && "bg-gray-100 cursor-not-allowed"
+          isDisabled && "bg-gray-100 cursor-not-allowed"
         )}
       >
-        <option value="">Select a provider...</option>
-        {providers.map((provider) => (
-          <option key={provider.id} value={provider.id}>
-            {getProviderDisplayName(provider)}
+        {providers.length === 0 ? (
+          <option value="">No providers</option>
+        ) : (
+          providers.map((provider) => (
+            <option key={provider.id} value={provider.id}>
+              {getProviderDisplayName(provider)}
+            </option>
+          ))
+        )}
+      </select>
+    </div>
+  );
+}
+
+interface FacilityDropdownProps {
+  facilities: Facilities.FacilityDto[];
+  selectedFacilityId: number | null;
+  onFacilityChange: ((facilityId: number | null) => void) | undefined;
+}
+
+function FacilityDropdown({
+  facilities,
+  selectedFacilityId,
+  onFacilityChange,
+}: FacilityDropdownProps) {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newValue = e.target.value === "" ? null : Number(e.target.value);
+    console.log("FacilityDropdown onChange:", newValue, "onFacilityChange:", !!onFacilityChange);
+    onFacilityChange?.(newValue);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label
+        htmlFor="facility-select"
+        className="text-xs font-medium text-gray-700 uppercase tracking-wide"
+      >
+        Facility
+      </label>
+      <select
+        id="facility-select"
+        value={selectedFacilityId ?? ""}
+        onChange={handleChange}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+      >
+        {facilities.map((facility) => (
+          <option key={facility.id} value={facility.id}>
+            {facility.name}
           </option>
         ))}
       </select>
@@ -217,6 +292,8 @@ interface VisitListItemProps {
 }
 
 function VisitListItem({ visit, isSelected, onSelect }: VisitListItemProps) {
+  const roomBed = [visit.room, visit.bed].filter(Boolean).join(" / ");
+
   return (
     <button
       onClick={onSelect}
@@ -226,7 +303,7 @@ function VisitListItem({ visit, isSelected, onSelect }: VisitListItemProps) {
       )}
     >
       <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0 flex items-center">
+        <div className="flex-1 min-w-0">
           <p
             className={cn(
               "text-sm font-medium truncate",
@@ -235,15 +312,20 @@ function VisitListItem({ visit, isSelected, onSelect }: VisitListItemProps) {
           >
             {getPatientDisplayNameV2(visit)}
           </p>
+          {roomBed && (
+            <p className="text-xs text-gray-500 truncate">
+              {roomBed}
+            </p>
+          )}
         </div>
-        {/* Status pill */}
-        <div className="flex items-center">
+        {/* Status pill - temporarily hidden for debugging */}
+        {/* <div className="flex items-center ml-2">
           {visit.hospitalization?.hospitalizationStatusId && (
             <HospitalizationStatusPill
               statusId={visit.hospitalization.hospitalizationStatusId}
             />
           )}
-        </div>
+        </div> */}
       </div>
     </button>
   );

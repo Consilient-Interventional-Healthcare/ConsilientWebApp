@@ -24,11 +24,13 @@ export function getPatientDisplayNameV2(visit: GraphQL.DailyLogVisit): string {
 }
 
 /**
- * Gets display name for a provider
+ * Gets display name for a provider with type in parenthesis
  */
 export function getProviderDisplayName(provider: DailyLogProviderV2 | null): string {
   if (!provider) return "";
   const firstName = provider.firstName ?? "";
   const lastName = provider.lastName ?? "";
-  return `${lastName}, ${firstName}`.trim().replace(/^,\s*|,\s*$/g, "");
+  const name = `${lastName}, ${firstName}`.trim().replace(/^,\s*|,\s*$/g, "");
+  const type = provider.type ? ` (${provider.type})` : "";
+  return `${name}${type}`;
 }
