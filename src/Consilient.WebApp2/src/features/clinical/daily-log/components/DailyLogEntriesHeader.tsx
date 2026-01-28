@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { SegmentedControl } from '@/shared/components/ui/segmented-control';
 import { StatusComboBox } from '@/shared/components/ui/status-combobox';
 import { dataProvider } from '@/data/DataProvider';
-import type { DailyLogVisit } from "../dailylog.types";
-import type { Hospitalizations, VisitEvents } from '@/types/api.generated';
+import type { GraphQL, Hospitalizations } from '@/types/api.generated';
+import { useVisitEventTypes } from '@/shared/stores/VisitEventTypeStore';
+
 interface DailyLogEntriesHeaderProps {
-  visit: DailyLogVisit | null;
+  visit: GraphQL.DailyLogVisit | null;
   typeFilter?: string;
   onTypeFilterChange?: ((value: string) => void) | undefined;
 }
@@ -16,8 +17,12 @@ export function DailyLogEntriesHeader({
   typeFilter = "all",
   onTypeFilterChange,
 }: DailyLogEntriesHeaderProps) {
-  const [statusId, setStatusId] = useState<number | undefined>(visit?.hospitalizationStatusId);
+  const [statusId, setStatusId] = useState<number | undefined>(visit?.hospitalization?.hospitalizationStatusId);
+  const { data: eventTypes = [] } = useVisitEventTypes();
+
+  // All hooks must be called before any early returns
   if (!visit) return null;
+
   const [selectedStatus = null] = dataProvider.query<Hospitalizations.HospitalizationStatusDto>(
     "SELECT * FROM hospitalizationStatuses WHERE id = ?",
     [statusId]
@@ -25,8 +30,12 @@ export function DailyLogEntriesHeader({
 
   const options = [
     { label: "All", value: "all" },
-    ...dataProvider.getTable<VisitEvents.VisitEventTypeDto>('visitEventTypes')
-      .map(t => ({ label: t.name ?? '', value: t.code ?? '' }))
+    ...eventTypes.map(t => ({
+      label: t.name,
+      value: t.code,
+      icon: t.iconName,
+      color: t.color
+    }))
   ];
   
   return (
@@ -39,7 +48,7 @@ export function DailyLogEntriesHeader({
           {/* Left: Patient Name */}
           <div className="flex items-center gap-x-2 min-w-0">
             <h2 className="text-lg font-semibold text-gray-900 truncate">
-              {visit.patientFirstName} {visit.patientLastName}
+              {visit.patient?.firstName} {visit.patient?.lastName}
             </h2>
           </div>
           {/* Center: Segmented Control */}

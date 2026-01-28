@@ -51,12 +51,40 @@ enum SortDirectionEnum {
 type Query {
 	"""Daily log visits with deduplicated providers for a specific date and facility"""
 	dailyLogVisits(dateServiced: String!, facilityId: Int!): dailyLogVisitsResult
+	"""Get log entries for a specific visit with event, user, and event type information"""
+	getLogEntriesByVisitIdV2(visitId: Int!): [dailyLogLogEntryV2!]
 	"""List of patients"""
 	patients(filter: String, sort: [QueryPatientsSortInput!]): [patient!]
 	"""Provider assignment batch with metadata and items"""
 	providerAssignmentBatch(batchId: ID!): providerAssignmentBatch
 	"""List of visits for a specific date and facility"""
 	visits(dateServiced: String!, facilityId: Int!, sort: [QueryVisitsSortInput!]): [visit!]
+}
+
+"""Event information for log entry"""
+type dailyLogEvent {
+	"""Description"""
+	description: String
+	"""EnteredByUserId"""
+	enteredByUserId: Int!
+	"""EventOccurredAt"""
+	eventOccurredAt: String
+	"""EventTypeId"""
+	eventTypeId: Int!
+	"""Id"""
+	id: Int!
+	"""VisitId"""
+	visitId: Int!
+}
+
+"""Event type information for log entry"""
+type dailyLogEventType {
+	"""Code"""
+	code: String
+	"""Id"""
+	id: Int!
+	"""Name"""
+	name: String
 }
 
 """Hospitalization information for daily log"""
@@ -71,6 +99,16 @@ type dailyLogHospitalization {
 	id: Int!
 }
 
+"""Log entry with event, user, and event type information"""
+type dailyLogLogEntryV2 {
+	"""Event"""
+	event: dailyLogEvent
+	"""EventType"""
+	eventType: dailyLogEventType
+	"""User"""
+	user: dailyLogUser
+}
+
 """Provider information for daily log"""
 type dailyLogProvider {
 	"""FirstName"""
@@ -81,6 +119,16 @@ type dailyLogProvider {
 	lastName: String
 	"""Type"""
 	type: ProviderType!
+}
+
+"""User information for log entry"""
+type dailyLogUser {
+	"""FirstName"""
+	firstName: String
+	"""LastName"""
+	lastName: String
+	"""Role"""
+	role: String
 }
 
 """Visit information for daily log"""

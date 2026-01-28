@@ -16,10 +16,12 @@ public static partial class GraphQlSchemaConfigurator
         ArgumentNullException.ThrowIfNull(schema, nameof(schema));
         AddTypes(schema);
         AddDailyLogTypes(schema);
+        AddLogEntryTypes(schema);
 
         var query = schema.Query();
         AddToQuery(query);
         AddDailyLogQuery(query);
+        AddLogEntryQuery(query);
     }
 
     private static void AddTypes(SchemaProvider<ConsilientDbContext> schema)

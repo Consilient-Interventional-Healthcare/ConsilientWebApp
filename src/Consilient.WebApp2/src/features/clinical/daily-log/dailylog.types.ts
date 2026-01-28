@@ -1,4 +1,5 @@
 import type { VisitEvents, GraphQL } from "@/types/api.generated";
+import type { EnrichedVisitEventType } from "@/shared/config/visitEventTypeConfig";
 
 export interface DailyLogVisit {
   id: number;
@@ -33,22 +34,6 @@ export interface StatusChangeEvent {
   iconName: string;
 }
 
-
-export interface IDailyLogService {
-  getVisitsByDate(_date: string): Promise<DailyLogVisit[]>;
-  getLogEntriesByVisitId(_visitId: number): Promise<DailyLogLogEntry[]>;
-  insertLogEntry(_visitId: number, _content: string, _userId: number, _eventTypeId: number): Promise<DailyLogLogEntry>;
-  getPatientTimelineData(_hospitalizationId: number): Promise<StatusChangeEvent[]>;
-}
-
-export interface ILogEntryTypeProvider {
-  getLogEntryType(): string;
-}
-export interface DailyLogLogEntry extends VisitEvents.VisitEventDto {
-  userFirstName: string;
-  userLastName: string;
-  userRole: string;
-}
 
 // ============================================================================
 // V2 Types - Using api.generated.ts types
@@ -94,5 +79,5 @@ export interface DailyLogLogEntryV2 {
     lastName: string;
     role: string;
   };
-  eventType: VisitEvents.VisitEventTypeDto | null;
+  eventType: EnrichedVisitEventType | null;
 }

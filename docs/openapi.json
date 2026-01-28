@@ -3795,14 +3795,6 @@
           },
           "name": {
             "type": "string"
-          },
-          "iconName": {
-            "type": "string",
-            "nullable": true
-          },
-          "color": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false

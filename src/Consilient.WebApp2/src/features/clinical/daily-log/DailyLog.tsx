@@ -1,5 +1,5 @@
 import { useNavigate, useLoaderData } from "react-router-dom";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useMemo } from "react";
 import { DailyLogVisitFiltersV2 } from "./components/DailyLogVisitFiltersV2";
 import { getDailyLogService } from "./services/DailyLogServiceFactory";
 import LoadingBarContext from "@/shared/layouts/LoadingBarContext";
@@ -135,8 +135,11 @@ export default function DailyLog() {
     void navigate(url, { replace: true });
   };
 
-  // Legacy visit - null until Stage 2/3 components are refactored to use V2 data
-  const visit = null;
+  // Find the selected visit from V2 data
+  const selectedVisit = useMemo(() => {
+    if (!selectedVisitId) return null;
+    return dailyLogData?.result.visits?.find(v => v.id === selectedVisitId) ?? null;
+  }, [selectedVisitId, dailyLogData]);
 
   return (
     <div className="flex h-full bg-gray-50 overflow-hidden">
@@ -160,11 +163,12 @@ export default function DailyLog() {
             <div className="flex flex-row h-full">
               {/* Main log entries panel */}
               <div className="w-3/5 flex flex-col h-full overflow-hidden">
-                <DailyLogEntriesPanel visit={visit} />
+                <DailyLogEntriesPanel visit={selectedVisit} />
               </div>
               {/* Fixed right panel */}
               <aside className="w-2/5 border-l border-gray-200 flex-shrink-0 flex flex-col items-center">
-                <DailyLogPatientDetails visit={visit} />
+                {/* Stage 3 - pass null until refactored to use V2 types */}
+                <DailyLogPatientDetails visit={null} />
               </aside>
             </div>
           </>

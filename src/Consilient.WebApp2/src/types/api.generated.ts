@@ -324,8 +324,6 @@ export namespace VisitEvents {
       id: number;
       code: string;
       name: string;
-      iconName?: string | null;
-      color?: string | null;
   }
 
 }
@@ -398,6 +396,7 @@ export namespace GraphQL {
 
   export type Query = {
     dailyLogVisits?: Maybe<DailyLogVisitsResult>;
+    getLogEntriesByVisitIdV2?: Maybe<Array<DailyLogLogEntryV2>>;
     patients?: Maybe<Array<Patient>>;
     providerAssignmentBatch?: Maybe<ProviderAssignmentBatch>;
     visits?: Maybe<Array<Visit>>;
@@ -407,6 +406,11 @@ export namespace GraphQL {
   export type QueryDailyLogVisitsArgs = {
     dateServiced: Scalars['String']['input'];
     facilityId: Scalars['Int']['input'];
+  };
+
+
+  export type QueryGetLogEntriesByVisitIdV2Args = {
+    visitId: Scalars['Int']['input'];
   };
 
 
@@ -453,6 +457,21 @@ export namespace GraphQL {
     Desc = 'DESC'
   }
 
+  export type DailyLogEvent = {
+    description?: Maybe<Scalars['String']['output']>;
+    enteredByUserId: Scalars['Int']['output'];
+    eventOccurredAt?: Maybe<Scalars['String']['output']>;
+    eventTypeId: Scalars['Int']['output'];
+    id: Scalars['Int']['output'];
+    visitId: Scalars['Int']['output'];
+  };
+
+  export type DailyLogEventType = {
+    code?: Maybe<Scalars['String']['output']>;
+    id: Scalars['Int']['output'];
+    name?: Maybe<Scalars['String']['output']>;
+  };
+
   export type DailyLogHospitalization = {
     admissionDate?: Maybe<Scalars['Date']['output']>;
     caseId: Scalars['Int']['output'];
@@ -460,11 +479,23 @@ export namespace GraphQL {
     id: Scalars['Int']['output'];
   };
 
+  export type DailyLogLogEntryV2 = {
+    event?: Maybe<DailyLogEvent>;
+    eventType?: Maybe<DailyLogEventType>;
+    user?: Maybe<DailyLogUser>;
+  };
+
   export type DailyLogProvider = {
     firstName?: Maybe<Scalars['String']['output']>;
     id: Scalars['Int']['output'];
     lastName?: Maybe<Scalars['String']['output']>;
     type: ProviderType;
+  };
+
+  export type DailyLogUser = {
+    firstName?: Maybe<Scalars['String']['output']>;
+    lastName?: Maybe<Scalars['String']['output']>;
+    role?: Maybe<Scalars['String']['output']>;
   };
 
   export type DailyLogVisit = {

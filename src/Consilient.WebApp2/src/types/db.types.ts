@@ -7,5 +7,4 @@ export interface DbSchema {
   providers: api.GraphQL.Provider[];
   visitEvents: api.VisitEvents.VisitEventDto[];
   hospitalizationStatuses: api.Hospitalizations.HospitalizationStatusDto[];
-  visitEventTypes: api.VisitEvents.VisitEventTypeDto[];
 }

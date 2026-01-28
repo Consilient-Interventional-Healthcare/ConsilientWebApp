@@ -55,7 +55,7 @@ internal class VisitEventService(ConsilientDbContext dataContext) : IVisitEventS
         {
             VisitId = request.VisitId,
             EventTypeId = request.EventTypeId,
-            EventOccurredAt = request.EventOccurredAt,
+            EventOccurredAt = DateTime.UtcNow,
             Description = request.Description,
             EnteredByUserId = userId
         };

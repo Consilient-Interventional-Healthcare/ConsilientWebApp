@@ -262,11 +262,6 @@
       "eventTypeId": 2
     }
   ],
-  "visitEventTypes": [
-    { "id": 1, "label": "Interval", "value": "interval", "icon": "fa-bed", "color": "#1976d2" },
-    { "id": 2, "label": "Interview", "value": "interview", "icon": "fa-user-md", "color": "#43a047" },
-    { "id": 3, "label": "Plan", "value": "plan", "icon": "fa-notes-medical", "color": "#fbc02d" }
-  ],
   "statusChanges": [
     {
       "hospitalizationId": 1,
