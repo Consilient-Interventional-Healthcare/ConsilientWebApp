@@ -106,6 +106,7 @@ jobs:
               - 'src/Consilient.Common.*/**'
               - 'src/Consilient.Constants/**'
               - 'src/Consilient.Data/**'
+              - 'src/Consilient.Data.GraphQL/**'
               - 'src/Consilient.Infrastructure.*/**'
               - 'src/Consilient.Shared.*/**'
               - 'src/Consilient.*.Services/**'
