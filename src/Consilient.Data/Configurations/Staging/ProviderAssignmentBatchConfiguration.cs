@@ -41,5 +41,12 @@ internal class ProviderAssignmentBatchConfiguration : BaseEntityTypeConfiguratio
 
         entity.HasIndex(e => e.CreatedByUserId)
             .HasDatabaseName("IX_ProviderAssignmentBatches_CreatedByUserId");
+
+        // FK to ProviderAssignmentBatchStatuses lookup table (uses enum property as FK)
+        entity.HasOne(p => p.StatusNavigation)
+            .WithMany()
+            .HasForeignKey(p => p.Status)
+            .HasConstraintName("FK_ProviderAssignmentBatches_ProviderAssignmentBatchStatuses_Status")
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

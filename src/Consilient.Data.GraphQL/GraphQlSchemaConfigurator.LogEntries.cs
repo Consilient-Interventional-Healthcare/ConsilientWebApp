@@ -63,7 +63,7 @@ public static partial class GraphQlSchemaConfigurator
             .ToList();
 
         var userIds = visitEvents.Select(ve => ve.EnteredByUserId).Distinct().ToList();
-        var eventTypeIds = visitEvents.Select(ve => ve.EventTypeId).Distinct().ToList();
+        var eventTypeIds = visitEvents.Select(ve => (int)ve.EventType).Distinct().ToList();
 
         // Load employees for the users
         var employees = ctx.Employees
@@ -85,7 +85,7 @@ public static partial class GraphQlSchemaConfigurator
                 Description = ve.Description,
                 EnteredByUserId = ve.EnteredByUserId,
                 EventOccurredAt = ve.EventOccurredAt.ToString("O"),
-                EventTypeId = ve.EventTypeId,
+                EventTypeId = (int)ve.EventType,
                 VisitId = ve.VisitId
             },
             User = employees.TryGetValue(ve.EnteredByUserId, out var employee)
@@ -96,7 +96,7 @@ public static partial class GraphQlSchemaConfigurator
                     Role = employee.Role.ToString()
                 }
                 : new DailyLogUser(),
-            EventType = eventTypes.TryGetValue(ve.EventTypeId, out var eventType)
+            EventType = eventTypes.TryGetValue((int)ve.EventType, out var eventType)
                 ? new DailyLogEventType
                 {
                     Id = eventType.Id,

@@ -209,6 +209,8 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
               visit={visit}
               isSelected={props.visitId === visit.id}
               onSelect={() => props.onVisitIdChange?.(visit.id)}
+              selectedProviderId={selectedProviderId}
+              providers={safeProviders}
             />
           ))
         )}
@@ -310,11 +312,25 @@ interface VisitListItemProps {
   visit: GraphQL.DailyLogVisit;
   isSelected: boolean;
   onSelect: () => void;
+  selectedProviderId: number | null;
+  providers: GraphQL.DailyLogProvider[];
 }
 
 const VisitListItem = React.forwardRef<HTMLButtonElement, VisitListItemProps>(
-  function VisitListItem({ visit, isSelected, onSelect }, ref) {
+  function VisitListItem({ visit, isSelected, onSelect, selectedProviderId, providers }, ref) {
     const roomBed = [visit.room, visit.bed].filter(Boolean).join(" / ");
+
+    const otherProviders = React.useMemo(() => {
+      return (visit.providerIds ?? [])
+        .filter((id) => id !== selectedProviderId)
+        .map((id) => providers.find((p) => p.id === id))
+        .filter((p): p is GraphQL.DailyLogProvider => p != null)
+        .map((p) => {
+          const abbrev = p.type === "Physician" ? "MD" : p.type === "NursePractitioner" ? "NP" : "";
+          return abbrev ? `${p.lastName} (${abbrev})` : p.lastName;
+        })
+        .join(", ");
+    }, [visit.providerIds, selectedProviderId, providers]);
 
     return (
       <button
@@ -339,6 +355,9 @@ const VisitListItem = React.forwardRef<HTMLButtonElement, VisitListItemProps>(
               <p className="text-xs text-gray-500 truncate">
                 {roomBed}
               </p>
+            )}
+            {otherProviders && (
+              <p className="text-xs text-gray-500 truncate">{otherProviders}</p>
             )}
           </div>
           <div className="flex items-center ml-2">

@@ -12,6 +12,8 @@ public class Provider : BaseEntity<int>
 
     public ProviderType Type { get; set; }
 
+    public virtual ProviderTypeEntity? ProviderTypeNavigation { get; set; }
+
     public string Email { get; set; } = string.Empty;
 
     public int? EmployeeId { get; set; }

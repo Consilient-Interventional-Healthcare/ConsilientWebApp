@@ -1,3 +1,4 @@
+using Consilient.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,7 +16,7 @@ namespace Consilient.Data.Mappings
             entity.Property(e => e.FacilityId).HasColumnName("FacilityID");
             entity.Property(e => e.PayAmount).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.PayUnit).HasMaxLength(100);
-            entity.Property(e => e.ServiceTypeId).HasColumnName("ServiceTypeID");
+            entity.Property(e => e.Type).HasColumnName("ServiceTypeID");
 
             entity.HasOne(d => d.Employee).WithMany()
                 .HasForeignKey(d => d.EmployeeId)
@@ -27,8 +28,9 @@ namespace Consilient.Data.Mappings
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ProviderPay_Facility");
 
-            entity.HasOne(d => d.ServiceType).WithMany()
-                .HasForeignKey(d => d.ServiceTypeId)
+            // FK to ServiceTypes lookup table (uses enum property as FK)
+            entity.HasOne(d => d.ServiceTypeNavigation).WithMany()
+                .HasForeignKey(d => d.Type)
                 .HasConstraintName("FK_ProviderPay_ServiceType");
         }
     }

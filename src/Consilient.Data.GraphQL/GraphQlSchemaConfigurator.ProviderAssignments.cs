@@ -49,7 +49,7 @@ public static partial class GraphQlSchemaConfigurator
         paType.AddField(m => m.ResolvedNursePractitionerId, nameof(ProviderAssignment.ResolvedNursePractitionerId));
         paType.AddField(m => m.ResolvedHospitalizationId, nameof(ProviderAssignment.ResolvedHospitalizationId));
         paType.AddField(m => m.ResolvedVisitId, nameof(ProviderAssignment.ResolvedVisitId));
-        paType.AddField(m => m.ResolvedHospitalizationStatusId, nameof(ProviderAssignment.ResolvedHospitalizationStatusId));
+        paType.AddField("resolvedHospitalizationStatusId", m => (int?)m.ResolvedHospitalizationStatus, nameof(ProviderAssignment.ResolvedHospitalizationStatus));
 
         // IsNew flags
         paType.AddField(m => m.PatientWasCreated, nameof(ProviderAssignment.PatientWasCreated));
@@ -101,9 +101,9 @@ public static partial class GraphQlSchemaConfigurator
 
         paType.AddField("hospitalizationStatus", pa => new ProviderAssignmentHospitalizationStatus
         {
-            Name = pa.ResolvedHospitalizationStatus != null ? pa.ResolvedHospitalizationStatus.Name : null,
-            Code = pa.ResolvedHospitalizationStatus != null ? pa.ResolvedHospitalizationStatus.Code : null,
-            Color = pa.ResolvedHospitalizationStatus != null ? pa.ResolvedHospitalizationStatus.Color : null,
+            Name = pa.ResolvedHospitalizationStatusNavigation != null ? pa.ResolvedHospitalizationStatusNavigation.Name : null,
+            Code = pa.ResolvedHospitalizationStatusNavigation != null ? pa.ResolvedHospitalizationStatusNavigation.Code : null,
+            Color = null,
         }, "HospitalizationStatus data - from HospitalizationStatus table if resolved, otherwise null");
 
         // Register the batch type

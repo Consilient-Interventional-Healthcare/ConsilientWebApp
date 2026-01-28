@@ -32,6 +32,10 @@ internal class HospitalizationConfiguration : BaseEntityTypeConfigurationWithId<
                .IsRequired(false)
                .HasColumnType("datetime2");
 
+        entity.Property(e => e.Status)
+            .IsRequired()
+            .HasColumnName("HospitalizationStatusId");
+
         entity.HasOne(e => e.Patient)
                .WithMany()
                .HasForeignKey(e => e.PatientId)
@@ -46,11 +50,21 @@ internal class HospitalizationConfiguration : BaseEntityTypeConfigurationWithId<
                .OnDelete(DeleteBehavior.Restrict)
                .HasConstraintName("FK_Hospitalizations_Facilities_FacilityId");
 
+        // FK to HospitalizationStatuses lookup table (uses enum property as FK)
+        entity.HasOne(e => e.HospitalizationStatusNavigation)
+               .WithMany()
+               .HasForeignKey(e => e.Status)
+               .IsRequired()
+               .OnDelete(DeleteBehavior.Restrict)
+               .HasConstraintName("FK_Hospitalizations_HospitalizationStatuses_HospitalizationStatusId");
+
         entity.HasIndex(e => e.PatientId)
                .HasDatabaseName("IX_Hospitalizations_PatientId");
 
         entity.HasIndex(e => e.FacilityId)
                .HasDatabaseName("IX_Hospitalizations_FacilityId");
 
+        entity.HasIndex(e => e.Status)
+               .HasDatabaseName("IX_Hospitalizations_HospitalizationStatusId");
     }
 }

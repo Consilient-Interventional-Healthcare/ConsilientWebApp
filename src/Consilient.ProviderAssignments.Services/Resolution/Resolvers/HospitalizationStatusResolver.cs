@@ -1,3 +1,4 @@
+using Consilient.Common;
 using Consilient.Data;
 using Consilient.Data.Entities.Clinical;
 using Consilient.ProviderAssignments.Contracts.Resolution;
@@ -12,20 +13,20 @@ namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers;
 /// Sets status to 1 when PsychEval is null or empty.
 /// </summary>
 internal class HospitalizationStatusResolver(IResolutionCache cache, ConsilientDbContext dbContext, ILogger<HospitalizationStatusResolver> logger)
-    : BaseResolver<HospitalizationStatus, HospitalizationStatusResolver>(cache, dbContext, logger), IHospitalizationStatusResolver
+    : BaseResolver<HospitalizationStatusEntity, HospitalizationStatusResolver>(cache, dbContext, logger), IHospitalizationStatusResolver
 {
-    protected override IReadOnlyCollection<HospitalizationStatus> LoadEntities(int facilityId, DateOnly date)
+    protected override IReadOnlyCollection<HospitalizationStatusEntity> LoadEntities(int facilityId, DateOnly date)
     {
         // Load all hospitalization statuses - they're reference data and should be cached
         return DbContext.HospitalizationStatuses.AsNoTracking().ToList();
     }
 
-    protected override Task<IEnumerable<HospitalizationStatus>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<HospitalizationStatus> cachedItems)
+    protected override Task<IEnumerable<HospitalizationStatusEntity>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<HospitalizationStatusEntity> cachedItems)
     {
-        IEnumerable<HospitalizationStatus>? statuses = null;
+        IEnumerable<HospitalizationStatusEntity>? statuses = null;
 
         // If PsychEval is null or empty, resolve to status ID 1
-        if (!ctx.Row.ResolvedHospitalizationStatusId.HasValue && string.IsNullOrWhiteSpace(ctx.Row.PsychEval))
+        if (!ctx.Row.ResolvedHospitalizationStatus.HasValue && string.IsNullOrWhiteSpace(ctx.Row.PsychEval))
         {
             statuses = cachedItems.Where(s => s.Id == 1).ToList();
         }
@@ -33,8 +34,8 @@ internal class HospitalizationStatusResolver(IResolutionCache cache, ConsilientD
         return Task.FromResult(statuses);
     }
 
-    protected override void SetResolvedId(RowValidationContext ctx, HospitalizationStatus entity)
+    protected override void SetResolvedId(RowValidationContext ctx, HospitalizationStatusEntity entity)
     {
-        ctx.Row.ResolvedHospitalizationStatusId = entity.Id;
+        ctx.Row.ResolvedHospitalizationStatus = (HospitalizationStatus)entity.Id;
     }
 }

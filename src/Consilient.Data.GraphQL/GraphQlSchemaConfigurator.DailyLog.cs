@@ -102,7 +102,7 @@ public static partial class GraphQlSchemaConfigurator
             Hospitalization = new DailyLogHospitalization
             {
                 Id = v.Hospitalization.Id,
-                HospitalizationStatusId = v.Hospitalization.HospitalizationStatusId,
+                HospitalizationStatusId = (int)v.Hospitalization.Status,
                 AdmissionDate = v.Hospitalization.AdmissionDate,
                 CaseId = v.Hospitalization.CaseId
             },

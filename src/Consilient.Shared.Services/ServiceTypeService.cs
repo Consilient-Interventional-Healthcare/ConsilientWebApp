@@ -14,7 +14,7 @@ public class ServiceTypeService(ConsilientDbContext dataContext) : IServiceTypeS
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var entity = request.Adapt<ServiceType>();
+        var entity = request.Adapt<ServiceTypeEntity>();
         try
         {
             await dataContext.ServiceTypes.AddAsync(entity);
@@ -84,7 +84,7 @@ public class ServiceTypeService(ConsilientDbContext dataContext) : IServiceTypeS
             var affected = await dataContext.ServiceTypes
                 .Where(st => st.Id == id)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(st => st.Description, st => request.Description ?? st.Description)
+                    .SetProperty(st => st.Name, st => request.Description ?? st.Name)
                 );
 
             if (affected == 0)

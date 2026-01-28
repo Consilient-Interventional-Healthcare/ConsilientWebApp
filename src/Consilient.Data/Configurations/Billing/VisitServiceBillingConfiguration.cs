@@ -12,7 +12,9 @@ internal class VisitServiceBillingConfiguration : BaseEntityTypeConfigurationWit
 
         entity.ToTable("VisitServiceBillings", ConsilientDbContext.Schemas.Billing);
 
-        entity.HasAlternateKey(e => new { e.VisitId, e.ServiceTypeId, e.BillingCodeId })
+        entity.Property(e => e.Type).HasColumnName("ServiceTypeId");
+
+        entity.HasAlternateKey(e => new { e.VisitId, e.Type, e.BillingCodeId })
             .HasName("AK_VisitServiceBillings_VisitId_ServiceTypeId_BillingCodeId");
 
         entity.HasOne(e => e.Visit)
@@ -22,9 +24,10 @@ internal class VisitServiceBillingConfiguration : BaseEntityTypeConfigurationWit
             .OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("FK_VisitServiceBillings_Visits_VisitId");
 
-        entity.HasOne(e => e.ServiceType)
+        // FK to ServiceTypes lookup table (uses enum property as FK)
+        entity.HasOne(e => e.ServiceTypeNavigation)
             .WithMany()
-            .HasForeignKey(e => e.ServiceTypeId)
+            .HasForeignKey(e => e.Type)
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("FK_VisitServiceBillings_ServiceTypes_ServiceTypeId");
@@ -37,7 +40,7 @@ internal class VisitServiceBillingConfiguration : BaseEntityTypeConfigurationWit
             .HasConstraintName("FK_VisitServiceBillings_BillingCodes_BillingCodeId");
 
         entity.HasIndex(e => e.VisitId).HasDatabaseName("IX_VisitServiceBillings_VisitId");
-        entity.HasIndex(e => e.ServiceTypeId).HasDatabaseName("IX_VisitServiceBillings_ServiceTypeId");
+        entity.HasIndex(e => e.Type).HasDatabaseName("IX_VisitServiceBillings_ServiceTypeId");
         entity.HasIndex(e => e.BillingCodeId).HasDatabaseName("IX_VisitServiceBillings_BillingCodeId");
     }
 }

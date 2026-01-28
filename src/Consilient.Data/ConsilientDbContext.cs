@@ -1,4 +1,4 @@
-﻿using Consilient.Data.Entities;
+using Consilient.Data.Entities;
 using Consilient.Data.Entities.Billing;
 using Consilient.Data.Entities.Clinical;
 using Consilient.Data.Entities.Compensation;
@@ -24,24 +24,29 @@ public class ConsilientDbContext : DbContext
 
     public virtual DbSet<Hospitalization> Hospitalizations { get; set; } = null!;
 
-    public virtual DbSet<HospitalizationStatus> HospitalizationStatuses { get; set; } = null!;
+    public virtual DbSet<HospitalizationStatusEntity> HospitalizationStatuses { get; set; } = null!;
 
     public virtual DbSet<Insurance> Insurances { get; set; } = null!;
 
     public virtual DbSet<Patient> Patients { get; set; } = null!;
 
     public virtual DbSet<PatientFacility> PatientFacilities { get; set; } = null!;
+
     public virtual DbSet<Provider> Providers { get; set; } = null!;
 
-    public virtual DbSet<ServiceType> ServiceTypes { get; set; } = null!;
+    public virtual DbSet<ProviderTypeEntity> ProviderTypes { get; set; } = null!;
+
+    public virtual DbSet<ServiceTypeEntity> ServiceTypes { get; set; } = null!;
 
     public virtual DbSet<ProviderAssignment> StagingProviderAssignments { get; set; } = null!;
 
     public virtual DbSet<ProviderAssignmentBatch> StagingProviderAssignmentBatches { get; set; } = null!;
 
+    public virtual DbSet<ProviderAssignmentBatchStatusEntity> ProviderAssignmentBatchStatuses { get; set; } = null!;
+
     public virtual DbSet<VisitEvent> VisitEvents { get; set; } = null!;
 
-    public virtual DbSet<VisitEventType> VisitEventTypes { get; set; } = null!;
+    public virtual DbSet<VisitEventTypeEntity> VisitEventTypes { get; set; } = null!;
 
     public virtual DbSet<Visit> Visits { get; set; } = null!;
 

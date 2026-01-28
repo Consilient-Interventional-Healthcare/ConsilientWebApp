@@ -30,5 +30,12 @@ internal class ProviderConfiguration : BaseEntityTypeConfigurationWithId<Provide
               .IsUnique()
               .HasFilter("[EmployeeId] IS NOT NULL")
               .HasDatabaseName("IX_Providers_EmployeeId");
+
+        // FK to ProviderTypes lookup table (uses enum property as FK)
+        entity.HasOne(p => p.ProviderTypeNavigation)
+              .WithMany()
+              .HasForeignKey(p => p.Type)
+              .HasConstraintName("FK_Providers_ProviderTypes_Type")
+              .OnDelete(DeleteBehavior.Restrict);
     }
 }

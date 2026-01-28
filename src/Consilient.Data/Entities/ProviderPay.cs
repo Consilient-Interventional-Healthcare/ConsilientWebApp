@@ -1,4 +1,6 @@
-﻿namespace Consilient.Data.Entities
+using Consilient.Common;
+
+namespace Consilient.Data.Entities
 {
 
     public class ProviderPay
@@ -9,7 +11,9 @@
 
         public int FacilityId { get; set; }
 
-        public int? ServiceTypeId { get; set; }
+        public ServiceType? Type { get; set; }
+
+        public virtual ServiceTypeEntity? ServiceTypeNavigation { get; set; }
 
         public string Description { get; set; } = null!;
 
@@ -22,7 +26,5 @@
         public virtual Facility Facility { get; set; } = null!;
 
         //public virtual ICollection<PayrollDatum> PayrollData { get; set; } = [];
-
-        public virtual ServiceType? ServiceType { get; set; }
     }
 }

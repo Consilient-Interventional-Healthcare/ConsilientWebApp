@@ -1,3 +1,4 @@
+using Consilient.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,15 +15,16 @@ namespace Consilient.Data.Mappings
             entity.Property(e => e.FacilityPayId).HasColumnName("FacilityPayID");
             entity.Property(e => e.FacilityId).HasColumnName("FacilityID");
             entity.Property(e => e.RevenueAmount).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.ServiceTypeId).HasColumnName("ServiceTypeID");
+            entity.Property(e => e.Type).HasColumnName("ServiceTypeID");
 
             entity.HasOne(d => d.Facility).WithMany()
                 .HasForeignKey(d => d.FacilityId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_FacilityPay_Facility");
 
-            entity.HasOne(d => d.ServiceType).WithMany()
-                .HasForeignKey(d => d.ServiceTypeId)
+            // FK to ServiceTypes lookup table (uses enum property as FK)
+            entity.HasOne(d => d.ServiceTypeNavigation).WithMany()
+                .HasForeignKey(d => d.Type)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_FacilityPay_ServiceType");
         }

@@ -1,3 +1,4 @@
+using Consilient.Common;
 using Consilient.Common.Contracts;
 using Consilient.Data.Entities.Clinical;
 using Microsoft.EntityFrameworkCore;
@@ -39,19 +40,19 @@ public class HospitalizationStatusChangeInterceptor(ICurrentUserService currentU
 
         foreach (var entry in changedHospitalizations)
         {
-            var statusProperty = entry.Property(h => h.HospitalizationStatusId);
+            var statusProperty = entry.Property(h => h.Status);
 
             if (statusProperty.IsModified)
             {
-                var oldStatusId = (int)statusProperty.OriginalValue!;
-                var newStatusId = (int)statusProperty.CurrentValue!;
+                var oldStatus = (HospitalizationStatus)statusProperty.OriginalValue!;
+                var newStatus = (HospitalizationStatus)statusProperty.CurrentValue!;
 
-                if (oldStatusId != newStatusId)
+                if (oldStatus != newStatus)
                 {
                     var history = new HospitalizationStatusHistory
                     {
                         HospitalizationId = entry.Entity.Id,
-                        NewStatusId = newStatusId,
+                        NewStatus = newStatus,
                         ChangedAt = DateTime.UtcNow,
                         ChangedByUserId = currentUserId
                     };

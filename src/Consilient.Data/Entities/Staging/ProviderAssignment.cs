@@ -1,6 +1,6 @@
+using Consilient.Common;
 using Consilient.Data.Entities.Clinical;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json;
 
 namespace Consilient.Data.Entities.Staging;
 
@@ -40,7 +40,8 @@ public class ProviderAssignment : BaseEntity<int>
     public int? ResolvedPatientId { get; set; }
     public int? ResolvedNursePractitionerId { get; set; }
     public int? ResolvedVisitId { get; set; }
-    public int? ResolvedHospitalizationStatusId { get; set; }
+
+    public HospitalizationStatus? ResolvedHospitalizationStatus { get; set; }
 
     /* Navigation Properties */
     public virtual Patient? ResolvedPatient { get; set; }
@@ -48,7 +49,7 @@ public class ProviderAssignment : BaseEntity<int>
     public virtual Provider? ResolvedNursePractitioner { get; set; }
     public virtual Hospitalization? ResolvedHospitalization { get; set; }
     public virtual Visit? ResolvedVisit { get; set; }
-    public virtual HospitalizationStatus? ResolvedHospitalizationStatus { get; set; }
+    public virtual HospitalizationStatusEntity? ResolvedHospitalizationStatusNavigation { get; set; }
 
     /* Import Statuses */
     public bool ShouldImport { get; set; }

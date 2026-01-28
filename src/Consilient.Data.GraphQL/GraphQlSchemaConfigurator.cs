@@ -47,9 +47,9 @@ public static partial class GraphQlSchemaConfigurator
         insuranceType.AddField(m => m.Description, nameof(Insurance.Description));
         insuranceType.AddField(m => m.Id, nameof(Insurance.Id));
 
-        var serviceTypeType = schema.AddType<ServiceType>(ToGraphQlName(nameof(ServiceType)), $"{ToGraphQlName(nameof(ServiceType))} object");
-        serviceTypeType.AddField(m => m.Id, nameof(ServiceType.Id));
-        serviceTypeType.AddField(m => m.Description, nameof(ServiceType.Description));
+        var serviceTypeType = schema.AddType<ServiceTypeEntity>(ToGraphQlName(nameof(ServiceTypeEntity)), $"{ToGraphQlName(nameof(ServiceTypeEntity))} object");
+        serviceTypeType.AddField(m => m.Id, nameof(ServiceTypeEntity.Id));
+        serviceTypeType.AddField(m => m.Name, nameof(ServiceTypeEntity.Name));
 
         var providerType = schema.AddType<Provider>(ToGraphQlName(nameof(Provider)), $"{ToGraphQlName(nameof(Provider))} object");
         providerType.AddField(m => m.Id, nameof(Provider.Id));
@@ -60,12 +60,11 @@ public static partial class GraphQlSchemaConfigurator
         providerType.AddField(m => m.Email, nameof(Provider.Email));
         providerType.AddField(m => m.EmployeeId, nameof(Provider.EmployeeId));
 
-        var hospitalizationStatusType = schema.AddType<HospitalizationStatus>(ToGraphQlName(nameof(HospitalizationStatus)), $"{ToGraphQlName(nameof(HospitalizationStatus))} object");
-        hospitalizationStatusType.AddField(m => m.Id, nameof(HospitalizationStatus.Id));
-        hospitalizationStatusType.AddField(m => m.Code, nameof(HospitalizationStatus.Code));
-        hospitalizationStatusType.AddField(m => m.Name, nameof(HospitalizationStatus.Name));
-        hospitalizationStatusType.AddField(m => m.Color, nameof(HospitalizationStatus.Color));
-        hospitalizationStatusType.AddField(m => m.DisplayOrder, nameof(HospitalizationStatus.DisplayOrder));
+        var hospitalizationStatusType = schema.AddType<HospitalizationStatusEntity>(ToGraphQlName(nameof(HospitalizationStatusEntity)), $"{ToGraphQlName(nameof(HospitalizationStatusEntity))} object");
+        hospitalizationStatusType.AddField(m => m.Id, nameof(HospitalizationStatusEntity.Id));
+        hospitalizationStatusType.AddField(m => m.Code, nameof(HospitalizationStatusEntity.Code));
+        hospitalizationStatusType.AddField(m => m.Name, nameof(HospitalizationStatusEntity.Name));
+        hospitalizationStatusType.AddField(m => m.DisplayOrder, nameof(HospitalizationStatusEntity.DisplayOrder));
 
         var hospitalizationType = schema.AddType<Hospitalization>(ToGraphQlName(nameof(Hospitalization)), $"{ToGraphQlName(nameof(Hospitalization))} object");
         hospitalizationType.AddField(m => m.Id, nameof(Hospitalization.Id));
@@ -75,10 +74,10 @@ public static partial class GraphQlSchemaConfigurator
         hospitalizationType.AddField(m => m.PsychEvaluation, nameof(Hospitalization.PsychEvaluation));
         hospitalizationType.AddField(m => m.AdmissionDate, nameof(Hospitalization.AdmissionDate));
         hospitalizationType.AddField(m => m.DischargeDate, nameof(Hospitalization.DischargeDate));
-        hospitalizationType.AddField(m => m.HospitalizationStatusId, nameof(Hospitalization.HospitalizationStatusId));
+        hospitalizationType.AddField("hospitalizationStatusId", m => (int)m.Status, nameof(Hospitalization.Status));
         hospitalizationType.AddField(m => m.Patient, nameof(Hospitalization.Patient));
         hospitalizationType.AddField(m => m.Facility, nameof(Hospitalization.Facility));
-        hospitalizationType.AddField(m => m.HospitalizationStatus, nameof(Hospitalization.HospitalizationStatus));
+        hospitalizationType.AddField("hospitalizationStatus", m => m.HospitalizationStatusNavigation, "HospitalizationStatusNavigation");
     }
 
     private static void AddCoreQueries(SchemaType<ConsilientDbContext> query)

@@ -8,6 +8,8 @@ public class ProviderAssignmentBatch : BaseEntity<Guid>
 
         public ProviderAssignmentBatchStatus Status { get; set; }
 
+        public virtual ProviderAssignmentBatchStatusEntity? StatusNavigation { get; set; }
+
         public int CreatedByUserId { get; set; }
 
     public virtual ICollection<ProviderAssignment> ProviderAssignments { get; set; } = [];

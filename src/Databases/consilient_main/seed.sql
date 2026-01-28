@@ -45,46 +45,48 @@ GO
 SET IDENTITY_INSERT [Clinical].[Facilities] OFF;
 GO
 
-SET IDENTITY_INSERT [Clinical].[HospitalizationStatuses] ON;
-INSERT INTO [Clinical].[HospitalizationStatuses] ([Id], [Code], [Name], [BillingCode], [Color], [DisplayOrder])
+-- HospitalizationStatuses lookup table (matches HospitalizationStatus enum - no IDENTITY_INSERT needed)
+INSERT INTO [Clinical].[HospitalizationStatuses] ([Id], [Code], [Name], [DisplayOrder])
 VALUES
-(1, N'DTS', N'Acute', N'99233', N'#64ffda', 1),
-(2, N'DTO', N'Acute', N'99233', N'#64ffda', 2),
-(3, N'GD', N'Acute', N'99233', N'#64ffda', 3),
-(4, N'SND', N'Status Next Day', N'99232', N'#ffd180', 4),
-(5, N'DC', N'Discharge Summary', N'99239', N'#bbdefb', 5),
-(6, N'PP', N'Pending Placement', N'', N'#e0e0e0', 6),
-(7, N'TCON-PP', N'', N'', N'', 7),
-(8, N'PE', N'Psychiatric Evaluation', N'90792', N'#fff176', 8)
-
-SET IDENTITY_INSERT [Clinical].[HospitalizationStatuses] OFF;
-
-
-SET IDENTITY_INSERT [Clinical].[ServiceTypes] ON;
+(1, N'DTS', N'Acute', 1),
+(2, N'DTO', N'Acute', 2),
+(3, N'GD', N'Acute', 3),
+(4, N'SND', N'Status Next Day', 4),
+(5, N'PP', N'Pending Placement', 5),
+(6, N'TCON-PP', N'TCON-PP', 6);
 GO
 
-INSERT INTO [Clinical].[ServiceTypes] ([ID], [Description])
+-- ProviderTypes lookup table (matches ProviderType enum - no IDENTITY_INSERT needed)
+INSERT INTO [Clinical].[ProviderTypes] ([Id], [Code], [Name], [DisplayOrder])
 VALUES
-    (1, N'Psych Evaluation'),
-    (4, N'Progress Note'),
-    (5, N'Discharge Summary');
+(0, N'MD', N'Physician', 1),
+(1, N'NP', N'Nurse Practitioner', 2);
 GO
 
-SET IDENTITY_INSERT [Clinical].[ServiceTypes] OFF;
-GO
-
-
-SET IDENTITY_INSERT [Clinical].[VisitEventTypes] ON;
-GO
-
-INSERT INTO [Clinical].[VisitEventTypes] ([Id], [Code], [Name])
+-- ProviderAssignmentBatchStatuses lookup table (matches ProviderAssignmentBatchStatus enum - no IDENTITY_INSERT needed)
+INSERT INTO [staging].[ProviderAssignmentBatchStatuses] ([Id], [Code], [Name], [DisplayOrder])
 VALUES
-    (1, 'INTERVAL', 'Interval'),
-    (2, 'INTERVIEW', 'Interview'),
-    (3, 'PLAN', 'Plan');
+(0, N'Pending', N'Pending', 1),
+(1, N'Imported', N'Imported', 2),
+(2, N'Resolved', N'Resolved', 3),
+(3, N'Processed', N'Processed', 4);
 GO
 
-SET IDENTITY_INSERT [Clinical].[VisitEventTypes] OFF;
+-- ServiceTypes lookup table (matches ServiceType enum - no IDENTITY_INSERT needed)
+INSERT INTO [Clinical].[ServiceTypes] ([Id], [Code], [Name], [DisplayOrder])
+VALUES
+(1, N'PsychEvaluation', N'Psych Evaluation', 1),
+(2, N'ProgressNote', N'Progress Note', 2),
+(3, N'DischargeSummary', N'Discharge Summary', 3);
+GO
+
+
+-- VisitEventTypes lookup table (matches VisitEventType enum - no IDENTITY_INSERT needed)
+INSERT INTO [Clinical].[VisitEventTypes] ([Id], [Code], [Name], [DisplayOrder])
+VALUES
+(1, N'Interval', N'Interval', 1),
+(2, N'Interview', N'Interview', 2),
+(3, N'Plan', N'Plan', 3);
 GO
 
 INSERT INTO [Billing].[BillingCodes] ([Id], [Code], [Description])
@@ -1243,13 +1245,6 @@ VALUES
 GO
 
 SET IDENTITY_INSERT [Billing].[VisitServiceBillings] OFF;
-GO
-GO
-
-SET IDENTITY_INSERT [Clinical].[Visits] OFF;
-GO
-
-SET IDENTITY_INSERT [Clinical].[Visits] OFF;
 GO
 
 
