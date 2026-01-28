@@ -23,6 +23,10 @@ interface DailyLogVisitFiltersV2Props {
 }
 
 export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
+  // Refs for scroll-into-view behavior
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const visitItemRefs = React.useRef<Map<number, HTMLButtonElement>>(new Map());
+
   // Ensure visits and providers are always arrays
   const safeVisits = React.useMemo(
     () => (Array.isArray(props.visits) ? props.visits : []),
@@ -88,6 +92,29 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [filteredVisits, props]);
+
+  // Scroll selected visit into view if outside visible area
+  React.useEffect(() => {
+    if (!props.visitId) return;
+
+    // Use requestAnimationFrame to ensure refs are populated after render
+    const frameId = requestAnimationFrame(() => {
+      const visitElement = visitItemRefs.current.get(props.visitId!);
+      const container = scrollContainerRef.current;
+
+      if (visitElement && container) {
+        const containerRect = container.getBoundingClientRect();
+        const itemRect = visitElement.getBoundingClientRect();
+
+        // Only scroll if item is outside visible area
+        if (itemRect.top < containerRect.top || itemRect.bottom > containerRect.bottom) {
+          visitElement.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        }
+      }
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [props.visitId, filteredVisits]);
 
   const handleProviderChange = (newProviderId: number | null) => {
     setSelectedProvider(newProviderId);
@@ -170,7 +197,7 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
       </div>
 
       {/* Visit List */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
         {!selectedProviderId ? (
           <EmptyState type="no-provider" />
         ) : filteredVisits.length === 0 ? (
@@ -179,6 +206,10 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
           filteredVisits.map((visit) => (
             <VisitListItem
               key={visit.id}
+              ref={(el) => {
+                if (el) visitItemRefs.current.set(visit.id, el);
+                else visitItemRefs.current.delete(visit.id);
+              }}
               visit={visit}
               isSelected={props.visitId === visit.id}
               onSelect={() => props.onVisitIdChange?.(visit.id)}
@@ -291,45 +322,48 @@ interface VisitListItemProps {
   onSelect: () => void;
 }
 
-function VisitListItem({ visit, isSelected, onSelect }: VisitListItemProps) {
-  const roomBed = [visit.room, visit.bed].filter(Boolean).join(" / ");
+const VisitListItem = React.forwardRef<HTMLButtonElement, VisitListItemProps>(
+  function VisitListItem({ visit, isSelected, onSelect }, ref) {
+    const roomBed = [visit.room, visit.bed].filter(Boolean).join(" / ");
 
-  return (
-    <button
-      onClick={onSelect}
-      className={cn(
-        "w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-l-4 border-b border-gray-100",
-        isSelected ? "bg-blue-50 border-l-blue-600" : "border-l-transparent"
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <p
-            className={cn(
-              "text-sm font-medium truncate",
-              isSelected ? "text-blue-900" : "text-gray-900"
-            )}
-          >
-            {getPatientDisplayNameV2(visit)}
-          </p>
-          {roomBed && (
-            <p className="text-xs text-gray-500 truncate">
-              {roomBed}
+    return (
+      <button
+        ref={ref}
+        onClick={onSelect}
+        className={cn(
+          "w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-l-4 border-b border-gray-100",
+          isSelected ? "bg-blue-50 border-l-blue-600" : "border-l-transparent"
+        )}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <p
+              className={cn(
+                "text-sm font-medium truncate",
+                isSelected ? "text-blue-900" : "text-gray-900"
+              )}
+            >
+              {getPatientDisplayNameV2(visit)}
             </p>
-          )}
+            {roomBed && (
+              <p className="text-xs text-gray-500 truncate">
+                {roomBed}
+              </p>
+            )}
+          </div>
+          {/* Status pill - temporarily hidden for debugging */}
+          {/* <div className="flex items-center ml-2">
+            {visit.hospitalization?.hospitalizationStatusId && (
+              <HospitalizationStatusPill
+                statusId={visit.hospitalization.hospitalizationStatusId}
+              />
+            )}
+          </div> */}
         </div>
-        {/* Status pill - temporarily hidden for debugging */}
-        {/* <div className="flex items-center ml-2">
-          {visit.hospitalization?.hospitalizationStatusId && (
-            <HospitalizationStatusPill
-              statusId={visit.hospitalization.hospitalizationStatusId}
-            />
-          )}
-        </div> */}
-      </div>
-    </button>
-  );
-}
+      </button>
+    );
+  }
+);
 
 interface EmptyStateProps {
   type: "no-provider" | "no-visits";

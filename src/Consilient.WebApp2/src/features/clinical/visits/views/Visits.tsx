@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, type ChangeEvent } from 'react';
-import { useNavigate, useLoaderData } from 'react-router-dom';
+import { useNavigate, useLoaderData, Link } from 'react-router-dom';
 import { useToast } from '@/shared/hooks/useToast';
 import { providerAssignmentsService } from '../../assignments/services/ProviderAssignmentsService';
 import { visitService } from '../services/VisitService';
@@ -134,17 +134,28 @@ export default function Visits() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Providers</TableHead>
                 <TableHead>Patient</TableHead>
                 <TableHead>Hospitalization Status</TableHead>
                 <TableHead>Room / Bed</TableHead>
                 <TableHead>Admission Date</TableHead>
-                <TableHead>Physician</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {visits.map((visit) => (
                 <TableRow key={visit.id}>
+                  <TableCell>
+                    {(visit.visitAttendants ?? []).map((attendant) => (
+                      <Link
+                        key={attendant.id}
+                        to={`/clinical/daily-log/${dateISO}/${facilityId}/${attendant.providerId}/${visit.id}`}
+                        className="block text-xs text-blue-600 hover:underline"
+                      >
+                        {attendant.provider?.lastName}, {attendant.provider?.firstName}
+                      </Link>
+                    ))}
+                  </TableCell>
                   <TableCell>
                     <span className="font-semibold">{visit.patient?.firstName} {visit.patient?.lastName}</span>
                     <span className="text-xs text-gray-500 ml-2">MRN: {visit.patient?.mrn}</span>
@@ -155,15 +166,6 @@ export default function Visits() {
                   </TableCell>
                   <TableCell>{visit.room} {visit.bed}</TableCell>
                   <TableCell>{visit.hospitalization?.admissionDate ? new Date(visit.hospitalization.admissionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}</TableCell>
-                  <TableCell>
-                    {(visit.visitAttendants ?? [])
-                      .filter((attendant) => attendant.provider?.type === GraphQL.ProviderType.Physician)
-                      .map((attendant) => (
-                        <div key={attendant.id} className="text-xs">
-                          {attendant.provider?.lastName}, {attendant.provider?.firstName}
-                        </div>
-                      ))}
-                  </TableCell>
                   <TableCell>{/* Placeholder for actions */}</TableCell>
                 </TableRow>
               ))}

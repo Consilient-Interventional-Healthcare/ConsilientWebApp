@@ -1,7 +1,5 @@
 import type {
-  IDailyLogService,
   IDailyLogServiceV2,
-  DailyLogVisit,
   DailyLogVisitsResponse,
   StatusChangeEvent,
   DailyLogLogEntry,
@@ -10,14 +8,9 @@ import type {
 import api from '@/shared/core/api/ApiClient';
 import type { GraphQL, GraphQl } from '@/types/api.generated';
 
-export class DailyLogService implements IDailyLogService, IDailyLogServiceV2 {
+export class DailyLogService implements IDailyLogServiceV2 {
 
   getPatientTimelineData(_hospitalizationId: number): Promise<StatusChangeEvent[]> {
-    // TODO: Implement real API call
-    return Promise.resolve([]);
-  }
-
-  getVisitsByDate(_date: string): Promise<DailyLogVisit[]> {
     // TODO: Implement real API call
     return Promise.resolve([]);
   }

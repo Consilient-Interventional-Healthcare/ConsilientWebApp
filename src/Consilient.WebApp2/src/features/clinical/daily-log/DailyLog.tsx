@@ -1,21 +1,16 @@
 import { useNavigate, useLoaderData } from "react-router-dom";
-import { useState, useEffect, useContext, useMemo } from "react";
-import { DailyLogVisitFilters } from "./components/DailyLogVisitFilters";
+import { useState, useEffect, useContext } from "react";
 import { DailyLogVisitFiltersV2 } from "./components/DailyLogVisitFiltersV2";
 import { getDailyLogService } from "./services/DailyLogServiceFactory";
 import LoadingBarContext from "@/shared/layouts/LoadingBarContext";
 import DailyLogPatientDetails from "./components/DailyLogAdditionalInfo";
-import type { DailyLogVisit, DailyLogVisitsResponse } from "./dailylog.types";
+import type { DailyLogVisitsResponse } from "./dailylog.types";
 import { DailyLogEntriesPanel } from "./components/DailyLogEntriesPanel";
-import { appSettings } from "@/config";
 import { facilityService } from "@/features/clinical/visits/services/FacilityService";
 import type { Facilities } from "@/types/api.generated";
 
 // At the top, outside the component:
 const dailyLogService = getDailyLogService();
-
-// Check if V2 Stage 1 is enabled
-const useV2Stage1 = appSettings.features.dailyLogV2.stage1;
 
 export default function DailyLog() {
   const { date, facilityId, providerId, visitId } = useLoaderData<{
@@ -29,9 +24,8 @@ export default function DailyLog() {
     visitId ?? null
   );
 
-  // State for V2 response and legacy visits
+  // State for V2 response
   const [dailyLogData, setDailyLogData] = useState<DailyLogVisitsResponse | null>(null);
-  const [visits, setVisits] = useState<DailyLogVisit[]>([]);
   const [facilities, setFacilities] = useState<Facilities.FacilityDto[]>([]);
 
   const loadingBar = useContext(LoadingBarContext);
@@ -51,36 +45,19 @@ export default function DailyLog() {
 
     loadingBar?.start();
 
-    if (useV2Stage1) {
-      // Use V2 service method
-      console.log("Fetching V2 visits for date:", date, "facilityId:", facilityId);
-      dailyLogService
-        .getVisitsByDateV2(date, facilityId)
-        .then((data: DailyLogVisitsResponse) => {
-          setDailyLogData(data);
-          console.log("Fetched V2 visits:", data);
-        })
-        .catch((err: unknown) => {
-          console.error("Failed to fetch V2 visits", err);
-        })
-        .finally(() => {
-          loadingBar?.complete();
-        });
-    } else {
-      // Use legacy service method
-      dailyLogService
-        .getVisitsByDate(date)
-        .then((data: DailyLogVisit[]) => {
-          setVisits(data);
-          console.log("Fetched visits:", data);
-        })
-        .catch((err: unknown) => {
-          console.error("Failed to fetch visits", err);
-        })
-        .finally(() => {
-          loadingBar?.complete();
-        });
-    }
+    console.log("Fetching V2 visits for date:", date, "facilityId:", facilityId);
+    dailyLogService
+      .getVisitsByDateV2(date, facilityId)
+      .then((data: DailyLogVisitsResponse) => {
+        setDailyLogData(data);
+        console.log("Fetched V2 visits:", data);
+      })
+      .catch((err: unknown) => {
+        console.error("Failed to fetch V2 visits", err);
+      })
+      .finally(() => {
+        loadingBar?.complete();
+      });
   }, [date, facilityId, loadingBar]);
 
   // Fetch facilities on mount and auto-select first if none selected
@@ -158,38 +135,25 @@ export default function DailyLog() {
     void navigate(url, { replace: true });
   };
 
-  const visit = useMemo(() => {
-    if (!selectedVisitId) return null;
-    return visits.find((v) => v.id === selectedVisitId) ?? null;
-  }, [selectedVisitId, visits]);
+  // Legacy visit - null until Stage 2/3 components are refactored to use V2 data
+  const visit = null;
 
   return (
     <div className="flex h-full bg-gray-50 overflow-hidden">
-      {/* Left Column - conditionally render V2 or legacy based on feature flag */}
-      {useV2Stage1 ? (
-        <DailyLogVisitFiltersV2
-          visitId={selectedVisitId}
-          onVisitIdChange={handleVisitSelect}
-          date={date}
-          onDateChange={handleDateChange}
-          {...(providerId && { providerId })}
-          onProviderChange={handleProviderChange}
-          visits={dailyLogData?.result.visits ?? []}
-          providers={dailyLogData?.providers ?? []}
-          facilities={facilities}
-          selectedFacilityId={facilityId}
-          onFacilityChange={handleFacilityChange}
-        />
-      ) : (
-        <DailyLogVisitFilters
-          visitId={selectedVisitId}
-          onVisitIdChange={handleVisitSelect}
-          date={date}
-          {...(providerId && { providerId })}
-          onProviderChange={handleProviderChange}
-          visits={visits}
-        />
-      )}
+      {/* Left Column */}
+      <DailyLogVisitFiltersV2
+        visitId={selectedVisitId}
+        onVisitIdChange={handleVisitSelect}
+        date={date}
+        onDateChange={handleDateChange}
+        {...(providerId && { providerId })}
+        onProviderChange={handleProviderChange}
+        visits={dailyLogData?.result.visits ?? []}
+        providers={dailyLogData?.providers ?? []}
+        facilities={facilities}
+        selectedFacilityId={facilityId}
+        onFacilityChange={handleFacilityChange}
+      />
       <div className="flex-1 flex flex-col bg-white overflow-hidden">
         {selectedVisitId ? (
           <>

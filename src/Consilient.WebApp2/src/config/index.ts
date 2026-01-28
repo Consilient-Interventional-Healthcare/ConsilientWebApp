@@ -22,7 +22,6 @@ export interface MockServicesConfig {
 
 // Feature flags for DailyLog V2 refactoring stages
 export interface DailyLogV2Config {
-  stage1: boolean;  // Left column: date, provider, visit selector
   stage2: boolean;  // Center column: note taking
   stage3: boolean;  // Right column: additional info
 }
@@ -68,7 +67,6 @@ declare global {
       APP_MOCK_APP_SETTINGS_SERVICE?: string;
       APP_ENABLE_REMOTE_LOGGING?: string;
       // DailyLog V2 refactoring feature flags
-      APP_DAILY_LOG_V2_STAGE1?: string;
       APP_DAILY_LOG_V2_STAGE2?: string;
       APP_DAILY_LOG_V2_STAGE3?: string;
     };
@@ -117,7 +115,6 @@ function createAppSettings(): AppSettings {
   // DailyLog V2 refactoring feature flags
   // Each stage can be enabled independently to gradually roll out the refactoring
   const dailyLogV2 = {
-    stage1: getEnv('APP_DAILY_LOG_V2_STAGE1') === 'true',
     stage2: getEnv('APP_DAILY_LOG_V2_STAGE2') === 'true',
     stage3: getEnv('APP_DAILY_LOG_V2_STAGE3') === 'true',
   } satisfies DailyLogV2Config;
