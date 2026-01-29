@@ -1,4 +1,4 @@
-namespace Consilient.Data.Entities;
+namespace Consilient.Data.Entities.Clinical;
 
 public class ServiceTypeEntity : BaseEntity<int>
 {

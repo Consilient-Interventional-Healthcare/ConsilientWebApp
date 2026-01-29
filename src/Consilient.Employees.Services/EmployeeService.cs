@@ -1,4 +1,5 @@
 ﻿using Consilient.Data;
+using Consilient.Data.Entities.Clinical;
 using Consilient.Data.Entities.Compensation;
 using Consilient.Employees.Contracts;
 using Consilient.Employees.Contracts.Dtos;
@@ -127,10 +128,7 @@ public class EmployeeService(ConsilientDbContext dataContext) : IEmployeeService
                 .SetProperty(e => e.FirstName, _ => request.FirstName)
                 .SetProperty(e => e.LastName, _ => request.LastName)
                 .SetProperty(e => e.TitleExtension, _ => request.TitleExtension)
-                //.SetProperty(e => e.IsProvider, _ => request.IsProvider)
-                .SetProperty(e => e.Role, _ => request.Role)
-            //.SetProperty(e => e.IsAdministrator, _ => request.IsAdministrator)
-            //.SetProperty(e => e.CanApproveVisits, _ => request.CanApproveVisits)
+                .SetProperty(e => e.Role, _ =>  (ProviderType) request.Role)
             );
 
         if (affected == 0)

@@ -1,6 +1,4 @@
-﻿using Consilient.Common;
-
-namespace Consilient.Data.Entities.Clinical;
+﻿namespace Consilient.Data.Entities.Clinical;
 
 public class Patient : BaseEntity<int>
 {

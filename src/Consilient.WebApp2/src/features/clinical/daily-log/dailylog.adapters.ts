@@ -31,6 +31,7 @@ export function getProviderDisplayName(provider: DailyLogProviderV2 | null): str
   const firstName = provider.firstName ?? "";
   const lastName = provider.lastName ?? "";
   const name = `${lastName}, ${firstName}`.trim().replace(/^,\s*|,\s*$/g, "");
-  const type = provider.type ? ` (${provider.type})` : "";
+  const typeName = (provider as { providerType?: { name?: string } }).providerType?.name ?? "";
+  const type = typeName ? ` (${typeName})` : "";
   return `${name}${type}`;
 }

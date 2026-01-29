@@ -1,4 +1,4 @@
-using Consilient.Common;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Consilient.Data.Entities.Clinical;
 
@@ -11,7 +11,14 @@ public class Hospitalization : BaseEntity<int>
     public DateTime AdmissionDate { get; set; }
     public DateTime? DischargeDate { get; set; }
 
-    public HospitalizationStatus Status { get; set; }
+    public int HospitalizationStatusId { get; set; }
+
+    [NotMapped]
+    public HospitalizationStatus Status
+    {
+        get => (HospitalizationStatus)HospitalizationStatusId;
+        set => HospitalizationStatusId = (int)value;
+    }
 
     public virtual HospitalizationStatusEntity HospitalizationStatusNavigation { get; set; } = null!;
 

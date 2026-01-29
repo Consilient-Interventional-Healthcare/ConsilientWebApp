@@ -25,9 +25,9 @@ internal class ProviderAssignmentBatchConfiguration : BaseEntityTypeConfiguratio
             entity.Property(e => e.FacilityId)
                 .IsRequired();
 
-            entity.Property(e => e.Status)
+            entity.Property(e => e.StatusId)
                 .IsRequired()
-                .HasDefaultValue(ProviderAssignmentBatchStatus.Pending);
+                .HasDefaultValue((int)ProviderAssignmentBatchStatus.Pending);
 
             entity.Property(e => e.CreatedByUserId)
                 .IsRequired();
@@ -36,17 +36,17 @@ internal class ProviderAssignmentBatchConfiguration : BaseEntityTypeConfiguratio
             entity.HasIndex(e => new { e.FacilityId, e.Date })
                 .HasDatabaseName("IX_ProviderAssignmentBatches_FacilityId_Date");
 
-            entity.HasIndex(e => e.Status)
+            entity.HasIndex(e => e.StatusId)
                 .HasDatabaseName("IX_ProviderAssignmentBatches_Status");
 
         entity.HasIndex(e => e.CreatedByUserId)
             .HasDatabaseName("IX_ProviderAssignmentBatches_CreatedByUserId");
 
-        // FK to ProviderAssignmentBatchStatuses lookup table (uses enum property as FK)
+        // FK to ProviderAssignmentBatchStatuses lookup table
         entity.HasOne(p => p.StatusNavigation)
             .WithMany()
-            .HasForeignKey(p => p.Status)
-            .HasConstraintName("FK_ProviderAssignmentBatches_ProviderAssignmentBatchStatuses_Status")
+            .HasForeignKey(e => e.StatusId)
+            .HasConstraintName("FK_ProviderAssignmentBatches_ProviderAssignmentBatchStatuses_StatusId")
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

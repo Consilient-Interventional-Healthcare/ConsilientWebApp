@@ -1,4 +1,4 @@
-namespace Consilient.Common;
+namespace Consilient.Data.Entities.Clinical;
 
 public enum ServiceType
 {

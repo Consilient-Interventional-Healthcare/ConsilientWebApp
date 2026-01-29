@@ -29,7 +29,7 @@ internal class ProviderAssignmentConfiguration : BaseEntityTypeConfiguration<Pro
         entity.Property(e => e.ResolvedHospitalizationId);
         entity.Property(e => e.ResolvedPatientId);
         entity.Property(e => e.ResolvedNursePractitionerId);
-        entity.Property(e => e.ResolvedHospitalizationStatus).HasColumnName("ResolvedHospitalizationStatusId");
+        entity.Property(e => e.ResolvedHospitalizationStatusId);
         entity.Property(e => e.BatchId).IsRequired();
         entity.Property(e => e.Imported).IsRequired().HasDefaultValue(false);
         entity.Property(e => e.ValidationErrorsJson)
@@ -80,10 +80,10 @@ internal class ProviderAssignmentConfiguration : BaseEntityTypeConfiguration<Pro
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // FK to HospitalizationStatuses lookup table (uses enum property as FK)
+        // FK to HospitalizationStatuses lookup table
         entity.HasOne(e => e.ResolvedHospitalizationStatusNavigation)
             .WithMany()
-            .HasForeignKey(e => e.ResolvedHospitalizationStatus)
+            .HasForeignKey(e => e.ResolvedHospitalizationStatusId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 

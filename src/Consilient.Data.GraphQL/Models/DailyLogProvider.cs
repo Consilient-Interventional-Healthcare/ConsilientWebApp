@@ -1,4 +1,4 @@
-using Consilient.Common;
+using Consilient.Data.Entities.Clinical;
 
 namespace Consilient.Data.GraphQL.Models;
 
@@ -8,4 +8,5 @@ public class DailyLogProvider
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public ProviderType Type { get; set; }
+    public ProviderTypeEntity? ProviderType { get; set; }
 }

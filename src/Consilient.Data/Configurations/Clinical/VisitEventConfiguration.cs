@@ -14,9 +14,8 @@ internal class VisitEventConfiguration : BaseEntityTypeConfigurationWithId<Visit
         entity.Property(e => e.VisitId)
             .IsRequired();
 
-        entity.Property(e => e.EventType)
-            .IsRequired()
-            .HasColumnName("EventTypeId");
+        entity.Property(e => e.EventTypeId)
+            .IsRequired();
 
         entity.Property(e => e.EventOccurredAt)
             .IsRequired()
@@ -32,17 +31,17 @@ internal class VisitEventConfiguration : BaseEntityTypeConfigurationWithId<Visit
             .OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("FK_VisitEvents_Visits_VisitId");
 
-        // FK to VisitEventTypes lookup table (uses enum property as FK)
+        // FK to VisitEventTypes lookup table
         entity.HasOne(e => e.EventTypeNavigation)
             .WithMany(et => et.VisitEvents)
-            .HasForeignKey(e => e.EventType)
+            .HasForeignKey(e => e.EventTypeId)
             .OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("FK_VisitEvents_VisitEventTypes_EventTypeId");
 
         entity.HasIndex(e => e.VisitId)
             .HasDatabaseName("IX_VisitEvents_VisitId");
 
-        entity.HasIndex(e => e.EventType)
+        entity.HasIndex(e => e.EventTypeId)
             .HasDatabaseName("IX_VisitEvents_EventTypeId");
 
         entity.HasIndex(e => e.EventOccurredAt)

@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http;
-
 namespace Consilient.ProviderAssignments.Contracts;
 
 /// <summary>
@@ -8,9 +6,14 @@ namespace Consilient.ProviderAssignments.Contracts;
 public class ImportProviderAssignmentRequest
 {
     /// <summary>
-    /// The uploaded file containing provider assignments.
+    /// Stream containing the file data.
     /// </summary>
-    public required IFormFile File { get; init; }
+    public required Stream FileStream { get; init; }
+
+    /// <summary>
+    /// Original filename of the uploaded file.
+    /// </summary>
+    public required string FileName { get; init; }
 
     /// <summary>
     /// ID of the facility for these assignments.

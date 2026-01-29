@@ -17,10 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Hangfire.Core" Version="1.8.22" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Consilient.Background.Workers\Consilient.Background.Workers.csproj" />
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
     <ProjectReference Include="..\Consilient.ProviderAssignments.Contracts\Consilient.ProviderAssignments.Contracts.csproj" />

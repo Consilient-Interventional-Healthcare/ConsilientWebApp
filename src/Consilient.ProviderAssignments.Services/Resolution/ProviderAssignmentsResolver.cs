@@ -45,7 +45,7 @@ internal class ProviderAssignmentsResolver(
                 {
                     // Step 2: Create validation contexts (deserialize any existing errors)
                     var contexts = recordsList
-                        .Select(r => new RowValidationContext(r, r.ValidationErrorsJson))
+                        .Select(r => (IRowValidationContext)new RowValidationContext(r, r.ValidationErrorsJson))
                         .ToList();
 
                     // Step 3: Create cache once for the entire resolution cycle
@@ -86,7 +86,7 @@ internal class ProviderAssignmentsResolver(
         IResolutionCache cache,
         int facilityId,
         DateOnly date,
-        List<RowValidationContext> contexts)
+        List<IRowValidationContext> contexts)
     {
         //ReportProgress(progress, "Physician", 0, totalRecords, batchId);
         await RunResolvers<IPhysicianResolver>(cache, facilityId, date, contexts);
@@ -107,7 +107,7 @@ internal class ProviderAssignmentsResolver(
 
     }
 
-    private async Task RunResolvers<TResolver>(IResolutionCache cache, int facilityId, DateOnly date, List<RowValidationContext> contexts)
+    private async Task RunResolvers<TResolver>(IResolutionCache cache, int facilityId, DateOnly date, List<IRowValidationContext> contexts)
         where TResolver : IResolver
     {
         foreach (var resolver in _resolverProvider.GetResolvers<TResolver>(cache, _dbContext))

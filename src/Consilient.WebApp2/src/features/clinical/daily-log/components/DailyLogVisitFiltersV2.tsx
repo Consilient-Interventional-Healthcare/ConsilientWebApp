@@ -326,8 +326,8 @@ const VisitListItem = React.forwardRef<HTMLButtonElement, VisitListItemProps>(
         .map((id) => providers.find((p) => p.id === id))
         .filter((p): p is GraphQL.DailyLogProvider => p != null)
         .map((p) => {
-          const abbrev = p.type === "Physician" ? "MD" : p.type === "NursePractitioner" ? "NP" : "";
-          return abbrev ? `${p.lastName} (${abbrev})` : p.lastName;
+          const abbrev = (p as { providerType?: { code?: string } }).providerType?.code ?? "";
+          return abbrev ? `${p.lastName} (${abbrev})` : p.lastName ?? "";
         })
         .join(", ");
     }, [visit.providerIds, selectedProviderId, providers]);

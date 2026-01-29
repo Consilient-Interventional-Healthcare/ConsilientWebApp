@@ -37,7 +37,8 @@ public class AssignmentsController(
         // Create request and let service handle batch creation, file saving, and job enqueuing
         var request = new ImportProviderAssignmentRequest
         {
-            File = file,
+            FileStream = file.OpenReadStream(),
+            FileName = file.FileName,
             FacilityId = facilityId,
             ServiceDate = serviceDate,
             EnqueuedByUserId = currentUserService.UserId

@@ -1,4 +1,4 @@
-using Consilient.Common;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Consilient.Data.Entities.Clinical;
 
@@ -10,7 +10,14 @@ public class Provider : BaseEntity<int>
 
     public string? TitleExtension { get; set; }
 
-    public ProviderType Type { get; set; }
+    public int ProviderTypeId { get; set; }
+
+    [NotMapped]
+    public ProviderType Type
+    {
+        get => (ProviderType)ProviderTypeId;
+        set => ProviderTypeId = (int)value;
+    }
 
     public virtual ProviderTypeEntity? ProviderTypeNavigation { get; set; }
 

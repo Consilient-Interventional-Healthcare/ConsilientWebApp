@@ -15,7 +15,7 @@ internal class HospitalizationResolver(IResolutionCache cache, ConsilientDbConte
         return DbContext.Hospitalizations.AsNoTracking().ToList();
     }
 
-    protected override Task<IEnumerable<Hospitalization>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<Hospitalization> cachedItems)
+    protected override Task<IEnumerable<Hospitalization>?> ResolveRecord(IRowValidationContext ctx, IReadOnlyCollection<Hospitalization> cachedItems)
     {
         IEnumerable<Hospitalization>? hospitalizations = null;
         if (ctx.Row.FacilityId == 0 || !ctx.Row.ResolvedPatientId.HasValue)
@@ -30,7 +30,7 @@ internal class HospitalizationResolver(IResolutionCache cache, ConsilientDbConte
         return Task.FromResult<IEnumerable<Hospitalization>?>(hospitalizations);
     }
 
-    protected override void SetResolvedId(RowValidationContext ctx, Hospitalization entity)
+    protected override void SetResolvedId(IRowValidationContext ctx, Hospitalization entity)
     {
         ctx.Row.ResolvedHospitalizationId = entity.Id;
     }

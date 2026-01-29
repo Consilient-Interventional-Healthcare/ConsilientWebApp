@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Consilient.Data.Entities.Staging;
 
 public class ProviderAssignmentBatch : BaseEntity<Guid>
@@ -6,7 +8,14 @@ public class ProviderAssignmentBatch : BaseEntity<Guid>
 
         public int FacilityId { get; set; }
 
-        public ProviderAssignmentBatchStatus Status { get; set; }
+        public int StatusId { get; set; }
+
+        [NotMapped]
+        public ProviderAssignmentBatchStatus Status
+        {
+            get => (ProviderAssignmentBatchStatus)StatusId;
+            set => StatusId = (int)value;
+        }
 
         public virtual ProviderAssignmentBatchStatusEntity? StatusNavigation { get; set; }
 

@@ -1,4 +1,3 @@
-using Consilient.Common;
 using Consilient.Data.Entities;
 using Consilient.Data.Entities.Clinical;
 using EntityGraphQL.Schema;
@@ -59,6 +58,13 @@ public static partial class GraphQlSchemaConfigurator
         providerType.AddField(m => m.Type, nameof(Provider.Type));
         providerType.AddField(m => m.Email, nameof(Provider.Email));
         providerType.AddField(m => m.EmployeeId, nameof(Provider.EmployeeId));
+        providerType.AddField("providerType", m => m.ProviderTypeNavigation, "ProviderTypeNavigation");
+
+        var providerTypeEntityType = schema.AddType<ProviderTypeEntity>(ToGraphQlName(nameof(ProviderTypeEntity)), $"{ToGraphQlName(nameof(ProviderTypeEntity))} object");
+        providerTypeEntityType.AddField(m => m.Id, nameof(ProviderTypeEntity.Id));
+        providerTypeEntityType.AddField(m => m.Code, nameof(ProviderTypeEntity.Code));
+        providerTypeEntityType.AddField(m => m.Name, nameof(ProviderTypeEntity.Name));
+        providerTypeEntityType.AddField(m => m.DisplayOrder, nameof(ProviderTypeEntity.DisplayOrder));
 
         var hospitalizationStatusType = schema.AddType<HospitalizationStatusEntity>(ToGraphQlName(nameof(HospitalizationStatusEntity)), $"{ToGraphQlName(nameof(HospitalizationStatusEntity))} object");
         hospitalizationStatusType.AddField(m => m.Id, nameof(HospitalizationStatusEntity.Id));

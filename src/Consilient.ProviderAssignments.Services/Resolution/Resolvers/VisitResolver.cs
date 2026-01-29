@@ -16,7 +16,7 @@ internal class VisitResolver(IResolutionCache cache, ConsilientDbContext dbConte
             .ToList();
     }
 
-    protected override Task<IEnumerable<Visit>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<Visit> cachedItems)
+    protected override Task<IEnumerable<Visit>?> ResolveRecord(IRowValidationContext ctx, IReadOnlyCollection<Visit> cachedItems)
     {
         // Visit resolution requires both patient and hospitalization to be resolved first
         if (!ctx.Row.ResolvedPatientId.HasValue || !ctx.Row.ResolvedHospitalizationId.HasValue)
@@ -32,7 +32,7 @@ internal class VisitResolver(IResolutionCache cache, ConsilientDbContext dbConte
         return Task.FromResult<IEnumerable<Visit>?>(items);
     }
 
-    protected override void SetResolvedId(RowValidationContext ctx, Visit entity)
+    protected override void SetResolvedId(IRowValidationContext ctx, Visit entity)
     {
         ctx.Row.ResolvedVisitId = entity.Id;
         ctx.AddError(ValidationErrorType.Resolution,

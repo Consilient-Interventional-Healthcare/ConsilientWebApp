@@ -1,5 +1,5 @@
-﻿using Consilient.Common;
-using Consilient.Data;
+﻿using Consilient.Data;
+using Consilient.Data.Entities.Clinical;
 using Consilient.Data.Entities.Staging;
 using Consilient.ProviderAssignments.Contracts.Resolution;
 using Consilient.ProviderAssignments.Contracts.Validation;
@@ -41,7 +41,7 @@ internal abstract class ProviderResolver<TResolver>(IResolutionCache cache, Cons
                 WHERE P.Type = {0}", (int)TargetProviderType).ToList();
     }
 
-    protected override Task<IEnumerable<ProviderRow>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<ProviderRow> cachedItems)
+    protected override Task<IEnumerable<ProviderRow>?> ResolveRecord(IRowValidationContext ctx, IReadOnlyCollection<ProviderRow> cachedItems)
     {
         var lastName = GetLastNameFromRecord(ctx.Row);
         if (string.IsNullOrEmpty(lastName))
@@ -54,7 +54,7 @@ internal abstract class ProviderResolver<TResolver>(IResolutionCache cache, Cons
         return Task.FromResult<IEnumerable<ProviderRow>?>(matches);
     }
 
-    protected override void SetResolvedId(RowValidationContext ctx, ProviderRow entity)
+    protected override void SetResolvedId(IRowValidationContext ctx, ProviderRow entity)
     {
         SetResolvedProviderIdOnRecord(ctx.Row, entity.ProviderId);
     }

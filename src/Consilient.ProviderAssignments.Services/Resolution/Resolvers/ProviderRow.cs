@@ -1,4 +1,4 @@
-﻿using Consilient.Common;
+﻿using Consilient.Data.Entities.Clinical;
 
 namespace Consilient.ProviderAssignments.Services.Resolution.Resolvers;
 

@@ -14,7 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
     <ProjectReference Include="..\Consilient.Patients.Contracts\Consilient.Patients.Contracts.csproj" />
-    <ProjectReference Include="..\Consilient.Visits.Contracts\Consilient.Visits.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

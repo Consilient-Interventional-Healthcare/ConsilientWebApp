@@ -1,9 +1,10 @@
 using Consilient.Data.Entities.Staging;
+using Consilient.ProviderAssignments.Contracts.Validation;
 using Newtonsoft.Json;
 
-namespace Consilient.ProviderAssignments.Contracts.Validation;
+namespace Consilient.ProviderAssignments.Services;
 
-public class RowValidationContext
+public class RowValidationContext : IRowValidationContext
 {
     private readonly List<ValidationError> _errors;
 

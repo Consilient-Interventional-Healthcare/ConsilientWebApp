@@ -12,7 +12,7 @@ internal abstract class BaseResolver<TEntity, TResolver>(IResolutionCache cache,
     protected ConsilientDbContext DbContext { get; } = dbContext;
     protected ILogger<TResolver> Logger { get; } = logger;
 
-    public async Task ResolveAsync(int facilityId, DateOnly date, List<RowValidationContext> contexts)
+    public async Task ResolveAsync(int facilityId, DateOnly date, List<IRowValidationContext> contexts)
     {
         if (contexts == null || contexts.Count == 0)
         {
@@ -43,8 +43,8 @@ internal abstract class BaseResolver<TEntity, TResolver>(IResolutionCache cache,
         }
     }
 
-    protected abstract void SetResolvedId(RowValidationContext ctx, TEntity entity);
-    protected abstract Task<IEnumerable<TEntity>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<TEntity> cachedItems);
+    protected abstract void SetResolvedId(IRowValidationContext ctx, TEntity entity);
+    protected abstract Task<IEnumerable<TEntity>?> ResolveRecord(IRowValidationContext ctx, IReadOnlyCollection<TEntity> cachedItems);
 
     protected Task<IReadOnlyCollection<TEntity>> LoadCache(int facilityId, DateOnly date)
     {

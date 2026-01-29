@@ -29,13 +29,12 @@ public class ProviderAssignmentsService(
             try
             {
                 // 1. Save the file to storage
-                var filename = PathHelper.GenerateFileReference(batchId.ToString(), request.File.FileName);
-                await using var stream = request.File.OpenReadStream();
-                var fileReference = await fileStorage.SaveAsync(filename, stream, cancellationToken).ConfigureAwait(false);
+                var filename = PathHelper.GenerateFileReference(batchId.ToString(), request.FileName);
+                var fileReference = await fileStorage.SaveAsync(filename, request.FileStream, cancellationToken).ConfigureAwait(false);
 
                 logger.LogInformation(
                     "File saved to storage for batch {BatchId}. File: {FileName}, Reference: {FileReference}",
-                    batchId, request.File.FileName, fileReference);
+                    batchId, request.FileName, fileReference);
 
                 // 2. Create the ProviderAssignmentBatch record
                 var batch = new ProviderAssignmentBatch

@@ -25,7 +25,7 @@ internal class PatientResolver(IResolutionCache cache, ConsilientDbContext dbCon
         return rows;
     }
 
-    protected override Task<IEnumerable<PatientRow>?> ResolveRecord(RowValidationContext ctx, IReadOnlyCollection<PatientRow> cachedItems)
+    protected override Task<IEnumerable<PatientRow>?> ResolveRecord(IRowValidationContext ctx, IReadOnlyCollection<PatientRow> cachedItems)
     {
         if (ctx.Row.FacilityId == 0)
         {
@@ -42,7 +42,7 @@ internal class PatientResolver(IResolutionCache cache, ConsilientDbContext dbCon
         return Task.FromResult<IEnumerable<PatientRow>?>(null);
     }
 
-    protected override void SetResolvedId(RowValidationContext ctx, PatientRow entity)
+    protected override void SetResolvedId(IRowValidationContext ctx, PatientRow entity)
     {
         ctx.Row.ResolvedPatientId = entity.PatientId;
     }

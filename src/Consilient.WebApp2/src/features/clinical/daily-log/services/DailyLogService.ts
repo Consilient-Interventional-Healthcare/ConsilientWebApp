@@ -19,7 +19,7 @@ export class DailyLogService implements IDailyLogServiceV2 {
       dailyLogVisits(dateServiced: "${date}", facilityId: ${facilityId}) {
         date
         facilityId
-        providers { id firstName lastName type }
+        providers { id firstName lastName type providerType { id code name } }
         visits {
           id
           room

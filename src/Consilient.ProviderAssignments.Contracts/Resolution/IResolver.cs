@@ -13,7 +13,7 @@ public interface IResolver
     /// <param name="facilityId">The facility ID for the resolution context.</param>
     /// <param name="date">The service date for the resolution context.</param>
     /// <param name="contexts">The validation contexts wrapping staging records to resolve.</param>
-    Task ResolveAsync(int facilityId, DateOnly date, List<RowValidationContext> contexts);
+    Task ResolveAsync(int facilityId, DateOnly date, List<IRowValidationContext> contexts);
 }
 
 /// <summary>

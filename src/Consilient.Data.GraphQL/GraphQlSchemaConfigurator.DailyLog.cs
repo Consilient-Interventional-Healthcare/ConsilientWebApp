@@ -17,6 +17,7 @@ public static partial class GraphQlSchemaConfigurator
         dailyLogProviderType.AddField(m => m.FirstName, nameof(DailyLogProvider.FirstName));
         dailyLogProviderType.AddField(m => m.LastName, nameof(DailyLogProvider.LastName));
         dailyLogProviderType.AddField(m => m.Type, nameof(DailyLogProvider.Type));
+        dailyLogProviderType.AddField(m => m.ProviderType, nameof(DailyLogProvider.ProviderType));
 
         // DailyLogHospitalization type
         var dailyLogHospitalizationType = schema.AddType<DailyLogHospitalization>(
@@ -73,6 +74,7 @@ public static partial class GraphQlSchemaConfigurator
                     .ThenInclude(p => p.PatientFacilities)
             .Include(v => v.VisitAttendants)
                 .ThenInclude(va => va.Provider)
+                    .ThenInclude(p => p.ProviderTypeNavigation)
             .Where(v => v.DateServiced == date && v.Hospitalization.FacilityId == facilityId)
             .OrderBy(v => v.Id)
             .ToList();
@@ -89,7 +91,8 @@ public static partial class GraphQlSchemaConfigurator
                 Id = p.Id,
                 FirstName = p.FirstName,
                 LastName = p.LastName,
-                Type = p.Type
+                Type = p.Type,
+                ProviderType = p.ProviderTypeNavigation
             })
             .ToList();
 

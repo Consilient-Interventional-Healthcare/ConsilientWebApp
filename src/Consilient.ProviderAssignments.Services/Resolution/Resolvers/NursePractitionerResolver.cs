@@ -1,5 +1,5 @@
-﻿using Consilient.Common;
-using Consilient.Data;
+﻿using Consilient.Data;
+using Consilient.Data.Entities.Clinical;
 using Consilient.Data.Entities.Staging;
 using Consilient.ProviderAssignments.Contracts.Resolution;
 using Microsoft.Extensions.Logging;

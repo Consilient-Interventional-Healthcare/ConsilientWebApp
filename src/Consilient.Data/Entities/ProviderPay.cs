@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using Consilient.Common;
 
 namespace Consilient.Data.Entities
@@ -11,7 +12,14 @@ namespace Consilient.Data.Entities
 
         public int FacilityId { get; set; }
 
-        public ServiceType? Type { get; set; }
+        public int? ServiceTypeId { get; set; }
+
+        [NotMapped]
+        public ServiceType? Type
+        {
+            get => ServiceTypeId.HasValue ? (ServiceType)ServiceTypeId.Value : null;
+            set => ServiceTypeId = value.HasValue ? (int)value.Value : null;
+        }
 
         public virtual ServiceTypeEntity? ServiceTypeNavigation { get; set; }
 

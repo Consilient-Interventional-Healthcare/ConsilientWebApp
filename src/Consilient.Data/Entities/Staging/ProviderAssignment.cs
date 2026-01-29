@@ -41,7 +41,14 @@ public class ProviderAssignment : BaseEntity<int>
     public int? ResolvedNursePractitionerId { get; set; }
     public int? ResolvedVisitId { get; set; }
 
-    public HospitalizationStatus? ResolvedHospitalizationStatus { get; set; }
+    public int? ResolvedHospitalizationStatusId { get; set; }
+
+    [NotMapped]
+    public HospitalizationStatus? ResolvedHospitalizationStatus
+    {
+        get => ResolvedHospitalizationStatusId.HasValue ? (HospitalizationStatus)ResolvedHospitalizationStatusId.Value : null;
+        set => ResolvedHospitalizationStatusId = value.HasValue ? (int)value.Value : null;
+    }
 
     /* Navigation Properties */
     public virtual Patient? ResolvedPatient { get; set; }
