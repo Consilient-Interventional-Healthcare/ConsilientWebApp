@@ -29,6 +29,7 @@ public static partial class GraphQlSchemaConfigurator
     private static void AddCoreTypes(SchemaProvider<ConsilientDbContext> schema)
     {
         schema.AddEnum<ProviderType>(nameof(ProviderType), "Provider type enum");
+        schema.AddEnum<Gender>(nameof(Gender), "Gender enum");
 
         var patientType = schema.AddType<Patient>(ToGraphQlName(nameof(Patient)), $"{ToGraphQlName(nameof(Patient))} object");
         patientType.AddField(m => m.BirthDate, nameof(Patient.BirthDate));

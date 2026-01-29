@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { DynamicIcon } from '@/shared/components/DynamicIcon';
-import type { StatusChangeEvent } from '../dailylog.types';
+import type { StatusChangeEvent } from '../services/IDailyLogService';
 
 interface PatientTimelineProps {
   statusChanges: StatusChangeEvent[];

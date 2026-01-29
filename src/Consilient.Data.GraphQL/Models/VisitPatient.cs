@@ -1,3 +1,5 @@
+using Consilient.Data.Entities.Clinical;
+
 namespace Consilient.Data.GraphQL.Models;
 
 public class VisitPatient
@@ -7,4 +9,5 @@ public class VisitPatient
     public string LastName { get; set; } = string.Empty;
     public DateOnly? BirthDate { get; set; }
     public string Mrn { get; set; } = string.Empty;
+    public Gender? Gender { get; set; }
 }

@@ -115,6 +115,7 @@ public static partial class GraphQlSchemaConfigurator
                 FirstName = v.Hospitalization.Patient.FirstName,
                 LastName = v.Hospitalization.Patient.LastName,
                 BirthDate = v.Hospitalization.Patient.BirthDate,
+                Gender = v.Hospitalization.Patient.Gender,
                 Mrn = v.Hospitalization.Patient.PatientFacilities
                     .Where(pf => pf.FacilityId == facilityId)
                     .Select(pf => pf.Mrn)

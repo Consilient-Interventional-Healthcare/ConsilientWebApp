@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<database name="consilient_main;encrypt=false;trustServerCertificate=true" schema="identity" type="Microsoft SQL Server - 16.00.4230">
+<database name="consilient_main;encrypt=false;trustServerCertificate=true" schema="identity" type="Microsoft SQL Server - 16.00.4236">
    <tables>
       <table catalog="consilient_main" name="RoleClaims" remarks="" schema="Identity" type="TABLE">
          <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4"/>

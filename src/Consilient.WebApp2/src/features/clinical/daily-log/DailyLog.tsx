@@ -1,16 +1,14 @@
 import { useNavigate, useLoaderData } from "react-router-dom";
 import { useState, useEffect, useContext, useMemo } from "react";
-import { DailyLogVisitFiltersV2 } from "./components/DailyLogVisitFiltersV2";
-import { getDailyLogService } from "./services/DailyLogServiceFactory";
+import { DailyLogVisitFilters } from "./components/DailyLogVisitFilters";
+import { dailyLogService } from "./services/DailyLogService";
 import LoadingBarContext from "@/shared/layouts/LoadingBarContext";
 import DailyLogPatientDetails from "./components/DailyLogAdditionalInfo";
-import type { DailyLogVisitsResponse } from "./dailylog.types";
 import { DailyLogEntriesPanel } from "./components/DailyLogEntriesPanel";
 import { facilityService } from "@/features/clinical/visits/services/FacilityService";
-import type { Facilities } from "@/types/api.generated";
+import type { Facilities, GraphQL } from "@/types/api.generated";
+import { useVisitMemory } from "./hooks/useVisitMemory";
 
-// At the top, outside the component:
-const dailyLogService = getDailyLogService();
 
 export default function DailyLog() {
   const { date, facilityId, providerId, visitId } = useLoaderData<{
@@ -20,48 +18,48 @@ export default function DailyLog() {
     visitId?: number;
   }>();
   const navigate = useNavigate();
-  const [selectedVisitId, setSelectedVisitId] = useState<number | null>(
-    visitId ?? null
-  );
+  const {
+    getVisitId: getMemorizedVisitId,
+    setVisitId: setMemorizedVisitId,
+    getProviderId: getMemorizedProviderId,
+    setProviderId: setMemorizedProviderId
+  } = useVisitMemory();
 
-  // State for V2 response
-  const [dailyLogData, setDailyLogData] = useState<DailyLogVisitsResponse | null>(null);
+  // State for daily log data and facilities
+  const [dailyLogData, setDailyLogData] = useState<GraphQL.DailyLogVisitsResult | null>(null);
   const [facilities, setFacilities] = useState<Facilities.FacilityDto[]>([]);
 
   const loadingBar = useContext(LoadingBarContext);
 
-  // Helper to build URLs with facilityId
+  // Helper to build URLs
   const buildUrl = (parts: (string | number | null | undefined)[]) => {
     const filtered = parts.filter(p => p != null);
     return `/clinical/daily-log/${filtered.join('/')}`;
   };
 
+  // Fetch daily log data when date/facility changes
   useEffect(() => {
-    if (!facilityId) {
-      // No facilityId provided, can't fetch visits
-      return;
-    }
+    if (!facilityId) return;
 
     loadingBar?.start();
 
     dailyLogService
-      .getVisitsByDateV2(date, facilityId)
-      .then((data: DailyLogVisitsResponse) => {
+      .getVisitsByDate(date, facilityId)
+      .then((data) => {
         setDailyLogData(data);
       })
       .catch((err: unknown) => {
-        console.error("Failed to fetch V2 visits", err);
+        console.error("Failed to fetch visits", err);
       })
       .finally(() => {
         loadingBar?.complete();
       });
   }, [date, facilityId, loadingBar]);
 
-  // Fetch facilities on mount and auto-select first if none selected
+  // Fetch facilities and auto-select first if none selected
   useEffect(() => {
     facilityService.getAll().then((fetchedFacilities) => {
       setFacilities(fetchedFacilities);
-      // Auto-select the first facility if none is selected
       const firstFacility = fetchedFacilities[0];
       if (!facilityId && firstFacility?.id) {
         void navigate(buildUrl([date, firstFacility.id]), { replace: true });
@@ -69,86 +67,131 @@ export default function DailyLog() {
     }).catch(console.error);
   }, [facilityId, date, navigate]);
 
+  // DERIVED STATE: Compute resolved provider from URL > memory > first
+  const resolvedProviderId = useMemo(() => {
+    if (!dailyLogData) return providerId ?? null;
+
+    const providers = dailyLogData.providers ?? [];
+    if (providers.length === 0) return null;
+
+    // Priority: URL (if valid) > memory (if valid) > first
+    if (providerId && providers.some(p => p.id === providerId)) {
+      return providerId;
+    }
+
+    const memorized = getMemorizedProviderId(date, facilityId);
+    if (memorized && providers.some(p => p.id === memorized)) {
+      return memorized;
+    }
+
+    return providers[0]?.id ?? null;
+  }, [dailyLogData, providerId, date, facilityId, getMemorizedProviderId]);
+
+  // DERIVED STATE: Compute resolved visit from URL > memory > first
+  const resolvedVisitId = useMemo(() => {
+    if (!dailyLogData || !resolvedProviderId) return visitId ?? null;
+
+    const visits = dailyLogData.visits ?? [];
+    const providerVisits = visits.filter(v => v.providerIds?.includes(resolvedProviderId));
+    if (providerVisits.length === 0) return null;
+
+    // Priority: URL (if valid for this provider) > memory (if valid) > first
+    if (visitId && providerVisits.some(v => v.id === visitId)) {
+      return visitId;
+    }
+
+    const memorized = getMemorizedVisitId(date, facilityId, resolvedProviderId);
+    if (memorized && providerVisits.some(v => v.id === memorized)) {
+      return memorized;
+    }
+
+    return providerVisits[0]?.id ?? null;
+  }, [dailyLogData, resolvedProviderId, visitId, date, facilityId, getMemorizedVisitId]);
+
+  // Sync URL when resolved values differ from URL values
+  useEffect(() => {
+    if (!dailyLogData) return;
+
+    const needsUpdate =
+      (resolvedProviderId !== (providerId ?? null)) ||
+      (resolvedVisitId !== (visitId ?? null));
+
+    if (needsUpdate && resolvedProviderId !== null) {
+      void navigate(buildUrl([date, facilityId, resolvedProviderId, resolvedVisitId]), { replace: true });
+    }
+  }, [dailyLogData, resolvedProviderId, resolvedVisitId, providerId, visitId, date, facilityId, navigate]);
+
+  // Persist to memory when URL has valid values
+  useEffect(() => {
+    if (providerId && facilityId) {
+      setMemorizedProviderId(date, facilityId, providerId);
+    }
+    if (providerId && visitId && facilityId) {
+      setMemorizedVisitId(date, facilityId, providerId, visitId);
+    }
+  }, [date, facilityId, providerId, visitId, setMemorizedProviderId, setMemorizedVisitId]);
+
+  // Handler: User changes provider dropdown
   const handleProviderChange = (newProviderId: number | null) => {
     if (!newProviderId) {
-      // If no provider selected, clear visit selection as well
-      setSelectedVisitId(null);
       void navigate(buildUrl([date, facilityId]), { replace: true });
       return;
-    } else {
-      // Filter visits for the selected provider using V2 data
-      const visitsData = dailyLogData?.result.visits ?? [];
-      const filteredVisits = visitsData.filter((v) => v.providerIds?.includes(newProviderId));
-
-      // If selectedVisitId is not in filteredVisits, set to first visit for provider
-      const hasSelectedVisit = filteredVisits.some(
-        (v) => v.id === selectedVisitId
-      );
-      const firstVisitId = filteredVisits.length > 0 && filteredVisits[0] ? filteredVisits[0].id : null;
-      const nextVisitId = hasSelectedVisit ? selectedVisitId : firstVisitId;
-      setSelectedVisitId(nextVisitId);
-      if (nextVisitId) {
-        void navigate(buildUrl([date, facilityId, newProviderId, nextVisitId]), { replace: true });
-      } else {
-        void navigate(buildUrl([date, facilityId, newProviderId]), { replace: true });
-      }
     }
+
+    // Compute visit for new provider inline
+    const visits = dailyLogData?.visits ?? [];
+    const providerVisits = visits.filter(v => v.providerIds?.includes(newProviderId));
+    const memorized = getMemorizedVisitId(date, facilityId, newProviderId);
+    const visitForProvider = (memorized && providerVisits.some(v => v.id === memorized))
+      ? memorized
+      : providerVisits[0]?.id ?? null;
+
+    void navigate(buildUrl([date, facilityId, newProviderId, visitForProvider]), { replace: true });
   };
 
-  const handleVisitSelect = (visitId: number | null) => {
-    setSelectedVisitId(visitId);
-    // Find the providerId for the selected visit
-    const visitsData = dailyLogData?.result.visits ?? [];
-    const selectedVisit = visitsData.find((v) => v.id === visitId);
-    const newProviderId = selectedVisit?.providerIds?.[0] ?? providerId;
-
-    if (newProviderId) {
-      void navigate(buildUrl([date, facilityId, newProviderId, visitId]), { replace: true });
-    } else {
-      void navigate(buildUrl([date, facilityId, visitId]), { replace: true });
-    }
+  // Handler: User clicks a visit
+  const handleVisitSelect = (newVisitId: number | null) => {
+    void navigate(buildUrl([date, facilityId, resolvedProviderId, newVisitId]), { replace: true });
   };
 
+  // Handler: User changes facility
   const handleFacilityChange = (newFacilityId: number | null) => {
-    // Clear data first to prevent auto-select from navigating back with stale facilityId
     setDailyLogData(null);
-    setSelectedVisitId(null);
     const url = `/clinical/daily-log/${date}${newFacilityId ? `/${newFacilityId}` : ''}`;
     void navigate(url);
   };
 
+  // Handler: User changes date
   const handleDateChange = (newDate: string) => {
-    // Clear data first to prevent auto-select from navigating back with stale values
     setDailyLogData(null);
-    setSelectedVisitId(null);
     const url = `/clinical/daily-log/${newDate}${facilityId ? `/${facilityId}` : ''}`;
     void navigate(url, { replace: true });
   };
 
-  // Find the selected visit from V2 data
+  // Find the selected visit object for display
   const selectedVisit = useMemo(() => {
-    if (!selectedVisitId) return null;
-    return dailyLogData?.result.visits?.find(v => v.id === selectedVisitId) ?? null;
-  }, [selectedVisitId, dailyLogData]);
+    if (!resolvedVisitId) return null;
+    return dailyLogData?.visits?.find(v => v.id === resolvedVisitId) ?? null;
+  }, [resolvedVisitId, dailyLogData]);
 
   return (
     <div className="flex h-full bg-gray-50 overflow-hidden">
       {/* Left Column */}
-      <DailyLogVisitFiltersV2
-        visitId={selectedVisitId}
+      <DailyLogVisitFilters
+        providerId={resolvedProviderId}
+        visitId={resolvedVisitId}
+        onProviderChange={handleProviderChange}
         onVisitIdChange={handleVisitSelect}
         date={date}
         onDateChange={handleDateChange}
-        {...(providerId && { providerId })}
-        onProviderChange={handleProviderChange}
-        visits={dailyLogData?.result.visits ?? []}
+        visits={dailyLogData?.visits ?? []}
         providers={dailyLogData?.providers ?? []}
         facilities={facilities}
         selectedFacilityId={facilityId}
         onFacilityChange={handleFacilityChange}
       />
       <div className="flex-1 flex flex-col bg-white overflow-hidden">
-        {selectedVisitId ? (
+        {resolvedVisitId ? (
           <>
             <div className="flex flex-row h-full">
               {/* Main log entries panel */}
@@ -157,8 +200,7 @@ export default function DailyLog() {
               </div>
               {/* Fixed right panel */}
               <aside className="w-2/5 border-l border-gray-200 flex-shrink-0 flex flex-col items-center">
-                {/* Stage 3 - pass null until refactored to use V2 types */}
-                <DailyLogPatientDetails visit={null} />
+                <DailyLogPatientDetails visit={selectedVisit} />
               </aside>
             </div>
           </>

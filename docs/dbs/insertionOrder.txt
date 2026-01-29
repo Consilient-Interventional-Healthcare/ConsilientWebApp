@@ -2,6 +2,7 @@ Facilities
 HospitalizationStatuses
 Patients
 Insurances
+ProviderTypes
 ServiceTypes
 VisitEventTypes
 Hospitalizations

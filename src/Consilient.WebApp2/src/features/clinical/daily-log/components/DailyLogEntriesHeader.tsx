@@ -29,15 +29,12 @@ export function DailyLogEntriesHeader({
   // All hooks must be called before any early returns
   if (!visit) return null;
 
-  const options = [
-    { label: "All", value: "all" },
-    ...eventTypes.map(t => ({
-      label: t.name,
-      value: t.code,
-      icon: t.iconName,
-      color: t.color
-    }))
-  ];
+  const options = eventTypes.map(t => ({
+    label: t.name,
+    value: t.code,
+    icon: t.iconName ?? '',
+    color: t.color ?? ''
+  }));
   
   return (
     <div
@@ -47,13 +44,13 @@ export function DailyLogEntriesHeader({
       <div className="px-6 py-4">
         <div className="flex items-center justify-between gap-x-6">
           {/* Left: Patient Name */}
-          <div className="flex items-center gap-x-2 min-w-0">
+          <div className="w-48 flex items-center gap-x-2 flex-shrink-0">
             <h2 className="text-lg font-semibold text-gray-900 truncate">
               {visit.patient?.firstName} {visit.patient?.lastName}
             </h2>
           </div>
           {/* Center: Segmented Control */}
-          <div className="flex-1 flex justify-center">
+          <div className="flex justify-center">
             <SegmentedControl
               options={options}
               defaultValue={typeFilter}
@@ -61,7 +58,7 @@ export function DailyLogEntriesHeader({
             />
           </div>
           {/* Right: Hospitalization Status ComboBox */}
-          <div className="flex items-center justify-end min-w-0">
+          <div className="w-48 flex items-center justify-end flex-shrink-0">
               <StatusComboBox value={statusId} onChange={setStatusId} />
           </div>
         </div>

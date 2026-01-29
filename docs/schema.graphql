@@ -28,6 +28,13 @@ directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 """Directs the executor to skip this field or fragment when the `if` argument is true."""
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
+"""Gender enum"""
+enum Gender {
+	Female
+	Male
+	Other
+}
+
 """Status of a provider assignment batch"""
 enum providerAssignmentBatchStatus {
 	Imported
@@ -117,6 +124,8 @@ type dailyLogProvider {
 	id: Int!
 	"""LastName"""
 	lastName: String
+	"""ProviderType"""
+	providerType: providerTypeEntity
 	"""Type"""
 	type: ProviderType!
 }
@@ -181,9 +190,9 @@ type hospitalization {
 	facility: facility
 	"""FacilityId"""
 	facilityId: Int!
-	"""HospitalizationStatus"""
-	hospitalizationStatus: hospitalizationStatus
-	"""HospitalizationStatusId"""
+	"""HospitalizationStatusNavigation"""
+	hospitalizationStatus: hospitalizationStatusEntity
+	"""Status"""
 	hospitalizationStatusId: Int!
 	"""Id"""
 	id: Int!
@@ -195,12 +204,10 @@ type hospitalization {
 	psychEvaluation: Boolean!
 }
 
-"""hospitalizationStatus object"""
-type hospitalizationStatus {
+"""hospitalizationStatusEntity object"""
+type hospitalizationStatusEntity {
 	"""Code"""
 	code: String
-	"""Color"""
-	color: String
 	"""DisplayOrder"""
 	displayOrder: Int!
 	"""Id"""
@@ -243,6 +250,8 @@ type provider {
 	id: Int!
 	"""LastName"""
 	lastName: String
+	"""ProviderTypeNavigation"""
+	providerType: providerTypeEntity
 	"""TitleExtension"""
 	titleExtension: String
 	"""Type"""
@@ -281,7 +290,7 @@ type providerAssignment {
 	physicianWasCreated: Boolean!
 	"""ResolvedHospitalizationId"""
 	resolvedHospitalizationId: Int
-	"""ResolvedHospitalizationStatusId"""
+	"""ResolvedHospitalizationStatus"""
 	resolvedHospitalizationStatusId: Int
 	"""ResolvedNursePractitionerId"""
 	resolvedNursePractitionerId: Int
@@ -357,6 +366,18 @@ type providerAssignmentVisit {
 	room: String
 }
 
+"""providerTypeEntity object"""
+type providerTypeEntity {
+	"""Code"""
+	code: String
+	"""DisplayOrder"""
+	displayOrder: Int!
+	"""Id"""
+	id: Int!
+	"""Name"""
+	name: String
+}
+
 """Sort arguments for patients"""
 input QueryPatientsSortInput {
 	birthDate: SortDirectionEnum
@@ -380,12 +401,12 @@ input QueryVisitsSortInput {
 	updatedAtUtc: SortDirectionEnum
 }
 
-"""serviceType object"""
-type serviceType {
-	"""Description"""
-	description: String
+"""serviceTypeEntity object"""
+type serviceTypeEntity {
 	"""Id"""
 	id: Int!
+	"""Name"""
+	name: String
 }
 
 """visit object"""
@@ -426,6 +447,8 @@ type visitPatient {
 	birthDate: DateOnly
 	"""FirstName"""
 	firstName: String
+	"""Gender"""
+	gender: Gender
 	"""Id"""
 	id: Int!
 	"""LastName"""

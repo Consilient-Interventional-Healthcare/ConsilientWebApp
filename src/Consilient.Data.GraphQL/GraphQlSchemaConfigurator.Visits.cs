@@ -24,6 +24,7 @@ public static partial class GraphQlSchemaConfigurator
             FirstName = m.Hospitalization.Patient.FirstName,
             LastName = m.Hospitalization.Patient.LastName,
             BirthDate = m.Hospitalization.Patient.BirthDate,
+            Gender = m.Hospitalization.Patient.Gender,
             Mrn = m.Hospitalization.Patient.PatientFacilities
                 .Where(pf => pf.FacilityId == m.Hospitalization.FacilityId)
                 .Select(pf => pf.Mrn)
@@ -36,6 +37,7 @@ public static partial class GraphQlSchemaConfigurator
         visitPatientType.AddField(m => m.FirstName, nameof(VisitPatient.FirstName));
         visitPatientType.AddField(m => m.LastName, nameof(VisitPatient.LastName));
         visitPatientType.AddField(m => m.BirthDate, nameof(VisitPatient.BirthDate));
+        visitPatientType.AddField(m => m.Gender, nameof(VisitPatient.Gender));
         visitPatientType.AddField(m => m.Mrn, nameof(VisitPatient.Mrn));
 
         var visitAttendantType = schema.AddType<VisitAttendant>(ToGraphQlName(nameof(VisitAttendant)), $"{ToGraphQlName(nameof(VisitAttendant))} object");

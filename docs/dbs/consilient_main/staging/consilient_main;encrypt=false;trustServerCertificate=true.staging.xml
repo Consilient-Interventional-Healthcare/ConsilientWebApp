@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<database name="consilient_main;encrypt=false;trustServerCertificate=true" schema="staging" type="Microsoft SQL Server - 16.00.4230">
+<database name="consilient_main;encrypt=false;trustServerCertificate=true" schema="staging" type="Microsoft SQL Server - 16.00.4236">
    <tables>
       <table catalog="consilient_main" name="ProviderAssignmentBatches" remarks="" schema="staging" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="16" type="uniqueidentifier" typeCode="1">
@@ -7,7 +7,9 @@
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Date" nullable="false" remarks="" size="6" type="date" typeCode="91"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="FacilityId" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
-         <column autoUpdated="false" defaultValue="((0))" digits="0" id="3" name="Status" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="((0))" digits="0" id="3" name="StatusId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ProviderAssignmentBatches_ProviderAssignmentBatchStatuses_StatusId" implied="false" onDeleteCascade="false" schema="staging" table="ProviderAssignmentBatchStatuses"/>
+         </column>
          <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
@@ -24,7 +26,25 @@
             <column ascending="true" name="Date"/>
          </index>
          <index name="IX_ProviderAssignmentBatches_Status" unique="false">
-            <column ascending="true" name="Status"/>
+            <column ascending="true" name="StatusId"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="ProviderAssignmentBatchStatuses" remarks="" schema="staging" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <child catalog="consilient_main" column="StatusId" foreignKey="FK_ProviderAssignmentBatches_ProviderAssignmentBatchStatuses_StatusId" implied="false" onDeleteCascade="false" schema="staging" table="ProviderAssignmentBatches"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Code" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="Name" nullable="false" remarks="" size="200" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="DisplayOrder" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_ProviderAssignmentBatchStatuses" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="IX_ProviderAssignmentBatchStatuses_Code" unique="true">
+            <column ascending="true" name="Code"/>
          </index>
       </table>
       <table catalog="consilient_main" name="ProviderAssignments" remarks="" schema="staging" type="TABLE">
@@ -74,15 +94,14 @@
          <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="29" name="ShouldImport" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
          <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="30" name="Imported" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="31" name="ValidationErrors" nullable="true" remarks="" size="2147483647" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="32" name="ExclusionReason" nullable="true" remarks="" size="1000" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="33" name="PatientWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="34" name="PatientFacilityWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="35" name="PhysicianWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="36" name="NursePractitionerWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="37" name="HospitalizationWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
-         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="38" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="39" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="40" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="32" name="PatientWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="33" name="PatientFacilityWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="34" name="PhysicianWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="35" name="NursePractitionerWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="36" name="HospitalizationWasCreated" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="37" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="38" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="39" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
          <primaryKey column="Id" sequenceNumberInPK="1"/>
          <index name="PK_ProviderAssignments" unique="true">
             <column ascending="true" name="Id"/>

@@ -278,3 +278,28 @@ export function formatDateToUrl(isoDate: string): string {
 export function getTodayYYYYMMDD(): string {
   return getToday().replace(/-/g, '');
 }
+
+/**
+ * Builds a URL path with a date segment in YYYYMMDD format.
+ *
+ * @param basePath - Base path (e.g., '/clinical/visits')
+ * @param date - Date in YYYY-MM-DD format
+ * @param additionalSegments - Additional path segments
+ * @returns Full path (e.g., '/clinical/visits/20251114/1')
+ *
+ * @example
+ * ```typescript
+ * buildDateUrl('/clinical/visits', '2025-11-14') // '/clinical/visits/20251114'
+ * buildDateUrl('/clinical/visits', '2025-11-14', 1) // '/clinical/visits/20251114/1'
+ * buildDateUrl('/clinical/visits', '2025-11-14', 1, 'edit') // '/clinical/visits/20251114/1/edit'
+ * ```
+ */
+export function buildDateUrl(
+  basePath: string,
+  date: string,
+  ...additionalSegments: (string | number | null | undefined)[]
+): string {
+  const urlDate = formatDateToUrl(date);
+  const segments = [basePath, urlDate, ...additionalSegments.filter(s => s != null)];
+  return segments.join('/');
+}

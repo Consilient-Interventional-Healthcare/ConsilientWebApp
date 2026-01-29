@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { Timeline } from 'rsuite';
 import { formatTime1 } from '@/shared/utils/utils';
-import type { DailyLogLogEntryV2 } from '../dailylog.types';
+import type { DailyLogLogEntry } from '../services/IDailyLogService';
 import { DynamicIcon } from '@/shared/components/DynamicIcon';
 interface DailyLogEntriesDisplayProps {
-  entries: DailyLogLogEntryV2[];
+  entries: DailyLogLogEntry[];
   typeFilter: string;
 }
 
@@ -19,7 +19,7 @@ export function DailyLogEntriesDisplay({ entries, typeFilter }: DailyLogEntriesD
 
   // Sort entries by timestamp ascending
   const sortedEntries = [...entries].sort(
-    (a, b) => new Date(a.event.eventOccurredAt).getTime() - new Date(b.event.eventOccurredAt).getTime()
+    (a, b) => new Date(a.event.eventOccurredAt ?? 0).getTime() - new Date(b.event.eventOccurredAt ?? 0).getTime()
   );
 
   const filteredEntries =
@@ -42,7 +42,7 @@ export function DailyLogEntriesDisplay({ entries, typeFilter }: DailyLogEntriesD
             }
           >
             <div className='entry.userRole'>
-              <span className="text-xs text-gray-500 mr-2">{formatTime1(entry.event.eventOccurredAt)}</span>
+              <span className="text-xs text-gray-500 mr-2">{formatTime1(entry.event.eventOccurredAt ?? '')}</span>
               <span className="text-xs text-gray-700 font-medium">
                 {entry.user.firstName} {entry.user.lastName} reported
               </span>

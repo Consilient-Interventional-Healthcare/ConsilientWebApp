@@ -4,7 +4,6 @@ window.__ENV = {
   "APP_ENABLE_DEBUG_MODE": "true",
   "APP_API_BASE_URL": "https://localhost:8091",
   "APP_ENV": "development",
-  "NODE_ENV": "development",
-  "APP_DAILY_LOG_V2_STAGE1": "true"
+  "NODE_ENV": "development"
 };
 console.log('window.__ENV loaded:', window.__ENV);

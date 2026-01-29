@@ -1,2 +1,3 @@
+ProviderAssignmentBatchStatuses
 ProviderAssignmentBatches
 ProviderAssignments

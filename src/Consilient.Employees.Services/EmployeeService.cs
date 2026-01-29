@@ -87,7 +87,7 @@ public class EmployeeService(ConsilientDbContext dataContext) : IEmployeeService
                         PR.Id AS ProviderId,
                         PR.LastName AS ProviderLastName,
                         PR.FirstName AS ProviderFirstName,
-                        PR.Type AS ProviderType,
+                        PR.ProviderTypeId AS ProviderType,
                         F.Id AS FacilityId,
                         F.Abbreviation AS FacilityAbbreviation,
                         P.Id AS PatientId,

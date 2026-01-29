@@ -2,20 +2,42 @@ import React from "react";
 import { cn } from "@/shared/utils/utils";
 import { DateNavigator } from "@/shared/components/ui/date-navigator";
 import { NativeSelect } from "@/shared/components/ui/native-select";
+import { RoomBed } from "@/shared/components/RoomBed";
 import type { GraphQL, Facilities } from "@/types/api.generated";
-import {
-  filterVisitsByProviderV2,
-  getPatientDisplayNameV2,
-  getProviderDisplayName,
-} from "@/features/clinical/daily-log/dailylog.adapters";
-import { HospitalizationStatusPill } from "./HospitalizationStatusPill";
+import { HospitalizationStatusPill } from "@/shared/components/HospitalizationStatusPill";
 
-interface DailyLogVisitFiltersV2Props {
+// Helper functions (inlined from dailylog.adapters.ts)
+
+function filterVisitsByProvider(
+  visits: GraphQL.DailyLogVisit[],
+  providerId: number | null
+): GraphQL.DailyLogVisit[] {
+  if (!providerId) return visits;
+  return visits.filter((visit) => visit.providerIds?.includes(providerId));
+}
+
+function getPatientDisplayName(visit: GraphQL.DailyLogVisit): string {
+  const firstName = visit.patient?.firstName ?? "";
+  const lastName = visit.patient?.lastName ?? "";
+  return `${lastName}, ${firstName}`.trim().replace(/^,\s*|,\s*$/g, "");
+}
+
+function getProviderDisplayName(provider: GraphQL.DailyLogProvider | null): string {
+  if (!provider) return "";
+  const firstName = provider.firstName ?? "";
+  const lastName = provider.lastName ?? "";
+  const name = `${lastName}, ${firstName}`.trim().replace(/^,\s*|,\s*$/g, "");
+  const typeCode = (provider as { providerType?: { code?: string } }).providerType?.code ?? "";
+  const type = typeCode ? ` (${typeCode})` : "";
+  return `${name}${type}`;
+}
+
+interface DailyLogVisitFiltersProps {
   date: string;
-  providerId?: number | null;
-  visitId?: number | null;
-  onProviderChange?: (providerId: number | null) => void;
-  onVisitIdChange?: (visitId: number | null) => void;
+  providerId: number | null;
+  visitId: number | null;
+  onProviderChange: (providerId: number | null) => void;
+  onVisitIdChange: (visitId: number | null) => void;
   visits: GraphQL.DailyLogVisit[];
   providers: GraphQL.DailyLogProvider[];
   onDateChange?: (date: string) => void;
@@ -24,7 +46,7 @@ interface DailyLogVisitFiltersV2Props {
   onFacilityChange?: (facilityId: number | null) => void;
 }
 
-export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
+export function DailyLogVisitFilters(props: DailyLogVisitFiltersProps) {
   // Refs for scroll-into-view behavior
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const visitItemRefs = React.useRef<Map<number, HTMLButtonElement>>(new Map());
@@ -45,21 +67,9 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
     [props.facilities]
   );
 
-  // Allow selectedProviderId to be null
-  const initialProviderId = React.useMemo(() => {
-    if (props.providerId !== undefined) return props.providerId;
-    if (safeProviders.length > 0 && safeProviders[0]) {
-      return safeProviders[0].id;
-    }
-    return null;
-  }, [props.providerId, safeProviders]);
-
-  const [selectedProviderId, setSelectedProvider] =
-    React.useState<number | null>(initialProviderId);
-
-  // Get visits for selected provider
+  // Get visits for selected provider (uses props.providerId directly - parent controls state)
   const filteredVisits = React.useMemo(() => {
-    const filtered = filterVisitsByProviderV2(safeVisits, selectedProviderId);
+    const filtered = filterVisitsByProvider(safeVisits, props.providerId);
     return filtered.sort((a, b) => {
       const lastNameA = (a.patient?.lastName ?? "").toLowerCase();
       const lastNameB = (b.patient?.lastName ?? "").toLowerCase();
@@ -68,7 +78,7 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
       const firstNameB = (b.patient?.firstName ?? "").toLowerCase();
       return firstNameA.localeCompare(firstNameB);
     });
-  }, [safeVisits, selectedProviderId]);
+  }, [safeVisits, props.providerId]);
 
   // Keyboard navigation for visit list
   React.useEffect(() => {
@@ -119,36 +129,8 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
   }, [props.visitId, filteredVisits]);
 
   const handleProviderChange = (newProviderId: number | null) => {
-    setSelectedProvider(newProviderId);
-    props.onProviderChange?.(newProviderId);
+    props.onProviderChange(newProviderId);
   };
-
-  // Auto-select first visit when provider changes or on initial load
-  // Only auto-select if we have visits AND a valid provider selected
-  // This prevents auto-selection during facility/date changes when data is being cleared
-  React.useEffect(() => {
-    if (
-      filteredVisits.length > 0 &&
-      !props.visitId &&
-      filteredVisits[0] &&
-      selectedProviderId !== null
-    ) {
-      props.onVisitIdChange?.(filteredVisits[0].id);
-    }
-  }, [filteredVisits, props, selectedProviderId]);
-
-  // Sync selectedProviderId with providers when visits change
-  // Only update local state, don't call parent callback to avoid navigation loops
-  React.useEffect(() => {
-    if (
-      safeProviders.length > 0 &&
-      (selectedProviderId === null ||
-        !safeProviders.some((p) => p.id === selectedProviderId))
-    ) {
-      setSelectedProvider(safeProviders[0]?.id ?? null);
-      // Don't call props.onProviderChange here - it causes navigation loops
-    }
-  }, [safeProviders, selectedProviderId]);
 
   // Calculate min and max date for input
   const today = new Date();
@@ -159,14 +141,9 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
 
   return (
     <div className="w-80 border-r border-gray-200 bg-white flex flex-col h-full relative">
-      {/* Facility, Date, and Provider Selection */}
+      {/* Date, Facility, and Provider Selection */}
       <div className="px-4 py-4 border-b border-gray-200 space-y-3">
-        {/* Facility Dropdown */}
-        <FacilityDropdown
-          facilities={safeFacilities}
-          selectedFacilityId={props.selectedFacilityId}
-          onFacilityChange={props.onFacilityChange}
-        />
+        {/* Date Selector */}
         <div className="space-y-2">
           <label
             htmlFor="date-input"
@@ -183,10 +160,16 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
             className="w-full"
           />
         </div>
+        {/* Facility Dropdown */}
+        <FacilityDropdown
+          facilities={safeFacilities}
+          selectedFacilityId={props.selectedFacilityId}
+          onFacilityChange={props.onFacilityChange}
+        />
         {/* Provider Dropdown */}
         <ProviderDropdown
           date={props.date}
-          selectedProviderId={selectedProviderId}
+          selectedProviderId={props.providerId}
           providers={safeProviders}
           onProviderChange={handleProviderChange}
         />
@@ -194,7 +177,7 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
 
       {/* Visit List */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
-        {!selectedProviderId ? (
+        {!props.providerId ? (
           <EmptyState type="no-provider" />
         ) : filteredVisits.length === 0 ? (
           <EmptyState type="no-visits" />
@@ -208,8 +191,8 @@ export function DailyLogVisitFiltersV2(props: DailyLogVisitFiltersV2Props) {
               }}
               visit={visit}
               isSelected={props.visitId === visit.id}
-              onSelect={() => props.onVisitIdChange?.(visit.id)}
-              selectedProviderId={selectedProviderId}
+              onSelect={() => props.onVisitIdChange(visit.id)}
+              selectedProviderId={props.providerId}
               providers={safeProviders}
             />
           ))
@@ -318,8 +301,6 @@ interface VisitListItemProps {
 
 const VisitListItem = React.forwardRef<HTMLButtonElement, VisitListItemProps>(
   function VisitListItem({ visit, isSelected, onSelect, selectedProviderId, providers }, ref) {
-    const roomBed = [visit.room, visit.bed].filter(Boolean).join(" / ");
-
     const otherProviders = React.useMemo(() => {
       return (visit.providerIds ?? [])
         .filter((id) => id !== selectedProviderId)
@@ -349,13 +330,9 @@ const VisitListItem = React.forwardRef<HTMLButtonElement, VisitListItemProps>(
                 isSelected ? "text-blue-900" : "text-gray-900"
               )}
             >
-              {getPatientDisplayNameV2(visit)}
+              {getPatientDisplayName(visit)}
             </p>
-            {roomBed && (
-              <p className="text-xs text-gray-500 truncate">
-                {roomBed}
-              </p>
-            )}
+            <RoomBed room={visit.room} bed={visit.bed} className="text-xs text-gray-500 truncate" />
             {otherProviders && (
               <p className="text-xs text-gray-500 truncate">{otherProviders}</p>
             )}

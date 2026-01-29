@@ -10,7 +10,8 @@ import { GraphQL, type Facilities } from '@/types/api.generated';
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/shared/components/ui/table";
 import { DateNavigator } from "@/shared/components/ui/date-navigator";
 import { NativeSelect } from "@/shared/components/ui/native-select";
-import { HospitalizationStatusPill } from "../../daily-log/components/HospitalizationStatusPill";
+import { HospitalizationStatusPill } from "@/shared/components/HospitalizationStatusPill";
+import { RoomBed } from "@/shared/components/RoomBed";
 
 export default function Visits() {
   const { date: urlDate, facilityId } = useLoaderData<{ date: string; facilityId: number | null }>();
@@ -164,7 +165,7 @@ export default function Visits() {
                   <TableCell>
                     <HospitalizationStatusPill statusId={visit.hospitalization?.hospitalizationStatusId ?? 0} />
                   </TableCell>
-                  <TableCell>{visit.room} {visit.bed}</TableCell>
+                  <TableCell><RoomBed room={visit.room} bed={visit.bed} /></TableCell>
                   <TableCell>
                     {visit.hospitalization?.admissionDate ? (() => {
                       const admissionDate = new Date(visit.hospitalization.admissionDate);

@@ -132,16 +132,11 @@ export namespace Employees {
       bed: string;
   }
 
-  export enum ProviderType {
-      _0 = 0,
-      _1 = 1,
-  }
-
   export interface UpdateEmployeeRequest {
       firstName: string;
       lastName: string;
       titleExtension?: string | null;
-      role: ProviderType;
+      role: number;
       canApproveVisits: boolean;
   }
 
@@ -264,19 +259,13 @@ export namespace Patients {
       mrn?: string | null;
   }
 
-  export enum Gender {
-      _1 = 1,
-      _2 = 2,
-      _3 = 3,
-  }
-
   export interface PatientDto {
       id: number;
       mrn: string;
       firstName?: string | null;
       lastName?: string | null;
       dateOfBirth?: string | null;
-      gender?: Gender;
+      gender?: number | null;
   }
 
 }
@@ -307,7 +296,6 @@ export namespace VisitEvents {
   export interface InsertVisitEventRequest {
       visitId: number;
       eventTypeId: number;
-      eventOccurredAt: string;
       description: string;
   }
 
@@ -388,6 +376,12 @@ export namespace GraphQL {
     DateTimeOffset: { input: string; output: string; }
     TimeOnly: { input: string; output: string; }
   };
+
+  export enum Gender {
+    Female = 'Female',
+    Male = 'Male',
+    Other = 'Other'
+  }
 
   export enum ProviderType {
     NursePractitioner = 'NursePractitioner',
@@ -489,6 +483,7 @@ export namespace GraphQL {
     firstName?: Maybe<Scalars['String']['output']>;
     id: Scalars['Int']['output'];
     lastName?: Maybe<Scalars['String']['output']>;
+    providerType?: Maybe<ProviderTypeEntity>;
     type: ProviderType;
   };
 
@@ -526,7 +521,7 @@ export namespace GraphQL {
     dischargeDate?: Maybe<Scalars['Date']['output']>;
     facility?: Maybe<Facility>;
     facilityId: Scalars['Int']['output'];
-    hospitalizationStatus?: Maybe<HospitalizationStatus>;
+    hospitalizationStatus?: Maybe<HospitalizationStatusEntity>;
     hospitalizationStatusId: Scalars['Int']['output'];
     id: Scalars['Int']['output'];
     patient?: Maybe<Patient>;
@@ -534,9 +529,8 @@ export namespace GraphQL {
     psychEvaluation: Scalars['Boolean']['output'];
   };
 
-  export type HospitalizationStatus = {
+  export type HospitalizationStatusEntity = {
     code?: Maybe<Scalars['String']['output']>;
-    color?: Maybe<Scalars['String']['output']>;
     displayOrder: Scalars['Int']['output'];
     id: Scalars['Int']['output'];
     name?: Maybe<Scalars['String']['output']>;
@@ -561,6 +555,7 @@ export namespace GraphQL {
     firstName?: Maybe<Scalars['String']['output']>;
     id: Scalars['Int']['output'];
     lastName?: Maybe<Scalars['String']['output']>;
+    providerType?: Maybe<ProviderTypeEntity>;
     titleExtension?: Maybe<Scalars['String']['output']>;
     type: ProviderType;
   };
@@ -633,9 +628,16 @@ export namespace GraphQL {
     room?: Maybe<Scalars['String']['output']>;
   };
 
-  export type ServiceType = {
-    description?: Maybe<Scalars['String']['output']>;
+  export type ProviderTypeEntity = {
+    code?: Maybe<Scalars['String']['output']>;
+    displayOrder: Scalars['Int']['output'];
     id: Scalars['Int']['output'];
+    name?: Maybe<Scalars['String']['output']>;
+  };
+
+  export type ServiceTypeEntity = {
+    id: Scalars['Int']['output'];
+    name?: Maybe<Scalars['String']['output']>;
   };
 
   export type Visit = {
@@ -659,6 +661,7 @@ export namespace GraphQL {
   export type VisitPatient = {
     birthDate?: Maybe<Scalars['DateOnly']['output']>;
     firstName?: Maybe<Scalars['String']['output']>;
+    gender?: Maybe<Gender>;
     id: Scalars['Int']['output'];
     lastName?: Maybe<Scalars['String']['output']>;
     mrn?: Maybe<Scalars['String']['output']>;

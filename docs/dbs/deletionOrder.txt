@@ -8,6 +8,7 @@ Visits
 Hospitalizations
 VisitEventTypes
 ServiceTypes
+ProviderTypes
 Insurances
 Patients
 HospitalizationStatuses

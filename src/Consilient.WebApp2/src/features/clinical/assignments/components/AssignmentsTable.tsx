@@ -1,4 +1,5 @@
 import { Badge } from '@/shared/components/ui/badge';
+import { RoomBed } from '@/shared/components/RoomBed';
 import {
   Table,
   TableBody,
@@ -86,7 +87,7 @@ export function AssignmentsTable({ items }: AssignmentsTableProps) {
             <TableCell>{renderNameWithBadge(item.physician, item.resolvedPhysicianId)}</TableCell>
             <TableCell>{renderNameWithBadge(item.nursePractitioner, item.resolvedNursePractitionerId)}</TableCell>
             <TableCell>{renderCaseIdWithBadge(item.hospitalization, item.resolvedHospitalizationId)}</TableCell>
-            <TableCell>{`${item.visit?.room ?? ''} ${item.visit?.bed ?? ''}`.trim()}</TableCell>
+            <TableCell><RoomBed room={item.visit?.room} bed={item.visit?.bed} /></TableCell>
             <TableCell>{item.imported ? 'Yes' : 'No'}</TableCell>
             <TableCell className="text-red-600">
               {parseErrorMessages(item.validationErrorsJson).map((msg, i) => (

@@ -3269,15 +3269,6 @@
         },
         "additionalProperties": false
       },
-      "Gender": {
-        "enum": [
-          1,
-          2,
-          3
-        ],
-        "type": "integer",
-        "format": "int32"
-      },
       "HospitalizationDto": {
         "required": [
           "admissionDate",
@@ -3399,7 +3390,6 @@
       "InsertVisitEventRequest": {
         "required": [
           "description",
-          "eventOccurredAt",
           "eventTypeId",
           "visitId"
         ],
@@ -3412,10 +3402,6 @@
           "eventTypeId": {
             "type": "integer",
             "format": "int32"
-          },
-          "eventOccurredAt": {
-            "type": "string",
-            "format": "date-time"
           },
           "description": {
             "type": "string"
@@ -3527,7 +3513,9 @@
             "nullable": true
           },
           "gender": {
-            "$ref": "#/components/schemas/Gender"
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3576,14 +3564,6 @@
         },
         "additionalProperties": false
       },
-      "ProviderType": {
-        "enum": [
-          0,
-          1
-        ],
-        "type": "integer",
-        "format": "int32"
-      },
       "ServiceTypeDto": {
         "required": [
           "id"
@@ -3626,7 +3606,8 @@
             "nullable": true
           },
           "role": {
-            "$ref": "#/components/schemas/ProviderType"
+            "type": "integer",
+            "format": "int32"
           },
           "canApproveVisits": {
             "type": "boolean"

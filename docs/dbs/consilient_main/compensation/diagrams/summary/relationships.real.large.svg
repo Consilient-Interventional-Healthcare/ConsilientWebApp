@@ -152,26 +152,26 @@
 <text text-anchor="start" x="227" y="-590.8" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#000000">Clinical.Providers</text>
 <text text-anchor="start" x="354.5219" y="-590.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">[table]</text>
 <polygon fill="none" stroke="#000000" points="222,-560.2 222,-582.2 389,-582.2 389,-560.2 222,-560.2"/>
-<text text-anchor="start" x="263" y="-567.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Id</text>
+<text text-anchor="start" x="260" y="-567.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Id</text>
 <polygon fill="none" stroke="#000000" points="222,-538.2 222,-560.2 389,-560.2 389,-538.2 222,-538.2"/>
-<text text-anchor="start" x="263" y="-545.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FirstName</text>
+<text text-anchor="start" x="260" y="-545.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FirstName</text>
 <polygon fill="none" stroke="#000000" points="222,-516.2 222,-538.2 389,-538.2 389,-516.2 222,-516.2"/>
-<text text-anchor="start" x="263" y="-523.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">LastName</text>
+<text text-anchor="start" x="260" y="-523.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">LastName</text>
 <polygon fill="none" stroke="#000000" points="222,-494.2 222,-516.2 389,-516.2 389,-494.2 222,-494.2"/>
-<text text-anchor="start" x="263" y="-501.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">TitleExtension</text>
+<text text-anchor="start" x="260" y="-501.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">TitleExtension</text>
 <polygon fill="none" stroke="#000000" points="222,-472.2 222,-494.2 389,-494.2 389,-472.2 222,-472.2"/>
-<text text-anchor="start" x="263" y="-479.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Type</text>
+<text text-anchor="start" x="260" y="-479.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">ProviderTypeId</text>
 <polygon fill="none" stroke="#000000" points="222,-450.2 222,-472.2 389,-472.2 389,-450.2 222,-450.2"/>
-<text text-anchor="start" x="263" y="-457.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Email</text>
+<text text-anchor="start" x="260" y="-457.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Email</text>
 <polygon fill="none" stroke="#000000" points="222,-428.2 222,-450.2 389,-450.2 389,-428.2 222,-428.2"/>
 <image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="227" y="-445.2"/>
-<text text-anchor="start" x="263" y="-435.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">EmployeeId</text>
+<text text-anchor="start" x="260" y="-435.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">EmployeeId</text>
 <polygon fill="none" stroke="#000000" points="222,-406.2 222,-428.2 389,-428.2 389,-406.2 222,-406.2"/>
-<text text-anchor="start" x="263" y="-413.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedAtUtc</text>
+<text text-anchor="start" x="260" y="-413.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedAtUtc</text>
 <polygon fill="none" stroke="#000000" points="222,-384.2 222,-406.2 389,-406.2 389,-384.2 222,-384.2"/>
-<text text-anchor="start" x="263" y="-391.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">UpdatedAtUtc</text>
+<text text-anchor="start" x="260" y="-391.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">UpdatedAtUtc</text>
 <polygon fill="none" stroke="#000000" points="222,-362.2 222,-384.2 389,-384.2 389,-362.2 222,-362.2"/>
-<text text-anchor="start" x="263" y="-369.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">RowVersion</text>
+<text text-anchor="start" x="260" y="-369.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">RowVersion</text>
 <polygon fill="#ffffff" stroke="transparent" points="222,-343.2 222,-362.2 389,-362.2 389,-343.2 222,-343.2"/>
 <polygon fill="none" stroke="#000000" points="222,-343.2 222,-362.2 389,-362.2 389,-343.2 222,-343.2"/>
 <polygon fill="#ffffff" stroke="transparent" points="223,-344.2 223,-361.2 284,-361.2 284,-344.2 223,-344.2"/>
