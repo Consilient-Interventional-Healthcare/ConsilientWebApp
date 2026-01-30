@@ -43,8 +43,8 @@ export class AuthService implements IAuthService {
     // return response.token;
   }
 
-  async login(params: Auth.AuthenticateUserRequest): Promise<Auth.AuthenticateUserApiResponse> {
-    const response = await apiClient.post<Auth.AuthenticateUserApiResponse>('/auth/authenticate', params, {
+  async login(params: Auth.AuthenticateUserRequest): Promise<Auth.AuthenticateUserResult> {
+    const response = await apiClient.post<Auth.AuthenticateUserResult>('/auth/authenticate', params, {
       withCredentials: true
     });
     if (response.status !== 200) {

@@ -2,7 +2,7 @@ import * as React from "react"
 import { cn } from "@/shared/utils/utils"
 import { ChevronDownIcon } from "lucide-react"
 
-interface NativeSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface NativeSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> {
   size?: "sm" | "default"
 }
 

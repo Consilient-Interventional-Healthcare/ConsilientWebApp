@@ -2,6 +2,7 @@ using Consilient.Api.Configuration;
 using Consilient.Api.Hubs;
 using Consilient.Api.Init;
 using Consilient.Background.Workers;
+using Consilient.Billing.Services;
 using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Data.GraphQL;
@@ -22,6 +23,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace Consilient.Api;
+
 
 internal static class Program
 {
@@ -74,6 +76,7 @@ internal static class Program
             builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
             builder.Services.RegisterUserDbContext(defaultConnectionString, builder.Environment.IsProduction());
             builder.Services.RegisterGraphQlServices();
+            builder.Services.RegisterBillingServices();
             builder.Services.RegisterEmployeeServices();
             builder.Services.RegisterInsuranceServices();
             builder.Services.RegisterPatientServices();
@@ -88,6 +91,7 @@ internal static class Program
             builder.Services.RegisterLogging(logger);
             builder.Services.ConfigureHangfire(hangfireConnectionString);
             builder.Services.AddWorkers();
+
 
             var allowedOrigins = builder.Configuration.GetSection(AllowedOriginsOptions.SectionName).Get<string[]>();
             builder.Services.ConfigureCors(allowedOrigins);

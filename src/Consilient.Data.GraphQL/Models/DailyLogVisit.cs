@@ -8,4 +8,5 @@ public class DailyLogVisit
     public DailyLogHospitalization Hospitalization { get; set; } = null!;
     public VisitPatient Patient { get; set; } = null!;
     public List<int> ProviderIds { get; set; } = [];
+    public List<VisitServiceBillingInfo> ServiceBillings { get; set; } = [];
 }

@@ -8,14 +8,14 @@ export type BatchStatus = GraphQL.ProviderAssignmentBatchStatus;
 class ProviderAssignmentsService {
   private readonly baseUrl = '/assignments';
 
-  async uploadFile(file: File, serviceDate: string, facilityId: number): Promise<Assignments.FileUploadResult> {
+  async uploadFile(file: File, serviceDate: string, facilityId: number): Promise<Assignments.ImportProviderAssignmentResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('serviceDate', serviceDate);
     formData.append('facilityId', facilityId.toString());
 
     // Remove Content-Type to let browser set multipart/form-data with boundary
-    const response = await api.post<Assignments.FileUploadResult>(`${this.baseUrl}/upload`, formData, {
+    const response = await api.post<Assignments.ImportProviderAssignmentResult>(`${this.baseUrl}/upload`, formData, {
       headers: { 'Content-Type': null as unknown as string }
     });
     return response.data;

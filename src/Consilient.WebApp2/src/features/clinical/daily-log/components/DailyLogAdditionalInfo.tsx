@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import type { StatusChangeEvent } from '../services/IDailyLogService';
-import type { GraphQL } from "@/types/api.generated";
 import { dailyLogService } from '../services/DailyLogService';
 import PatientTimeline from './PatientTimeline';
 import { RoomBed } from "@/shared/components/RoomBed";
 import { calculateAge, diffInDays, formatDate } from "@/shared/utils/utils";
+import { VisitServiceBillingEditor } from './VisitServiceBillingEditor';
+import type { DailyLogVisitWithBillings } from '../types/visitServiceBilling.types';
 
 interface DailyLogAdditionalInfoProps {
-  visit: GraphQL.DailyLogVisit | null;
+  visit: DailyLogVisitWithBillings | null;
+  onRefresh?: () => void;
 }
 
-export default function DailyLogAdditionalInfo({ visit }: DailyLogAdditionalInfoProps) {
+export default function DailyLogAdditionalInfo({ visit, onRefresh }: DailyLogAdditionalInfoProps) {
   const [timelineData, setTimelineData] = useState<StatusChangeEvent[]>([]);
 
   useEffect(() => {
@@ -85,6 +87,14 @@ export default function DailyLogAdditionalInfo({ visit }: DailyLogAdditionalInfo
     <div className="w-full p-4 min-w-0 min-h-0">
       <h2 className="text-base font-semibold text-gray-800">Patient Progress</h2>
       <PatientTimeline statusChanges={timelineData} />
+    </div>
+    <div className="w-full p-4 border-t border-gray-200 min-w-0 min-h-0">
+      <VisitServiceBillingEditor
+        visitId={visit.id}
+        serviceBillings={visit.serviceBillings ?? []}
+        onBillingAdded={onRefresh}
+        onBillingDeleted={onRefresh}
+      />
     </div>
   </>
 }

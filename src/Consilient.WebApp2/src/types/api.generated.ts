@@ -80,6 +80,17 @@ export namespace Auth {
 }
 
 
+export namespace BillingCodes {
+
+  export interface BillingCodeDto {
+      id: number;
+      code: string;
+      description: string;
+  }
+
+}
+
+
 export namespace Common {
 
   export interface FileParameter {
@@ -326,15 +337,6 @@ export namespace Visits {
       isScribeServiceOnly: boolean;
   }
 
-  export interface ProblemDetails {
-      type?: string | null;
-      title?: string | null;
-      status?: number | null;
-      detail?: string | null;
-      instance?: string | null;
-      [key: string]: any;
-  }
-
   export interface UpdateVisitRequest {
       isScribeServiceOnly: boolean;
       physicianApproved: boolean;
@@ -348,6 +350,26 @@ export namespace Visits {
       patientId: number;
       patientLastName: string;
       patientFirstName: string;
+  }
+
+}
+
+
+export namespace VisitServiceBillings {
+
+  export interface CreateVisitServiceBillingRequest {
+      visitId: number;
+      serviceTypeId: number;
+      billingCodeId: number;
+  }
+
+  export interface ProblemDetails {
+      type?: string | null;
+      title?: string | null;
+      status?: number | null;
+      detail?: string | null;
+      instance?: string | null;
+      [key: string]: any;
   }
 
 }

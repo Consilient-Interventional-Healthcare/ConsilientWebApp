@@ -1,5 +1,7 @@
 ﻿namespace Consilient.Data.Entities.Clinical;
 
+using Consilient.Data.Entities.Billing;
+
 public class Visit : BaseEntity<int>
 {
     public DateOnly DateServiced { get; set; }
@@ -10,4 +12,5 @@ public class Visit : BaseEntity<int>
     public string Bed { get; set; } = string.Empty;
     public virtual ICollection<VisitAttendant> VisitAttendants { get; set; } = null!;
     public virtual ICollection<VisitEvent> VisitEvents { get; set; } = null!;
+    public virtual ICollection<VisitServiceBilling> VisitServiceBillings { get; set; } = null!;
 }

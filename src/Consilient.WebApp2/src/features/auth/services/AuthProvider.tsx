@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (
     credentials: Auth.AuthenticateUserRequest
-  ): Promise<Auth.AuthenticateUserApiResponse> => {
+  ): Promise<Auth.AuthenticateUserResult> => {
     setIsLoading(true);
     try {
       const result = await authService.login(credentials);

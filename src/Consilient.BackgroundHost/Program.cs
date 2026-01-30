@@ -1,5 +1,6 @@
 using Consilient.Background.Workers;
 using Consilient.BackgroundHost.Init;
+using Consilient.Billing.Services;
 using Consilient.Constants;
 using Consilient.Data;
 using Consilient.Employees.Services;
@@ -18,6 +19,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+
 
 namespace Consilient.BackgroundHost;
 
@@ -67,6 +69,7 @@ internal static class Program
 
             // Register domain services
             builder.Services.RegisterCosilientDbContext(defaultConnectionString, builder.Environment.IsProduction());
+            builder.Services.RegisterBillingServices();
             builder.Services.RegisterEmployeeServices();
             builder.Services.ConfigureHangfireServices(hangfireConnectionString);
             builder.Services.RegisterInsuranceServices();
@@ -78,6 +81,7 @@ internal static class Program
             builder.Services.AddExcelImporter();
             builder.Services.AddWorkers();
             builder.Services.RegisterLogging(logger);
+
 
             // Configure health checks
             builder.Services.ConfigureHealthChecks(builder.Configuration);

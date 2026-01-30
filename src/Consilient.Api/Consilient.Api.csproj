@@ -39,6 +39,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Consilient.Background.Workers\Consilient.Background.Workers.csproj" />
+    <ProjectReference Include="..\Consilient.Billing.Services\Consilient.Billing.Services.csproj" />
     <ProjectReference Include="..\Consilient.Constants\Consilient.Constants.csproj" />
     <ProjectReference Include="..\Consilient.Data.GraphQL\Consilient.Data.GraphQL.csproj" />
     <ProjectReference Include="..\Consilient.Data\Consilient.Data.csproj" />
@@ -56,6 +57,7 @@
     <ProjectReference Include="..\Consilient.Infrastructure.Storage\Consilient.Infrastructure.Storage.csproj" />
     <ProjectReference Include="..\Consilient.Infrastructure.Serialization\Consilient.Infrastructure.Serialization.csproj" />
   </ItemGroup>
+
 
   <!-- Code generation is now handled by NUKE Build -->
   <!-- Run manually: build.cmd GenerateAllTypes -->

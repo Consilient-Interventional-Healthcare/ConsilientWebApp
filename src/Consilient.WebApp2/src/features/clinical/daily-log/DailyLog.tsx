@@ -1,5 +1,5 @@
 import { useNavigate, useLoaderData } from "react-router-dom";
-import { useState, useEffect, useContext, useMemo } from "react";
+import { useState, useEffect, useContext, useMemo, useCallback } from "react";
 import { DailyLogVisitFilters } from "./components/DailyLogVisitFilters";
 import { dailyLogService } from "./services/DailyLogService";
 import LoadingBarContext from "@/shared/layouts/LoadingBarContext";
@@ -168,6 +168,17 @@ export default function DailyLog() {
     void navigate(url, { replace: true });
   };
 
+  // Handler: Refresh data (used after service billing changes)
+  const handleRefreshData = useCallback(() => {
+    if (!facilityId) return;
+    dailyLogService
+      .getVisitsByDate(date, facilityId)
+      .then(setDailyLogData)
+      .catch((err: unknown) => {
+        console.error("Failed to refresh visits", err);
+      });
+  }, [date, facilityId]);
+
   // Find the selected visit object for display
   const selectedVisit = useMemo(() => {
     if (!resolvedVisitId) return null;
@@ -199,8 +210,8 @@ export default function DailyLog() {
                 <DailyLogEntriesPanel visit={selectedVisit} />
               </div>
               {/* Fixed right panel */}
-              <aside className="w-2/5 border-l border-gray-200 flex-shrink-0 flex flex-col items-center">
-                <DailyLogPatientDetails visit={selectedVisit} />
+              <aside className="w-2/5 border-l border-gray-200 flex-shrink-0 flex flex-col items-center overflow-y-auto">
+                <DailyLogPatientDetails visit={selectedVisit} onRefresh={handleRefreshData} />
               </aside>
             </div>
           </>

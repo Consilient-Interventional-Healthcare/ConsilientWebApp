@@ -22,7 +22,13 @@ internal class VisitConfiguration : BaseEntityTypeConfigurationWithId<Visit, int
             .OnDelete(DeleteBehavior.ClientSetNull)
             .HasConstraintName("FK_Visits_Hospitalizations_HospitalizationId");
 
+        entity.HasMany(e => e.VisitServiceBillings)
+            .WithOne(vsb => vsb.Visit)
+            .HasForeignKey(vsb => vsb.VisitId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         entity.HasIndex(e => e.DateServiced, "IX_Visits_DateServiced");
+
 
 
     }

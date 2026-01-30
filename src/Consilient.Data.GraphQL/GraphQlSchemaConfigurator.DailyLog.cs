@@ -28,6 +28,18 @@ public static partial class GraphQlSchemaConfigurator
         dailyLogHospitalizationType.AddField(m => m.AdmissionDate, nameof(DailyLogHospitalization.AdmissionDate));
         dailyLogHospitalizationType.AddField(m => m.CaseId, nameof(DailyLogHospitalization.CaseId));
 
+        // VisitServiceBillingInfo type
+        var visitServiceBillingType = schema.AddType<VisitServiceBillingInfo>(
+            "visitServiceBilling",
+            "Service billing information for a visit");
+        visitServiceBillingType.AddField(m => m.Id, nameof(VisitServiceBillingInfo.Id));
+        visitServiceBillingType.AddField(m => m.ServiceTypeId, nameof(VisitServiceBillingInfo.ServiceTypeId));
+        visitServiceBillingType.AddField(m => m.ServiceTypeCode, nameof(VisitServiceBillingInfo.ServiceTypeCode));
+        visitServiceBillingType.AddField(m => m.ServiceTypeName, nameof(VisitServiceBillingInfo.ServiceTypeName));
+        visitServiceBillingType.AddField(m => m.BillingCodeId, nameof(VisitServiceBillingInfo.BillingCodeId));
+        visitServiceBillingType.AddField(m => m.BillingCodeCode, nameof(VisitServiceBillingInfo.BillingCodeCode));
+        visitServiceBillingType.AddField(m => m.BillingCodeDescription, nameof(VisitServiceBillingInfo.BillingCodeDescription));
+
         // DailyLogVisit type
         var dailyLogVisitType = schema.AddType<DailyLogVisit>(
             "dailyLogVisit",
@@ -38,6 +50,7 @@ public static partial class GraphQlSchemaConfigurator
         dailyLogVisitType.AddField(m => m.Hospitalization, nameof(DailyLogVisit.Hospitalization));
         dailyLogVisitType.AddField(m => m.Patient, nameof(DailyLogVisit.Patient));
         dailyLogVisitType.AddField(m => m.ProviderIds, nameof(DailyLogVisit.ProviderIds));
+        dailyLogVisitType.AddField(m => m.ServiceBillings, nameof(DailyLogVisit.ServiceBillings));
 
         // DailyLogVisitsResult type
         var dailyLogVisitsResultType = schema.AddType<DailyLogVisitsResult>(
@@ -75,6 +88,10 @@ public static partial class GraphQlSchemaConfigurator
             .Include(v => v.VisitAttendants)
                 .ThenInclude(va => va.Provider)
                     .ThenInclude(p => p.ProviderTypeNavigation)
+            .Include(v => v.VisitServiceBillings)
+                .ThenInclude(vsb => vsb.ServiceTypeNavigation)
+            .Include(v => v.VisitServiceBillings)
+                .ThenInclude(vsb => vsb.BillingCode)
             .Where(v => v.DateServiced == date && v.Hospitalization.FacilityId == facilityId)
             .OrderBy(v => v.Id)
             .ToList();
@@ -121,7 +138,17 @@ public static partial class GraphQlSchemaConfigurator
                     .Select(pf => pf.Mrn)
                     .FirstOrDefault() ?? string.Empty
             },
-            ProviderIds = [.. v.VisitAttendants.Select(va => va.ProviderId)]
+            ProviderIds = [.. v.VisitAttendants.Select(va => va.ProviderId)],
+            ServiceBillings = [.. v.VisitServiceBillings.Select(vsb => new VisitServiceBillingInfo
+            {
+                Id = vsb.Id,
+                ServiceTypeId = vsb.ServiceTypeId,
+                ServiceTypeCode = vsb.ServiceTypeNavigation.Code,
+                ServiceTypeName = vsb.ServiceTypeNavigation.Name,
+                BillingCodeId = vsb.BillingCodeId,
+                BillingCodeCode = vsb.BillingCode.Code,
+                BillingCodeDescription = vsb.BillingCode.Description
+            })]
         }).ToList();
 
         return new DailyLogVisitsResult

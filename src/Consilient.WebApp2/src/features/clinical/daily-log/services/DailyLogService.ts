@@ -28,6 +28,15 @@ export class DailyLogService implements IDailyLogService {
           hospitalization { id hospitalizationStatusId admissionDate caseId }
           patient { id firstName lastName mrn birthDate gender }
           providerIds
+          serviceBillings {
+            id
+            serviceTypeId
+            serviceTypeCode
+            serviceTypeName
+            billingCodeId
+            billingCodeCode
+            billingCodeDescription
+          }
         }
       }
     }`;

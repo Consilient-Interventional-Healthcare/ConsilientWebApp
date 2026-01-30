@@ -9,5 +9,6 @@ public static class VisitRegistrationExtension
     {
         services.AddScoped<IVisitService, VisitService>();
         services.AddScoped<IVisitEventService, VisitEventService>();
+        services.AddScoped<IVisitServiceBillingService, VisitServiceBillingService>();
     }
 }
