@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Consilient.Data.Migrations.Consilient
 {
     [DbContext(typeof(ConsilientDbContext))]
-    [Migration("20260127164213_RemoveExclusionReason")]
-    partial class RemoveExclusionReason
+    [Migration("20260130144349_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -215,7 +215,8 @@ namespace Consilient.Data.Migrations.Consilient
                     b.HasIndex("FacilityId")
                         .HasDatabaseName("IX_Hospitalizations_FacilityId");
 
-                    b.HasIndex("HospitalizationStatusId");
+                    b.HasIndex("HospitalizationStatusId")
+                        .HasDatabaseName("IX_Hospitalizations_HospitalizationStatusId");
 
                     b.HasIndex("PatientId")
                         .HasDatabaseName("IX_Hospitalizations_PatientId");
@@ -267,20 +268,12 @@ namespace Consilient.Data.Migrations.Consilient
                     b.ToTable("HospitalizationInsurances", "Clinical");
                 });
 
-            modelBuilder.Entity("Consilient.Data.Entities.Clinical.HospitalizationStatus", b =>
+            modelBuilder.Entity("Consilient.Data.Entities.Clinical.HospitalizationStatusEntity", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("Color")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -312,6 +305,10 @@ namespace Consilient.Data.Migrations.Consilient
 
                     b.HasKey("Id")
                         .HasName("PK_HospitalizationStatus");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_HospitalizationStatuses_Code");
 
                     b.ToTable("HospitalizationStatuses", "Clinical");
                 });
@@ -498,6 +495,9 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("ProviderTypeId")
+                        .HasColumnType("int");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -508,9 +508,6 @@ namespace Consilient.Data.Migrations.Consilient
                     b.Property<string>("TitleExtension")
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .ValueGeneratedOnAdd()
@@ -525,7 +522,99 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasDatabaseName("IX_Providers_EmployeeId")
                         .HasFilter("[EmployeeId] IS NOT NULL");
 
+                    b.HasIndex("ProviderTypeId");
+
                     b.ToTable("Providers", "Clinical");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.Clinical.ProviderTypeEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id")
+                        .HasName("PK_ProviderTypes");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ProviderTypes_Code");
+
+                    b.ToTable("ProviderTypes", "Clinical");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.Clinical.ServiceTypeEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id")
+                        .HasName("PK_ServiceType");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ServiceTypes_Code");
+
+                    b.ToTable("ServiceTypes", "Clinical");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Clinical.Visit", b =>
@@ -691,13 +780,10 @@ namespace Consilient.Data.Migrations.Consilient
                     b.ToTable("VisitEvents", "Clinical");
                 });
 
-            modelBuilder.Entity("Consilient.Data.Entities.Clinical.VisitEventType", b =>
+            modelBuilder.Entity("Consilient.Data.Entities.Clinical.VisitEventTypeEntity", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
@@ -708,6 +794,9 @@ namespace Consilient.Data.Migrations.Consilient
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -884,41 +973,6 @@ namespace Consilient.Data.Migrations.Consilient
                     b.HasKey("Id");
 
                     b.ToTable("Insurances", "Clinical");
-                });
-
-            modelBuilder.Entity("Consilient.Data.Entities.ServiceType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion")
-                        .HasColumnName("RowVersion");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ServiceTypes", "Clinical");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Staging.ProviderAssignment", b =>
@@ -1140,7 +1194,7 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasColumnType("rowversion")
                         .HasColumnName("RowVersion");
 
-                    b.Property<int>("Status")
+                    b.Property<int>("StatusId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(0);
@@ -1156,13 +1210,58 @@ namespace Consilient.Data.Migrations.Consilient
                     b.HasIndex("CreatedByUserId")
                         .HasDatabaseName("IX_ProviderAssignmentBatches_CreatedByUserId");
 
-                    b.HasIndex("Status")
+                    b.HasIndex("StatusId")
                         .HasDatabaseName("IX_ProviderAssignmentBatches_Status");
 
                     b.HasIndex("FacilityId", "Date")
                         .HasDatabaseName("IX_ProviderAssignmentBatches_FacilityId_Date");
 
                     b.ToTable("ProviderAssignmentBatches", "staging");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.Staging.ProviderAssignmentBatchStatusEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id")
+                        .HasName("PK_ProviderAssignmentBatchStatuses");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ProviderAssignmentBatchStatuses_Code");
+
+                    b.ToTable("ProviderAssignmentBatchStatuses", "staging");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Billing.VisitServiceBilling", b =>
@@ -1174,7 +1273,7 @@ namespace Consilient.Data.Migrations.Consilient
                         .IsRequired()
                         .HasConstraintName("FK_VisitServiceBillings_BillingCodes_BillingCodeId");
 
-                    b.HasOne("Consilient.Data.Entities.ServiceType", "ServiceType")
+                    b.HasOne("Consilient.Data.Entities.Clinical.ServiceTypeEntity", "ServiceTypeNavigation")
                         .WithMany()
                         .HasForeignKey("ServiceTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1182,7 +1281,7 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasConstraintName("FK_VisitServiceBillings_ServiceTypes_ServiceTypeId");
 
                     b.HasOne("Consilient.Data.Entities.Clinical.Visit", "Visit")
-                        .WithMany()
+                        .WithMany("VisitServiceBillings")
                         .HasForeignKey("VisitId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
@@ -1190,7 +1289,7 @@ namespace Consilient.Data.Migrations.Consilient
 
                     b.Navigation("BillingCode");
 
-                    b.Navigation("ServiceType");
+                    b.Navigation("ServiceTypeNavigation");
 
                     b.Navigation("Visit");
                 });
@@ -1204,11 +1303,12 @@ namespace Consilient.Data.Migrations.Consilient
                         .IsRequired()
                         .HasConstraintName("FK_Hospitalizations_Facilities_FacilityId");
 
-                    b.HasOne("Consilient.Data.Entities.Clinical.HospitalizationStatus", "HospitalizationStatus")
+                    b.HasOne("Consilient.Data.Entities.Clinical.HospitalizationStatusEntity", "HospitalizationStatusNavigation")
                         .WithMany()
                         .HasForeignKey("HospitalizationStatusId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_Hospitalizations_HospitalizationStatuses_HospitalizationStatusId");
 
                     b.HasOne("Consilient.Data.Entities.Clinical.Patient", "Patient")
                         .WithMany()
@@ -1219,7 +1319,7 @@ namespace Consilient.Data.Migrations.Consilient
 
                     b.Navigation("Facility");
 
-                    b.Navigation("HospitalizationStatus");
+                    b.Navigation("HospitalizationStatusNavigation");
 
                     b.Navigation("Patient");
                 });
@@ -1252,12 +1352,14 @@ namespace Consilient.Data.Migrations.Consilient
                         .IsRequired()
                         .HasConstraintName("FK_HospitalizationStatusHistories_Hospitalizations_HospitalizationId");
 
-                    b.HasOne("Consilient.Data.Entities.Clinical.HospitalizationStatus", null)
+                    b.HasOne("Consilient.Data.Entities.Clinical.HospitalizationStatusEntity", "NewStatusNavigation")
                         .WithMany()
                         .HasForeignKey("NewStatusId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_HospitalizationStatusHistories_HospitalizationStatuses_NewStatusId");
+
+                    b.Navigation("NewStatusNavigation");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Clinical.PatientFacility", b =>
@@ -1286,6 +1388,15 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasForeignKey("Consilient.Data.Entities.Clinical.Provider", "EmployeeId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("FK_Providers_Employees_EmployeeId");
+
+                    b.HasOne("Consilient.Data.Entities.Clinical.ProviderTypeEntity", "ProviderTypeNavigation")
+                        .WithMany()
+                        .HasForeignKey("ProviderTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_Providers_ProviderTypes_ProviderTypeId");
+
+                    b.Navigation("ProviderTypeNavigation");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Clinical.Visit", b =>
@@ -1322,7 +1433,7 @@ namespace Consilient.Data.Migrations.Consilient
 
             modelBuilder.Entity("Consilient.Data.Entities.Clinical.VisitEvent", b =>
                 {
-                    b.HasOne("Consilient.Data.Entities.Clinical.VisitEventType", null)
+                    b.HasOne("Consilient.Data.Entities.Clinical.VisitEventTypeEntity", "EventTypeNavigation")
                         .WithMany("VisitEvents")
                         .HasForeignKey("EventTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -1335,6 +1446,8 @@ namespace Consilient.Data.Migrations.Consilient
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("FK_VisitEvents_Visits_VisitId");
+
+                    b.Navigation("EventTypeNavigation");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Compensation.ProviderContract", b =>
@@ -1365,7 +1478,7 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasForeignKey("ResolvedHospitalizationId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Consilient.Data.Entities.Clinical.HospitalizationStatus", "ResolvedHospitalizationStatus")
+                    b.HasOne("Consilient.Data.Entities.Clinical.HospitalizationStatusEntity", "ResolvedHospitalizationStatusNavigation")
                         .WithMany()
                         .HasForeignKey("ResolvedHospitalizationStatusId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -1392,7 +1505,7 @@ namespace Consilient.Data.Migrations.Consilient
 
                     b.Navigation("ResolvedHospitalization");
 
-                    b.Navigation("ResolvedHospitalizationStatus");
+                    b.Navigation("ResolvedHospitalizationStatusNavigation");
 
                     b.Navigation("ResolvedNursePractitioner");
 
@@ -1401,6 +1514,18 @@ namespace Consilient.Data.Migrations.Consilient
                     b.Navigation("ResolvedPhysician");
 
                     b.Navigation("ResolvedVisit");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.Staging.ProviderAssignmentBatch", b =>
+                {
+                    b.HasOne("Consilient.Data.Entities.Staging.ProviderAssignmentBatchStatusEntity", "StatusNavigation")
+                        .WithMany()
+                        .HasForeignKey("StatusId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ProviderAssignmentBatches_ProviderAssignmentBatchStatuses_StatusId");
+
+                    b.Navigation("StatusNavigation");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Clinical.Facility", b =>
@@ -1418,9 +1543,11 @@ namespace Consilient.Data.Migrations.Consilient
                     b.Navigation("VisitAttendants");
 
                     b.Navigation("VisitEvents");
+
+                    b.Navigation("VisitServiceBillings");
                 });
 
-            modelBuilder.Entity("Consilient.Data.Entities.Clinical.VisitEventType", b =>
+            modelBuilder.Entity("Consilient.Data.Entities.Clinical.VisitEventTypeEntity", b =>
                 {
                     b.Navigation("VisitEvents");
                 });

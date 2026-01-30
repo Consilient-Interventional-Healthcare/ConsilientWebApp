@@ -381,6 +381,37 @@ The codebase has two database contexts:
 .\build.ps1 ResetDatabase --force
 ```
 
+### Rebuilding Database from SQL Scripts
+
+The `RebuildDatabase` command provides a faster alternative to `ResetDatabase` by dropping all objects and re-running SQL scripts without restarting the Docker container.
+
+```powershell
+# Rebuild database (requires --force flag)
+.\build.ps1 RebuildDatabase --force
+
+# Rebuild with backup (creates .bak file in temp directory)
+.\build.ps1 RebuildDatabase --force --backup
+
+# Rebuild specific database
+.\build.ps1 RebuildDatabase --force --database consilient_main
+```
+
+**Differences from ResetDatabase:**
+
+| Aspect | ResetDatabase | RebuildDatabase |
+|--------|---------------|-----------------|
+| Approach | Recreates Docker container | Drops objects, runs scripts |
+| Speed | Slower (image rebuild) | Faster (no container restart) |
+| Use case | Fresh start, clean slate | Apply script changes quickly |
+| Backup | No | Optional (`--backup`) |
+
+**What RebuildDatabase does:**
+1. Ensures database container is running (if Docker)
+2. Creates backup (optional, if `--backup` flag provided)
+3. Drops all objects in dependency order: FKs → Views → Procedures → Functions → Tables → Types → Schemas
+4. Runs all SQL scripts in `src/Databases/consilient_main/` in order
+5. Verifies database health (table count)
+
 ### Complete Workflow Example
 
 When making database schema changes, follow this sequence:
@@ -405,8 +436,71 @@ When making database schema changes, follow this sequence:
 #    - src/Consilient.Data.Migrations/Consilient/[timestamp]_YourMigrationName.cs
 #    - src/Consilient.Data.Migrations/Consilient/[timestamp]_YourMigrationName.Designer.cs
 #    - src/Consilient.Data.Migrations/Consilient/ConsilientDbContextModelSnapshot.cs
-#    - src/Databases/consilient_main/XX_YourMigrationName.sql
+#    - src/Databases/consilient_main/XX_consilient_YourMigrationName.sql
 ```
+
+### Migration Script Management
+
+#### SQL Script Naming Convention
+
+Migration scripts follow this naming pattern: `{NN}_{context}_{MigrationName}.sql`
+
+| Pattern | Description | Example |
+|---------|-------------|---------|
+| `{NN}_consilient_*.sql` | ConsilientDbContext migrations (auto-generated) | `02_consilient_Initial.sql` |
+| `{NN}_users_*.sql` | UsersDbContext migrations (auto-generated) | `01_users_Initial.sql` |
+| `{NN}_manual_*.sql` | Manually created scripts (preserved during squash) | `03_manual_stored_procedures.sql` |
+| `seed.sql` | Seed data (always preserved, runs last) | `seed.sql` |
+
+#### Squashing Migrations
+
+When migration history becomes too long, consolidate into a single Initial migration:
+
+```powershell
+# Option 1: Use the shortcut utility (recommended - includes confirmation prompt)
+scripts\squash-migrations.cmd ConsilientDbContext
+
+# Option 2: Use build.ps1 directly
+.\build.ps1 SquashMigrations --db-context ConsilientDbContext --force
+```
+
+**Common mistakes to avoid:**
+
+| Incorrect | Correct | Issue |
+|-----------|---------|-------|
+| `./build.ps1` | `.\build.ps1` | Forward slash fails on Windows |
+| `build.ps1 SquashMigrations` | `.\build.ps1 SquashMigrations` | Missing .\ prefix |
+| `--db-context "ConsilientDbContext"` | `--db-context ConsilientDbContext` | Unnecessary quotes for simple values |
+| `--dbcontext` | `--db-context` | Wrong parameter name (use kebab-case) |
+| `--db-context Both` | `--db-context ConsilientDbContext` | "Both" not allowed for SquashMigrations |
+
+#### Generating Migration Scripts
+
+After creating a new EF migration, generate the SQL deployment script:
+
+```powershell
+# Generate SQL script for latest migration
+.\build.ps1 GenerateMigrationScript --db-context ConsilientDbContext
+
+# Override sequence number (for manual ordering)
+.\build.ps1 GenerateMigrationScript --db-context ConsilientDbContext --sequence-number 05
+```
+
+Output format: `{NN}_{context}_{MigrationName}.sql` with metadata header.
+
+#### One-Time File Rename Utility
+
+To migrate existing files to the new naming convention:
+
+```powershell
+# Run from repository root (NOT from scripts folder)
+scripts\rename-migration-scripts.cmd
+```
+
+**Do NOT use:**
+- `./scripts/rename-migration-scripts.cmd` (forward slashes fail on Windows)
+- `cd scripts && rename-migration-scripts.cmd` (wrong working directory)
+- `bash scripts/rename-migration-scripts.cmd` (wrong shell interpreter)
 
 ### Troubleshooting
 
