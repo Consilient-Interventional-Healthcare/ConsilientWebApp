@@ -12,16 +12,31 @@ partial class Build : NukeBuild
 {
     static Build()
     {
+        // Enable auto-flush on Console.Out for real-time subprocess output
+        Console.Out.Flush();
+
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .WriteTo.Console(
                 outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
-                restrictedToMinimumLevel: LogEventLevel.Information)
+                restrictedToMinimumLevel: LogEventLevel.Information,
+                standardErrorFromLevel: null)  // Keep all output on stdout
             .CreateLogger();
     }
 
-    public static int Main() => Execute<Build>(x => x.Compile);
+    public static int Main()
+    {
+        try
+        {
+            return Execute<Build>(x => x.Compile);
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+            Console.Out.Flush();
+        }
+    }
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly string Configuration = IsLocalBuild ? "Debug" : "Release";

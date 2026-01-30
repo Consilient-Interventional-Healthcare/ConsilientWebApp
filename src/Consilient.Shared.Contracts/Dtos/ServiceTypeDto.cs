@@ -7,7 +7,14 @@ public class ServiceTypeDto
 {
     public int Id { get; set; }
 
-    public string? Description { get; set; }
+    public string Code { get; set; } = string.Empty;
 
-    public int? CptCode { get; set; }
+    public string Name { get; set; } = string.Empty;
+
+    public int DisplayOrder { get; set; }
+
+    /// <summary>
+    /// Valid billing codes for this service type.
+    /// </summary>
+    public List<BillingCodeAssociationDto> BillingCodes { get; set; } = [];
 }

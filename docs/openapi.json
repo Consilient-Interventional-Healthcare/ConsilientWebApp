@@ -3062,6 +3062,22 @@
         },
         "additionalProperties": false
       },
+      "BillingCodeAssociationDto": {
+        "required": [
+          "code",
+          "isDefault"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "BillingCodeDto": {
         "required": [
           "code",
@@ -3807,7 +3823,11 @@
       },
       "ServiceTypeDto": {
         "required": [
-          "id"
+          "billingCodes",
+          "code",
+          "displayOrder",
+          "id",
+          "name"
         ],
         "type": "object",
         "properties": {
@@ -3815,14 +3835,21 @@
             "type": "integer",
             "format": "int32"
           },
-          "description": {
-            "type": "string",
-            "nullable": true
+          "code": {
+            "type": "string"
           },
-          "cptCode": {
+          "name": {
+            "type": "string"
+          },
+          "displayOrder": {
             "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "format": "int32"
+          },
+          "billingCodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingCodeAssociationDto"
+            }
           }
         },
         "additionalProperties": false

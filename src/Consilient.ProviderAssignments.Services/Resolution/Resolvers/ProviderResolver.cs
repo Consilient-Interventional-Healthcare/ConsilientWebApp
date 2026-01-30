@@ -31,14 +31,16 @@ internal abstract class ProviderResolver<TResolver>(IResolutionCache cache, Cons
 
     protected override IReadOnlyCollection<ProviderRow> LoadEntities(int facilityId, DateOnly date)
     {
-        return DbContext.Database.SqlQueryRaw<ProviderRow>(@"
-                SELECT
-                    P.Id AS ProviderId,
-                    P.LastName AS ProviderLastName,
-                    P.FirstName AS ProviderFirstName,
-                    P.Type AS ProviderType
-                FROM Clinical.Providers AS P
-                WHERE P.Type = {0}", (int)TargetProviderType).ToList();
+        return DbContext.Set<Provider>()
+            .Where(p => p.ProviderTypeId == (int)TargetProviderType)
+            .Select(p => new ProviderRow
+            {
+                ProviderId = p.Id,
+                ProviderLastName = p.LastName,
+                ProviderFirstName = p.FirstName,
+                ProviderType = p.Type
+            })
+            .ToList();
     }
 
     protected override Task<IEnumerable<ProviderRow>?> ResolveRecord(IRowValidationContext ctx, IReadOnlyCollection<ProviderRow> cachedItems)

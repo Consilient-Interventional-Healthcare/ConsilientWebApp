@@ -50,16 +50,16 @@
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="PatientId" nullable="false" remarks="" size="4" type="int" typeCode="4">
             <parent catalog="consilient_main" column="Id" foreignKey="FK_Hospitalizations_Patients_PatientId" implied="false" onDeleteCascade="false" schema="Clinical" table="Patients"/>
          </column>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="FacilityId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="CaseId" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="FacilityId" nullable="false" remarks="" size="4" type="int" typeCode="4">
             <parent catalog="consilient_main" column="Id" foreignKey="FK_Hospitalizations_Facilities_FacilityId" implied="false" onDeleteCascade="false" schema="Clinical" table="Facilities"/>
          </column>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="CaseId" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
-         <column autoUpdated="false" defaultValue="null" digits="7" id="4" name="AdmissionDate" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="7" id="5" name="DischargeDate" nullable="true" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="HospitalizationStatusId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="PsychEvaluation" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="null" digits="7" id="5" name="AdmissionDate" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="7" id="6" name="DischargeDate" nullable="true" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="HospitalizationStatusId" nullable="false" remarks="" size="4" type="int" typeCode="4">
             <parent catalog="consilient_main" column="Id" foreignKey="FK_Hospitalizations_HospitalizationStatuses_HospitalizationStatusId" implied="false" onDeleteCascade="false" schema="Clinical" table="HospitalizationStatuses"/>
          </column>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="PsychEvaluation" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
          <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="8" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="9" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="10" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
@@ -90,11 +90,11 @@
             <child catalog="consilient_main" column="NewStatusId" foreignKey="FK_HospitalizationStatusHistories_HospitalizationStatuses_NewStatusId" implied="false" onDeleteCascade="false" schema="Clinical" table="HospitalizationStatusHistories"/>
             <child catalog="consilient_main" column="ResolvedHospitalizationStatusId" foreignKey="FK_ProviderAssignments_HospitalizationStatuses_ResolvedHospitalizationStatusId" implied="false" onDeleteCascade="false" schema="staging" table="ProviderAssignments"/>
          </column>
-         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Code" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Code" nullable="false" remarks="" size="40" type="nvarchar" typeCode="-9"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="Name" nullable="false" remarks="" size="200" type="nvarchar" typeCode="-9"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="DisplayOrder" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
-         <column autoUpdated="false" defaultValue="null" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
          <primaryKey column="Id" sequenceNumberInPK="1"/>
          <index name="PK_HospitalizationStatus" unique="true">
@@ -242,13 +242,14 @@
       </table>
       <table catalog="consilient_main" name="ServiceTypes" remarks="" schema="Clinical" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <child catalog="consilient_main" column="ServiceTypeId" foreignKey="FK_ServiceTypeBillingCodes_ServiceTypes" implied="false" onDeleteCascade="false" schema="Billing" table="ServiceTypeBillingCodes"/>
             <child catalog="consilient_main" column="ServiceTypeId" foreignKey="FK_VisitServiceBillings_ServiceTypes_ServiceTypeId" implied="false" onDeleteCascade="false" schema="Billing" table="VisitServiceBillings"/>
          </column>
-         <column autoUpdated="false" defaultValue="('')" digits="0" id="1" name="Code" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Code" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="Name" nullable="false" remarks="" size="200" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="((0))" digits="0" id="3" name="DisplayOrder" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
-         <column autoUpdated="false" defaultValue="null" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="DisplayOrder" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
          <primaryKey column="Id" sequenceNumberInPK="1"/>
          <index name="PK_ServiceType" unique="true">
@@ -321,13 +322,16 @@
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Code" nullable="false" remarks="" size="100" type="nvarchar" typeCode="-9"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="Name" nullable="false" remarks="" size="200" type="nvarchar" typeCode="-9"/>
-         <column autoUpdated="false" defaultValue="((0))" digits="0" id="3" name="DisplayOrder" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
-         <column autoUpdated="false" defaultValue="null" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
-         <column autoUpdated="false" defaultValue="null" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="DisplayOrder" nullable="false" remarks="" size="4" type="int" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
          <primaryKey column="Id" sequenceNumberInPK="1"/>
          <index name="PK_VisitEventType" unique="true">
             <column ascending="true" name="Id"/>
+         </index>
+         <index name="IX_VisitEventTypes_Code" unique="true">
+            <column ascending="true" name="Code"/>
          </index>
       </table>
       <table catalog="consilient_main" name="Visits" remarks="" schema="Clinical" type="TABLE">

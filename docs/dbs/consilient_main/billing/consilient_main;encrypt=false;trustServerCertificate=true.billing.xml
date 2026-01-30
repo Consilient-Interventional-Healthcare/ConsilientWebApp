@@ -3,6 +3,7 @@
    <tables>
       <table catalog="consilient_main" name="BillingCodes" remarks="" schema="Billing" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <child catalog="consilient_main" column="BillingCodeId" foreignKey="FK_ServiceTypeBillingCodes_BillingCodes" implied="false" onDeleteCascade="false" schema="Billing" table="ServiceTypeBillingCodes"/>
             <child catalog="consilient_main" column="BillingCodeId" foreignKey="FK_VisitServiceBillings_BillingCodes_BillingCodeId" implied="false" onDeleteCascade="false" schema="Billing" table="VisitServiceBillings"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="Code" nullable="false" remarks="" size="20" type="varchar" typeCode="12"/>
@@ -16,6 +17,33 @@
          </index>
          <index name="AK_BillingCodes_Code" unique="true">
             <column ascending="true" name="Code"/>
+         </index>
+      </table>
+      <table catalog="consilient_main" name="ServiceTypeBillingCodes" remarks="" schema="Billing" type="TABLE">
+         <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="Id" nullable="false" remarks="" size="4" type="int identity" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="ServiceTypeId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ServiceTypeBillingCodes_ServiceTypes" implied="false" onDeleteCascade="false" schema="Clinical" table="ServiceTypes"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="BillingCodeId" nullable="false" remarks="" size="4" type="int" typeCode="4">
+            <parent catalog="consilient_main" column="Id" foreignKey="FK_ServiceTypeBillingCodes_BillingCodes" implied="false" onDeleteCascade="false" schema="Billing" table="BillingCodes"/>
+         </column>
+         <column autoUpdated="false" defaultValue="(CONVERT([bit],(0)))" digits="0" id="3" name="IsDefault" nullable="false" remarks="" size="1" type="bit" typeCode="-7"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="4" name="CreatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="(sysutcdatetime())" digits="7" id="5" name="UpdatedAtUtc" nullable="false" remarks="" size="16" type="datetime2" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="RowVersion" nullable="false" remarks="" size="8" type="timestamp" typeCode="-2"/>
+         <primaryKey column="Id" sequenceNumberInPK="1"/>
+         <index name="PK_ServiceTypeBillingCode" unique="true">
+            <column ascending="true" name="Id"/>
+         </index>
+         <index name="AK_ServiceTypeBillingCodes_ServiceTypeId_BillingCodeId" unique="true">
+            <column ascending="true" name="ServiceTypeId"/>
+            <column ascending="true" name="BillingCodeId"/>
+         </index>
+         <index name="IX_ServiceTypeBillingCodes_BillingCodeId" unique="false">
+            <column ascending="true" name="BillingCodeId"/>
+         </index>
+         <index name="IX_ServiceTypeBillingCodes_ServiceTypeId" unique="false">
+            <column ascending="true" name="ServiceTypeId"/>
          </index>
       </table>
       <table catalog="consilient_main" name="VisitServiceBillings" remarks="" schema="Billing" type="TABLE">

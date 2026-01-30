@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { StatusChangeEvent } from '../services/IDailyLogService';
 import { dailyLogService } from '../services/DailyLogService';
-import PatientTimeline from './PatientTimeline';
+// import PatientTimeline from './PatientTimeline';
 import { RoomBed } from "@/shared/components/RoomBed";
 import { calculateAge, diffInDays, formatDate } from "@/shared/utils/utils";
 import { VisitServiceBillingEditor } from './VisitServiceBillingEditor';
@@ -34,7 +34,7 @@ export default function DailyLogAdditionalInfo({ visit, onRefresh }: DailyLogAdd
   const genderDisplay = visit.patient?.gender ?? 'Unknown';
 
   return <>
-    <div className="w-full min-w-0 min-h-0">
+    {/* <div className="w-full min-w-0 min-h-0">
       <div className="p-4" style={{borderBottom: '1px solid gray'}}>
         <button
           className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
@@ -83,11 +83,11 @@ export default function DailyLogAdditionalInfo({ visit, onRefresh }: DailyLogAdd
           </div>
         </div>
       </div>
-    </div>
-    <div className="w-full p-4 min-w-0 min-h-0">
+    </div> */}
+    {/* <div className="w-full p-4 min-w-0 min-h-0">
       <h2 className="text-base font-semibold text-gray-800">Patient Progress</h2>
       <PatientTimeline statusChanges={timelineData} />
-    </div>
+    </div> */}
     <div className="w-full p-4 border-t border-gray-200 min-w-0 min-h-0">
       <VisitServiceBillingEditor
         visitId={visit.id}

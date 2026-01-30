@@ -284,6 +284,11 @@ export namespace Patients {
 
 export namespace ServiceTypes {
 
+  export interface BillingCodeAssociationDto {
+      code: string;
+      isDefault: boolean;
+  }
+
   export interface CreateServiceTypeRequest {
       description?: string | null;
       cptCode?: number | null;
@@ -291,8 +296,10 @@ export namespace ServiceTypes {
 
   export interface ServiceTypeDto {
       id: number;
-      description?: string | null;
-      cptCode?: number | null;
+      code: string;
+      name: string;
+      displayOrder: number;
+      billingCodes: BillingCodeAssociationDto[];
   }
 
   export interface UpdateServiceTypeRequest {

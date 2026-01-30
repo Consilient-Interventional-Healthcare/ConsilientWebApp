@@ -54,6 +54,8 @@ public class ConsilientDbContext : DbContext
 
     public virtual DbSet<VisitServiceBilling> VisitServiceBillings { get; set; } = null!;
 
+    public virtual DbSet<ServiceTypeBillingCode> ServiceTypeBillingCodes { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

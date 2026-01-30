@@ -426,7 +426,7 @@
         "keyTitle": "Indexed",
         "name": "<i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i>Code",
         "type": "nvarchar",
-        "length": 100,
+        "length": 40,
         "nullable": "",
         "autoUpdated": "",
         "defaultValue": "null",
@@ -471,7 +471,7 @@
         "length": 16,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "null",
+        "defaultValue": "(sysutcdatetime())",
         "comments": ""
     },
     {
@@ -485,7 +485,7 @@
         "length": 16,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "null",
+        "defaultValue": "(sysutcdatetime())",
         "comments": ""
     },
     {
@@ -534,6 +534,20 @@
         "tableName": "Hospitalizations",
         "tableFileName": "Hospitalizations",
         "tableType": "Table",
+        "keyClass": "indexedColumn",
+        "keyTitle": "Indexed",
+        "name": "<i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i>CaseId",
+        "type": "int",
+        "length": 4,
+        "nullable": "",
+        "autoUpdated": "",
+        "defaultValue": "null",
+        "comments": ""
+    },
+    {
+        "tableName": "Hospitalizations",
+        "tableFileName": "Hospitalizations",
+        "tableType": "Table",
         "keyClass": "foreignKey",
         "keyTitle": "Foreign Key",
         "name": "<i class='icon ion-key iconkey' style='padding-left: 5px;'></i>FacilityId",
@@ -548,11 +562,11 @@
         "tableName": "Hospitalizations",
         "tableFileName": "Hospitalizations",
         "tableType": "Table",
-        "keyClass": "indexedColumn",
-        "keyTitle": "Indexed",
-        "name": "<i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i>CaseId",
-        "type": "int",
-        "length": 4,
+        "keyClass": "",
+        "keyTitle": "",
+        "name": "PsychEvaluation",
+        "type": "bit",
+        "length": 1,
         "nullable": "",
         "autoUpdated": "",
         "defaultValue": "null",
@@ -595,20 +609,6 @@
         "name": "<i class='icon ion-key iconkey' style='padding-left: 5px;'></i>HospitalizationStatusId",
         "type": "int",
         "length": 4,
-        "nullable": "",
-        "autoUpdated": "",
-        "defaultValue": "null",
-        "comments": ""
-    },
-    {
-        "tableName": "Hospitalizations",
-        "tableFileName": "Hospitalizations",
-        "tableType": "Table",
-        "keyClass": "",
-        "keyTitle": "",
-        "name": "PsychEvaluation",
-        "type": "bit",
-        "length": 1,
         "nullable": "",
         "autoUpdated": "",
         "defaultValue": "null",
@@ -1241,7 +1241,7 @@
         "length": 100,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "('')",
+        "defaultValue": "null",
         "comments": ""
     },
     {
@@ -1269,7 +1269,7 @@
         "length": 4,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "((0))",
+        "defaultValue": "null",
         "comments": ""
     },
     {
@@ -1283,7 +1283,7 @@
         "length": 16,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "null",
+        "defaultValue": "(sysutcdatetime())",
         "comments": ""
     },
     {
@@ -1297,7 +1297,7 @@
         "length": 16,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "null",
+        "defaultValue": "(sysutcdatetime())",
         "comments": ""
     },
     {
@@ -1416,9 +1416,9 @@
         "tableName": "VisitEventTypes",
         "tableFileName": "VisitEventTypes",
         "tableType": "Table",
-        "keyClass": "",
-        "keyTitle": "",
-        "name": "Code",
+        "keyClass": "indexedColumn",
+        "keyTitle": "Indexed",
+        "name": "<i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i>Code",
         "type": "nvarchar",
         "length": 100,
         "nullable": "",
@@ -1451,7 +1451,7 @@
         "length": 4,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "((0))",
+        "defaultValue": "null",
         "comments": ""
     },
     {
@@ -1465,7 +1465,7 @@
         "length": 16,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "null",
+        "defaultValue": "(sysutcdatetime())",
         "comments": ""
     },
     {
@@ -1479,7 +1479,7 @@
         "length": 16,
         "nullable": "",
         "autoUpdated": "",
-        "defaultValue": "null",
+        "defaultValue": "(sysutcdatetime())",
         "comments": ""
     },
     {

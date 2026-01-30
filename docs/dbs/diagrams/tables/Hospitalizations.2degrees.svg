@@ -87,33 +87,33 @@
 <text text-anchor="start" x="469.5" y="-526.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="#ffffff" stroke="transparent" points="273.5,-496.6433 273.5,-518.6433 466.5,-518.6433 466.5,-496.6433 273.5,-496.6433"/>
 <polygon fill="none" stroke="#000000" points="273.5,-496.6433 273.5,-518.6433 466.5,-518.6433 466.5,-496.6433 273.5,-496.6433"/>
-<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="278.5" y="-513.643"/>
-<text text-anchor="start" x="293.5" y="-503.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FacilityId</text>
+<text text-anchor="start" x="293.5" y="-503.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CaseId</text>
 <polygon fill="none" stroke="#000000" points="466.5,-496.6433 466.5,-518.6433 547.5,-518.6433 547.5,-496.6433 466.5,-496.6433"/>
 <text text-anchor="start" x="469.5" y="-504.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="#ffffff" stroke="transparent" points="273.5,-474.6433 273.5,-496.6433 466.5,-496.6433 466.5,-474.6433 273.5,-474.6433"/>
 <polygon fill="none" stroke="#000000" points="273.5,-474.6433 273.5,-496.6433 466.5,-496.6433 466.5,-474.6433 273.5,-474.6433"/>
-<text text-anchor="start" x="293.5" y="-481.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CaseId</text>
+<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="278.5" y="-491.643"/>
+<text text-anchor="start" x="293.5" y="-481.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FacilityId</text>
 <polygon fill="none" stroke="#000000" points="466.5,-474.6433 466.5,-496.6433 547.5,-496.6433 547.5,-474.6433 466.5,-474.6433"/>
 <text text-anchor="start" x="469.5" y="-482.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="none" stroke="#000000" points="273.5,-452.6433 273.5,-474.6433 466.5,-474.6433 466.5,-452.6433 273.5,-452.6433"/>
-<text text-anchor="start" x="293.5" y="-459.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">AdmissionDate</text>
+<text text-anchor="start" x="293.5" y="-459.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">PsychEvaluation</text>
 <polygon fill="none" stroke="#000000" points="466.5,-452.6433 466.5,-474.6433 547.5,-474.6433 547.5,-452.6433 466.5,-452.6433"/>
-<text text-anchor="start" x="469.0968" y="-460.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
+<text text-anchor="start" x="469.5" y="-460.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">bit[1]</text>
 <polygon fill="none" stroke="#000000" points="273.5,-430.6433 273.5,-452.6433 466.5,-452.6433 466.5,-430.6433 273.5,-430.6433"/>
-<text text-anchor="start" x="293.5" y="-437.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">DischargeDate</text>
+<text text-anchor="start" x="293.5" y="-437.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">AdmissionDate</text>
 <polygon fill="none" stroke="#000000" points="466.5,-430.6433 466.5,-452.6433 547.5,-452.6433 547.5,-430.6433 466.5,-430.6433"/>
 <text text-anchor="start" x="469.0968" y="-438.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
-<polygon fill="#ffffff" stroke="transparent" points="273.5,-408.6433 273.5,-430.6433 466.5,-430.6433 466.5,-408.6433 273.5,-408.6433"/>
 <polygon fill="none" stroke="#000000" points="273.5,-408.6433 273.5,-430.6433 466.5,-430.6433 466.5,-408.6433 273.5,-408.6433"/>
-<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="278.5" y="-425.643"/>
-<text text-anchor="start" x="293.5" y="-415.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">HospitalizationStatusId</text>
+<text text-anchor="start" x="293.5" y="-415.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">DischargeDate</text>
 <polygon fill="none" stroke="#000000" points="466.5,-408.6433 466.5,-430.6433 547.5,-430.6433 547.5,-408.6433 466.5,-408.6433"/>
-<text text-anchor="start" x="469.5" y="-416.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
+<text text-anchor="start" x="469.0968" y="-416.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
+<polygon fill="#ffffff" stroke="transparent" points="273.5,-386.6433 273.5,-408.6433 466.5,-408.6433 466.5,-386.6433 273.5,-386.6433"/>
 <polygon fill="none" stroke="#000000" points="273.5,-386.6433 273.5,-408.6433 466.5,-408.6433 466.5,-386.6433 273.5,-386.6433"/>
-<text text-anchor="start" x="293.5" y="-393.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">PsychEvaluation</text>
+<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="278.5" y="-403.643"/>
+<text text-anchor="start" x="293.5" y="-393.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">HospitalizationStatusId</text>
 <polygon fill="none" stroke="#000000" points="466.5,-386.6433 466.5,-408.6433 547.5,-408.6433 547.5,-386.6433 466.5,-386.6433"/>
-<text text-anchor="start" x="469.5" y="-394.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">bit[1]</text>
+<text text-anchor="start" x="469.5" y="-394.3433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="none" stroke="#000000" points="273.5,-364.6433 273.5,-386.6433 466.5,-386.6433 466.5,-364.6433 273.5,-364.6433"/>
 <text text-anchor="start" x="293.5" y="-371.7433" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedAtUtc</text>
 <polygon fill="none" stroke="#000000" points="466.5,-364.6433 466.5,-386.6433 547.5,-386.6433 547.5,-364.6433 466.5,-364.6433"/>
@@ -250,9 +250,9 @@
 <!-- Hospitalizations&#45;&gt;Facilities -->
 <g id="edge4" class="edge">
 <title>Hospitalizations:w&#45;&gt;Facilities:e</title>
-<path fill="none" stroke="#000000" d="M259.3956,-510.574C241.8633,-519.6314 246.0324,-547.9318 229,-570.6433 206.5119,-600.6295 213.9818,-636.6433 176.5,-636.6433"/>
-<polygon fill="#000000" stroke="#000000" points="265.6673,-509.2709 274.2324,-511.168 269.5837,-508.4571 273.5,-507.6433 273.5,-507.6433 273.5,-507.6433 269.5837,-508.4571 272.7676,-504.1186 265.6673,-509.2709 265.6673,-509.2709"/>
-<ellipse fill="none" stroke="#000000" cx="262.5342" cy="-509.9219" rx="3.2" ry="3.2"/>
+<path fill="none" stroke="#000000" d="M259.324,-488.2454C235.8769,-498.8612 249.0853,-539.7938 229,-570.6433 208.5492,-602.0543 213.9818,-636.6433 176.5,-636.6433"/>
+<polygon fill="#000000" stroke="#000000" points="265.6315,-487.0877 274.15,-489.1841 269.5657,-486.3655 273.5,-485.6433 273.5,-485.6433 273.5,-485.6433 269.5657,-486.3655 272.85,-482.1025 265.6315,-487.0877 265.6315,-487.0877"/>
+<ellipse fill="none" stroke="#000000" cx="262.484" cy="-487.6654" rx="3.2" ry="3.2"/>
 </g>
 <!-- HospitalizationStatuses -->
 <g id="node7" class="node">
@@ -281,9 +281,9 @@
 <!-- Hospitalizations&#45;&gt;HospitalizationStatuses -->
 <g id="edge5" class="edge">
 <title>Hospitalizations:w&#45;&gt;HospitalizationStatuses:e</title>
-<path fill="none" stroke="#000000" d="M258.9711,-418.6415C159.2328,-404.6114 127.4046,-246.8458 118.0629,-175.4147"/>
-<polygon fill="#000000" stroke="#000000" points="265.519,-419.0929 273.2523,-423.2348 269.5095,-419.3681 273.5,-419.6433 273.5,-419.6433 273.5,-419.6433 269.5095,-419.3681 273.7477,-416.0518 265.519,-419.0929 265.519,-419.0929"/>
-<ellipse fill="none" stroke="#000000" cx="262.3265" cy="-418.8728" rx="3.2" ry="3.2"/>
+<path fill="none" stroke="#000000" d="M259.104,-396.6235C166.5218,-383.2661 131.1162,-242.0967 119.4734,-175.3035"/>
+<polygon fill="#000000" stroke="#000000" points="265.52,-397.078 273.2456,-401.2343 269.51,-397.3606 273.5,-397.6433 273.5,-397.6433 273.5,-397.6433 269.51,-397.3606 273.7544,-394.0523 265.52,-397.078 265.52,-397.078"/>
+<ellipse fill="none" stroke="#000000" cx="262.328" cy="-396.8518" rx="3.2" ry="3.2"/>
 </g>
 <!-- Patients -->
 <g id="node8" class="node">

@@ -98,6 +98,20 @@ VALUES
     (5, '99239', N'Discharge day management, high complexity');
 GO
 
+INSERT INTO Billing.ServiceTypeBillingCodes (ServiceTypeId, BillingCodeId, IsDefault)
+VALUES
+    -- Psych Eval (1): 90792 only - default
+    (1, (SELECT Id FROM Billing.BillingCodes WHERE Code = '90792'), 1),
+
+    -- DC Summary (3): 99239 only - default
+    (3, (SELECT Id FROM Billing.BillingCodes WHERE Code = '99239'), 1),
+
+    -- Progress Note (2): 99231, 99232 (default), 99233
+    (2, (SELECT Id FROM Billing.BillingCodes WHERE Code = '99231'), 0),
+    (2, (SELECT Id FROM Billing.BillingCodes WHERE Code = '99232'), 1),  -- Default
+    (2, (SELECT Id FROM Billing.BillingCodes WHERE Code = '99233'), 0);
+GO
+
 SET IDENTITY_INSERT [Clinical].[Patients] ON;
 GO
 

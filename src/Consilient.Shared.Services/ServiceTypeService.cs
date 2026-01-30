@@ -51,10 +51,30 @@ public class ServiceTypeService(ConsilientDbContext dataContext) : IServiceTypeS
 
     public async Task<IEnumerable<ServiceTypeDto>> GetAllAsync()
     {
-        var dtos = await dataContext.ServiceTypes
+        var serviceTypes = await dataContext.ServiceTypes
             .AsNoTracking()
-            .ProjectToType<ServiceTypeDto>()
             .ToListAsync();
+
+        var billingCodeAssociations = await dataContext.ServiceTypeBillingCodes
+            .AsNoTracking()
+            .Include(stbc => stbc.BillingCode)
+            .ToListAsync();
+
+        var dtos = serviceTypes.Select(st => new ServiceTypeDto
+        {
+            Id = st.Id,
+            Code = st.Code,
+            Name = st.Name,
+            DisplayOrder = st.DisplayOrder,
+            BillingCodes = billingCodeAssociations
+                .Where(bc => bc.ServiceTypeId == st.Id)
+                .Select(bc => new BillingCodeAssociationDto
+                {
+                    Code = bc.BillingCode.Code,
+                    IsDefault = bc.IsDefault
+                })
+                .ToList()
+        });
 
         return dtos;
     }

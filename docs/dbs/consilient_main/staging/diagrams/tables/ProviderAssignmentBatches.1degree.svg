@@ -40,23 +40,23 @@
 <text text-anchor="start" x="372" y="-154.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">StatusId</text>
 <polygon fill="none" stroke="#000000" points="580,-147.2 580,-169.2 678,-169.2 678,-147.2 580,-147.2"/>
 <text text-anchor="start" x="583" y="-154.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
+<polygon fill="#ffffff" stroke="transparent" points="352,-125.2 352,-147.2 580,-147.2 580,-125.2 352,-125.2"/>
 <polygon fill="none" stroke="#000000" points="352,-125.2 352,-147.2 580,-147.2 580,-125.2 352,-125.2"/>
-<text text-anchor="start" x="372" y="-132.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedAtUtc</text>
+<text text-anchor="start" x="372" y="-132.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedByUserId</text>
 <polygon fill="none" stroke="#000000" points="580,-125.2 580,-147.2 678,-147.2 678,-125.2 580,-125.2"/>
-<text text-anchor="start" x="583" y="-132.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
+<text text-anchor="start" x="583" y="-132.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="none" stroke="#000000" points="352,-103.2 352,-125.2 580,-125.2 580,-103.2 352,-103.2"/>
-<text text-anchor="start" x="372" y="-110.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">UpdatedAtUtc</text>
+<text text-anchor="start" x="372" y="-110.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedAtUtc</text>
 <polygon fill="none" stroke="#000000" points="580,-103.2 580,-125.2 678,-125.2 678,-103.2 580,-103.2"/>
 <text text-anchor="start" x="583" y="-110.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
 <polygon fill="none" stroke="#000000" points="352,-81.2 352,-103.2 580,-103.2 580,-81.2 352,-81.2"/>
-<text text-anchor="start" x="372" y="-88.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">RowVersion</text>
+<text text-anchor="start" x="372" y="-88.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">UpdatedAtUtc</text>
 <polygon fill="none" stroke="#000000" points="580,-81.2 580,-103.2 678,-103.2 678,-81.2 580,-81.2"/>
-<text text-anchor="start" x="583" y="-88.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">timestamp[8]</text>
-<polygon fill="#ffffff" stroke="transparent" points="352,-59.2 352,-81.2 580,-81.2 580,-59.2 352,-59.2"/>
+<text text-anchor="start" x="583" y="-88.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
 <polygon fill="none" stroke="#000000" points="352,-59.2 352,-81.2 580,-81.2 580,-59.2 352,-59.2"/>
-<text text-anchor="start" x="372" y="-66.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedByUserId</text>
+<text text-anchor="start" x="372" y="-66.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">RowVersion</text>
 <polygon fill="none" stroke="#000000" points="580,-59.2 580,-81.2 678,-81.2 678,-59.2 580,-59.2"/>
-<text text-anchor="start" x="583" y="-66.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
+<text text-anchor="start" x="583" y="-66.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">timestamp[8]</text>
 <polygon fill="#ffffff" stroke="transparent" points="352,-40.2 352,-59.2 678,-59.2 678,-40.2 352,-40.2"/>
 <polygon fill="none" stroke="#000000" points="352,-40.2 352,-59.2 678,-59.2 678,-40.2 352,-40.2"/>
 <polygon fill="#ffffff" stroke="transparent" points="353,-41.2 353,-58.2 464,-58.2 464,-41.2 353,-41.2"/>

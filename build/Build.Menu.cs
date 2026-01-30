@@ -1,4 +1,5 @@
 using Nuke.Common;
+using Serilog;
 using Spectre.Console;
 
 /// <summary>
@@ -187,6 +188,7 @@ partial class Build
                     break;
                 case "Recreate Database Documentation":
                     ExecuteTargetWithOutput("GenerateDatabaseDocs", "--db-auto-start");
+                    WaitForKeyPress();
                     break;
                 default:
                     return;
@@ -476,47 +478,88 @@ partial class Build
             // Get the path to the build executable
             var buildExePath = Path.Combine(RootDirectory, "build", "bin", "Debug", "_build.exe");
 
-            // Run the process and capture output
+            // Close Serilog to release the build.log file before spawning subprocess
+            // The subprocess will create its own logger instance
+            Log.CloseAndFlush();
+
+            // Temporarily rename the build.log file to avoid file locking conflict
+            // NUKE automatically writes to .nuke/temp/build.log in both parent and child
+            var buildLogPath = RootDirectory / ".nuke" / "temp" / "build.log";
+            var buildLogBackup = RootDirectory / ".nuke" / "temp" / "build.log.parent";
+            bool logFileRenamed = false;
+
+            try
+            {
+                if (File.Exists(buildLogPath))
+                {
+                    if (File.Exists(buildLogBackup))
+                        File.Delete(buildLogBackup);
+                    File.Move(buildLogPath, buildLogBackup);
+                    logFileRenamed = true;
+                }
+            }
+            catch
+            {
+                // If we can't rename, continue anyway - subprocess might still work
+            }
+
+            // Run the process and let it inherit the console for real-time output
+            // Don't redirect stdout/stderr - let the subprocess write directly to console
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = buildExePath,
                 Arguments = args,
                 WorkingDirectory = RootDirectory,
                 UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
+                // Don't redirect - let subprocess write directly to console for real-time output
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                CreateNoWindow = false
             };
 
-            using var process = new System.Diagnostics.Process { StartInfo = startInfo };
-
-            process.OutputDataReceived += (_, e) =>
+            int exitCode;
+            using (var process = new System.Diagnostics.Process { StartInfo = startInfo })
             {
-                if (e.Data != null)
-                    Console.WriteLine(e.Data);
-            };
+                process.Start();
+                process.WaitForExit();
+                exitCode = process.ExitCode;
+            }
 
-            process.ErrorDataReceived += (_, e) =>
+            // Restore the parent's build.log
+            try
             {
-                if (e.Data != null)
-                    AnsiConsole.MarkupLine($"[red]{Markup.Escape(e.Data)}[/]");
-            };
+                if (logFileRenamed && File.Exists(buildLogBackup))
+                {
+                    if (File.Exists(buildLogPath))
+                        File.Delete(buildLogPath);
+                    File.Move(buildLogBackup, buildLogPath);
+                }
+            }
+            catch
+            {
+                // Ignore cleanup errors
+            }
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
+            // Reinitialize the logger for the parent process
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+                .WriteTo.Console(
+                    outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information,
+                    standardErrorFromLevel: null)
+                .CreateLogger();
 
             AnsiConsole.WriteLine();
 
-            if (process.ExitCode == 0)
+            if (exitCode == 0)
             {
                 AnsiConsole.MarkupLine("[green]Completed successfully.[/]");
                 return true;
             }
             else
             {
-                AnsiConsole.MarkupLine($"[red]Failed with exit code {process.ExitCode}[/]");
+                AnsiConsole.MarkupLine($"[red]Failed with exit code {exitCode}[/]");
                 return false;
             }
         }

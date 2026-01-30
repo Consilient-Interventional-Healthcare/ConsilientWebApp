@@ -93,7 +93,7 @@ BEGIN
         -- Ensure batch exists and is in Resolved status before processing
         IF NOT EXISTS (
             SELECT 1 FROM [staging].[ProviderAssignmentBatches]
-            WHERE [Id] = @BatchId AND [Status] = 2  -- Resolved
+            WHERE [Id] = @BatchId AND [StatusId] = 2  -- Resolved
         )
         BEGIN
             SET @ErrorMessage = 'Batch must be in Resolved status to process. BatchId: ' + CAST(@BatchId AS NVARCHAR(36));
@@ -296,7 +296,7 @@ BEGIN
 
         WHILE @@FETCH_STATUS = 0
         BEGIN
-            INSERT INTO [Clinical].[Providers] (FirstName, LastName, TitleExtension, [Type], Email, EmployeeId)
+            INSERT INTO [Clinical].[Providers] (FirstName, LastName, TitleExtension, [ProviderTypeId], Email, EmployeeId)
             VALUES ('', @PhysicianLastName, NULL, 0, '', NULL);
 
             SET @NewProviderId = SCOPE_IDENTITY();
@@ -345,7 +345,7 @@ BEGIN
 
         WHILE @@FETCH_STATUS = 0
         BEGIN
-            INSERT INTO [Clinical].[Providers] (FirstName, LastName, TitleExtension, [Type], Email, EmployeeId)
+            INSERT INTO [Clinical].[Providers] (FirstName, LastName, TitleExtension, [ProviderTypeId], Email, EmployeeId)
             VALUES ('', @NPLastName, NULL, 1, '', NULL);
 
             SET @NewNPId = SCOPE_IDENTITY();
@@ -587,7 +587,7 @@ BEGIN
 
         UPDATE [staging].[ProviderAssignmentBatches]
         SET
-            [Status] = 3,  -- Processed
+            [StatusId] = 3,  -- Processed
             [UpdatedAtUtc] = SYSUTCDATETIME()
         WHERE [Id] = @BatchId;
 
@@ -829,7 +829,7 @@ BEGIN
 
         UPDATE [staging].[ProviderAssignmentBatches]
         SET
-            [Status] = 2,  -- Resolved (ready for re-processing)
+            [StatusId] = 2,  -- Resolved (ready for re-processing)
             [UpdatedAtUtc] = SYSUTCDATETIME()
         WHERE [Id] = @BatchId;
 

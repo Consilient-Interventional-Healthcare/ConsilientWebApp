@@ -72,7 +72,7 @@ partial class Build
             Log.Information("Searching for Consilient Docker images...");
             var imageIdsOutput = GetDockerOutput("images --filter \"reference=*consilient*\" -q", DockerDirectory);
             var imageIds = imageIdsOutput
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
                 .Where(id => !string.IsNullOrWhiteSpace(id))
                 .ToList();
 
@@ -86,7 +86,7 @@ partial class Build
                 {
                     var containerIds = GetDockerOutput($"ps -a --filter \"ancestor={imageId}\" -q", DockerDirectory);
                     containersToRemove.AddRange(containerIds
-                        .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
                         .Where(id => !string.IsNullOrWhiteSpace(id)));
                 }
 

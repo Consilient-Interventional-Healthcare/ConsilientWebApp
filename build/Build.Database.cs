@@ -924,8 +924,8 @@ namespace {migrationNamespace}
         // Use --no-deps since we already verified db is healthy (avoids container name conflicts)
         var args = $"compose -f \"{composeFileName}\" --profile tools run --rm --no-deps schemaspy";
 
-        Log.Debug("Running: docker {Args} with SCHEMASPY_SCHEMA={Schema}, SCHEMASPY_OUTPUT={Output}",
-            args, schema, dockerOutputPath);
+        Log.Information("Running: docker {Args}", args);
+        Log.Information("  SCHEMASPY_SCHEMA={Schema}, SCHEMASPY_OUTPUT={Output}", schema, dockerOutputPath);
 
         RunDockerComposeWithEnv(args, composeDir, envVars);
 
@@ -950,12 +950,22 @@ namespace {migrationNamespace}
             $"-connprops \"encrypt=false;trustServerCertificate=true\" " +
             $"-norows -vizjs -imageformat svg";
 
+        Log.Information("Running: docker {Args}", args);
+
         var process = ProcessTasks.StartProcess("docker", args, workingDirectory: RootDirectory);
         process.WaitForExit();
 
+        var output = string.Join("\n", process.Output.Select(o => o.Text));
+        if (!string.IsNullOrWhiteSpace(output))
+        {
+            Log.Information("SchemaSpy output:\n{Output}", output);
+        }
+
         if (process.ExitCode != 0)
         {
-            Log.Warning("SchemaSpy failed for {Database}.{Schema}. Check if database is running and accessible.", database, schema);
+            Log.Error("SchemaSpy failed for {Database}.{Schema} with exit code {ExitCode}", database, schema, process.ExitCode);
+            Log.Error("Check if database is running and accessible.");
+            throw new Exception($"SchemaSpy failed for {database}.{schema}. Exit code: {process.ExitCode}");
         }
     }
 
@@ -983,12 +993,22 @@ namespace {migrationNamespace}
             $"-connprops \"encrypt=false;trustServerCertificate=true\" " +
             $"-norows -vizjs -imageformat svg";
 
+        Log.Information("Running: java {Args}", args);
+
         var process = ProcessTasks.StartProcess("java", args, workingDirectory: RootDirectory);
         process.WaitForExit();
 
+        var output = string.Join("\n", process.Output.Select(o => o.Text));
+        if (!string.IsNullOrWhiteSpace(output))
+        {
+            Log.Information("SchemaSpy output:\n{Output}", output);
+        }
+
         if (process.ExitCode != 0)
         {
-            Log.Warning("SchemaSpy failed for {Database}.{Schema}. Ensure Java 17+ is installed.", database, schema);
+            Log.Error("SchemaSpy failed for {Database}.{Schema} with exit code {ExitCode}", database, schema, process.ExitCode);
+            Log.Error("Ensure Java 17+ is installed.");
+            throw new Exception($"SchemaSpy failed for {database}.{schema}. Exit code: {process.ExitCode}");
         }
     }
 
@@ -1300,7 +1320,8 @@ GO
             if (e.Data != null)
             {
                 output.Add(e.Data);
-                Log.Debug(e.Data);
+                Log.Information("  {Output}", e.Data);
+                Console.Out.Flush();  // Force immediate display
             }
         };
 
@@ -1309,7 +1330,9 @@ GO
             if (e.Data != null)
             {
                 errors.Add(e.Data);
-                Log.Debug(e.Data);
+                // SchemaSpy outputs progress to stderr, show as warning for visibility
+                Log.Warning("  {Error}", e.Data);
+                Console.Out.Flush();  // Force immediate display
             }
         };
 
@@ -1321,8 +1344,17 @@ GO
         if (process.ExitCode != 0)
         {
             var errorOutput = string.Join("\n", errors);
-            Log.Error("Docker command failed: {Error}", errorOutput);
-            throw new Exception($"Docker command failed with exit code {process.ExitCode}");
+            var stdOutput = string.Join("\n", output);
+            Log.Error("Docker command failed with exit code {ExitCode}", process.ExitCode);
+            if (!string.IsNullOrWhiteSpace(errorOutput))
+            {
+                Log.Error("Stderr output:\n{Error}", errorOutput);
+            }
+            if (!string.IsNullOrWhiteSpace(stdOutput))
+            {
+                Log.Error("Stdout output:\n{Output}", stdOutput);
+            }
+            throw new Exception($"Docker command failed with exit code {process.ExitCode}. Check logs above for details.");
         }
     }
 

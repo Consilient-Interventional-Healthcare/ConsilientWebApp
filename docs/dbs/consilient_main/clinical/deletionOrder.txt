@@ -7,9 +7,9 @@ Providers
 Visits
 Hospitalizations
 VisitEventTypes
-ServiceTypes
 ProviderTypes
 Insurances
+ServiceTypes
 Patients
 HospitalizationStatuses
 Facilities

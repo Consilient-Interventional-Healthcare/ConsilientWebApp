@@ -67,33 +67,33 @@
 <text text-anchor="start" x="468" y="-449.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="#ffffff" stroke="transparent" points="272,-419.8384 272,-441.8384 465,-441.8384 465,-419.8384 272,-419.8384"/>
 <polygon fill="none" stroke="#000000" points="272,-419.8384 272,-441.8384 465,-441.8384 465,-419.8384 272,-419.8384"/>
-<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="277" y="-436.838"/>
-<text text-anchor="start" x="292" y="-426.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FacilityId</text>
+<text text-anchor="start" x="292" y="-426.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CaseId</text>
 <polygon fill="none" stroke="#000000" points="465,-419.8384 465,-441.8384 546,-441.8384 546,-419.8384 465,-419.8384"/>
 <text text-anchor="start" x="468" y="-427.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="#ffffff" stroke="transparent" points="272,-397.8384 272,-419.8384 465,-419.8384 465,-397.8384 272,-397.8384"/>
 <polygon fill="none" stroke="#000000" points="272,-397.8384 272,-419.8384 465,-419.8384 465,-397.8384 272,-397.8384"/>
-<text text-anchor="start" x="292" y="-404.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CaseId</text>
+<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="277" y="-414.838"/>
+<text text-anchor="start" x="292" y="-404.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FacilityId</text>
 <polygon fill="none" stroke="#000000" points="465,-397.8384 465,-419.8384 546,-419.8384 546,-397.8384 465,-397.8384"/>
 <text text-anchor="start" x="468" y="-405.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="none" stroke="#000000" points="272,-375.8384 272,-397.8384 465,-397.8384 465,-375.8384 272,-375.8384"/>
-<text text-anchor="start" x="292" y="-382.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">AdmissionDate</text>
+<text text-anchor="start" x="292" y="-382.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">PsychEvaluation</text>
 <polygon fill="none" stroke="#000000" points="465,-375.8384 465,-397.8384 546,-397.8384 546,-375.8384 465,-375.8384"/>
-<text text-anchor="start" x="467.5968" y="-383.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
+<text text-anchor="start" x="468" y="-383.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">bit[1]</text>
 <polygon fill="none" stroke="#000000" points="272,-353.8384 272,-375.8384 465,-375.8384 465,-353.8384 272,-353.8384"/>
-<text text-anchor="start" x="292" y="-360.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">DischargeDate</text>
+<text text-anchor="start" x="292" y="-360.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">AdmissionDate</text>
 <polygon fill="none" stroke="#000000" points="465,-353.8384 465,-375.8384 546,-375.8384 546,-353.8384 465,-353.8384"/>
 <text text-anchor="start" x="467.5968" y="-361.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
-<polygon fill="#ffffff" stroke="transparent" points="272,-331.8384 272,-353.8384 465,-353.8384 465,-331.8384 272,-331.8384"/>
 <polygon fill="none" stroke="#000000" points="272,-331.8384 272,-353.8384 465,-353.8384 465,-331.8384 272,-331.8384"/>
-<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="277" y="-348.838"/>
-<text text-anchor="start" x="292" y="-338.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">HospitalizationStatusId</text>
+<text text-anchor="start" x="292" y="-338.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">DischargeDate</text>
 <polygon fill="none" stroke="#000000" points="465,-331.8384 465,-353.8384 546,-353.8384 546,-331.8384 465,-331.8384"/>
-<text text-anchor="start" x="468" y="-339.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
+<text text-anchor="start" x="467.5968" y="-339.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">datetime2[16,7]</text>
+<polygon fill="#ffffff" stroke="transparent" points="272,-309.8384 272,-331.8384 465,-331.8384 465,-309.8384 272,-309.8384"/>
 <polygon fill="none" stroke="#000000" points="272,-309.8384 272,-331.8384 465,-331.8384 465,-309.8384 272,-309.8384"/>
-<text text-anchor="start" x="292" y="-316.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">PsychEvaluation</text>
+<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="277" y="-326.838"/>
+<text text-anchor="start" x="292" y="-316.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">HospitalizationStatusId</text>
 <polygon fill="none" stroke="#000000" points="465,-309.8384 465,-331.8384 546,-331.8384 546,-309.8384 465,-309.8384"/>
-<text text-anchor="start" x="468" y="-317.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">bit[1]</text>
+<text text-anchor="start" x="468" y="-317.5384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">int[4]</text>
 <polygon fill="none" stroke="#000000" points="272,-287.8384 272,-309.8384 465,-309.8384 465,-287.8384 272,-287.8384"/>
 <text text-anchor="start" x="292" y="-294.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CreatedAtUtc</text>
 <polygon fill="none" stroke="#000000" points="465,-287.8384 465,-309.8384 546,-309.8384 546,-287.8384 465,-287.8384"/>
@@ -131,35 +131,35 @@
 <g id="node3" class="node">
 <title>Facilities</title>
 <g id="a_node3"><a xlink:href="../../tables/Facilities.html" xlink:title="Facilities" target="_top">
-<polygon fill="#ffffff" stroke="transparent" points="52.5,-382.3384 52.5,-465.3384 176.5,-465.3384 176.5,-382.3384 52.5,-382.3384"/>
-<polygon fill="#f5f5f5" stroke="transparent" points="52.5,-441.8384 52.5,-464.8384 176.5,-464.8384 176.5,-441.8384 52.5,-441.8384"/>
-<polygon fill="none" stroke="#000000" points="52.5,-441.8384 52.5,-464.8384 176.5,-464.8384 176.5,-441.8384 52.5,-441.8384"/>
-<text text-anchor="start" x="57.5" y="-450.4384" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#000000">Facilities</text>
-<text text-anchor="start" x="141.5437" y="-449.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">[table]</text>
-<polygon fill="none" stroke="#000000" points="52.5,-419.8384 52.5,-441.8384 176.5,-441.8384 176.5,-419.8384 52.5,-419.8384"/>
-<image xlink:href="../../images/primaryKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="57.5" y="-436.838"/>
-<text text-anchor="start" x="72.5" y="-426.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Id</text>
-<polygon fill="none" stroke="#000000" points="52.5,-400.8384 52.5,-419.8384 176.5,-419.8384 176.5,-400.8384 52.5,-400.8384"/>
-<text text-anchor="start" x="55.5" y="-406.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">...</text>
-<polygon fill="#ffffff" stroke="transparent" points="52.5,-381.8384 52.5,-400.8384 176.5,-400.8384 176.5,-381.8384 52.5,-381.8384"/>
-<polygon fill="none" stroke="#000000" points="52.5,-381.8384 52.5,-400.8384 176.5,-400.8384 176.5,-381.8384 52.5,-381.8384"/>
-<polygon fill="#ffffff" stroke="transparent" points="53.5,-382.8384 53.5,-399.8384 91.5,-399.8384 91.5,-382.8384 53.5,-382.8384"/>
-<text text-anchor="start" x="55.5" y="-387.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000"> &#160;</text>
-<polygon fill="#ffffff" stroke="transparent" points="91.5,-382.8384 91.5,-399.8384 129.5,-399.8384 129.5,-382.8384 91.5,-382.8384"/>
-<text text-anchor="start" x="107.4431" y="-387.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000"> &#160;</text>
-<polygon fill="#ffffff" stroke="transparent" points="129.5,-382.8384 129.5,-399.8384 175.5,-399.8384 175.5,-382.8384 129.5,-382.8384"/>
-<text text-anchor="start" x="157.9053" y="-387.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">3 &gt;</text>
-<polygon fill="#000000" stroke="#000000" points="91.5,-382.8384 91.5,-399.8384 91.5,-399.8384 91.5,-382.8384 91.5,-382.8384"/>
-<polygon fill="#000000" stroke="#000000" points="129.5,-382.8384 129.5,-399.8384 129.5,-399.8384 129.5,-382.8384 129.5,-382.8384"/>
+<polygon fill="#ffffff" stroke="transparent" points="52.5,-360.3384 52.5,-443.3384 176.5,-443.3384 176.5,-360.3384 52.5,-360.3384"/>
+<polygon fill="#f5f5f5" stroke="transparent" points="52.5,-419.8384 52.5,-442.8384 176.5,-442.8384 176.5,-419.8384 52.5,-419.8384"/>
+<polygon fill="none" stroke="#000000" points="52.5,-419.8384 52.5,-442.8384 176.5,-442.8384 176.5,-419.8384 52.5,-419.8384"/>
+<text text-anchor="start" x="57.5" y="-428.4384" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#000000">Facilities</text>
+<text text-anchor="start" x="141.5437" y="-427.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">[table]</text>
+<polygon fill="none" stroke="#000000" points="52.5,-397.8384 52.5,-419.8384 176.5,-419.8384 176.5,-397.8384 52.5,-397.8384"/>
+<image xlink:href="../../images/primaryKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="57.5" y="-414.838"/>
+<text text-anchor="start" x="72.5" y="-404.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Id</text>
+<polygon fill="none" stroke="#000000" points="52.5,-378.8384 52.5,-397.8384 176.5,-397.8384 176.5,-378.8384 52.5,-378.8384"/>
+<text text-anchor="start" x="55.5" y="-384.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">...</text>
+<polygon fill="#ffffff" stroke="transparent" points="52.5,-359.8384 52.5,-378.8384 176.5,-378.8384 176.5,-359.8384 52.5,-359.8384"/>
+<polygon fill="none" stroke="#000000" points="52.5,-359.8384 52.5,-378.8384 176.5,-378.8384 176.5,-359.8384 52.5,-359.8384"/>
+<polygon fill="#ffffff" stroke="transparent" points="53.5,-360.8384 53.5,-377.8384 91.5,-377.8384 91.5,-360.8384 53.5,-360.8384"/>
+<text text-anchor="start" x="55.5" y="-365.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000"> &#160;</text>
+<polygon fill="#ffffff" stroke="transparent" points="91.5,-360.8384 91.5,-377.8384 129.5,-377.8384 129.5,-360.8384 91.5,-360.8384"/>
+<text text-anchor="start" x="107.4431" y="-365.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000"> &#160;</text>
+<polygon fill="#ffffff" stroke="transparent" points="129.5,-360.8384 129.5,-377.8384 175.5,-377.8384 175.5,-360.8384 129.5,-360.8384"/>
+<text text-anchor="start" x="157.9053" y="-365.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">3 &gt;</text>
+<polygon fill="#000000" stroke="#000000" points="91.5,-360.8384 91.5,-377.8384 91.5,-377.8384 91.5,-360.8384 91.5,-360.8384"/>
+<polygon fill="#000000" stroke="#000000" points="129.5,-360.8384 129.5,-377.8384 129.5,-377.8384 129.5,-360.8384 129.5,-360.8384"/>
 </a>
 </g>
 </g>
 <!-- Hospitalizations&#45;&gt;Facilities -->
 <g id="edge2" class="edge">
 <title>Hospitalizations:w&#45;&gt;Facilities:e</title>
-<path fill="none" stroke="#000000" d="M257.4512,-430.8384C226.4054,-430.8384 213.6389,-430.8384 176.5,-430.8384"/>
-<polygon fill="#000000" stroke="#000000" points="264,-430.8385 272,-434.4384 268,-430.8385 272,-430.8384 272,-430.8384 272,-430.8384 268,-430.8385 272,-427.2384 264,-430.8385 264,-430.8385"/>
-<ellipse fill="none" stroke="#000000" cx="260.8" cy="-430.8385" rx="3.2" ry="3.2"/>
+<path fill="none" stroke="#000000" d="M257.4512,-408.8384C226.4054,-408.8384 213.6389,-408.8384 176.5,-408.8384"/>
+<polygon fill="#000000" stroke="#000000" points="264,-408.8385 272,-412.4384 268,-408.8385 272,-408.8384 272,-408.8384 272,-408.8384 268,-408.8385 272,-405.2384 264,-408.8385 264,-408.8385"/>
+<ellipse fill="none" stroke="#000000" cx="260.8" cy="-408.8385" rx="3.2" ry="3.2"/>
 </g>
 <!-- HospitalizationStatuses -->
 <g id="node4" class="node">
@@ -194,43 +194,43 @@
 <!-- Hospitalizations&#45;&gt;HospitalizationStatuses -->
 <g id="edge3" class="edge">
 <title>Hospitalizations:w&#45;&gt;HospitalizationStatuses:e</title>
-<path fill="none" stroke="#000000" d="M257.7449,-340.2467C209.5913,-319.2551 292.4992,-177.8384 221.5,-177.8384"/>
-<polygon fill="#000000" stroke="#000000" points="264.129,-341.4073 271.356,-346.3804 268.0645,-342.1229 272,-342.8384 272,-342.8384 272,-342.8384 268.0645,-342.1229 272.644,-339.2965 264.129,-341.4073 264.129,-341.4073"/>
-<ellipse fill="none" stroke="#000000" cx="260.9806" cy="-340.8349" rx="3.2" ry="3.2"/>
+<path fill="none" stroke="#000000" d="M257.7915,-317.8517C217.9672,-297.3164 283.1099,-177.8384 221.5,-177.8384"/>
+<polygon fill="#000000" stroke="#000000" points="264.1711,-319.1927 271.2594,-324.3614 268.0855,-320.0156 272,-320.8384 272,-320.8384 272,-320.8384 268.0855,-320.0156 272.7406,-317.3154 264.1711,-319.1927 264.1711,-319.1927"/>
+<ellipse fill="none" stroke="#000000" cx="261.0395" cy="-318.5344" rx="3.2" ry="3.2"/>
 </g>
 <!-- Patients -->
 <g id="node5" class="node">
 <title>Patients</title>
 <g id="a_node5"><a xlink:href="../../tables/Patients.html" xlink:title="Patients" target="_top">
-<polygon fill="#ffffff" stroke="transparent" points="52.5,-507.3384 52.5,-590.3384 176.5,-590.3384 176.5,-507.3384 52.5,-507.3384"/>
-<polygon fill="#f5f5f5" stroke="transparent" points="52.5,-566.8384 52.5,-589.8384 176.5,-589.8384 176.5,-566.8384 52.5,-566.8384"/>
-<polygon fill="none" stroke="#000000" points="52.5,-566.8384 52.5,-589.8384 176.5,-589.8384 176.5,-566.8384 52.5,-566.8384"/>
-<text text-anchor="start" x="57.5" y="-575.4384" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#000000">Patients</text>
-<text text-anchor="start" x="141.5437" y="-574.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">[table]</text>
-<polygon fill="none" stroke="#000000" points="52.5,-544.8384 52.5,-566.8384 176.5,-566.8384 176.5,-544.8384 52.5,-544.8384"/>
-<image xlink:href="../../images/primaryKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="57.5" y="-561.838"/>
-<text text-anchor="start" x="72.5" y="-551.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Id</text>
-<polygon fill="none" stroke="#000000" points="52.5,-525.8384 52.5,-544.8384 176.5,-544.8384 176.5,-525.8384 52.5,-525.8384"/>
-<text text-anchor="start" x="55.5" y="-531.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">...</text>
-<polygon fill="#ffffff" stroke="transparent" points="52.5,-506.8384 52.5,-525.8384 176.5,-525.8384 176.5,-506.8384 52.5,-506.8384"/>
-<polygon fill="none" stroke="#000000" points="52.5,-506.8384 52.5,-525.8384 176.5,-525.8384 176.5,-506.8384 52.5,-506.8384"/>
-<polygon fill="#ffffff" stroke="transparent" points="53.5,-507.8384 53.5,-524.8384 91.5,-524.8384 91.5,-507.8384 53.5,-507.8384"/>
-<text text-anchor="start" x="55.5" y="-512.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000"> &#160;</text>
-<polygon fill="#ffffff" stroke="transparent" points="91.5,-507.8384 91.5,-524.8384 129.5,-524.8384 129.5,-507.8384 91.5,-507.8384"/>
-<text text-anchor="start" x="107.4431" y="-512.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000"> &#160;</text>
-<polygon fill="#ffffff" stroke="transparent" points="129.5,-507.8384 129.5,-524.8384 175.5,-524.8384 175.5,-507.8384 129.5,-507.8384"/>
-<text text-anchor="start" x="157.9053" y="-512.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">3 &gt;</text>
-<polygon fill="#000000" stroke="#000000" points="91.5,-507.8384 91.5,-524.8384 91.5,-524.8384 91.5,-507.8384 91.5,-507.8384"/>
-<polygon fill="#000000" stroke="#000000" points="129.5,-507.8384 129.5,-524.8384 129.5,-524.8384 129.5,-507.8384 129.5,-507.8384"/>
+<polygon fill="#ffffff" stroke="transparent" points="52.5,-496.3384 52.5,-579.3384 176.5,-579.3384 176.5,-496.3384 52.5,-496.3384"/>
+<polygon fill="#f5f5f5" stroke="transparent" points="52.5,-555.8384 52.5,-578.8384 176.5,-578.8384 176.5,-555.8384 52.5,-555.8384"/>
+<polygon fill="none" stroke="#000000" points="52.5,-555.8384 52.5,-578.8384 176.5,-578.8384 176.5,-555.8384 52.5,-555.8384"/>
+<text text-anchor="start" x="57.5" y="-564.4384" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00" fill="#000000">Patients</text>
+<text text-anchor="start" x="141.5437" y="-563.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">[table]</text>
+<polygon fill="none" stroke="#000000" points="52.5,-533.8384 52.5,-555.8384 176.5,-555.8384 176.5,-533.8384 52.5,-533.8384"/>
+<image xlink:href="../../images/primaryKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="57.5" y="-550.838"/>
+<text text-anchor="start" x="72.5" y="-540.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Id</text>
+<polygon fill="none" stroke="#000000" points="52.5,-514.8384 52.5,-533.8384 176.5,-533.8384 176.5,-514.8384 52.5,-514.8384"/>
+<text text-anchor="start" x="55.5" y="-520.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">...</text>
+<polygon fill="#ffffff" stroke="transparent" points="52.5,-495.8384 52.5,-514.8384 176.5,-514.8384 176.5,-495.8384 52.5,-495.8384"/>
+<polygon fill="none" stroke="#000000" points="52.5,-495.8384 52.5,-514.8384 176.5,-514.8384 176.5,-495.8384 52.5,-495.8384"/>
+<polygon fill="#ffffff" stroke="transparent" points="53.5,-496.8384 53.5,-513.8384 91.5,-513.8384 91.5,-496.8384 53.5,-496.8384"/>
+<text text-anchor="start" x="55.5" y="-501.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000"> &#160;</text>
+<polygon fill="#ffffff" stroke="transparent" points="91.5,-496.8384 91.5,-513.8384 129.5,-513.8384 129.5,-496.8384 91.5,-496.8384"/>
+<text text-anchor="start" x="107.4431" y="-501.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000"> &#160;</text>
+<polygon fill="#ffffff" stroke="transparent" points="129.5,-496.8384 129.5,-513.8384 175.5,-513.8384 175.5,-496.8384 129.5,-496.8384"/>
+<text text-anchor="start" x="157.9053" y="-501.9384" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">3 &gt;</text>
+<polygon fill="#000000" stroke="#000000" points="91.5,-496.8384 91.5,-513.8384 91.5,-513.8384 91.5,-496.8384 91.5,-496.8384"/>
+<polygon fill="#000000" stroke="#000000" points="129.5,-496.8384 129.5,-513.8384 129.5,-513.8384 129.5,-496.8384 129.5,-496.8384"/>
 </a>
 </g>
 </g>
 <!-- Hospitalizations&#45;&gt;Patients -->
 <g id="edge4" class="edge">
 <title>Hospitalizations:w&#45;&gt;Patients:e</title>
-<path fill="none" stroke="#000000" d="M257.5421,-455.0855C214.0239,-470.1482 233.4403,-555.8384 176.5,-555.8384"/>
-<polygon fill="#000000" stroke="#000000" points="264.0949,-454.0671 272.5529,-456.3957 268.0475,-453.4528 272,-452.8384 272,-452.8384 272,-452.8384 268.0475,-453.4528 271.4471,-449.2811 264.0949,-454.0671 264.0949,-454.0671"/>
-<ellipse fill="none" stroke="#000000" cx="260.9329" cy="-454.5586" rx="3.2" ry="3.2"/>
+<path fill="none" stroke="#000000" d="M257.6993,-455.0219C216.4863,-468.9538 230.0257,-544.8384 176.5,-544.8384"/>
+<polygon fill="#000000" stroke="#000000" points="264.0916,-454.0459 272.5434,-456.3972 268.0458,-453.4422 272,-452.8384 272,-452.8384 272,-452.8384 268.0458,-453.4422 271.4566,-449.2797 264.0916,-454.0459 264.0916,-454.0459"/>
+<ellipse fill="none" stroke="#000000" cx="260.9283" cy="-454.5289" rx="3.2" ry="3.2"/>
 </g>
 <!-- HospitalizationStatusHistories -->
 <g id="node6" class="node">
@@ -387,7 +387,7 @@
 <!-- staging.ProviderAssignments&#45;&gt;Patients -->
 <g id="edge10" class="edge">
 <title>staging.ProviderAssignments:w&#45;&gt;Patients:e</title>
-<path fill="none" stroke="#000000" d="M894.5718,-499.2592C880.2029,-511.972 892.3278,-548.6238 867,-562.8384 759.2534,-623.3086 712.5511,-563.8867 589,-562.8384 405.6469,-561.2828 359.8597,-555.8384 176.5,-555.8384"/>
+<path fill="none" stroke="#000000" d="M894.5718,-499.2592C880.2029,-511.972 892.3278,-548.6238 867,-562.8384 831.7454,-582.6242 273.7746,-544.8384 176.5,-544.8384"/>
 <polygon fill="#000000" stroke="#000000" points="900.8749,-497.2587 909.5891,-498.2697 904.6874,-496.0486 908.5,-494.8384 908.5,-494.8384 908.5,-494.8384 904.6874,-496.0486 907.4109,-491.4071 900.8749,-497.2587 900.8749,-497.2587"/>
 <ellipse fill="none" stroke="#000000" cx="897.8248" cy="-498.2268" rx="3.2" ry="3.2"/>
 </g>

@@ -84,11 +84,11 @@
 <text text-anchor="start" x="28.5" y="-252.8" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">PatientId</text>
 <polygon fill="#ffffff" stroke="transparent" points="8.5,-223.7 8.5,-245.7 201.5,-245.7 201.5,-223.7 8.5,-223.7"/>
 <polygon fill="none" stroke="#000000" points="8.5,-223.7 8.5,-245.7 201.5,-245.7 201.5,-223.7 8.5,-223.7"/>
-<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="13.5" y="-240.7"/>
-<text text-anchor="start" x="28.5" y="-230.8" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FacilityId</text>
+<text text-anchor="start" x="28.5" y="-230.8" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CaseId</text>
 <polygon fill="#ffffff" stroke="transparent" points="8.5,-201.7 8.5,-223.7 201.5,-223.7 201.5,-201.7 8.5,-201.7"/>
 <polygon fill="none" stroke="#000000" points="8.5,-201.7 8.5,-223.7 201.5,-223.7 201.5,-201.7 8.5,-201.7"/>
-<text text-anchor="start" x="28.5" y="-208.8" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">CaseId</text>
+<image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="13.5" y="-218.7"/>
+<text text-anchor="start" x="28.5" y="-208.8" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">FacilityId</text>
 <polygon fill="#ffffff" stroke="transparent" points="8.5,-179.7 8.5,-201.7 201.5,-201.7 201.5,-179.7 8.5,-179.7"/>
 <polygon fill="none" stroke="#000000" points="8.5,-179.7 8.5,-201.7 201.5,-201.7 201.5,-179.7 8.5,-179.7"/>
 <image xlink:href="../../images/foreignKeys.png" width="11px" height="12px" preserveAspectRatio="xMinYMin meet" x="13.5" y="-196.7"/>

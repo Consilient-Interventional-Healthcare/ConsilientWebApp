@@ -114,7 +114,7 @@
 <polygon fill="none" stroke="#000000" points="10,-169.2 10,-191.2 205,-191.2 205,-169.2 10,-169.2"/>
 <text text-anchor="start" x="30" y="-176.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Code</text>
 <polygon fill="none" stroke="#000000" points="205,-169.2 205,-191.2 286,-191.2 286,-169.2 205,-169.2"/>
-<text text-anchor="start" x="208" y="-176.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">nvarchar[100]</text>
+<text text-anchor="start" x="208" y="-176.9" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">nvarchar[40]</text>
 <polygon fill="none" stroke="#000000" points="10,-147.2 10,-169.2 205,-169.2 205,-147.2 10,-147.2"/>
 <text text-anchor="start" x="30" y="-154.3" font-family="Helvetica,sans-Serif" font-size="11.00" fill="#000000">Name</text>
 <polygon fill="none" stroke="#000000" points="205,-147.2 205,-169.2 286,-169.2 286,-147.2 205,-147.2"/>

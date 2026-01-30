@@ -12,6 +12,30 @@ internal class VisitServiceBillingService(ConsilientDbContext dataContext) : IVi
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        // Check for duplicate billing entry (same service type + billing code for this visit)
+        var duplicateExists = await dataContext.VisitServiceBillings
+            .AnyAsync(vsb =>
+                vsb.VisitId == request.VisitId &&
+                vsb.ServiceTypeId == request.ServiceTypeId &&
+                vsb.BillingCodeId == request.BillingCodeId, ct);
+
+        if (duplicateExists)
+        {
+            throw new InvalidOperationException(
+                "This service type and billing code combination already exists for this visit.");
+        }
+
+        // Validate the pairing is configured in ServiceTypeBillingCodes
+        var isValidPairing = await dataContext.ServiceTypeBillingCodes
+            .AnyAsync(x => x.ServiceTypeId == request.ServiceTypeId
+                        && x.BillingCodeId == request.BillingCodeId, ct);
+
+        if (!isValidPairing)
+        {
+            throw new InvalidOperationException(
+                "This billing code is not valid for the selected service type.");
+        }
+
         var entity = new VisitServiceBilling
         {
             VisitId = request.VisitId,

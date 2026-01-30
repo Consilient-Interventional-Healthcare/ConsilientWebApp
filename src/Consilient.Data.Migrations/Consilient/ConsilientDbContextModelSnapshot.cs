@@ -62,6 +62,57 @@ namespace Consilient.Data.Migrations.Consilient
                     b.ToTable("BillingCodes", "Billing");
                 });
 
+            modelBuilder.Entity("Consilient.Data.Entities.Billing.ServiceTypeBillingCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BillingCodeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<bool>("IsDefault")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion")
+                        .HasColumnName("RowVersion");
+
+                    b.Property<int>("ServiceTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.HasKey("Id")
+                        .HasName("PK_ServiceTypeBillingCode");
+
+                    b.HasAlternateKey("ServiceTypeId", "BillingCodeId")
+                        .HasName("AK_ServiceTypeBillingCodes_ServiceTypeId_BillingCodeId");
+
+                    b.HasIndex("BillingCodeId")
+                        .HasDatabaseName("IX_ServiceTypeBillingCodes_BillingCodeId");
+
+                    b.HasIndex("ServiceTypeId")
+                        .HasDatabaseName("IX_ServiceTypeBillingCodes_ServiceTypeId");
+
+                    b.ToTable("ServiceTypeBillingCodes", "Billing");
+                });
+
             modelBuilder.Entity("Consilient.Data.Entities.Billing.VisitServiceBilling", b =>
                 {
                     b.Property<int>("Id")
@@ -1259,6 +1310,27 @@ namespace Consilient.Data.Migrations.Consilient
                         .HasDatabaseName("IX_ProviderAssignmentBatchStatuses_Code");
 
                     b.ToTable("ProviderAssignmentBatchStatuses", "staging");
+                });
+
+            modelBuilder.Entity("Consilient.Data.Entities.Billing.ServiceTypeBillingCode", b =>
+                {
+                    b.HasOne("Consilient.Data.Entities.Billing.BillingCode", "BillingCode")
+                        .WithMany()
+                        .HasForeignKey("BillingCodeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ServiceTypeBillingCodes_BillingCodes");
+
+                    b.HasOne("Consilient.Data.Entities.Clinical.ServiceTypeEntity", "ServiceType")
+                        .WithMany()
+                        .HasForeignKey("ServiceTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_ServiceTypeBillingCodes_ServiceTypes");
+
+                    b.Navigation("BillingCode");
+
+                    b.Navigation("ServiceType");
                 });
 
             modelBuilder.Entity("Consilient.Data.Entities.Billing.VisitServiceBilling", b =>
