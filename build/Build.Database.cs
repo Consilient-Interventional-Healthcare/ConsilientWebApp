@@ -12,9 +12,6 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
 /// </summary>
 partial class Build
 {
-    // Database container configuration
-    const string DatabaseContainerName = "consilient.dbs.container";
-
     // Database paths (MigrationsProject is defined in Build.cs)
     static AbsolutePath DatabaseScriptsDir => SourceDirectory / "Databases";
     static AbsolutePath EnvLocalFile => RootDirectory / ".nuke" / ".env.local";
@@ -27,7 +24,7 @@ partial class Build
     readonly int? SequenceNumber;
 
     [Parameter("Target database name")]
-    readonly string Database = "consilient_main";
+    readonly string Database = MainDatabaseName;
 
     [Parameter("Database server host")]
     readonly string? DbHost;
@@ -88,7 +85,7 @@ partial class Build
     }
 
     string ResolvedDbHost => DbHost ?? "localhost";
-    int ResolvedDbPort => DbPort ?? 1434;
+    int ResolvedDbPort => DbPort ?? DefaultDbPort;
     string ResolvedDbUser => DbUser ?? EnvLocal.GetValueOrDefault("SQL_ADMIN_USERNAME", "sa");
     string ResolvedDbPassword => DbPassword ?? EnvLocal.GetValueOrDefault("SQL_ADMIN_PASSWORD", "YourStrong!Passw0rd");
 
@@ -97,9 +94,9 @@ partial class Build
 
     // Docker configuration resolved properties
     bool ResolvedDbDocker => DbDocker ?? bool.TryParse(EnvLocal.GetValueOrDefault("DB_DOCKER", "true"), out var v) && v;
-    string ResolvedDbContainerName => DbContainerName ?? EnvLocal.GetValueOrDefault("DB_CONTAINER_NAME", "consilient.dbs.container");
-    AbsolutePath ResolvedDbComposeFile => RootDirectory / (DbComposeFile ?? EnvLocal.GetValueOrDefault("DB_COMPOSE_FILE", "src/.docker/docker-compose.yml"));
-    string ResolvedDbServiceName => DbServiceName ?? EnvLocal.GetValueOrDefault("DB_SERVICE_NAME", "db");
+    string ResolvedDbContainerName => DbContainerName ?? EnvLocal.GetValueOrDefault("DB_CONTAINER_NAME", DefaultDatabaseContainerName);
+    AbsolutePath ResolvedDbComposeFile => RootDirectory / (DbComposeFile ?? EnvLocal.GetValueOrDefault("DB_COMPOSE_FILE", DefaultDbComposeFile));
+    string ResolvedDbServiceName => DbServiceName ?? EnvLocal.GetValueOrDefault("DB_SERVICE_NAME", DefaultDbServiceName);
     bool ResolvedDbAutoStart => DbAutoStart ?? bool.TryParse(EnvLocal.GetValueOrDefault("DB_AUTO_START", "false"), out var v) && v;
 
     // Track if we started the container so we know to stop it
@@ -117,14 +114,14 @@ partial class Build
 
             var process = ProcessTasks.StartProcess(
                 "docker",
-                $"inspect {DatabaseContainerName} --format=\"{{{{.State.Health.Status}}}}\"",
+                $"inspect {ResolvedDbContainerName} --format=\"{{{{.State.Health.Status}}}}\"",
                 workingDirectory: RootDirectory);
             process.WaitForExit();
 
             if (process.ExitCode != 0)
             {
-                Log.Error("Database container '{Container}' not found. Start it with: docker compose up -d db", DatabaseContainerName);
-                throw new Exception($"Database container '{DatabaseContainerName}' not found");
+                Log.Error("Database container '{Container}' not found. Start it with: docker compose up -d db", ResolvedDbContainerName);
+                throw new Exception($"Database container '{ResolvedDbContainerName}' not found");
             }
 
             var output = string.Join("", process.Output.Select(o => o.Text)).Trim().Trim('"');
@@ -192,7 +189,7 @@ partial class Build
 
             var inspectProcess = ProcessTasks.StartProcess(
                 "docker",
-                $"inspect {DatabaseContainerName} --format=\"{{{{.State.Running}}}}\"",
+                $"inspect {ResolvedDbContainerName} --format=\"{{{{.State.Running}}}}\"",
                 workingDirectory: RootDirectory);
             inspectProcess.WaitForExit();
 
@@ -211,7 +208,7 @@ partial class Build
             }
 
             // Step 3: Wait for healthy status
-            WaitForDatabaseHealthy(retries: 15, intervalSeconds: 5);
+            WaitForDatabaseHealthy(retries: ContainerStartRetries);
 
             // Step 4: Apply migrations
             Log.Information("Applying database migrations...");
@@ -238,7 +235,7 @@ partial class Build
             var context = DbContext;
 
             // Convention-based derivation (e.g., "ConsilientDbContext" -> "Consilient")
-            var contextShort = Regex.Match(context, @"^(.*)DbContext$").Groups[1].Value;
+            var contextShort = GetDbContextShortName(context);
             if (string.IsNullOrEmpty(contextShort))
                 contextShort = context;
 
@@ -297,7 +294,7 @@ namespace {migrationNamespace}
             foreach (var ctx in contexts)
             {
                 // Convention-based derivation
-                var contextShort = Regex.Match(ctx, @"^(.*)DbContext$").Groups[1].Value;
+                var contextShort = GetDbContextShortName(ctx);
                 if (string.IsNullOrEmpty(contextShort))
                     contextShort = ctx;
 
@@ -397,7 +394,7 @@ namespace {migrationNamespace}
             Log.Information("Removing existing database container...");
             var removeProcess = ProcessTasks.StartProcess(
                 "docker",
-                $"rm -f {DatabaseContainerName}",
+                $"rm -f {ResolvedDbContainerName}",
                 workingDirectory: RootDirectory);
             removeProcess.WaitForExit();
             // Ignore exit code - container may not exist
@@ -416,13 +413,13 @@ namespace {migrationNamespace}
             RunDocker($"compose -f \"{DockerComposeFile}\" up -d --force-recreate db", DockerDirectory);
 
             // Wait for database to be healthy
-            WaitForDatabaseHealthy(retries: 24, intervalSeconds: 5);
+            WaitForDatabaseHealthy(retries: DatabaseRebuildRetries);
 
             // Verify table creation
             Log.Information("Verifying table creation...");
             var verifyProcess = ProcessTasks.StartProcess(
                 "docker",
-                $"exec {DatabaseContainerName} bash -c \"echo 'SELECT COUNT(*) FROM {Database}.INFORMATION_SCHEMA.TABLES' | /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $SA_PASSWORD -C -h -1\"",
+                $"exec {ResolvedDbContainerName} bash -c \"echo 'SELECT COUNT(*) FROM {Database}.INFORMATION_SCHEMA.TABLES' | {SqlCmdPathInContainer} -S localhost -U sa -P $SA_PASSWORD -C -h -1\"",
                 workingDirectory: RootDirectory);
             verifyProcess.WaitForExit();
 
@@ -484,7 +481,7 @@ namespace {migrationNamespace}
             var context = DbContext;
 
             // Convention-based derivation (e.g., "ConsilientDbContext" -> "Consilient" -> "consilient")
-            var contextShort = Regex.Match(context, @"^(.*)DbContext$").Groups[1].Value;
+            var contextShort = GetDbContextShortName(context);
             if (string.IsNullOrEmpty(contextShort))
                 contextShort = context;
 
@@ -829,7 +826,7 @@ namespace {migrationNamespace}
             DatabaseDocsOutputDir.CreateDirectory();
 
             // Get databases to document - all schemas
-            var databases = new[] { ("consilient_main", "consilient_main", new[] { "billing", "clinical", "compensation", "identity", "staging" }) };
+            var databases = new[] { (MainDatabaseName, MainDatabaseName, DatabaseSchemas) };
 
             try
             {
@@ -1128,7 +1125,7 @@ GO
         }
     }
 
-    void WaitForDatabaseHealthy(int retries = 12, int intervalSeconds = 5)
+    void WaitForDatabaseHealthy(int retries = DefaultHealthCheckRetries, int intervalSeconds = DefaultHealthCheckIntervalSeconds)
     {
         Log.Information("Waiting for database to be healthy (max {Retries} attempts, {Interval}s interval)...",
             retries, intervalSeconds);
@@ -1137,7 +1134,7 @@ GO
         {
             var process = ProcessTasks.StartProcess(
                 "docker",
-                $"inspect {DatabaseContainerName} --format=\"{{{{.State.Health.Status}}}}\"",
+                $"inspect {ResolvedDbContainerName} --format=\"{{{{.State.Health.Status}}}}\"",
                 workingDirectory: RootDirectory);
             process.WaitForExit();
 
@@ -1210,7 +1207,7 @@ GO
         Log.Information("Database container started");
 
         // Wait for healthy status
-        WaitForDatabaseHealthy(retries: 15, intervalSeconds: 5);
+        WaitForDatabaseHealthy(retries: ContainerStartRetries);
     }
 
     void StopContainerIfStartedByBuild()
@@ -1446,141 +1443,155 @@ PRINT 'All database objects dropped successfully';
         Log.Information("  All objects dropped from {Database}", database);
     }
 
+    // ============================================
+    // SQL EXECUTION (CONSOLIDATED)
+    // ============================================
+
+    /// <summary>Result of SQL execution.</summary>
+    record SqlExecutionResult(bool Success, string? Output = null, string? Error = null);
+
+    /// <summary>Options for SQL execution.</summary>
+    record SqlExecutionOptions(bool ThrowOnError = false, string? ScriptDisplayName = null);
+
     /// <summary>
-    /// Executes a SQL command against the specified database.
-    /// Uses Docker exec if running in Docker mode, otherwise direct sqlcmd.
+    /// Executes SQL against the database (from file or inline string).
     /// </summary>
-    void ExecuteSqlCommand(string database, string sqlCommand)
+    SqlExecutionResult ExecuteSql(string database, string sqlOrPath, bool isFilePath, SqlExecutionOptions? options = null)
     {
-        // Write SQL to temp file for execution
-        var tempSqlFile = Path.GetTempFileName() + ".sql";
-        File.WriteAllText(tempSqlFile, sqlCommand);
+        options ??= new SqlExecutionOptions();
+        var displayName = options.ScriptDisplayName ?? (isFilePath ? Path.GetFileName(sqlOrPath) : "inline SQL");
+
+        if (isFilePath)
+        {
+            Log.Information("  Running: {Script}", displayName);
+        }
+
+        // Create temp file if inline SQL
+        string scriptPath;
+        bool cleanupNeeded = false;
+
+        if (isFilePath)
+        {
+            scriptPath = sqlOrPath;
+        }
+        else
+        {
+            scriptPath = Path.GetTempFileName() + ".sql";
+            File.WriteAllText(scriptPath, sqlOrPath);
+            cleanupNeeded = true;
+        }
 
         try
         {
             if (ResolvedDbDocker)
             {
-                // Copy script to container
-                var containerPath = "/tmp/command.sql";
-                var copyProcess = ProcessTasks.StartProcess(
-                    "docker",
-                    $"cp \"{tempSqlFile}\" {ResolvedDbContainerName}:{containerPath}",
-                    workingDirectory: RootDirectory);
-                copyProcess.WaitForExit();
-
-                if (copyProcess.ExitCode != 0)
-                {
-                    throw new Exception("Failed to copy SQL file to container");
-                }
-
-                // Execute via sqlcmd inside container using $SA_PASSWORD env var
-                var execProcess = ProcessTasks.StartProcess(
-                    "docker",
-                    $"exec {ResolvedDbContainerName} bash -c \"/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \\\"$SA_PASSWORD\\\" -d {database} -C -i {containerPath}\"",
-                    workingDirectory: RootDirectory);
-                execProcess.WaitForExit();
-
-                // Clean up
-                ProcessTasks.StartProcess("docker", $"exec {ResolvedDbContainerName} rm {containerPath}", workingDirectory: RootDirectory).WaitForExit();
-
-                if (execProcess.ExitCode != 0)
-                {
-                    var output = string.Join("\n", execProcess.Output.Select(o => o.Text));
-                    throw new Exception($"SQL command failed: {output}");
-                }
+                return ExecuteSqlViaDocker(database, scriptPath, displayName, options);
             }
             else
             {
-                // Direct sqlcmd execution
-                var args = $"-S {ResolvedDbHost},{ResolvedDbPort} -U {ResolvedDbUser} -P \"{ResolvedDbPassword}\" -d {database} -i \"{tempSqlFile}\"";
-                var process = ProcessTasks.StartProcess("sqlcmd", args, workingDirectory: RootDirectory);
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                {
-                    var output = string.Join("\n", process.Output.Select(o => o.Text));
-                    throw new Exception($"SQL command failed: {output}");
-                }
+                return ExecuteSqlDirect(database, scriptPath, displayName, options);
             }
+        }
+        catch (Exception ex)
+        {
+            Log.Error("    EXCEPTION: {Script} - {Message}", displayName, ex.Message);
+            if (options.ThrowOnError)
+                throw;
+            return new SqlExecutionResult(false, Error: ex.Message);
         }
         finally
         {
-            // Clean up temp file
-            if (File.Exists(tempSqlFile))
-                File.Delete(tempSqlFile);
+            if (cleanupNeeded && File.Exists(scriptPath))
+                File.Delete(scriptPath);
         }
     }
+
+    SqlExecutionResult ExecuteSqlViaDocker(string database, string scriptPath, string displayName, SqlExecutionOptions options)
+    {
+        var scriptName = Path.GetFileName(scriptPath);
+        var containerPath = $"{ContainerTempDir}/{scriptName}";
+
+        // Copy script to container
+        var copyProcess = ProcessTasks.StartProcess(
+            "docker",
+            $"cp \"{scriptPath}\" {ResolvedDbContainerName}:{containerPath}",
+            workingDirectory: RootDirectory);
+        copyProcess.WaitForExit();
+
+        if (copyProcess.ExitCode != 0)
+        {
+            return HandleSqlError("Failed to copy script to container", displayName, options);
+        }
+
+        try
+        {
+            // Execute via sqlcmd inside container
+            var execProcess = ProcessTasks.StartProcess(
+                "docker",
+                $"exec {ResolvedDbContainerName} bash -c \"{SqlCmdPathInContainer} -S localhost -U sa -P \\\"$SA_PASSWORD\\\" -d {database} -C -i {containerPath}\"",
+                workingDirectory: RootDirectory);
+            execProcess.WaitForExit();
+
+            var output = string.Join("\n", execProcess.Output.Select(o => o.Text));
+
+            if (execProcess.ExitCode != 0)
+            {
+                return HandleSqlError(output, displayName, options);
+            }
+
+            Log.Information("    OK: {Script}", displayName);
+            return new SqlExecutionResult(true, output);
+        }
+        finally
+        {
+            // Clean up container temp file
+            ProcessTasks.StartProcess("docker", $"exec {ResolvedDbContainerName} rm -f {containerPath}", workingDirectory: RootDirectory).WaitForExit();
+        }
+    }
+
+    SqlExecutionResult ExecuteSqlDirect(string database, string scriptPath, string displayName, SqlExecutionOptions options)
+    {
+        var args = $"-S {ResolvedDbHost},{ResolvedDbPort} -U {ResolvedDbUser} -P \"{ResolvedDbPassword}\" -d {database} -i \"{scriptPath}\"";
+        var process = ProcessTasks.StartProcess("sqlcmd", args, workingDirectory: RootDirectory);
+        process.WaitForExit();
+
+        var output = string.Join("\n", process.Output.Select(o => o.Text));
+
+        if (process.ExitCode != 0)
+        {
+            return HandleSqlError(output, displayName, options);
+        }
+
+        Log.Information("    OK: {Script}", displayName);
+        return new SqlExecutionResult(true, output);
+    }
+
+    SqlExecutionResult HandleSqlError(string message, string displayName, SqlExecutionOptions options)
+    {
+        Log.Error("    FAILED: {Script}", displayName);
+        Log.Error("    Output: {Output}", message);
+
+        if (options.ThrowOnError)
+        {
+            throw new Exception($"SQL execution failed: {message}");
+        }
+
+        return new SqlExecutionResult(false, Error: message);
+    }
+
+    /// <summary>
+    /// Executes a SQL command against the specified database.
+    /// Uses Docker exec if running in Docker mode, otherwise direct sqlcmd.
+    /// </summary>
+    void ExecuteSqlCommand(string database, string sqlCommand) =>
+        ExecuteSql(database, sqlCommand, isFilePath: false, new SqlExecutionOptions(ThrowOnError: true));
 
     /// <summary>
     /// Executes a SQL script file against the specified database.
     /// Returns true if successful, false if failed.
     /// </summary>
-    bool ExecuteSqlScript(string scriptPath, string database)
-    {
-        var scriptName = Path.GetFileName(scriptPath);
-        Log.Information("  Running: {Script}", scriptName);
-
-        try
-        {
-            if (ResolvedDbDocker)
-            {
-                // Copy script to container
-                var containerPath = $"/tmp/{scriptName}";
-                var copyProcess = ProcessTasks.StartProcess(
-                    "docker",
-                    $"cp \"{scriptPath}\" {ResolvedDbContainerName}:{containerPath}",
-                    workingDirectory: RootDirectory);
-                copyProcess.WaitForExit();
-
-                if (copyProcess.ExitCode != 0)
-                {
-                    Log.Error("    FAILED to copy script to container: {Script}", scriptName);
-                    return false;
-                }
-
-                // Execute via sqlcmd inside container using $SA_PASSWORD env var
-                var execProcess = ProcessTasks.StartProcess(
-                    "docker",
-                    $"exec {ResolvedDbContainerName} bash -c \"/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \\\"$SA_PASSWORD\\\" -d {database} -C -i {containerPath}\"",
-                    workingDirectory: RootDirectory);
-                execProcess.WaitForExit();
-
-                // Clean up
-                ProcessTasks.StartProcess("docker", $"exec {ResolvedDbContainerName} rm {containerPath}", workingDirectory: RootDirectory).WaitForExit();
-
-                if (execProcess.ExitCode != 0)
-                {
-                    var output = string.Join("\n", execProcess.Output.Select(o => o.Text));
-                    Log.Error("    FAILED: {Script}", scriptName);
-                    Log.Error("    Output: {Output}", output);
-                    return false;
-                }
-            }
-            else
-            {
-                // Direct sqlcmd execution
-                var args = $"-S {ResolvedDbHost},{ResolvedDbPort} -U {ResolvedDbUser} -P \"{ResolvedDbPassword}\" -d {database} -i \"{scriptPath}\"";
-                var process = ProcessTasks.StartProcess("sqlcmd", args, workingDirectory: RootDirectory);
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                {
-                    var output = string.Join("\n", process.Output.Select(o => o.Text));
-                    Log.Error("    FAILED: {Script}", scriptName);
-                    Log.Error("    Output: {Output}", output);
-                    return false;
-                }
-            }
-
-            Log.Information("    OK: {Script}", scriptName);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Log.Error("    EXCEPTION: {Script} - {Message}", scriptName, ex.Message);
-            return false;
-        }
-    }
+    bool ExecuteSqlScript(string scriptPath, string database) =>
+        ExecuteSql(database, scriptPath, isFilePath: true).Success;
 
     /// <summary>
     /// Gets SQL scripts from the specified directory, ordered by filename.
@@ -1685,7 +1696,7 @@ PRINT 'All database objects dropped successfully';
 
                 var process = ProcessTasks.StartProcess(
                     "docker",
-                    $"exec {ResolvedDbContainerName} bash -c \"/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \\\"$SA_PASSWORD\\\" -C -h -1 -i {containerPath}\"",
+                    $"exec {ResolvedDbContainerName} bash -c \"{SqlCmdPathInContainer} -S localhost -U sa -P \\\"$SA_PASSWORD\\\" -C -h -1 -i {containerPath}\"",
                     workingDirectory: RootDirectory);
                 process.WaitForExit();
 

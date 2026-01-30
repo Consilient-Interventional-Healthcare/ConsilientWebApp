@@ -36,11 +36,6 @@ partial class Build
     [Parameter("State source: Fresh (default), Local, Remote")]
     readonly string TerraformStateSource = "Fresh";
 
-    // Remote backend configuration defaults
-    const string DefaultTerraformStateRg = "consilient-terraform";
-    const string DefaultTerraformStateSa = "consilienttfstate";
-    const string DefaultTerraformStateContainer = "tfstate";
-
     // ============================================
     // RESOLVED PROPERTIES
     // ============================================
@@ -49,7 +44,7 @@ partial class Build
     string ResolvedArmClientSecret => EnvLocal.GetValueOrDefault("ARM_CLIENT_SECRET", "");
     string ResolvedArmTenantId => EnvLocal.GetValueOrDefault("ARM_TENANT_ID", "");
     string ResolvedAzureSubscriptionId => EnvLocal.GetValueOrDefault("AZURE_SUBSCRIPTION_ID", "");
-    string ResolvedAzureRegion => EnvLocal.GetValueOrDefault("AZURE_REGION", "canadacentral");
+    string ResolvedAzureRegion => EnvLocal.GetValueOrDefault("AZURE_REGION", DefaultAzureRegion);
     string ResolvedAzureResourceGroupName => EnvLocal.GetValueOrDefault("AZURE_RESOURCE_GROUP_NAME", "");
     string ResolvedSqlAdminUsername => EnvLocal.GetValueOrDefault("SQL_ADMIN_USERNAME", "sa");
     string ResolvedSqlAdminPassword => EnvLocal.GetValueOrDefault("SQL_ADMIN_PASSWORD", "");

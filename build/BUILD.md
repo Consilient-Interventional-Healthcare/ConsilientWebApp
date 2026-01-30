@@ -10,6 +10,35 @@ build.cmd GenerateAllTypes   # Non-interactive
 build.cmd --help             # Show help
 ```
 
+## Build System Architecture
+
+The build system uses NUKE with partial classes for organization:
+
+| File | Purpose |
+|------|---------|
+| `Build.cs` | Core targets (Clean, Restore, Compile), paths, helpers |
+| `Build.Configuration.cs` | **Centralized constants** - database names, defaults, retry settings |
+| `Build.Database.cs` | EF Core migrations, database health, SQL execution |
+| `Build.Docker.cs` | Docker container lifecycle |
+| `Build.Frontend.cs` | npm/Node.js targets |
+| `Build.GraphQL.cs` | GraphQL schema generation |
+| `Build.RestApi.cs` | OpenAPI/REST type generation |
+| `Build.TypeGen.cs` | Type merging orchestration |
+| `Build.Terraform.cs` | Terraform infrastructure management |
+| `Build.Menu.cs` | Interactive menu system |
+
+### Portability
+
+To port this build system to another project, update:
+
+1. **`Build.Configuration.cs`** - All project-specific constants:
+   - Database names (`MainDatabaseName`, `UsersDatabaseName`)
+   - Docker container names and paths
+   - Retry/timeout settings
+   - Terraform defaults
+
+2. **`.env.template`** - Copy to `.nuke/.env.local` with project-specific values
+
 ## Secrets Configuration
 
 Environment variables are loaded from `.nuke/.env.local`.
@@ -31,14 +60,16 @@ See `build/.env.template` for all available variables with descriptions.
 
 ### Variables Used by Build
 
-| Variable | Description | Default |
-|----------|-------------|---------|
+Environment variables override defaults defined in `Build.Configuration.cs`:
+
+| Variable | Description | Default (from Configuration) |
+|----------|-------------|------------------------------|
 | `SQL_ADMIN_USERNAME` | Database username | `sa` |
 | `SQL_ADMIN_PASSWORD` | Database password | `YourStrong!Passw0rd` |
 | `DB_DOCKER` | Use Docker for database | `true` |
-| `DB_CONTAINER_NAME` | Docker container name | `consilient.dbs.container` |
-| `DB_COMPOSE_FILE` | Docker compose file path | `src/.docker/docker-compose.yml` |
-| `DB_SERVICE_NAME` | Docker service name | `db` |
+| `DB_CONTAINER_NAME` | Docker container name | `DefaultDatabaseContainerName` |
+| `DB_COMPOSE_FILE` | Docker compose file path | `DefaultDbComposeFile` |
+| `DB_SERVICE_NAME` | Docker service name | `DefaultDbServiceName` |
 | `DB_AUTO_START` | Auto-start container | `false` |
 
 ### For Terraform Operations
