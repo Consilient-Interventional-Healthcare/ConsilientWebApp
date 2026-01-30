@@ -128,17 +128,10 @@ See [components/databases.md](databases.md) for complete database guide.
 1. **Extract Database Names** - Parse discovered databases
 2. **Validate Prerequisites** - Check SQL Server, sqlcmd, java, SchemaSpy available
 3. **Generate Docs (Matrix Job)** - For each database:
-   - Parse `db_docs.yml` configuration
    - Query database for schemas (`list_user_schemas.sql`)
-   - Filter excluded schemas (from `schemas.exclude` list)
    - Run SchemaSpy in parallel for each schema
    - Generate HTML documentation
    - Create index.html with schema navigation
-
-**Configuration:**
-Per-database control via `src/Databases/{Name}/db_docs.yml`:
-- `database.generate_docs` - Enable/disable documentation
-- `schemas.exclude` - Schemas to skip in documentation
 
 **Output:**
 - Artifact: `database-documentation-{database}-{suffix}.zip`

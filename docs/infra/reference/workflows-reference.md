@@ -46,7 +46,6 @@ main.yml (Orchestrator - Triggered by: push main, manual dispatch)
 database-docs.yml (Documentation - Called from main.yml on PR)
 │
 ├─ Discovers databases from src/Databases/
-├─ Reads db_docs.yml configuration
 ├─ Generates SchemaSpy docs per schema
 └─ Uploads artifacts
 ```

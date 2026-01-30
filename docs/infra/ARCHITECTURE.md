@@ -207,33 +207,25 @@ See [components/databases.md](components/databases.md) for detailed database gui
 ```
 src/Databases/ Directory Structure
     │
-    ├─ Main/
-    │   ├─ Schema/          ← SQL scripts
-    │   ├─ Seeds/
-    │   └─ db_docs.yml      ← Configuration
+    ├─ consilient_main/
+    │   └─ *.sql           ← SQL scripts
     │
-    ├─ Hangfire/
-    │   └─ db_docs.yml
-    │
-    └─ CustomDB/
-        └─ db_docs.yml
+    └─ users_main/
+        └─ *.sql
 
               ▼
 
 discover-databases Action
 
 1. Scan src/Databases/ for directories
-2. Read db_docs.yml (if exists)
-3. Check generate_docs flag
-4. Output: database_configs JSON object
-   └─ Maps database names to config paths
+2. Output: database list for documentation workflow
 
               ▼
 
 database-docs.yml Workflow (Called from main.yml on PR)
 
 1. extract-databases job
-   └─ Extract database names from config object
+   └─ Extract database names
 
               ▼
 
@@ -244,15 +236,9 @@ database-docs.yml Workflow (Called from main.yml on PR)
               ▼
 
 3. generate-db-docs job (matrix per database)
-   ├─ Parse db_docs.yml configuration
-   │  └─ Read: database.name, schemas.exclude list
-   │
    ├─ Discover Schemas (list_user_schemas.sql)
    │  └─ Query database for user-created schemas
    │  └─ Auto-exclude: sys, INFORMATION_SCHEMA, guest
-   │
-   ├─ Filter Schemas
-   │  └─ Apply manual exclusions from db_docs.yml
    │
    ├─ For each schema (parallel execution):
    │  ├─ SchemaSpy generates HTML documentation
@@ -271,17 +257,6 @@ Output Artifacts
 - Contents: docs/ folder with all HTML documentation
 - Retention: 7 days (PR), 30 days (manual/main.yml)
 ```
-
-**Configuration-Driven Approach:**
-The `generate_docs` flag in `db_docs.yml` controls documentation generation:
-- `true`: Generate HTML documentation for this database
-- `false`: Skip documentation (useful for temporary databases)
-
-**Schema Filtering:**
-The `schemas.exclude` list in `db_docs.yml` filters which schemas are documented:
-- All user-created schemas discovered automatically
-- Manual exclusions remove internal/staging/test schemas
-- Remaining schemas passed to SchemaSpy
 
 **Parallel Execution:**
 All schemas processed simultaneously for performance:

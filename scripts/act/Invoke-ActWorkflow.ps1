@@ -237,18 +237,10 @@ function ConvertTo-ActBooleanString {
 # For AI: Main workflow orchestrator file - see docs/infra/components/github-actions.md
 $WorkflowFile = $ActWorkflowConfig.WorkflowFile
 
-# For AI: Centralized secrets in scripts/.env.local or scripts/.env.dev
-# See docs/infra/components/local-testing.md#secrets-management
-# Primary: scripts/.env.local, Fallback: infra/act/.env.act (legacy)
-$ScriptsDir = Resolve-Path "$ScriptRoot\.."
-$ActSecretFile = Join-Path $ScriptsDir ".env.local"
-if (-not (Test-Path $ActSecretFile)) {
-    # Fallback to legacy location for backwards compatibility
-    $LegacySecretFile = Join-Path $RepoRoot "infra\act\.env.act"
-    if (Test-Path $LegacySecretFile) {
-        $ActSecretFile = $LegacySecretFile
-    }
-}
+# For AI: Centralized secrets in .nuke/.env.local (auto-gitignored)
+# See build/BUILD.md for setup instructions
+# Primary: .nuke/.env.local
+$ActSecretFile = Join-Path $RepoRoot ".nuke\.env.local"
 
 # Docker image configuration (from ActConfig.ps1)
 # For AI: Custom runner image with pre-installed tools (Azure CLI, sqlcmd, Terraform, etc.)

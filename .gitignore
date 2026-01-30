@@ -404,7 +404,6 @@ FodyWeavers.xsd
 .env.act
 .secrets
 /src/.docker/ollama/
-/src/.consilient_seed_password
 /src/Consilient.WebApp2/*.pem
 /src/Consilient.WebApp2/.claude
 /src/.claude
@@ -427,10 +426,6 @@ tmpclaude-*
 /infra/terraform/tfplan
 /infra/act/.env
 .env.local
-
-# Scripts secrets files
-/scripts/.env.local
-/scripts/.env.dev
 
 # Local app settings (machine-specific, not committed)
 **/appsettings.local.json

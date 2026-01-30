@@ -176,8 +176,6 @@ Interactive HTML documentation is automatically generated for your database sche
 
 **Workflow:** [`.github/workflows/docs_db.yml`](../../../.github/workflows/docs_db.yml)
 
-**Configuration:** Per-database control via [`db_docs.yml`](../../../src/Databases/)
-
 **What Gets Generated:**
 - Interactive schema diagrams (entity relationship diagrams)
 - Table and column documentation
@@ -186,28 +184,12 @@ Interactive HTML documentation is automatically generated for your database sche
 - Navigable HTML documentation with search
 
 **How It Works:**
-1. Database discovery: Scan `src/Databases/` for configuration files
+1. Database discovery: Scan `src/Databases/` for database directories
 2. Schema discovery: Query database for user-created schemas
-3. Configuration filtering: Apply exclusions from `db_docs.yml`
-4. Documentation generation: SchemaSpy generates HTML for each schema (parallel)
-5. Artifact upload: Documentation packaged as workflow artifact
+3. Documentation generation: SchemaSpy generates HTML for each schema (parallel)
+4. Artifact upload: Documentation packaged as workflow artifact
 
-**Schema Exclusion:**
-Control which schemas are documented via the `schemas.exclude` list in your database's `db_docs.yml` configuration file. This allows you to exclude internal, temporary, or staging schemas from the documentation.
-
-**Example Configuration:**
-```yaml
-database:
-  name: "ConsilientDB"
-  generate_docs: true
-
-schemas:
-  exclude:
-    - "internal_schema"
-    - "temp_schema"
-```
-
-See [components/database-documentation.md](database-documentation.md) for complete guide, configuration options, and troubleshooting.
+See [components/database-documentation.md](database-documentation.md) for complete guide and troubleshooting.
 
 ---
 

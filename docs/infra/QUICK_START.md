@@ -225,31 +225,10 @@ Auto-generate interactive HTML documentation for your database schemas using Sch
 
 ### Prerequisites
 - Database deployed (see Task 2)
-- `db_docs.yml` configuration file (optional, uses defaults if missing)
 
 ### Steps
 
-#### Step 1: Create Database Configuration (Optional)
-
-If you want to customize documentation generation, create `src/Databases/{DatabaseName}/db_docs.yml`:
-
-```yaml
-database:
-  name: "MyDatabase"
-  generate_docs: true
-
-schemas:
-  exclude:
-    - "internal_schema"
-    - "temp_schema"
-```
-
-**Or copy the template:**
-```bash
-cp src/Databases/db_docs.yml.template src/Databases/{DatabaseName}/db_docs.yml
-```
-
-#### Step 2: Trigger Documentation Generation
+#### Step 1: Trigger Documentation Generation
 
 **Option A: Automatic (Recommended)**
 Push your changes to main - `main.yml` calls `database-docs.yml` automatically on pull requests.
@@ -259,13 +238,13 @@ Push your changes to main - `main.yml` calls `database-docs.yml` automatically o
 2. Select workflow: "05 - Generate DB Docs"
 3. Click "Run workflow" → Select branch → Click "Run"
 
-#### Step 3: Download Documentation
+#### Step 2: Download Documentation
 
 1. Go to GitHub → Actions → Workflow run summary
 2. Scroll to "Artifacts" section
 3. Download artifact: `database-documentation-{database_name}-{suffix}.zip`
 
-#### Step 4: View Documentation
+#### Step 3: View Documentation
 
 1. Extract the ZIP file
 2. Open `docs/index.html` in your browser
@@ -281,41 +260,14 @@ Each schema documentation includes:
 - **Indexes** - All indexes and keys
 - **Constraints** - Primary, foreign, unique, check constraints
 
-### Configuration Options
-
-**Document All Schemas:**
-```yaml
-database:
-  generate_docs: true
-
-schemas:
-  exclude: []
-```
-
-**Exclude Specific Schemas:**
-```yaml
-schemas:
-  exclude:
-    - "TempSchema"
-    - "TestSchema"
-```
-
-**Skip Documentation for Database:**
-```yaml
-database:
-  generate_docs: false
-```
-
 ### Troubleshooting
 
 **No artifact generated:**
-- Check `generate_docs: true` in `db_docs.yml`
 - Ensure database has user-created schemas
 - Check workflow logs for errors
 
 **Schemas missing from documentation:**
-- Verify they're not in `schemas.exclude` list
-- Regenerate workflow (download previous artifact is cached)
+- Regenerate workflow (downloaded artifact may be from previous run)
 - Use hard refresh: Ctrl+Shift+R
 
 **Generation timeout:**

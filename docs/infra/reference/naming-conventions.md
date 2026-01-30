@@ -193,32 +193,14 @@ locals {
 
 ## Database Documentation Files
 
-Configuration and output files for the automated database documentation system.
+Files for the automated database documentation system.
 
 | Item | Pattern | Example |
 |------|---------|---------|
-| Configuration File | `src/Databases/{Name}/db_docs.yml` | `src/Databases/Main/db_docs.yml` |
-| Configuration Template | `src/Databases/db_docs.yml.template` | Reference for creating new configs |
 | Schema Discovery SQL | `.github/actions/discover-databases/list_user_schemas.sql` | (Single file, no variation) |
 | Discovery Action | `.github/actions/discover-databases/` | (Single action, no variation) |
 | Documentation Workflow | `.github/workflows/docs_db.yml` | (Single workflow, no variation) |
 | Output Artifact | `database-documentation-{name}-{suffix}` | `database-documentation-consilient_main-latest.zip` |
-
-**Configuration File Naming:**
-- Always: `db_docs.yml` (exact spelling, lowercase)
-- Location: Database directory root
-- One file per database directory
-- Optional (uses defaults if missing)
-
-**Configuration Contents:**
-```yaml
-database:
-  name: "MyDatabase"
-  generate_docs: true
-
-schemas:
-  exclude: []
-```
 
 **Artifact Naming Format:**
 - Prefix: `database-documentation-`

@@ -1,6 +1,6 @@
 # Database Documentation Workflow
 
-<!-- AI_CONTEXT: Automated HTML documentation generation using SchemaSpy. Configured via db_docs.yml per database. Per-environment deployment. -->
+<!-- AI_CONTEXT: Automated HTML documentation generation using SchemaSpy. Per-environment deployment. -->
 
 ## For Non-Technical Stakeholders
 
@@ -14,13 +14,11 @@ Generate interactive HTML documentation for database schemas automatically using
 
 **What:** Auto-generates interactive HTML docs for your database schemas
 **How:** Scans database → discovers schemas → SchemaSpy generates HTML → uploads as artifact
-**Configuration:** Per-database via `db_docs.yml` file
 **Trigger:** Runs on pull requests and manual workflows (called from `main.yml`)
 **Output:** GitHub Actions workflow artifact (7-30 day retention)
 
 **Key Concepts:**
 - **Database Discovery:** Automatically scans `src/Databases/` directory
-- **Configuration-Driven:** Control generation per database via `db_docs.yml`
 - **Schema Discovery:** Dynamically queries database for schemas (no hardcoding)
 - **Parallel Execution:** All schemas processed simultaneously for speed
 - **Azure AD Auth:** Uses same credentials as database deployment
@@ -29,7 +27,7 @@ Generate interactive HTML documentation for database schemas automatically using
 
 ## Database Discovery System
 
-The discovery system automatically finds databases and determines what to document.
+The discovery system automatically finds databases to document.
 
 ### How Discovery Works
 
@@ -38,184 +36,17 @@ The discovery system automatically finds databases and determines what to docume
 **Process:**
 1. Scans `src/Databases/` directory for subdirectories
 2. Each subdirectory represents one database
-3. Looks for optional `db_docs.yml` configuration file
-4. Checks `database.generate_docs` flag (default: true)
-5. Outputs two formats:
-   - `database_directories`: List for deployment workflows
-   - `database_configs`: Object for documentation workflow
+3. Outputs database list for documentation workflow
 
 **Example Directory Structure:**
 ```
 src/Databases/
-├── Main/
-│   ├── Schema/              (SQL scripts)
-│   ├── Seeds/               (Test data)
-│   └── db_docs.yml          ✅ Configuration found!
+├── consilient_main/
+│   └── *.sql              (SQL scripts)
 │
-├── Hangfire/
-│   ├── Schema/
-│   └── db_docs.yml
-│
-└── CustomDB/
-    └── Schema/
-        (no db_docs.yml - uses defaults)
+└── users_main/
+    └── *.sql
 ```
-
-### Discovery Action Output
-
-**File:** [`.github/actions/discover-databases/action.yml:164-185`](../../../.github/actions/discover-databases/action.yml#L164-L185)
-
-The action produces multiple output formats for different workflows:
-
-```yaml
-# Output for databases.yml (deployment workflow)
-database_directories: ["Main", "Hangfire", "CustomDB"]
-
-# Output for docs_db.yml (documentation workflow)
-database_configs:
-  ConsilientDB:
-    directory: "Main"
-    config_path: "Main/db_docs.yml"
-  HangfireDB:
-    directory: "Hangfire"
-    config_path: "Hangfire/db_docs.yml"
-```
-
-### Configuration-Driven Filtering
-
-The `generate_docs` flag controls whether documentation is generated:
-
-```yaml
-database:
-  generate_docs: true   # ✅ Documentation will be generated
-```
-
-When set to `false`:
-- Database is still discovered
-- Documentation generation is skipped
-- No SchemaSpy execution
-- No artifacts created
-- Useful for temporary or utility databases
-
-**Use Cases for `generate_docs: false`:**
-- Temporary test databases
-- Backup/DR databases that change frequently
-- Utility databases with minimal structure
-- Databases still in development
-
----
-
-## Configuration Guide (db_docs.yml)
-
-### File Location
-
-```
-src/Databases/
-└── {DatabaseName}/
-    └── db_docs.yml    ← Configuration file (one per database)
-```
-
-**Example Paths:**
-- `src/Databases/Main/db_docs.yml`
-- `src/Databases/Hangfire/db_docs.yml`
-- `src/Databases/CustomDB/db_docs.yml`
-
-### Configuration Structure
-
-```yaml
-database:
-  # Friendly name for documentation headers and summaries
-  name: "ConsilientDB"
-
-  # Enable/disable documentation generation for this database
-  # true: Generate documentation (default)
-  # false: Skip documentation
-  generate_docs: true
-
-  # (Optional) Environment-specific database name overrides
-  # If not specified, uses workflow-provided database name
-  # environment_names:
-  #   dev: "ConsilientDB_dev"
-  #   prod: "ConsilientDB_prod"
-
-schemas:
-  # Schemas to exclude from documentation
-  # Dynamically discovered schemas not in this list will be documented
-  # Matching is case-insensitive
-  exclude: []
-
-  # Examples (uncomment to use):
-  # exclude:
-  #   - "TempSchema"      # Temporary working schema
-  #   - "Internal"        # Internal-use only
-  #   - "Staging"         # ETL/staging area
-```
-
-### Common Configuration Patterns
-
-**Pattern 1: Basic Database (Document Everything)**
-```yaml
-database:
-  name: "HangfireDB"
-  generate_docs: true
-
-schemas:
-  exclude: []
-```
-Use this for databases with minimal or internal schemas.
-
-**Pattern 2: Large Database with Filtered Schemas**
-```yaml
-database:
-  name: "ConsilientDB"
-  generate_docs: true
-
-schemas:
-  exclude:
-    - "internal"
-    - "staging"
-    - "audit_temp"
-```
-Use this for large databases with internal/temporary schemas you don't need documented.
-
-**Pattern 3: Disable Documentation**
-```yaml
-database:
-  name: "UtilityDB"
-  generate_docs: false
-
-schemas:
-  exclude: []
-```
-Use this for databases that change frequently or don't need documentation.
-
-### Schema Exclusion Details
-
-**Discovery Process:**
-1. Query database for user-created schemas (`list_user_schemas.sql`)
-2. System schemas automatically excluded (sys, INFORMATION_SCHEMA, guest, db_*)
-3. Apply manual exclusions from `schemas.exclude`
-4. Remaining schemas passed to SchemaSpy for documentation
-
-**Example Filtering:**
-
-```
-All Schemas in Database: dbo, Sales, Marketing, Internal, Staging, temp_work
-
-System Schemas (auto-excluded): sys, INFORMATION_SCHEMA, guest
-
-Manual Exclusions (from db_docs.yml):
-  - "Internal"
-  - "Staging"
-  - "temp_work"
-
-Final Schemas Documented: dbo, Sales, Marketing
-```
-
-**Matching Rules:**
-- Case-insensitive: `"SCHEMA"`, `"schema"`, and `"Schema"` all match
-- Whitespace trimmed: leading/trailing spaces ignored
-- Exact name required: `"Schema"` doesn't match `"SchemaPrefix"`
 
 ---
 
@@ -261,20 +92,14 @@ ORDER BY s.name;
 **Workflow Stage:** [`docs_db.yml:160-226`](../../../.github/workflows/docs_db.yml#L160-L226)
 
 ```bash
-# Step 1: Run schema discovery SQL
+# Run schema discovery SQL
 sqlcmd -S {server} \
        -d {database} \
        -G \
        -i .github/actions/discover-databases/list_user_schemas.sql
 
 # Outputs list of discovered schema names
-# Example: dbo, Sales, Marketing, Internal, Staging
-
-# Step 2: Filter exclusions from db_docs.yml
-# Remove schemas matching the exclude list
-
-# Step 3: Store final list for SchemaSpy
-SCHEMAS_TO_DOC="dbo,Sales,Marketing"
+# Example: dbo, Clinical, Compensation, Identity
 ```
 
 ---
@@ -417,29 +242,17 @@ generate-db-docs:
 
 ### Generation Job Steps
 
-**Step 1: Parse Configuration**
-- Read `db_docs.yml` from database directory
-- Extract `schemas.exclude` list
-- Validate YAML syntax
-
-**Step 2: Azure Login**
+**Step 1: Azure Login**
 - OIDC authentication to Azure
 - Credentials available for SQL queries
 
-**Step 3: Discover Schemas**
+**Step 2: Discover Schemas**
 ```bash
 sqlcmd -S {server} -d {database} -G -i .github/actions/discover-databases/list_user_schemas.sql
 # Output: List of user-created schemas (auto-excludes system schemas)
 ```
 
-**Step 4: Filter Exclusions**
-```bash
-# Apply manual exclusions from db_docs.yml
-# Remove "Internal", "Staging", etc. from discovered schemas
-# Result: Final list of schemas to document
-```
-
-**Step 5: Generate Documentation**
+**Step 3: Generate Documentation**
 ```bash
 # For each schema (parallel):
 for schema in $SCHEMAS_TO_DOC; do
@@ -447,13 +260,13 @@ for schema in $SCHEMAS_TO_DOC; do
 done
 ```
 
-**Step 6: Create HTML Index**
+**Step 4: Create HTML Index**
 - Generate `docs/index.html` (landing page)
 - List all schema documentation
 - Create schema cards with navigation links
 - Include database name and timestamp
 
-**Step 7: Upload Artifact**
+**Step 5: Upload Artifact**
 ```yaml
 artifact-name: database-documentation-{database}-{suffix}
 retention-days: 7  # Pull requests
@@ -581,23 +394,14 @@ open index.html  # or double-click in Explorer
 
 **Solutions:**
 
-**Option 1: Exclude Large Schemas (Recommended)**
-```yaml
-# src/Databases/Main/db_docs.yml
-schemas:
-  exclude:
-    - "LargeArchiveSchema"
-    - "HistoricalData"
-```
-
-**Option 2: Increase Timeout**
+**Option 1: Increase Timeout**
 Edit `.github/workflows/docs_db.yml` and increase:
 ```yaml
 env:
   SCHEMASPY_TIMEOUT_SECONDS: 900  # 15 minutes instead of 10
 ```
 
-**Option 3: Disable Row Counts** (Already Done)
+**Option 2: Disable Row Counts** (Already Done)
 SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 
 ---
@@ -606,97 +410,19 @@ SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 
 **Symptoms:**
 - Workflow completes but no artifact
-- Job logs show: "SKIP_DOCUMENTATION=true" or "generate_docs: false"
+- Job logs show: "SKIP_DOCUMENTATION=true"
 
 **Diagnosis:**
-1. Check `db_docs.yml` configuration:
-   ```bash
-   cat src/Databases/{Name}/db_docs.yml
-   # Look for: generate_docs: true
-   ```
-
-2. Check for schema exclusions:
-   ```yaml
-   schemas:
-     exclude: []  # Empty = document all schemas
-   ```
-
-3. Verify database has schemas:
+1. Verify database has schemas:
    See "Schema Discovery Fails" above
 
-4. Check workflow input:
+2. Check workflow input:
    - If triggered manually, ensure `skip_db_docs: false` (not true)
    - Check main.yml input parameters
 
 **Solution:**
-- Set `generate_docs: true` in `db_docs.yml`
-- Ensure `schemas.exclude: []` (or remove items as needed)
 - Verify database has user-created schemas
 - Don't skip documentation when triggering workflow
-
----
-
-### db_docs.yml Not Recognized
-
-**Symptoms:**
-- Database discovered but configuration ignored
-- Workflow uses default values instead of your config
-
-**Diagnosis:**
-1. Verify file name (case-sensitive):
-   ```bash
-   ls -la src/Databases/{Name}/
-   # Should show: db_docs.yml (exact spelling)
-   ```
-
-2. Check file location:
-   ```
-   Correct:   src/Databases/Main/db_docs.yml ✅
-   Wrong:     src/Databases/Main/Schema/db_docs.yml ❌
-   Wrong:     src/Databases/Main/db-docs.yml ❌
-   ```
-
-3. Validate YAML syntax (no tabs, proper indentation):
-   ```bash
-   cat src/Databases/{Name}/db_docs.yml | grep -P '\t'
-   # Should output nothing (tabs = error)
-   ```
-
-4. Use YAML validator online: https://www.yamllint.com/
-
-**Solution:**
-- Verify file name is exactly `db_docs.yml`
-- Ensure file is in database directory root (not subdirectories)
-- Check YAML indentation (2 spaces, no tabs)
-- Use linting tool to validate syntax
-
----
-
-### Excluded Schemas Still Appearing in Docs
-
-**Symptoms:**
-- Added schema to `schemas.exclude` list
-- Schema still appears in generated documentation
-
-**Diagnosis:**
-- Artifact is from previous workflow run (cached)
-- Configuration changed after workflow ran
-- Schema name case mismatch
-
-**Solution:**
-1. Regenerate documentation:
-   - Go to GitHub Actions
-   - Re-run workflow for the database
-   - Wait for new artifact
-
-2. Verify schema name case:
-   - Schema matching is case-insensitive
-   - Both "Sales" and "SALES" should match "sales"
-   - Check exact schema name in your database
-
-3. Clear artifact cache:
-   - Download latest artifact
-   - Use browser "hard refresh" (Ctrl+Shift+R)
 
 ---
 
@@ -720,7 +446,6 @@ SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 - **Workflow:** [`.github/workflows/docs_db.yml`](../../../.github/workflows/docs_db.yml) - Full workflow definition
 - **Discovery Action:** [`.github/actions/discover-databases/action.yml`](../../../.github/actions/discover-databases/action.yml) - Discovery implementation
 - **Schema Discovery SQL:** [`.github/actions/discover-databases/list_user_schemas.sql`](../../../.github/actions/discover-databases/list_user_schemas.sql) - Schema enumeration logic
-- **Configuration Example:** [`src/Databases/consilient_main/db_docs.yml`](../../../src/Databases/consilient_main/db_docs.yml) - Real configuration file
 
 ---
 
@@ -729,10 +454,8 @@ SchemaSpy runs with `-norows` flag to skip expensive row count queries.
 | Item | Path | Purpose |
 |------|------|---------|
 | Documentation Workflow | [`.github/workflows/docs_db.yml`](../../../.github/workflows/docs_db.yml) | Main documentation generation workflow |
-| Discovery Action | [`.github/actions/discover-databases/action.yml`](../../../.github/actions/discover-databases/action.yml) | Scans for databases and configurations |
+| Discovery Action | [`.github/actions/discover-databases/action.yml`](../../../.github/actions/discover-databases/action.yml) | Scans for databases |
 | Schema Discovery | [`.github/actions/discover-databases/list_user_schemas.sql`](../../../.github/actions/discover-databases/list_user_schemas.sql) | Queries database for user schemas |
-| Configuration Template | [Template Guide](#configuration-guide-dbdocsyml) | (See section below) |
-| Example Configuration | [`src/Databases/consilient_main/db_docs.yml`](../../../src/Databases/consilient_main/db_docs.yml) | Working example |
 | Main Orchestrator | [`.github/workflows/main.yml:173-186`](../../../.github/workflows/main.yml#L173-L186) | Calls docs_db.yml from main.yml |
 
 ---

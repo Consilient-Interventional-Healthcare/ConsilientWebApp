@@ -570,35 +570,21 @@ az sql server firewall-rule list \
 
 **Solution:**
 
-**Option 1: Exclude Large Schemas (Recommended)**
+**Option 1: Increase Timeout**
 
-Edit `src/Databases/{Name}/db_docs.yml`:
-```yaml
-schemas:
-  exclude:
-    - "LargeArchiveSchema"
-    - "HistoricalData"
-```
-
-Then regenerate: Go to GitHub Actions → Re-run workflow
-
-**Option 2: Increase Timeout**
-
-Edit `.github/workflows/database-docs.yml` (temporary fix):
+Edit `.github/workflows/database-docs.yml`:
 ```yaml
 env:
   SCHEMASPY_TIMEOUT_SECONDS: 900  # 15 minutes instead of 10
 ```
 
-**Option 3: Check Schema Complexity**
+**Option 2: Check Schema Complexity**
 
 See how many tables/relationships:
 ```sql
 SELECT COUNT(*) FROM sys.tables WHERE schema_id = SCHEMA_ID('{SchemaName}');
 SELECT COUNT(*) FROM sys.foreign_keys;
 ```
-
-Large numbers may indicate need for exclusion.
 
 **Note:** SchemaSpy already runs with `-norows` flag (skips expensive row count queries).
 
@@ -611,131 +597,19 @@ Large numbers may indicate need for exclusion.
 **Error:** Workflow completes but no artifact, or "SKIP_DOCUMENTATION=true"
 
 **Diagnosis:**
-- `generate_docs: false` in `db_docs.yml`
-- All schemas excluded (none to document)
 - Workflow manually skipped
+- Database has no user-created schemas
 
 **Solution:**
 
-1. Check database configuration:
-```bash
-cat src/Databases/{Name}/db_docs.yml
-# Should show: generate_docs: true
-```
-
-2. Verify schema exclusions:
-```yaml
-schemas:
-  exclude: []  # Empty = document all schemas
-```
-
-3. Check for all schemas excluded:
-```yaml
-schemas:
-  exclude:
-    - "schema1"
-    - "schema2"
-    # If ALL user schemas are here, nothing gets documented!
-```
-
-4. Verify database has schemas:
+1. Verify database has schemas:
    See "Schema Discovery Fails" above
 
-5. Check workflow was not skipped:
+2. Check workflow was not skipped:
    - If triggered manually: ensure `skip_db_docs: false` (not true)
    - Check main.yml input parameters
 
-**Solution:** Set `generate_docs: true` and remove unnecessary exclusions, then re-run workflow.
-
 **Related Files:** [components/database-documentation.md](components/database-documentation.md#documentation-not-generating)
-
----
-
-### db_docs.yml Not Recognized
-
-**Error:** Database discovered but configuration ignored, using defaults
-
-**Diagnosis:**
-- File name misspelled (not exactly `db_docs.yml`)
-- Wrong location (not in database directory root)
-- YAML syntax error (indentation, tabs)
-
-**Solution:**
-
-1. Verify exact file name:
-```bash
-ls -la src/Databases/{Name}/
-# Must show exactly: db_docs.yml (not db-docs.yml or db_docs.yaml)
-```
-
-2. Check file location (must be in database root):
-```
-Correct:   src/Databases/Main/db_docs.yml ✅
-Wrong:     src/Databases/Main/Schema/db_docs.yml ❌
-Wrong:     src/Databases/Main/db-docs.yml ❌
-```
-
-3. Validate YAML syntax:
-```bash
-# Check for tabs (should be none - only spaces)
-cat src/Databases/{Name}/db_docs.yml | grep -P '\t'
-# No output = correct
-```
-
-4. Use online YAML validator:
-   - Copy file contents
-   - Paste to https://www.yamllint.com/
-   - Fix any errors shown
-
-5. Verify indentation:
-   ```yaml
-   database:           # 0 spaces
-     name: "MyDB"      # 2 spaces
-     generate_docs: true  # 2 spaces
-
-   schemas:            # 0 spaces
-     exclude: []       # 2 spaces
-   ```
-
-**Related Files:** [components/database-documentation.md](components/database-documentation.md#dbdocsyml-not-recognized)
-
----
-
-### Excluded Schemas Still Appearing in Docs
-
-**Error:** Added schema to `exclude` list but still appears in documentation
-
-**Diagnosis:**
-- Artifact is cached from previous run
-- Schema name case mismatch
-- Configuration changed after workflow ran
-
-**Solution:**
-
-1. **Regenerate documentation:**
-   - Go to GitHub Actions
-   - Select workflow: "05 - Generate DB Docs"
-   - Click "Run workflow"
-   - Wait for new artifact
-
-2. **Clear browser cache:**
-   - Hard refresh: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
-   - Or download fresh artifact
-
-3. **Verify schema name matching:**
-   - Matching is case-INSENSITIVE
-   - Both "Sales" and "SALES" match "sales"
-   - Check exact name in database:
-   ```sql
-   SELECT name FROM sys.schemas WHERE schema_id > 4;
-   ```
-
-4. **Confirm configuration saved:**
-   - Commit `db_docs.yml` changes
-   - Push to repository
-   - Trigger workflow again
-
-**Related Files:** [components/database-documentation.md](components/database-documentation.md#excluded-schemas-still-appearing-in-docs)
 
 ---
 

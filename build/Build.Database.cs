@@ -17,7 +17,7 @@ partial class Build
 
     // Database paths (MigrationsProject is defined in Build.cs)
     static AbsolutePath DatabaseScriptsDir => SourceDirectory / "Databases";
-    static AbsolutePath EnvLocalFile => RootDirectory / "scripts" / ".env.local";
+    static AbsolutePath EnvLocalFile => RootDirectory / ".nuke" / ".env.local";
 
     // Parameters
     [Parameter("Migration name (required for AddMigration)")]
